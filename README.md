@@ -20,7 +20,7 @@ A simple, headless Node.js application that turns a standard PC into a multi-cha
 
 LANStreamer simplifies the workflow by acting as a central control panel for three core components:
 
-1. **Audio Device:** A multi-channel audio interface like the Behringer XR18 captures audio from multiple microphones and sends it to the host PC via a USB connection.
+1. **Audio Device:** A multi-channel audio interface like the Behringer XR18 (or Focusrite Scarlett 18i20) captures audio from multiple microphones and sends it to the host PC via a USB connection.
 
 2. **FFmpeg:** This powerful tool is used to read the individual audio channels from the XR18, encode them into a streamable format (like MP3), and push them to the streaming server.
 
@@ -58,3 +58,4 @@ npm install
 ```bash
 npm start
 ```
+
