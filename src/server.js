@@ -1,3 +1,20 @@
+/**
+ * LANStreamer Main Server File
+ *
+ * This is the main entry point for the LANStreamer application. It sets up the Express server,
+ * initializes all services (FFmpeg, Icecast, Audio Device, System monitoring), configures
+ * middleware for security and logging, sets up WebSocket communication, and handles graceful
+ * shutdown procedures.
+ *
+ * Key responsibilities:
+ * - HTTP server setup with Express.js
+ * - WebSocket server initialization with Socket.io
+ * - Service initialization and dependency injection
+ * - Middleware configuration (security, logging, validation)
+ * - Route registration for API endpoints
+ * - Graceful shutdown handling
+ */
+
 const express = require('express')
 const http = require('http')
 const socketIo = require('socket.io')

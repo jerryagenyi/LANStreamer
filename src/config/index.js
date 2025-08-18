@@ -1,3 +1,18 @@
+/**
+ * LANStreamer Configuration Management
+ *
+ * This file centralizes all application configuration, loading from environment variables
+ * and providing default values. It organizes configuration into logical sections:
+ * - Server settings (port, host, environment)
+ * - Security configuration (JWT, passwords, encryption)
+ * - External service settings (Icecast, FFmpeg)
+ * - Audio and network configuration
+ * - Logging and monitoring settings
+ * - Development and testing options
+ *
+ * The configuration is validated in production to ensure required values are set.
+ */
+
 const dotenv = require('dotenv')
 const path = require('path')
 

@@ -1,3 +1,19 @@
+/**
+ * LANStreamer Frontend Application Entry Point
+ *
+ * This file initializes the Vue.js 3 application with all necessary plugins and configurations:
+ * - Vue Router for single-page application navigation
+ * - Vuex store for centralized state management
+ * - Bootstrap 5 for responsive UI components
+ * - Toast notifications for user feedback
+ * - Global components registration
+ * - Global filters and utilities
+ * - Error handling and logging
+ *
+ * The application provides a modern, responsive web interface for managing
+ * audio streams and monitoring system status.
+ */
+
 import { createApp } from 'vue'
 import App from './App.vue'
 import router from './router'

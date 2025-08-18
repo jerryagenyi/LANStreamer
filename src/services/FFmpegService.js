@@ -1,3 +1,19 @@
+/**
+ * FFmpeg Service - Audio Stream Processing and Management
+ *
+ * This service manages FFmpeg processes for audio encoding and streaming. It handles:
+ * - FFmpeg installation verification and version checking
+ * - Stream configuration and validation
+ * - Process spawning and lifecycle management
+ * - Audio channel mapping and encoding parameters
+ * - Real-time process monitoring and error handling
+ * - Cross-platform audio device support (Windows DirectShow, macOS AVFoundation, Linux PulseAudio)
+ * - Hardware simulation for development and testing
+ *
+ * Each stream runs as a separate FFmpeg process that reads from audio devices
+ * and streams to Icecast server endpoints.
+ */
+
 const { spawn, exec } = require('child_process')
 const { promisify } = require('util')
 const fs = require('fs-extra')
