@@ -4,7 +4,7 @@ A simple, headless Node.js application that turns a standard PC into a multi-cha
 Features
 Automated Setup: A guided wizard automates the installation and configuration of Icecast and FFmpeg.
 
-Audio Device Detection: Automatically detects and lists connected audio devices (e.g., the Behringer XR18).
+Audio Device Detection: Automatically detects and lists connected audio devices (e.g., the Behringer XR18 or Focusrite Scarlett 18i20).
 
 Multi-Stream Management: Start, stop, and manage individual audio streams from a simple web-based dashboard.
 
