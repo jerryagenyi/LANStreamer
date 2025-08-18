@@ -1,0 +1,107 @@
+{
+  "name": "lanstreamer",
+  "version": "1.0.0",
+  "description": "A Node.js application that turns a standard PC into a multi-channel audio streaming server for local area networks",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "lint": "eslint src/",
+    "lint:fix": "eslint src/ --fix",
+    "build": "npm run build:frontend",
+    "build:frontend": "cd frontend && npm run build",
+    "setup": "node scripts/setup.js",
+    "postinstall": "cd frontend && npm install"
+  },
+  "keywords": [
+    "audio",
+    "streaming",
+    "icecast",
+    "ffmpeg",
+    "lan",
+    "conference",
+    "interpretation",
+    "nodejs",
+    "express",
+    "vue"
+  ],
+  "author": "LANStreamer Team",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jerryagenyi/LANStreamer.git"
+  },
+  "engines": {
+    "node": ">=16.0.0",
+    "npm": ">=8.0.0"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "express-rate-limit": "^6.7.0",
+    "helmet": "^6.1.5",
+    "cors": "^2.8.5",
+    "compression": "^1.7.4",
+    "morgan": "^1.10.0",
+    "winston": "^3.8.2",
+    "winston-daily-rotate-file": "^4.7.1",
+    "socket.io": "^4.6.2",
+    "bcryptjs": "^2.4.3",
+    "jsonwebtoken": "^9.0.0",
+    "joi": "^17.9.2",
+    "dotenv": "^16.0.3",
+    "systeminformation": "^5.17.12",
+    "node-cron": "^3.0.2",
+    "qrcode": "^1.5.3",
+    "multer": "^1.4.5-lts.1",
+    "express-validator": "^6.15.0",
+    "uuid": "^9.0.0",
+    "lodash": "^4.17.21",
+    "moment": "^2.29.4",
+    "fs-extra": "^11.1.1",
+    "xml2js": "^0.5.0",
+    "portfinder": "^1.0.32",
+    "ping": "^0.4.4",
+    "node-fetch": "^2.6.9"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.22",
+    "jest": "^29.5.0",
+    "supertest": "^6.3.3",
+    "eslint": "^8.40.0",
+    "eslint-config-standard": "^17.0.0",
+    "eslint-plugin-import": "^2.27.5",
+    "eslint-plugin-node": "^11.1.0",
+    "eslint-plugin-promise": "^6.1.1",
+    "@types/jest": "^29.5.1",
+    "husky": "^8.0.3",
+    "lint-staged": "^13.2.2"
+  },
+  "husky": {
+    "hooks": {
+      "pre-commit": "lint-staged"
+    }
+  },
+  "lint-staged": {
+    "src/**/*.js": [
+      "eslint --fix",
+      "git add"
+    ]
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "collectCoverageFrom": [
+      "src/**/*.js",
+      "!src/server.js",
+      "!src/config/*.js"
+    ],
+    "coverageDirectory": "coverage",
+    "coverageReporters": [
+      "text",
+      "lcov",
+      "html"
+    ]
+  }
+}
