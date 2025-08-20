@@ -18,7 +18,7 @@ set "AUDIO_DEVICE=Microphone Array (Intel® Smart Sound Technology for Digital M
 :: If the DVS is working, you can change this to:
 :: set "AUDIO_DEVICE=DVS Receive 1-2 (Dante Virtual Soundcard)"
 
-:: Set your Icecast server details
+:: Set your Icecast server details (change 'localhost' to your server IP if needed or planning to access from other devices)
 set "ICECAST_HOST=localhost"
 set "ICECAST_PORT=8000"
 set "ICECAST_USER=source"

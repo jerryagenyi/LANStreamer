@@ -1,7 +1,7 @@
 {
-  "name": "lanstreamer",
+  "name": "lanstreamer-vue-app",
   "version": "1.0.0",
-  "description": "A Node.js application that turns a standard PC into a multi-channel audio streaming server for local area networks",
+  "description": "Vue.js web interface for LANStreamer - A Node.js application that turns a standard PC into a multi-channel audio streaming server for local area networks",
   "main": "src/server.js",
   "scripts": {
     "start": "node src/server.js",
@@ -27,7 +27,9 @@
     "interpretation",
     "nodejs",
     "express",
-    "vue"
+    "vue",
+    "web-interface",
+    "admin-panel"
   ],
   "author": "LANStreamer Team",
   "license": "MIT",
@@ -89,6 +91,5 @@
       "eslint --fix",
       "git add"
     ]
-  },
-
+  }
 }

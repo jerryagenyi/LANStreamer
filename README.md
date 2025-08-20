@@ -1,6 +1,37 @@
 # LANStreamer
 
-A simple, headless Node.js application that turns a standard PC into a multi-channel audio streaming server for a local area network (LAN). This project is designed to simplify the process of setting up live, low-latency audio broadcasts for events like language interpretation, meetings, or conferences.
+A comprehensive solution that turns a standard PC into a multi-channel audio streaming server for local area networks (LAN). This project provides both **manual setup guides** and a **web-based application** for live, low-latency audio broadcasts for events like language interpretation, meetings, or conferences.
+
+## Project Structure
+
+```
+LANStreamer/
+├── README.md                                    # This file - project overview
+├── LANStreamer-Audio-Pipeline-Concepts.md      # Core concepts and troubleshooting
+├── LANStreamer-basic-xr18.md                   # XR18 hardware setup guide
+├── LANStreamer-basic-dvs.md                    # DVS/Dante setup guide
+├── start_dvs_streams.bat                       # Multi-stream batch file
+├── stream.bat                                  # Single stream example
+└── vue-app/                                    # Vue.js web application
+    ├── package.json                            # Node.js dependencies
+    ├── src/                                    # Server-side code (Express + Node.js)
+    ├── frontend/                               # Frontend code (Vue.js)
+    └── README.md                               # Web app documentation
+```
+
+## Two Ways to Use LANStreamer
+
+### 1. 📖 **Manual Setup** (Recommended for Learning)
+- **Step-by-step guides** for XR18 and DVS hardware
+- **Batch file approach** with variable-based configuration
+- **Complete understanding** of the audio pipeline
+- **Perfect for troubleshooting** and customization
+
+### 2. 🖥️ **Vue.js Web Application** (In Development)
+- **Browser-based interface** for stream control
+- **Real-time monitoring** and status updates
+- **User-friendly** for non-technical operators
+- **Advanced features** like recording and analytics
 
 ## Features
 
