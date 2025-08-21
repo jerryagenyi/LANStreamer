@@ -59,6 +59,29 @@ LANStreamer simplifies the workflow by acting as a central control panel for thr
 
 LANStreamer manages the configuration and execution of the FFmpeg and Icecast components, providing a simple web interface for a one-click streaming experience.
 
+## Visual Concept Overview
+
+### Local Server Approach (Recommended)
+![LANStreamer Local Server Concept](images/lanstreamer-local-audio-concept-1.jpg)
+
+**Key Benefits:**
+- **Complete Control:** Your own local streaming server using Icecast
+- **No Internet Required:** Works entirely on your local network
+- **Cost-Effective:** Uses VLC (free) or any audio player for listening
+- **Privacy:** Audio never leaves your network
+- **Reliable:** No dependency on external services
+
+### Cloud-Based Alternative
+![LANStreamer Cloud Concept](images/lanstreamer-local-audio-concept-2.jpg)
+
+**When to Consider:**
+- **Remote Participants:** Need internet-based streaming
+- **Simplified Setup:** Prefer managed streaming service
+- **Mobile-First:** Optimized for smartphone listening
+- **Scalability:** Large number of concurrent listeners
+
+> 💡 **Recommendation**: Start with the **local server approach** using our manual setup guides. It's more reliable, cost-effective, and gives you complete control over your audio streaming infrastructure.
+
 ## Getting Started
 
 ### Prerequisites
@@ -69,24 +92,40 @@ LANStreamer manages the configuration and execution of the FFmpeg and Icecast co
 
 - The **X AIR EDIT** application for routing your audio interface channels.
 
-### Installation
+### Quick Start Options
 
-1. Clone this repository:
+#### Option 1: Manual Setup (Recommended for Beginners)
 
-```bash
-git clone https://github.com/your-username/LANStreamer.git
-cd LANStreamer
-```
+1. **Clone this repository:**
+   ```bash
+   git clone https://github.com/your-username/LANStreamer.git
+   cd LANStreamer
+   ```
 
-2. Install the dependencies:
+2. **Choose your hardware setup guide:**
+   - **XR18/Scarlett Users:** Follow [LANStreamer-basic-xr18.md](LANStreamer-basic-xr18.md)
+   - **DVS/Dante Users:** Follow [LANStreamer-basic-dvs.md](LANStreamer-basic-dvs.md)
 
-```bash
-npm install
-```
+3. **Start with single stream testing:**
+   - Edit and run `stream.bat` for your first test
+   - Once working, advance to multi-stream batch files
 
-3. Start the application and follow the on-screen setup wizard:
+#### Option 2: Vue.js Web Application (Advanced)
 
-```bash
-npm start
-```
+1. **Navigate to the web app:**
+   ```bash
+   cd vue-app
+   ```
+
+2. **Install dependencies:**
+   ```bash
+   npm install
+   ```
+
+3. **Start the development server:**
+   ```bash
+   npm run dev
+   ```
+
+> 📖 **New to LANStreamer?** Start with the **manual setup guides** to understand the core concepts, then advance to the web application for production use.
 
