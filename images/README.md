@@ -4,8 +4,8 @@ This directory contains visual diagrams and illustrations for the LANStreamer do
 
 ## Current Images
 
-### 1. lanstreamer-local-audio-concept-1.jpg ✅
-**Description:** Diagram showing the local server approach with VLC/Icecast
+### 1. lanstreamer-local-audio-concept-1.jpg ✅ **ACTIVE**
+**Description:** Main LANStreamer concept diagram showing local server approach
 **Content:**
 - 4 audio inputs (ENG, FRA, POR, ARA) with XLR connectors
 - VLC cone icon representing "4 instances of local Audio streaming Generate servers links"
@@ -14,8 +14,8 @@ This directory contains visual diagrams and illustrations for the LANStreamer do
 - Mobile phone showing language selection (ENG, FRA, POR, ITA)
 - Text: "Instead of internet-based, we can setup a local server, and create an open-password SSID for participants to connect to"
 
-### 2. lanstreamer-local-audio-concept-2.jpg ✅
-**Description:** Diagram showing the cloud-based streaming approach
+### 2. lanstreamer-local-audio-concept-2.jpg ✅ **ACTIVE**
+**Description:** Alternative streaming approach diagram
 **Content:**
 - Same 4 audio inputs (ENG, FRA, POR, ARA) with XLR connectors
 - Cloud icon with "AUDIO STREAM" and "LIVE Audio, 4 channels streaming service"
@@ -24,9 +24,9 @@ This directory contains visual diagrams and illustrations for the LANStreamer do
 
 ## Status
 
-✅ **Images Added:** Both concept diagrams are now in place
-✅ **README Updated:** Main README.md references the correct filenames
-✅ **Ready to Display:** Images will show in GitHub README
+✅ **Both Images Active:** Displayed side-by-side in README concept section
+✅ **Complete Visual:** Shows multiple implementation approaches
+✅ **Ready to Display:** Both images show properly in GitHub README
 
 ## Image Guidelines
 

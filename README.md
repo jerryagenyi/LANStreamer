@@ -61,26 +61,30 @@ LANStreamer manages the configuration and execution of the FFmpeg and Icecast co
 
 ## Visual Concept Overview
 
-### Local Server Approach (Recommended)
-![LANStreamer Local Server Concept](images/lanstreamer-local-audio-concept-1.jpg)
+### LANStreamer Concept
+
+<div align="center">
+  <img src="images/lanstreamer-local-audio-concept-1.jpg" width="45%" alt="LANStreamer Local Server Setup" style="border: 1px solid #ccc;" />
+  <img src="images/lanstreamer-local-audio-concept-2.jpg" width="45%" alt="LANStreamer Alternative Setup" style="border: 1px solid #ccc;" />
+</div>
+
+**How LANStreamer Works:**
+- **4 Audio Inputs:** Connect interpreters' microphones (ENG, FRA, POR, ARA)
+- **Local Streaming Server:** Uses Icecast or similar streaming technology
+- **Simple Web Interface:** Participants access streams through a basic webpage
+- **QR Code Access:** Easy connection - scan and listen, no app downloads required
+- **Mobile-Friendly:** Works on any device with a web browser
+- **Flexible Implementation:** Multiple approaches to achieve the same goal
 
 **Key Benefits:**
-- **Complete Control:** Your own local streaming server using Icecast
+- **Complete Control:** Your own local streaming server
 - **No Internet Required:** Works entirely on your local network
-- **Cost-Effective:** Uses VLC (free) or any audio player for listening
+- **Cost-Effective:** Uses free, open-source software
 - **Privacy:** Audio never leaves your network
 - **Reliable:** No dependency on external services
+- **Multiple Options:** Choose the streaming approach that works best for your setup
 
-### Cloud-Based Alternative
-![LANStreamer Cloud Concept](images/lanstreamer-local-audio-concept-2.jpg)
-
-**When to Consider:**
-- **Remote Participants:** Need internet-based streaming
-- **Simplified Setup:** Prefer managed streaming service
-- **Mobile-First:** Optimized for smartphone listening
-- **Scalability:** Large number of concurrent listeners
-
-> 💡 **Recommendation**: Start with the **local server approach** using our manual setup guides. It's more reliable, cost-effective, and gives you complete control over your audio streaming infrastructure.
+> 💡 **Perfect for:** Conferences, meetings, language interpretation events, and any situation where you need reliable, low-latency audio distribution to multiple listeners on a local network.
 
 ## Getting Started
 
