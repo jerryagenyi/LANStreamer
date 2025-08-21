@@ -2,6 +2,29 @@
 
 A comprehensive step-by-step solution for setting up your multi-language audio streaming system using Dante Virtual Soundcard (DVS) and Icecast with multiple streaming software options.
 
+## Table of Contents
+
+1. [Overview](#overview)
+2. [System Architecture](#system-architecture)
+3. [Key Differences from Standard Setup](#key-differences-from-standard-setup)
+4. [Prerequisites](#prerequisites)
+5. [Step 1: Install and Configure Icecast](#step-1-install-and-configure-icecast)
+6. [Step 2: Install and Configure DVS](#step-2-install-and-configure-dvs)
+7. [Step 3: Install FFmpeg](#step-3-install-ffmpeg)
+8. [Step 4: FFmpeg Direct Streaming (Recommended)](#step-4-ffmpeg-direct-streaming-recommended)
+   - [Option A: Single Stream Testing (stream.bat)](#option-a-single-stream-testing-streambat)
+   - [Option B: Multi-Stream Production (start_dvs_streams.bat)](#option-b-multi-stream-production-start_dvs_streamsbat)
+9. [Step 5: Alternative Streaming Options](#step-5-alternative-streaming-options)
+   - [Option C: Ezstream + FFmpeg (WSL)](#option-c-ezstream--ffmpeg-wsl)
+   - [Option D: VLC Media Player](#option-d-vlc-media-player)
+   - [Option E: GStreamer](#option-e-gstreamer)
+   - [Option F: OBS Studio](#option-f-obs-studio)
+   - [Option G: BUTT (Fallback)](#option-g-butt-fallback)
+10. [Recommended Setup Order](#recommended-setup-order)
+11. [Testing and Verification](#testing-and-verification)
+12. [Troubleshooting](#troubleshooting)
+13. [Web Interface](#web-interface)
+
 ## Overview
 
 This guide provides an alternative to the FFmpeg-based LANStreamer setup, designed for environments using Dante-enabled mixers or audio interfaces. It uses Dante Virtual Soundcard (DVS) to expose Dante audio channels as Windows audio devices, then offers multiple streaming software options including Ezstream (recommended), FFmpeg, VLC, OBS, and others.
@@ -407,7 +430,7 @@ If you need to capture Windows audio from WSL, you may need to:
 
 ---
 
-## Option B: FFmpeg Direct Streaming (Fallback)
+### Option C: Ezstream + FFmpeg (WSL)
 
 ### A.1 Install FFmpeg
 
@@ -680,7 +703,7 @@ ffmpeg -f dshow -i audio="%AUDIO_DEVICE%" ^
 
 ---
 
-## Option B: OBS Studio Streaming
+### Option F: OBS Studio
 
 ### B.1 Install OBS Studio
 
@@ -711,7 +734,7 @@ ffmpeg -f dshow -i audio="%AUDIO_DEVICE%" ^
 
 ---
 
-## Option C: VLC Media Player Streaming
+### Option D: VLC Media Player
 
 ### C.1 Install VLC (if not already installed)
 
@@ -751,7 +774,7 @@ pause
 
 ---
 
-## Option D: GStreamer Streaming
+### Option E: GStreamer
 
 ### D.1 Install GStreamer
 
@@ -789,7 +812,7 @@ pause
 
 ---
 
-## Option E: BUTT (Multiple Instances)
+### Option G: BUTT (Fallback)
 
 ### E.1 Install BUTT
 
@@ -977,6 +1000,114 @@ public          = no
 ```
 
 ---
+
+---
+
+## Step 4: FFmpeg Direct Streaming (Recommended)
+
+FFmpeg direct streaming is now the **recommended primary option** since it works reliably with DVS on Windows without requiring WSL or additional tools.
+
+### Option A: Single Stream Testing (stream.bat)
+
+**Perfect for learning, testing, and single-language setups.**
+
+The included `stream.bat` file demonstrates the basic concept with a single stream. This is ideal for:
+- **Understanding the pipeline** before setting up multiple streams
+- **Testing your DVS configuration** with a working audio device
+- **Single-language events** or simple setups
+- **Troubleshooting** audio device issues
+
+**How to use stream.bat:**
+
+1. **Edit the batch file** to configure your settings:
+   ```batch
+   :: Edit these variables at the top of stream.bat
+   set "AUDIO_DEVICE=DVS Receive 1-2 (Dante Virtual Soundcard)"
+   set "ICECAST_PASSWORD=your-source-password"
+   set "STREAM_NAME=english"
+   ```
+
+2. **Test with a working device first**:
+   ```batch
+   :: For testing, use a known working microphone
+   set "AUDIO_DEVICE=Microphone Array (Intel® Smart Sound Technology for Digital Microphones)"
+   ```
+
+3. **Run the batch file**:
+   - Double-click `stream.bat`
+   - Check the console output for any errors
+   - Visit `http://your-computer-ip:8000/english` to test the stream
+
+4. **Switch to DVS when ready**:
+   ```batch
+   :: Once testing works, switch to your DVS device
+   set "AUDIO_DEVICE=DVS Receive 1-2 (Dante Virtual Soundcard)"
+   ```
+
+### Option B: Multi-Stream Production (start_dvs_streams.bat)
+
+**For production use with multiple languages.**
+
+The `start_dvs_streams.bat` file handles 4 simultaneous streams with smart IP detection and variable-based configuration.
+
+**Features:**
+- **Auto-detects LAN IP** (192.168.x.x) for network access
+- **Manual IP override** for different network configurations
+- **Variable-based configuration** - edit settings at the top
+- **Professional output** with progress indicators
+- **All 4 languages** start automatically
+
+**Configuration:**
+
+1. **Edit the variables** at the top of `start_dvs_streams.bat`:
+   ```batch
+   :: === ICECAST SERVER SETTINGS ===
+   :: Manual IP override - set this if auto-detection doesn't work
+   set "MANUAL_IP="
+   :: set "MANUAL_IP=192.168.1.100"
+
+   set "ICECAST_PORT=8000"
+   set "ICECAST_USER=source"
+   set "ICECAST_PASSWORD=your-source-password"
+
+   :: === DVS AUDIO DEVICES ===
+   set "ENGLISH_DEVICE=DVS Receive  5-6 (Dante Virtual Soundcard)"
+   set "FRENCH_DEVICE=DVS Receive  7-8 (Dante Virtual Soundcard)"
+   set "PORTUGUESE_DEVICE=DVS Receive  9-10 (Dante Virtual Soundcard)"
+   set "ARABIC_DEVICE=DVS Receive 11-12 (Dante Virtual Soundcard)"
+   ```
+
+2. **Update device names** with your exact DVS device names:
+   - Run: `ffmpeg -list_devices true -f dshow -i dummy`
+   - Copy the exact device names (including spaces)
+   - Note the **double space** in "DVS Receive  5-6" - this is important
+
+3. **Set your Icecast password**:
+   - Replace `your-source-password` with your actual Icecast source password
+
+4. **Run the multi-stream setup**:
+   - Double-click `start_dvs_streams.bat`
+   - Review the configuration display
+   - Press Enter to start all 4 streams
+   - Check the displayed URLs to verify streams
+
+**Stream URLs will be:**
+- English: `http://192.168.1.xxx:8000/english`
+- French: `http://192.168.1.xxx:8000/french`
+- Portuguese: `http://192.168.1.xxx:8000/portuguese`
+- Arabic: `http://192.168.1.xxx:8000/arabic`
+
+**Benefits of Variable-Based Approach:**
+- **Easy device switching** for testing different audio sources
+- **Quick password updates** in one location
+- **Consistent settings** across all streams
+- **Troubleshooting friendly** - switch to working microphone for testing
+
+---
+
+## Step 5: Alternative Streaming Options
+
+If FFmpeg direct streaming doesn't work for your setup, try these alternatives in order:
 
 ## Recommended Setup Order
 

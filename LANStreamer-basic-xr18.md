@@ -2,6 +2,22 @@
 
 A comprehensive step-by-step solution for setting up your multi-language audio streaming system using the Behringer XR18 (or Focusrite Scarlett 18i20), FFmpeg, Icecast, and a web interface.
 
+## Table of Contents
+
+1. [Overview](#overview)
+2. [Prerequisites](#prerequisites)
+3. [Step 1: Hardware Setup](#step-1-hardware-setup)
+4. [Step 2: Configure XR18 Mixer](#step-2-configure-xr18-mixer)
+5. [Step 3: Software Installation](#step-3-software-installation)
+6. [Step 4: Install and Configure FFmpeg](#step-4-install-and-configure-ffmpeg)
+7. [Step 5: FFmpeg Streaming (Recommended)](#step-5-ffmpeg-streaming-recommended)
+   - [Single Stream Testing](#single-stream-testing)
+   - [Multi-Stream Production](#multi-stream-production)
+8. [Step 6: Create Web Interface](#step-6-create-web-interface)
+9. [Step 7: Testing and Troubleshooting](#step-7-testing-and-troubleshooting)
+10. [Step 8: Production Deployment](#step-8-production-deployment)
+11. [Conclusion](#conclusion)
+
 ## Overview
 
 This guide will help you create a professional audio streaming system for conferences, meetings, or events requiring multiple language channels. The system consists of:
@@ -519,9 +535,108 @@ chmod +x start_streams.sh
 
 ---
 
-## Step 5: Create Web Interface
+## Step 5: FFmpeg Streaming (Recommended)
 
-### 5.1 Create HTML Interface
+FFmpeg direct streaming is the **recommended approach** for XR18 setups, providing professional-quality audio streaming with reliable performance.
+
+### Single Stream Testing
+
+**Perfect for learning, testing, and single-language setups.**
+
+The included `stream.bat` file demonstrates the basic concept with a single stream. This is ideal for:
+- **Understanding the pipeline** before setting up multiple streams
+- **Testing your XR18 configuration** with a working audio device
+- **Single-language events** or simple setups
+- **Troubleshooting** audio device issues
+
+**How to use stream.bat:**
+
+1. **Edit the batch file** to configure your settings:
+   ```batch
+   :: Edit these variables at the top of stream.bat
+   set "AUDIO_DEVICE=XR18"
+   set "ICECAST_PASSWORD=your-source-password"
+   set "STREAM_NAME=english"
+   ```
+
+2. **Test with XR18 device**:
+   ```batch
+   :: Use your XR18 device name from device detection
+   set "AUDIO_DEVICE=XR18"
+   ```
+
+3. **Run the batch file**:
+   - Double-click `stream.bat`
+   - Check the console output for any errors
+   - Visit `http://your-computer-ip:8000/english` to test the stream
+
+### Multi-Stream Production
+
+For production use with multiple languages, you can create a multi-stream batch file similar to the DVS version:
+
+**Create `start_xr18_streams.bat`:**
+
+```batch
+@echo off
+setlocal enabledelayedexpansion
+
+:: === XR18 Multi-Stream Configuration ===
+set "ICECAST_HOST=localhost"
+set "ICECAST_PORT=8000"
+set "ICECAST_USER=source"
+set "ICECAST_PASSWORD=your-source-password"
+
+:: === XR18 AUDIO DEVICE ===
+set "XR18_DEVICE=XR18"
+
+echo Starting XR18 multi-language streams...
+echo Make sure Icecast is running first!
+pause
+
+:: English Stream (XR18 USB channels 1-2)
+start "English Stream" /min ffmpeg -f dshow -i audio="%XR18_DEVICE%" ^
+-filter_complex "[0:0]pan=mono|c0=0.5*c0+0.5*c1[english]" ^
+-map "[english]" -acodec libmp3lame -b:a 128k -ar 44100 ^
+-content_type audio/mpeg -ice_name "English" ^
+-f mp3 icecast://%ICECAST_USER%:%ICECAST_PASSWORD%@%ICECAST_HOST%:%ICECAST_PORT%/english
+
+:: French Stream (XR18 USB channels 3-4)
+start "French Stream" /min ffmpeg -f dshow -i audio="%XR18_DEVICE%" ^
+-filter_complex "[0:0]pan=mono|c0=0.5*c2+0.5*c3[french]" ^
+-map "[french]" -acodec libmp3lame -b:a 128k -ar 44100 ^
+-content_type audio/mpeg -ice_name "French" ^
+-f mp3 icecast://%ICECAST_USER%:%ICECAST_PASSWORD%@%ICECAST_HOST%:%ICECAST_PORT%/french
+
+:: Portuguese Stream (XR18 USB channels 5-6)
+start "Portuguese Stream" /min ffmpeg -f dshow -i audio="%XR18_DEVICE%" ^
+-filter_complex "[0:0]pan=mono|c0=0.5*c4+0.5*c5[portuguese]" ^
+-map "[portuguese]" -acodec libmp3lame -b:a 128k -ar 44100 ^
+-content_type audio/mpeg -ice_name "Portuguese" ^
+-f mp3 icecast://%ICECAST_USER%:%ICECAST_PASSWORD%@%ICECAST_HOST%:%ICECAST_PORT%/portuguese
+
+:: Arabic Stream (XR18 USB channels 7-8)
+start "Arabic Stream" /min ffmpeg -f dshow -i audio="%XR18_DEVICE%" ^
+-filter_complex "[0:0]pan=mono|c0=0.5*c6+0.5*c7[arabic]" ^
+-map "[arabic]" -acodec libmp3lame -b:a 128k -ar 44100 ^
+-content_type audio/mpeg -ice_name "Arabic" ^
+-f mp3 icecast://%ICECAST_USER%:%ICECAST_PASSWORD%@%ICECAST_HOST%:%ICECAST_PORT%/arabic
+
+echo All streams started!
+echo Check http://%ICECAST_HOST%:%ICECAST_PORT%/ to verify streams
+pause
+```
+
+**Key Features:**
+- **Variable-based configuration** - easy to modify
+- **Channel mapping** - uses XR18's USB channel routing
+- **Professional audio processing** - proper filtering and encoding
+- **Multiple simultaneous streams** - all 4 languages at once
+
+---
+
+## Step 6: Create Web Interface
+
+### 6.1 Create HTML Interface
 
 Create `index.html`:
 
@@ -643,7 +758,7 @@ Create `index.html`:
 </html>
 ```
 
-### 5.2 Host the Web Interface
+### 6.2 Host the Web Interface
 
 #### Option 1: Simple HTTP Server (Python)
 ```bash
@@ -669,9 +784,9 @@ Access at: `http://localhost:8080`
 
 ---
 
-## Step 6: Testing and Troubleshooting
+## Step 7: Testing and Troubleshooting
 
-### 6.1 System Testing
+### 7.1 System Testing
 
 1. **Start Services in Order**
    - Power on XR18 and connect all cables
@@ -690,7 +805,7 @@ Access at: `http://localhost:8080`
    - Test with multiple devices on the network
    - Monitor system performance and audio quality
 
-### 6.2 Common Issues and Solutions
+### 7.2 Common Issues and Solutions
 
 #### No Audio in Streams
 - **Check XR18 USB connection**: Verify the mixer appears in system audio devices
@@ -715,7 +830,7 @@ Access at: `http://localhost:8080`
 - **Stream URLs**: Verify URLs in HTML match your Icecast configuration
 - **Browser compatibility**: Test with different browsers (Chrome, Firefox, Safari)
 
-### 6.3 Performance Optimization
+### 7.3 Performance Optimization
 
 #### System Resources
 - **CPU usage**: Monitor FFmpeg processes, consider reducing bitrate if CPU usage is high
@@ -729,9 +844,9 @@ Access at: `http://localhost:8080`
 
 ---
 
-## Step 7: Production Deployment
+## Step 8: Production Deployment
 
-### 7.1 Network Configuration
+### 8.1 Network Configuration
 
 #### For Local Network Use
 - Ensure all client devices are on the same network as the streaming computer
@@ -744,7 +859,7 @@ Access at: `http://localhost:8080`
 - Set up SSL/TLS certificates for HTTPS streaming
 - Update HTML interface URLs to use your public IP or domain name
 
-### 7.2 Security Considerations
+### 8.2 Security Considerations
 
 1. **Change Default Passwords**
    - Update all Icecast passwords from defaults
@@ -760,7 +875,7 @@ Access at: `http://localhost:8080`
    - Use IP whitelisting for administrative access
    - Monitor access logs for suspicious activity
 
-### 7.3 Monitoring and Maintenance
+### 8.3 Monitoring and Maintenance
 
 #### System Monitoring
 - Set up monitoring for Icecast server status
