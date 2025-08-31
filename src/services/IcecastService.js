@@ -1,13 +1,12 @@
-const { spawn, exec } = require('child_process')
-const { promisify } = require('util')
-const fs = require('fs-extra')
-const path = require('path')
-const xml2js = require('xml2js')
-const fetch = require('node-fetch')
+import { spawn, exec } from 'child_process'
+import { promisify } from 'util'
+import fs from 'fs-extra'
+import path from 'path'
+import xml2js from 'xml2js'
+import fetch from 'node-fetch'
 
-const config = require('../config')
-const logger = require('../utils/logger')
-const { AppError } = require('../middleware/errorHandler')
+import config from '../config/index.js'
+import logger from '../utils/logger.js'
 
 const execAsync = promisify(exec)
 
@@ -470,4 +469,4 @@ class IcecastService {
   }
 }
 
-module.exports = IcecastService
+export default IcecastService

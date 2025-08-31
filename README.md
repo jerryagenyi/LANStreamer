@@ -9,10 +9,17 @@ For advanced users or for troubleshooting, **manual setup guides** are also avai
 ```
 LANStreamer/
 ├── README.md                               # This file - project overview
+├── .env.example                            # Environment configuration template
 ├── package.json                            # Node.js dependencies
 ├── src/                                    # Server-side code (Express + Node.js)
 ├── frontend/                               # Frontend code (Vue.js)
 ├── tests/                                  # Automated tests
+├── docs/                                   # Comprehensive documentation
+│   ├── LANStreamer-PRD.md                  # Product Requirements Document
+│   ├── LANStreamer-TDD.md                  # Test-Driven Development Plan
+│   ├── Admin-Dashboard-UI-Design.md        # UI Design Specifications
+│   ├── Audio-Monitoring-Feature-Specification.md # Monitoring Feature Specs
+│   └── env-example.md                      # Environment Configuration Guide
 ├── manual-setup/                           # Manual guides and scripts
 │   ├── README.md                           # Explanation of the manual setup
 │   ├── LANStreamer-basic-xr18.md           # XR18 hardware setup guide
@@ -24,10 +31,12 @@ LANStreamer/
 ## Features
 
 - **Automated Setup:** A guided wizard automates the installation and configuration of Icecast and FFmpeg.
-- **Audio Device Detection:** Automatically detects and lists connected audio devices.
+- **Professional Audio Device Detection:** Automatically detects and differentiates input and output audio devices for professional setups.
+- **Audio Monitoring:** Monitor live streams through local output devices for quality control before broadcasting.
 - **Multi-Stream Management:** Start, stop, and manage individual audio streams from a simple web-based dashboard.
 - **Real-time Status:** View the live status of all streams and system components via WebSockets.
 - **User-Friendly Interface:** A clean web interface allows users on the network to easily select and listen to the audio stream of their choice.
+- **Professional Integration:** Supports DVS/Dante audio interfaces for language interpretation and live event management.
 
 ## How It Works
 
@@ -68,17 +77,26 @@ LANStreamer simplifies the workflow by acting as a central control panel for thr
     cd LANStreamer
     ```
 
-2.  **Install dependencies:**
+2.  **Configure environment variables:**
+    ```bash
+    # Copy the example environment file
+    cp .env.example .env
+    
+    # Edit .env and update the CHANGE_THIS_VALUE entries
+    # At minimum, change all passwords for production use!
+    ```
+
+3.  **Install dependencies:**
     ```bash
     npm install
     ```
 
-3.  **Start the development server:**
+4.  **Start the development server:**
     ```bash
     npm run dev
     ```
 
-4.  **Access the web interface** by opening a browser to `http://localhost:3000` (or the port specified in your `.env` file).
+5.  **Access the web interface** by opening a browser to `http://localhost:3001/dashboard` (or the port specified in your `.env` file).
 
 ### Manual Setup (Advanced Users)
 

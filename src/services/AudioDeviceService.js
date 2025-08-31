@@ -15,4 +15,4 @@ class AudioDeviceService {
   }
 }
 
-export default AudioDeviceService;
+export default new AudioDeviceService();

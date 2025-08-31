@@ -53,14 +53,15 @@ const actions = {
     try {
       const response = await api.post('/api/streams/start', streamConfig)
       
-      // Add the new stream to active streams
+      // Use the real stream data from the backend
       const stream = {
-        id: response.data.streamId,
-        name: streamConfig.name || `Stream ${response.data.streamId}`,
-        deviceId: streamConfig.deviceId,
-        status: 'running',
-        config: streamConfig,
-        startedAt: new Date().toISOString()
+        id: response.data.stream.id,
+        name: response.data.stream.name || `Stream ${response.data.stream.id}`,
+        deviceId: response.data.stream.deviceId,
+        status: response.data.stream.status || 'running',
+        config: response.data.stream.config,
+        startedAt: response.data.stream.startedAt || new Date().toISOString(),
+        pid: response.data.stream.pid
       }
       
       commit('ADD_STREAM', stream)
@@ -123,34 +124,47 @@ const actions = {
   },
   
   // Stop all active streams
-  async stopAllStreams({ dispatch, getters }) {
-    const streamIds = getters.activeStreams.map(stream => stream.id)
-    const results = []
-    
-    for (const streamId of streamIds) {
-      try {
-        await dispatch('stopStream', streamId)
-        results.push({ id: streamId, success: true })
-      } catch (error) {
-        console.error(`Failed to stop stream ${streamId}:`, error)
-        results.push({ id: streamId, success: false, error })
-      }
+  async stopAllStreams({ commit, dispatch }) {
+    try {
+      await api.post('/api/streams/stop-all')
+      
+      // Clear all streams from state
+      commit('CLEAR_ALL_STREAMS')
+      
+      // Stop all polling intervals
+      dispatch('clearAllPolling')
+      
+      return { success: true }
+    } catch (error) {
+      console.error('Failed to stop all streams:', error)
+      commit('SET_ERROR', 'Failed to stop all streams')
+      throw error
     }
-    
-    return results
   },
   
   // Poll for stream status updates
-  startStreamStatusPolling({ commit }, streamId) {
-    // In a real implementation, this would use WebSockets
-    // For now, we'll simulate status updates
-    const interval = setInterval(() => {
-      // Simulate status updates
-      commit('UPDATE_STREAM_STATUS', {
-        id: streamId,
-        status: 'running',
-        lastUpdate: new Date().toISOString()
-      })
+  startStreamStatusPolling({ commit, dispatch }, streamId) {
+    // Poll for real stream status updates
+    const interval = setInterval(async () => {
+      try {
+        const response = await api.get('/api/streams/status')
+        const streamStats = response.data.streams.find(s => s.id === streamId)
+        
+        if (streamStats) {
+          commit('UPDATE_STREAM', {
+            id: streamId,
+            status: streamStats.status,
+            lastUpdate: new Date().toISOString(),
+            uptime: streamStats.uptime
+          })
+        } else {
+          // If stream is no longer reported, it has stopped
+          dispatch('stopStreamStatusPolling', streamId)
+          commit('REMOVE_STREAM', streamId)
+        }
+      } catch (error) {
+        console.error(`Failed to poll status for stream ${streamId}:`, error)
+      }
     }, 5000) // Update every 5 seconds
     
     // Store the interval ID for cleanup
@@ -200,13 +214,16 @@ const mutations = {
     const { [streamId]: removed, ...remaining } = state.activeStreams
     state.activeStreams = remaining
   },
+
+  CLEAR_ALL_STREAMS(state) {
+    state.activeStreams = {}
+  },
   
-  UPDATE_STREAM_STATUS(state, { id, status, lastUpdate }) {
-    if (state.activeStreams[id]) {
-      state.activeStreams[id] = {
-        ...state.activeStreams[id],
-        status,
-        lastUpdate
+  UPDATE_STREAM(state, streamUpdate) {
+    if (state.activeStreams[streamUpdate.id]) {
+      state.activeStreams[streamUpdate.id] = {
+        ...state.activeStreams[streamUpdate.id],
+        ...streamUpdate
       }
     }
   },

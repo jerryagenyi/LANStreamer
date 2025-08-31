@@ -13,8 +13,8 @@
  * The configuration is validated in production to ensure required values are set.
  */
 
-const dotenv = require('dotenv')
-const path = require('path')
+import dotenv from 'dotenv'
+import path from 'path'
 
 // Load environment variables
 dotenv.config()
@@ -140,4 +140,4 @@ if (config.server.env === 'production') {
   validateConfig()
 }
 
-module.exports = config
+export default config

@@ -14,6 +14,7 @@ This document outlines the requirements for **LANStreamer v1.0**, a desktop appl
 - **As an Event Admin,** I want to name each audio stream (e.g., "French Interpretation," "Main Stage Audio") so they are clearly identifiable to listeners.
 - **As an Event Admin,** I want to start and stop all streams with a single click and also be able to manage each stream individually.
 - **As an Event Admin,** I want to see a clear, real-time status indicator (e.g., "Live," "Stopped," "Error") for each stream.
+- **As an Event Admin,** I want to be able to monitor any live audio stream on a specific output device so I can check its quality before broadcasting to listeners.
 - **As a Listener,** I want to connect to a simple web page on my phone, see a list of available audio streams, and click one to start listening immediately.
 - **As a Listener,** I want the audio to play directly in my mobile web browser without needing to download a special app.
 

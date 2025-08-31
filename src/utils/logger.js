@@ -1,8 +1,8 @@
-const winston = require('winston')
-const DailyRotateFile = require('winston-daily-rotate-file')
-const path = require('path')
-const fs = require('fs-extra')
-const config = require('../config')
+import winston from 'winston'
+import DailyRotateFile from 'winston-daily-rotate-file'
+import path from 'path'
+import fs from 'fs-extra'
+import config from '../config/index.js'
 
 // Ensure log directory exists
 const logDir = path.resolve(config.logging.filePath)
@@ -139,12 +139,12 @@ logger.performance = (message, meta = {}) => {
 // Log uncaught exceptions and unhandled rejections
 process.on('uncaughtException', (error) => {
   logger.error('Uncaught Exception:', error)
-  process.exit(1)
+  // process.exit(1) // Avoid exiting in dev/test environments
 })
 
 process.on('unhandledRejection', (reason, promise) => {
-  logger.error('Unhandled Rejection at:', promise, 'reason:', reason)
+  logger.error('Unhandled Rejection at:', { promise, reason })
 })
 
 // Export logger
-module.exports = logger
+export default logger
