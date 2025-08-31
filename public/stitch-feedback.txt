@@ -1,5 +1,18 @@
 TODO:
 - change logo to our logo and update its URL to link back to dashboard if in admin mode, else it should link back to home page 'localhost/3001'.
+- under icecast server, listeners should be over 100, eg x/100. because that is our max listeners.
+
+
+
+ there should also be a link under uptime to also say 'not installed' and give a link or guide to installation and setup to read 'setup icecast server' and link it to (https://github.com/jerryagenyi/LANStreamer/blob/main/docs/guides/icecast-installation.md).
+
+
+
+there should be option to edit a stream and to delete it.
+
+
+
+remove the header icon in the header.
 
 
 =======

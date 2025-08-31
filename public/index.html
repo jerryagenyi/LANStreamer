@@ -336,48 +336,17 @@
     </div>
     </div>
     </div>
-    <div class="bg-[var(--card-bg)] border border-[var(--border-color)] rounded-2xl p-6 shadow-2xl shadow-black/30">
-    <h2 class="text-xl font-bold text-white mb-4">Lobby Background Music</h2>
-    <div class="bg-[#111111] border border-[var(--border-color)] rounded-xl p-4 space-y-4">
-    <div class="flex items-center justify-between">
-    <div class="flex items-center gap-4">
-    <div class="w-2 h-10 rounded-full bg-gray-600"></div>
-    <div>
-    <p class="font-semibold text-white">Background Music</p>
-    <p class="text-sm text-gray-500 font-medium flex items-center gap-1">
-    <span class="material-symbols-outlined text-sm"> circle </span> Stopped
-                              </p>
-    </div>
-    </div>
-    <div class="flex items-center gap-4">
-    <button class="inline-flex items-center justify-center gap-2 rounded-md px-4 py-2 text-sm font-semibold text-white shadow-lg transition-all duration-300 btn-gradient">
-    <span class="material-symbols-outlined"> play_arrow </span>
-                                  Start
-                                </button>
-    </div>
-    </div>
-    <div class="pt-4 border-t border-gray-800 space-y-4">
-    <div class="flex items-center justify-between">
-    <p class="text-sm font-mono text-gray-400 truncate max-w-[200px] md:max-w-xs">Slack-Huddle-Hold-Music_Daniel-Simmons.mp3</p>
-    <button class="text-sm font-semibold text-[var(--primary-color)] hover:text-white transition-colors">Change</button>
-    </div>
-    <div class="flex items-center gap-4">
-    <button class="flex h-8 w-8 items-center justify-center rounded-md border border-[var(--border-color)] bg-[#2A2A2A] text-gray-400 hover:bg-[var(--primary-color)]/20 hover:text-[var(--primary-color)] transition-colors">
-    <span class="material-symbols-outlined text-base"> volume_off </span>
-    </button>
-    <div class="flex-1">
-    <input class="w-full" max="100" min="0" type="range" value="75"/>
-    </div>
-    </div>
-    </div>
-    </div>
-    </div>
+        <!-- Lobby Background Music Player Component -->
+    <div id="lobby-music-player"></div>
     </div>
     </div>
     </div>
     </main>
     </div>
 
+    <!-- Include Components -->
+    <script src="/components/LobbyMusicPlayer.js"></script>
+    
     <script>
         class LANStreamerDashboard {
             constructor() {
@@ -385,6 +354,7 @@
                 this.activeStreams = {};
                 this.isLoading = false;
                 this.icecastStatus = 'unknown';
+                this.lobbyMusicPlayer = null;
                 this.init();
             }
 
@@ -392,9 +362,15 @@
                 await this.loadAudioDevices();
                 await this.checkIcecastStatus();
                 await this.checkFFmpegStatus();
+                this.initializeComponents();
                 this.setupEventListeners();
                 this.startStatusPolling();
                 this.updateStatusIndicators();
+            }
+
+            initializeComponents() {
+                // Initialize Lobby Music Player component
+                this.lobbyMusicPlayer = new LobbyMusicPlayer('lobby-music-player');
             }
 
             async loadAudioDevices() {
@@ -555,24 +531,7 @@
                     });
                 }
 
-                // Volume controls
-                const volumeSlider = document.querySelector('input[type="range"]');
-                const muteBtn = document.querySelector('button .material-symbols-outlined[text-content*="volume"]')?.parentElement;
-
-                if (muteBtn) {
-                    muteBtn.addEventListener('click', () => {
-                        const icon = muteBtn.querySelector('.material-symbols-outlined');
-                        const slider = document.querySelector('input[type="range"]');
-                        
-                        if (icon.textContent.trim() === 'volume_off') {
-                            icon.textContent = 'volume_up';
-                            if (slider) slider.value = 75;
-                        } else {
-                            icon.textContent = 'volume_off';
-                            if (slider) slider.value = 0;
-                        }
-                    });
-                }
+                // Note: Volume controls are now handled by the LobbyMusicPlayer component
             }
 
             startStatusPolling() {
