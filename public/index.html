@@ -2,9 +2,9 @@
     <meta charset="utf-8"/>
     <link crossorigin="" href="https://fonts.gstatic.com/" rel="preconnect"/>
     <link as="style" href="https://fonts.googleapis.com/css2?display=swap&amp;family=Inter%3Awght%40400%3B500%3B700%3B900&amp;family=Noto+Sans%3Awght%40400%3B500%3B700%3B900" onload="this.rel='stylesheet'" rel="stylesheet"/>
-    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:FILL@1" rel="stylesheet"/>
     <title>Stitch Design</title>
-    <link href="data:image/x-icon;base64," rel="icon" type="image/x-icon"/>
+    <link href="/assets/placeholder-logo.svg" rel="icon" type="image/svg+xml"/>
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
     <style type="text/tailwindcss">
         :root {
@@ -110,10 +110,10 @@
     </div>
     <div class="flex items-center gap-3">
     <button class="flex h-10 w-10 cursor-pointer items-center justify-center rounded-lg border border-[var(--border-color)] bg-[var(--card-bg)] text-gray-400 transition-all hover:bg-[var(--primary-color)]/10 hover:text-[var(--primary-color)]">
-    <span class="material-symbols-outlined"> refresh </span></button>
+    <span class="material-symbols-rounded"> refresh </span></button>
     <div class="group relative flex items-center">
     <button class="flex h-10 w-10 cursor-pointer items-center justify-center rounded-lg border border-[var(--border-color)] bg-[var(--card-bg)] text-gray-400 transition-all hover:bg-[var(--primary-color)]/10 hover:text-[var(--primary-color)]">
-    <span class="material-symbols-outlined status-icon"> volume_up </span></button>
+    <span class="material-symbols-rounded status-icon"> volume_up </span></button>
     <div class="absolute top-full right-0 mt-2 w-72 rounded-lg bg-[var(--card-bg)] border border-[var(--border-color)] p-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none group-hover:pointer-events-auto shadow-2xl shadow-black/50">
     <h4 class="font-bold text-white mb-2">Audio Devices</h4>
     <p class="text-sm text-gray-400">2 Devices Online</p>
@@ -121,7 +121,7 @@
     </div>
     <div class="group relative flex items-center">
     <button class="flex h-10 w-10 cursor-pointer items-center justify-center rounded-lg border border-[var(--border-color)] bg-[var(--card-bg)] text-gray-400 transition-all hover:bg-[var(--live-color)]/10 hover:text-[var(--live-color)]">
-    <span class="material-symbols-outlined status-icon status-icon-live"> settings_input_component </span></button>
+    <span class="material-symbols-rounded status-icon status-icon-live"> settings_input_component </span></button>
     <div class="absolute top-full right-0 mt-2 w-72 rounded-lg bg-[var(--card-bg)] border border-[var(--border-color)] p-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none group-hover:pointer-events-auto shadow-2xl shadow-black/50">
     <h4 class="font-bold text-white mb-2">FFmpeg Streams</h4>
     <p class="text-sm text-gray-400">1 Stream Live</p>
@@ -129,7 +129,7 @@
     </div>
     <div class="group relative flex items-center">
     <button class="flex h-10 w-10 cursor-pointer items-center justify-center rounded-lg border border-[var(--border-color)] bg-[var(--card-bg)] text-gray-400 transition-all hover:bg-[var(--primary-color)]/10 hover:text-[var(--primary-color)]">
-    <span class="material-symbols-outlined status-icon"> router </span></button>
+    <span class="material-symbols-rounded status-icon"> router </span></button>
     <div class="absolute top-full right-0 mt-2 w-72 rounded-lg bg-[var(--card-bg)] border border-[var(--border-color)] p-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none group-hover:pointer-events-auto shadow-2xl shadow-black/50">
     <h4 class="font-bold text-white mb-2">Icecast Server</h4>
     <p class="text-sm text-gray-400">Server Online</p>
@@ -137,7 +137,7 @@
     </div>
     <div class="group relative flex items-center">
     <button class="flex h-10 w-10 cursor-pointer items-center justify-center rounded-lg border border-[var(--border-color)] bg-[var(--card-bg)] text-gray-400 transition-all hover:bg-yellow-500/10 hover:text-yellow-500">
-    <span class="material-symbols-outlined status-icon"> warning </span></button>
+    <span class="material-symbols-rounded status-icon"> warning </span></button>
     <div class="absolute top-full right-0 mt-2 w-72 rounded-lg bg-[var(--card-bg)] border border-[var(--border-color)] p-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none group-hover:pointer-events-auto shadow-2xl shadow-black/50">
     <h4 class="font-bold text-white mb-2">System Status</h4>
     <p class="text-sm text-yellow-500">Security Warning Active</p>
@@ -151,7 +151,7 @@
     <div class="mx-auto max-w-7xl">
     <div class="mb-8 p-4 rounded-xl bg-yellow-500/10 border border-yellow-500/50 text-yellow-400">
     <div class="flex items-center gap-3">
-    <span class="material-symbols-outlined text-2xl"> warning </span>
+    <span class="material-symbols-rounded text-2xl"> warning </span>
     <p class="font-medium">
     <strong>Security Warning:</strong> Your LANStreamer instance is running in development mode. For production use, please configure SSL and authentication.
                   </p>
@@ -177,8 +177,10 @@
             <!-- Stream Controls - Component or Static -->
             <div id="stream-controls"></div>
             
-            <!-- Icecast Server - Component or Static -->
-            <div id="icecast-server"></div>
+                    <!-- Icecast Server - Component or Static -->
+        <div id="icecast-server">
+            <!-- IcecastManager component will be initialized here -->
+        </div>
             
             <!-- Lobby Background Music - Component or Static -->
             <div id="lobby-music-player"></div>
@@ -206,7 +208,7 @@
                             <div>
                                 <p class="font-semibold text-white">Main Room Audio</p>
                                 <p class="text-sm text-[var(--live-color)] font-medium flex items-center gap-1">
-                                    <span class="material-symbols-outlined text-sm">circle</span> Live <span class="text-gray-500 font-mono">(192kbps)</span>
+                                    <span class="material-symbols-rounded text-sm">circle</span> Live <span class="text-gray-500 font-mono">(192kbps)</span>
                                 </p>
                             </div>
                         </div>
@@ -218,14 +220,14 @@
                                 </select>
                             </div>
                             <button class="inline-flex items-center justify-center gap-2 rounded-md px-4 py-2 text-sm font-semibold text-white shadow-lg transition-all duration-300 btn-stop-gradient">
-                                <span class="material-symbols-outlined">stop</span>
+                                <span class="material-symbols-rounded">stop</span>
                                 Stop
                             </button>
                         </div>
                     </div>
                     <div class="mt-4">
                         <button class="w-full inline-flex items-center justify-center gap-2 rounded-md px-4 py-2 text-sm font-semibold text-white bg-[var(--primary-color)]/10 hover:bg-[var(--primary-color)]/20 border border-[var(--border-color)] transition-all duration-300">
-                            <span class="material-symbols-outlined">add</span>
+                            <span class="material-symbols-rounded">add</span>
                             Add New Stream
                         </button>
                     </div>
@@ -239,7 +241,7 @@
                 <div class="flex items-center justify-between mb-4">
                     <h2 class="text-xl font-bold text-white">Audio Devices captured by FFmpeg</h2>
                     <button class="flex items-center gap-2 rounded-md px-3 py-1.5 text-sm font-semibold text-white bg-[var(--primary-color)]/10 hover:bg-[var(--primary-color)]/20 border border-[var(--border-color)] transition-all duration-300">
-                        <span class="material-symbols-outlined text-base">refresh</span>
+                        <span class="material-symbols-rounded text-base">refresh</span>
                         Refresh device list
                     </button>
                 </div>
@@ -249,7 +251,7 @@
                         <div class="space-y-3">
                             <div class="flex items-center justify-between p-3 bg-[#111111] rounded-xl border border-[var(--border-color)]">
                                 <div class="flex items-center gap-3">
-                                    <span class="material-symbols-outlined text-2xl text-[var(--live-color)]">mic</span>
+                                    <span class="material-symbols-rounded text-2xl text-[var(--live-color)]">mic</span>
                                     <div>
                                         <p class="font-semibold text-white text-sm">Focusrite Scarlett 2i2</p>
                                         <p class="text-xs text-gray-400">USB Audio Device</p>
@@ -258,7 +260,7 @@
                             </div>
                             <div class="flex items-center justify-between p-3 bg-[#111111] rounded-xl border border-[var(--border-color)]">
                                 <div class="flex items-center gap-3">
-                                    <span class="material-symbols-outlined text-2xl text-gray-600">mic_off</span>
+                                    <span class="material-symbols-rounded text-2xl text-gray-600">mic_off</span>
                                     <div>
                                         <p class="font-semibold text-white text-sm">Default Microphone</p>
                                         <p class="text-xs text-gray-400">System Default</p>
@@ -272,7 +274,7 @@
                         <div class="space-y-3">
                             <div class="flex items-center justify-between p-3 bg-[#111111] rounded-xl border border-[var(--border-color)]">
                                 <div class="flex items-center gap-3">
-                                    <span class="material-symbols-outlined text-2xl text-gray-600">headphones</span>
+                                    <span class="material-symbols-rounded text-2xl text-gray-600">headphones</span>
                                     <div>
                                         <p class="font-semibold text-white text-sm">Realtek Digital Output</p>
                                         <p class="text-xs text-gray-400">Onboard Audio</p>
@@ -281,7 +283,7 @@
                             </div>
                             <div class="flex items-center justify-between p-3 bg-[#111111] rounded-xl border border-[var(--border-color)]">
                                 <div class="flex items-center gap-3">
-                                    <span class="material-symbols-outlined text-2xl text-gray-600">speaker</span>
+                                    <span class="material-symbols-rounded text-2xl text-gray-600">speaker</span>
                                     <div>
                                         <p class="font-semibold text-white text-sm">Monitor Speakers</p>
                                         <p class="text-xs text-gray-400">NVIDIA High Definition Audio</p>
@@ -300,14 +302,14 @@
                 <div class="flex items-center justify-between mb-4">
                     <h2 class="text-xl font-bold text-white">Video Sources captured by FFmpeg</h2>
                     <button class="flex items-center gap-2 rounded-md px-3 py-1.5 text-sm font-semibold text-white bg-[var(--primary-color)]/10 hover:bg-[var(--primary-color)]/20 border border-[var(--border-color)] transition-all duration-300">
-                        <span class="material-symbols-outlined text-base">refresh</span>
+                        <span class="material-symbols-rounded text-base">refresh</span>
                         Refresh device list
                     </button>
                 </div>
                 <div class="space-y-4">
                     <div class="flex items-center justify-between p-4 bg-[#111111] rounded-xl border border-[var(--border-color)]">
                         <div class="flex items-center gap-3">
-                            <span class="material-symbols-outlined text-2xl text-gray-600">videocam_off</span>
+                            <span class="material-symbols-rounded text-2xl text-gray-600">videocam_off</span>
                             <div>
                                 <p class="font-semibold text-white">No video sources detected</p>
                                 <p class="text-sm text-gray-400">Connect a camera or capture card.</p>
@@ -329,11 +331,11 @@
                 </div>
                 <div class="flex flex-col sm:flex-row gap-4">
                     <button class="w-full inline-flex items-center justify-center gap-2 rounded-md px-4 py-3 text-sm font-semibold text-white shadow-lg transition-all duration-300 btn-gradient">
-                        <span class="material-symbols-outlined">play_arrow</span>
+                        <span class="material-symbols-rounded">play_arrow</span>
                         Start All Streams
                     </button>
                     <button class="w-full inline-flex items-center justify-center gap-2 rounded-md px-4 py-3 text-sm font-semibold text-white shadow-lg transition-all duration-300 btn-stop-gradient">
-                        <span class="material-symbols-outlined">stop</span>
+                        <span class="material-symbols-rounded">stop</span>
                         End All Streams
                     </button>
                 </div>
@@ -345,34 +347,57 @@
             <div class="bg-[var(--card-bg)] border border-[var(--border-color)] rounded-2xl p-6 shadow-2xl shadow-black/30">
                 <div class="flex justify-between items-start mb-4">
                     <h2 class="text-xl font-bold text-white">Icecast Server</h2>
-                    <div class="group relative flex items-center">
-                        <div class="flex items-center gap-2 cursor-pointer">
+                    <div class="flex items-center gap-3">
+                        <div class="flex items-center gap-2">
                             <span class="h-3 w-3 rounded-full bg-red-600"></span>
-                            <span class="text-sm font-medium text-gray-300">Not Installed</span>
+                            <span class="text-sm font-medium text-gray-300">Not Installed - <a href="https://github.com/jerryagenyi/LANStreamer/blob/main/docs/guides/icecast-installation.md" target="_blank" class="text-blue-400 hover:text-blue-300 underline">setup guide</a></span>
                         </div>
-                        <div class="absolute top-full right-0 mt-2 w-72 rounded-lg bg-[var(--card-bg)] border border-[var(--border-color)] p-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none group-hover:pointer-events-auto shadow-2xl shadow-black/50 z-10">
-                            <h4 class="font-bold text-white mb-2">Icecast Not Found</h4>
-                            <p class="text-sm text-gray-400 mb-3">The Icecast server is not detected on this system. Please install it to enable streaming.</p>
-                            <a class="inline-flex items-center gap-2 rounded-md px-3 py-1.5 text-sm font-semibold text-white bg-[var(--primary-color)]/10 hover:bg-[var(--primary-color)]/20 border border-[var(--border-color)] transition-all duration-300" href="#">
-                                <span class="material-symbols-outlined text-base">info</span>
-                                View Installation Guide
-                            </a>
-                        </div>
+                        <button class="inline-flex items-center justify-center gap-2 rounded-md px-2 py-1 text-xs font-medium text-white bg-[var(--card-bg)] border border-[var(--border-color)] hover:bg-[var(--border-color)] transition-all duration-300" title="Check for installation">
+                            <span class="material-symbols-rounded text-sm">refresh</span>
+                        </button>
                     </div>
                 </div>
                 <div class="space-y-5 opacity-50">
-                    <div>
-                        <div class="flex justify-between items-center mb-1">
-                            <p class="text-sm font-medium text-gray-400">Listeners</p>
-                            <p class="text-sm font-bold text-white">0 / 0</p>
+                    <!-- Component Notification -->
+                    <div class="flex items-center gap-3 p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-xl">
+                        <span class="material-symbols-rounded text-yellow-500">code_off</span>
+                        <div class="flex-1">
+                            <p class="text-sm font-medium text-yellow-400">Using Static Content - Component Not Available</p>
                         </div>
-                        <div class="w-full bg-[#111111] rounded-full h-2.5">
-                            <div class="bg-gray-600 h-2.5 rounded-full" style="width: 0%"></div>
+                        <span class="text-xs text-yellow-500 font-medium">Icecast Server</span>
+                    </div>
+                    
+                    <!-- Server Status -->
+                    <div class="flex items-center gap-4 p-3 bg-[#111111] border border-[var(--border-color)] rounded-xl">
+                        <span class="material-symbols-rounded text-2xl text-red-500">code_off</span>
+                        <div class="flex-1">
+                            <p class="font-semibold text-white">Icecast Server Component Not Available</p>
+                            <p class="text-sm text-gray-400">Using Static Content - Component Not Available</p>
                         </div>
                     </div>
+                    
+                    <!-- Action Buttons -->
+                    <div class="flex gap-2 pt-4 border-t border-[var(--border-color)]">
+                        <button class="flex-1 inline-flex items-center justify-center gap-2 rounded-md px-3 py-2 text-sm font-semibold text-white shadow-lg transition-all duration-300 btn-gradient opacity-50 cursor-not-allowed" disabled>
+                            <span class="material-symbols-rounded text-base">play_arrow</span>
+                            Start
+                        </button>
+                        <button class="flex-1 inline-flex items-center justify-center gap-2 rounded-md px-3 py-2 text-sm font-semibold text-white shadow-lg transition-all duration-300 btn-stop-gradient opacity-50 cursor-not-allowed" disabled>
+                            <span class="material-symbols-rounded text-base">stop</span>
+                            Stop
+                        </button>
+                        <button class="flex-1 inline-flex items-center justify-center gap-2 rounded-md px-3 py-2 text-sm font-semibold text-white shadow-lg transition-all duration-300 bg-[var(--card-bg)] border border-[var(--border-color)] opacity-50 cursor-not-allowed" disabled>
+                            <span class="material-symbols-rounded text-base">restart</span>
+                            Restart
+                        </button>
+                    </div>
+                    
+                    <!-- Server Info -->
                     <div class="border-t border-[var(--border-color)] pt-4 mt-4 text-xs text-gray-500 space-y-1">
                         <p><strong>Host:</strong> -</p>
+                        <p><strong>Port:</strong> -</p>
                         <p><strong>Uptime:</strong> -</p>
+                        <p><strong>Listeners:</strong> 0 / 100</p>
                     </div>
                 </div>
             </div>
@@ -389,13 +414,13 @@
                             <div>
                                 <p class="font-semibold text-white">Background Music</p>
                                 <p class="text-sm text-gray-500 font-medium flex items-center gap-1">
-                                    <span class="material-symbols-outlined text-sm">circle</span> Stopped
+                                    <span class="material-symbols-rounded text-sm">circle</span> Stopped
                                 </p>
                             </div>
                         </div>
                         <div class="flex items-center gap-4">
                             <button class="inline-flex items-center justify-center gap-2 rounded-md px-4 py-2 text-sm font-semibold text-white shadow-lg transition-all duration-300 btn-gradient">
-                                <span class="material-symbols-outlined">play_arrow</span>
+                                <span class="material-symbols-rounded">play_arrow</span>
                                 Start
                             </button>
                         </div>
@@ -407,7 +432,7 @@
                         </div>
                         <div class="flex items-center gap-4">
                             <button class="flex h-8 w-8 items-center justify-center rounded-md border border-[var(--border-color)] bg-[#2A2A2A] text-gray-400 hover:bg-[var(--primary-color)]/20 hover:text-[var(--primary-color)] transition-colors">
-                                <span class="material-symbols-outlined text-base">volume_off</span>
+                                <span class="material-symbols-rounded text-base">volume_off</span>
                             </button>
                             <div class="flex-1">
                                 <input class="w-full" max="100" min="0" type="range" value="75"/>
@@ -426,6 +451,7 @@
     <!-- Include Components -->
     <script src="/components/ComponentManager.js"></script>
     <script src="/components/LobbyMusicPlayer.js"></script>
+    <script src="/components/IcecastManager.js"></script>
     
     <script>
         class LANStreamerDashboard {
@@ -443,12 +469,13 @@
                 // Initialize ComponentManager after all scripts have loaded
                 await this.initializeComponentManager();
                 await this.loadAudioDevices();
-                await this.checkIcecastStatus();
                 await this.checkFFmpegStatus();
                 await this.initializeComponents();
                 this.setupEventListeners();
                 this.startStatusPolling();
                 this.updateStatusIndicators();
+                
+                // Icecast Manager will be initialized by ComponentManager with proper fallback
             }
 
             async initializeComponentManager() {
@@ -485,6 +512,15 @@
                     console.log('✅ Lobby Music Player component successfully integrated');
                 } else {
                     console.log('⚠️ Lobby Music Player component not found - using static fallback');
+                }
+                
+                // Store reference to icecast manager for dashboard integration
+                this.icecastManager = this.componentManager.getComponent('icecast-server');
+                
+                if (this.icecastManager) {
+                    console.log('✅ Icecast Manager component successfully integrated');
+                } else {
+                    console.log('⚠️ Icecast Manager component not found - using static fallback');
                 }
             }
 
@@ -607,17 +643,17 @@
                 
                 // Update audio devices indicator
                 if (this.audioDevices.length > 0 && audioIndicator) {
-                    audioIndicator.querySelector('.status-icon').className = 'material-symbols-outlined status-icon text-[var(--live-color)]';
+                    audioIndicator.querySelector('.status-icon').className = 'material-symbols-rounded status-icon text-[var(--live-color)]';
                 }
                 
                 // Update FFmpeg indicator
                 if (Object.keys(this.activeStreams).length > 0 && ffmpegIndicator) {
-                    ffmpegIndicator.querySelector('.status-icon').className = 'material-symbols-outlined status-icon status-icon-live text-[var(--live-color)]';
+                    ffmpegIndicator.querySelector('.status-icon').className = 'material-symbols-rounded status-icon status-icon-live text-[var(--live-color)]';
                 }
                 
                 // Update Icecast indicator
                 if (this.icecastStatus === 'running' && icecastIndicator) {
-                    icecastIndicator.querySelector('.status-icon').className = 'material-symbols-outlined status-icon text-[var(--live-color)]';
+                    icecastIndicator.querySelector('.status-icon').className = 'material-symbols-rounded status-icon text-[var(--live-color)]';
                 }
             }
 

@@ -103,6 +103,12 @@ If using **Dante Virtual Soundcard** for interpretation:
     git clone https://github.com/your-username/LANStreamer.git
     cd LANStreamer
     ```
+    
+    **Run the setup script (recommended for first-time installation):**
+    ```bash
+    npm run setup
+    ```
+    This creates the necessary data directories and initializes default settings.
 
 2.  **Configure environment variables:**
     ```bash
@@ -119,11 +125,43 @@ If using **Dante Virtual Soundcard** for interpretation:
     ```
 
 4.  **Start the development server:**
+    
+    **For development with live reload (recommended):**
+    ```bash
+    npm run dev:live
+    ```
+    Then access the web interface at `http://localhost:3002` (BrowserSync automatically refreshes when you edit files)
+    
+    **For production or simple development:**
     ```bash
     npm run dev
     ```
+    Then access the web interface at `http://localhost:3001`
 
-5.  **Access the web interface** by opening a browser to `http://localhost:3001/dashboard` (or the port specified in your `.env` file).
+5.  **Access the web interface:**
+    - **Development with live reload:** `http://localhost:3002` 
+    - **Regular development:** `http://localhost:3001`
+    - **Dashboard path:** Add `/dashboard` to either URL
+
+### 🔄 Live Reload Development
+
+The `npm run dev:live` command uses **BrowserSync** for automatic browser refresh during development:
+
+- **Main Application:** `http://localhost:3002` (auto-refreshes on file changes)
+- **BrowserSync Dashboard:** `http://localhost:3002` (shows the interface you saw)
+- **Original Server:** `http://localhost:3001` (proxied by BrowserSync)
+
+**Features:**
+- ✅ **Auto-refresh** when you edit any file in `public/`
+- ✅ **Server restart** when you edit backend files
+- ✅ **Multiple device sync** (test on different browsers/devices simultaneously)
+- ✅ **Network access** via the External URL shown in the dashboard
+
+**Development Workflow:**
+1. Run `npm run dev:live`
+2. Open `http://localhost:3002` in your browser
+3. Edit any file in `public/components/` or `public/index.html`
+4. Watch the browser automatically refresh with your changes!
 
 ### Manual Setup (Advanced Users)
 

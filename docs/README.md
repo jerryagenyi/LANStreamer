@@ -2,6 +2,23 @@
 
 This directory contains comprehensive documentation for the LANStreamer project.
 
+## 🚀 Quick Start
+
+1. **Install dependencies:** `npm install`
+2. **Configure environment:** Copy `.env.example` to `.env` and modify as needed
+3. **Start development server:**
+   - **With live reload:** `npm run dev:live` → `http://localhost:3002` ⚡
+   - **Regular mode:** `npm run dev` → `http://localhost:3001`
+4. **Access dashboard:** Add `/dashboard` to either URL
+
+### 🔄 Development Mode
+
+For the best development experience, use `npm run dev:live`:
+- **Auto-refresh** on file changes (no more manual refresh!)
+- **BrowserSync** dashboard for development tools
+- **Multi-device testing** support
+- **Network access** for testing on other devices
+
 ## Documentation Overview
 
 ### Core Documents

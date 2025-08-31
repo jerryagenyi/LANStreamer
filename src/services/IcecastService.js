@@ -8,12 +8,30 @@ import fetch from 'node-fetch'
 import config from '../config/index.js'
 import logger from '../utils/logger.js'
 
+// Define AppError locally since it's not exported from errorHandler
+class AppError extends Error {
+  constructor(message, statusCode = 500) {
+    super(message)
+    this.statusCode = statusCode
+    this.status = `${statusCode}`.startsWith('4') ? 'fail' : 'error'
+    this.isOperational = true
+
+    Error.captureStackTrace(this, this.constructor)
+  }
+}
+
 const execAsync = promisify(exec)
 
 class IcecastService {
   constructor() {
     this.process = null
-    this.configPath = config.icecast.configPath
+    
+    // Use configured paths or fallback to null
+    this.exePath = config.icecast.paths.exePath || null
+    this.configPath = config.icecast.paths.configPath || config.icecast.configPath || null
+    this.accessLogPath = config.icecast.paths.accessLogPath || null
+    this.errorLogPath = config.icecast.paths.errorLogPath || null
+    
     this.isRunning = false
     this.stats = {
       startTime: null,
@@ -39,39 +57,236 @@ class IcecastService {
 
   async checkInstallation() {
     try {
-      const { stdout } = await execAsync('icecast2 -v')
-      const versionMatch = stdout.match(/Icecast ([^\s]+)/)
-      const version = versionMatch ? versionMatch[1] : 'unknown'
-      
-      logger.icecast('Icecast installation verified', { version })
-      return {
-        installed: true,
-        version,
-        path: 'icecast2'
+      // Step 1: Check for manually configured paths first (highest priority)
+      if (this.exePath && this.configPath) {
+        try {
+          await fs.access(this.exePath, fs.constants.X_OK);
+          await fs.access(this.configPath, fs.constants.R_OK);
+
+          // Verify version
+          const { stdout } = await execAsync(`"${this.exePath}" -v`);
+          const versionMatch = stdout.match(/Icecast ([^\s]+)/);
+          const version = versionMatch ? versionMatch[1] : 'unknown';
+
+          logger.icecast('Icecast installation verified via manual paths', { 
+            version, 
+            exePath: this.exePath, 
+            configPath: this.configPath,
+            accessLogPath: this.accessLogPath,
+            errorLogPath: this.errorLogPath
+          });
+          
+          return {
+            installed: true,
+            version,
+            path: this.exePath,
+            configPath: this.configPath,
+            accessLogPath: this.accessLogPath,
+            errorLogPath: this.errorLogPath,
+            platform: process.platform
+          };
+        } catch (error) {
+          logger.icecast('Manual path check failed. Falling back to automatic search.', { error: error.message });
+          // Reset paths to null so automatic search can proceed
+          this.exePath = null;
+          this.configPath = null;
+          this.accessLogPath = null;
+          this.errorLogPath = null;
+        }
       }
-    } catch (error) {
-      // Try alternative command names
+
+      // Step 2: Check for legacy customPath (deprecated but still supported)
+      if (config.icecast.customPath) {
+        const icecastPath = config.icecast.customPath;
+        const exeName = process.platform === 'win32' ? 'icecast.exe' : 'icecast';
+        const fullPath = path.join(icecastPath, exeName);
+
+        try {
+          await fs.access(fullPath, fs.constants.X_OK);
+          const { stdout } = await execAsync(`"${fullPath}" -v`);
+          const versionMatch = stdout.match(/Icecast ([^\s]+)/);
+          const version = versionMatch ? versionMatch[1] : 'unknown';
+
+          logger.icecast('Icecast installation verified via legacy custom path', { version, path: fullPath });
+          return {
+            installed: true,
+            version,
+            path: fullPath,
+            platform: process.platform
+          };
+        } catch (error) {
+          logger.icecast(`Legacy custom path check failed: ${fullPath}. Attempting default search.`, { error: error.message });
+        }
+      }
+
+      // Step 2: Search for the executable in common system-wide locations based on the platform
+      let commonPaths;
+      let exeName = 'icecast';
+
+      if (process.platform === 'win32') {
+        exeName = 'icecast.exe';
+        commonPaths = [
+          path.join(process.env.ProgramFiles, 'Icecast', exeName),
+          path.join(process.env['ProgramFiles(x86)'], 'Icecast', exeName),
+          path.join(process.env.ProgramFiles, 'Icecast2', exeName),
+          path.join(process.env['ProgramFiles(x86)'], 'Icecast2', exeName),
+          'C:\\icecast\\icecast.exe',
+          'C:\\icecast2\\icecast.exe',
+          // Add bin subdirectories where executables are typically stored
+          'C:\\Program Files\\Icecast\\bin\\icecast.exe',
+          'C:\\Program Files (x86)\\Icecast\\bin\\icecast.exe',
+          'C:\\Program Files\\Icecast2\\bin\\icecast.exe',
+          'C:\\Program Files (x86)\\Icecast2\\bin\\icecast.exe'
+        ];
+      } else if (process.platform === 'darwin') { // macOS
+        commonPaths = [
+          '/Applications/Icecast/icecast',
+          '/usr/local/bin/icecast',
+          '/opt/local/bin/icecast',
+          '/usr/bin/icecast'
+        ];
+      } else if (['linux', 'freebsd', 'openbsd'].includes(process.platform)) { // Unix-like
+        commonPaths = [
+          '/usr/local/bin/icecast',
+          '/usr/bin/icecast',
+          '/opt/icecast/icecast',
+          '/bin/icecast'
+        ];
+      } else {
+        // Platform not supported or no common paths to check
+        logger.icecast('Platform not supported for automatic installation check', { platform: process.platform });
+        return {
+          installed: false,
+          version: null,
+          path: null,
+          platform: process.platform
+        };
+      }
+
+      // Check if executable exists in common paths
+      for (const icecastPath of commonPaths) {
+        try {
+          await fs.access(icecastPath);
+          
+          // Try to get version
+          try {
+            const { stdout } = await execAsync(`"${icecastPath}" -v`);
+            const versionMatch = stdout.match(/Icecast ([^\s]+)/);
+            const version = versionMatch ? versionMatch[1] : 'unknown';
+
+            // Set paths for this installation
+            this.exePath = icecastPath;
+            
+            // Try to find config and log files in common locations
+            if (process.platform === 'win32') {
+              const baseDir = path.dirname(icecastPath);
+              const parentDir = path.dirname(baseDir); // Go up from 'bin' to main directory
+              
+              // Check for config file
+              const possibleConfigPaths = [
+                path.join(parentDir, 'icecast.xml'),
+                path.join(parentDir, 'etc', 'icecast.xml'),
+                path.join(parentDir, 'conf', 'icecast.xml')
+              ];
+              
+              for (const configPath of possibleConfigPaths) {
+                try {
+                  await fs.access(configPath);
+                  this.configPath = configPath;
+                  break;
+                } catch (e) {
+                  continue;
+                }
+              }
+              
+              // Set log paths
+              if (this.configPath) {
+                const logDir = path.join(path.dirname(this.configPath), 'log');
+                this.accessLogPath = path.join(logDir, 'access.log');
+                this.errorLogPath = path.join(logDir, 'error.log');
+              }
+            }
+
+            logger.icecast(`Icecast installation verified on ${process.platform}`, { 
+              version, 
+              path: icecastPath,
+              configPath: this.configPath,
+              accessLogPath: this.accessLogPath,
+              errorLogPath: this.errorLogPath
+            });
+            
+            return {
+              installed: true,
+              version,
+              path: icecastPath,
+              configPath: this.configPath,
+              accessLogPath: this.accessLogPath,
+              errorLogPath: this.errorLogPath,
+              platform: process.platform
+            };
+          } catch (versionError) {
+            // Executable exists but version check failed
+            logger.icecast('Icecast executable found but version check failed', { path: icecastPath, error: versionError.message });
+            return {
+              installed: true,
+              version: 'unknown',
+              path: icecastPath,
+              platform: process.platform
+            };
+          }
+        } catch (accessError) {
+          continue; // Path not found, continue to the next one
+        }
+      }
+
+      // Step 3: Check if the executable is in the system's PATH
       try {
-        const { stdout } = await execAsync('icecast -v')
-        const versionMatch = stdout.match(/Icecast ([^\s]+)/)
-        const version = versionMatch ? versionMatch[1] : 'unknown'
+        const { stdout } = await execAsync(`${exeName} -v`);
+        const versionMatch = stdout.match(/Icecast ([^\s]+)/);
+        const version = versionMatch ? versionMatch[1] : 'unknown';
         
-        logger.icecast('Icecast installation verified', { version })
+        // Set executable path
+        this.exePath = exeName;
+        
+        logger.icecast(`Icecast installation verified in PATH`, { version });
         return {
           installed: true,
           version,
-          path: 'icecast'
-        }
-      } catch (altError) {
-        logger.warn('Icecast installation not found')
-        throw new AppError('Icecast is not installed or not accessible', 500)
+          path: exeName,
+          platform: process.platform
+        };
+      } catch (pathError) {
+        // Installation not found
+        logger.icecast('Icecast executable not found in common paths or system PATH.');
+        return {
+          installed: false,
+          version: null,
+          path: null,
+          platform: process.platform
+        };
       }
+    } catch (error) {
+      logger.error('Failed to perform Icecast installation check:', error);
+      return {
+        installed: false,
+        version: null,
+        path: null,
+        platform: process.platform,
+        error: error.message
+      };
     }
   }
 
   async ensureConfigDirectory() {
-    const configDir = path.dirname(this.configPath)
-    await fs.ensureDir(configDir)
+    try {
+      const configDir = path.dirname(this.configPath)
+      logger.icecast('Ensuring config directory exists', { configDir })
+      await fs.ensureDir(configDir)
+      logger.icecast('Config directory ready', { configDir })
+    } catch (error) {
+      logger.error('Failed to create config directory:', error)
+      throw new Error(`Failed to create config directory: ${error.message}`)
+    }
   }
 
   async checkRunningStatus() {
@@ -93,7 +308,22 @@ class IcecastService {
   async getStatus() {
     try {
       // First check if Icecast is installed
-      const installationCheck = await this.checkInstallation();
+      let installationCheck;
+      try {
+        installationCheck = await this.checkInstallation();
+      } catch (installError) {
+        // Installation check failed - treat as not installed
+        logger.warn('Icecast installation check failed:', installError.message)
+        return {
+          installed: false,
+          running: false,
+          status: 'not-installed',
+          uptime: 0,
+          version: null,
+          port: config.icecast.port,
+          error: installError.message
+        }
+      }
       
       if (!installationCheck.installed) {
         return {
@@ -157,6 +387,171 @@ class IcecastService {
         error: error.message
       }
     }
+  }
+
+  async searchForIcecastInstallations() {
+    const results = {
+      found: false,
+      installations: [],
+      suggestions: []
+    }
+    
+    // Step 1: Check for a manually specified path first
+    if (config.icecast.customPath) {
+      const icecastPath = config.icecast.customPath;
+      const exeName = process.platform === 'win32' ? 'icecast.exe' : 'icecast';
+      const fullPath = path.join(icecastPath, exeName);
+
+      try {
+        await fs.access(fullPath);
+        results.installations.push({
+          path: fullPath,
+          type: 'executable',
+          platform: process.platform,
+          source: 'custom_path'
+        });
+        results.found = true;
+      } catch (error) {
+        // Custom path doesn't exist
+      }
+    }
+    
+    // Step 2: Search common system-wide locations based on platform
+    let searchPaths = [];
+    
+         if (process.platform === 'win32') {
+               searchPaths = [
+          path.join(process.env.ProgramFiles, 'Icecast'),
+          path.join(process.env['ProgramFiles(x86)'], 'Icecast'),
+          path.join(process.env.ProgramFiles, 'Icecast2'),
+          path.join(process.env['ProgramFiles(x86)'], 'Icecast2'),
+          'C:\\icecast',
+          'C:\\icecast2',
+          process.env.LOCALAPPDATA + '\\Programs\\Icecast',
+          process.env.APPDATA + '\\Icecast',
+          // Add explicit paths for common installations
+          'C:\\Program Files\\Icecast',
+          'C:\\Program Files (x86)\\Icecast',
+          'C:\\Program Files\\Icecast2',
+          'C:\\Program Files (x86)\\Icecast2',
+          // Add bin subdirectories where executables are typically stored
+          'C:\\Program Files\\Icecast\\bin',
+          'C:\\Program Files (x86)\\Icecast\\bin',
+          'C:\\Program Files\\Icecast2\\bin',
+          'C:\\Program Files (x86)\\Icecast2\\bin'
+        ];
+    } else if (process.platform === 'darwin') { // macOS
+      searchPaths = [
+        '/Applications/Icecast',
+        '/usr/local/bin',
+        '/opt/local/bin',
+        '/usr/bin'
+      ];
+    } else if (['linux', 'freebsd', 'openbsd'].includes(process.platform)) { // Unix-like
+      searchPaths = [
+        '/usr/local/bin',
+        '/usr/bin',
+        '/opt/icecast',
+        '/bin'
+      ];
+    }
+    
+    // Search for executables in common paths
+    for (const searchPath of searchPaths) {
+      try {
+        const exeName = process.platform === 'win32' ? 'icecast.exe' : 'icecast';
+        const icecastExe = path.join(searchPath, exeName);
+        await fs.access(icecastExe);
+        
+        results.installations.push({
+          path: icecastExe,
+          type: 'executable',
+          platform: process.platform,
+          source: 'common_path'
+        });
+        results.found = true;
+      } catch (error) {
+        // Path doesn't exist
+      }
+    }
+    
+    // Step 3: Check if executable is in PATH
+    try {
+      const exeName = process.platform === 'win32' ? 'icecast.exe' : 'icecast';
+      if (process.platform === 'win32') {
+        const { stdout } = await execAsync(`where ${exeName}`);
+        const pathResult = stdout.trim().split('\n')[0]; // Take first result
+        if (pathResult) {
+          results.installations.push({
+            path: pathResult,
+            type: 'executable',
+            platform: process.platform,
+            source: 'path'
+          });
+          results.found = true;
+        }
+      } else {
+        const { stdout } = await execAsync(`which ${exeName}`);
+        if (stdout.trim()) {
+          results.installations.push({
+            path: stdout.trim(),
+            type: 'executable',
+            platform: process.platform,
+            source: 'path'
+          });
+          results.found = true;
+        }
+      }
+    } catch (error) {
+      // Not in PATH
+    }
+    
+    // Step 4: Check Windows services
+    if (process.platform === 'win32') {
+      try {
+        const { stdout } = await execAsync('sc query "Icecast"');
+        if (stdout.includes('SERVICE_NAME: Icecast')) {
+          results.installations.push({
+            path: 'service',
+            type: 'service',
+            platform: 'windows',
+            source: 'service'
+          });
+          results.found = true;
+        }
+      } catch (error) {
+        // Service not found
+      }
+    }
+    
+    // Generate suggestions if nothing found
+    if (!results.found) {
+      if (process.platform === 'win32') {
+        results.suggestions = [
+          'Check if Icecast is installed in Program Files',
+          'Look for Icecast in your Downloads or custom installation folder',
+          'Try running "icecast -v" in Command Prompt to see if it\'s in PATH',
+          'Check Windows Services for Icecast service',
+          'Set ICECAST_CUSTOM_PATH environment variable to point to your installation'
+        ];
+      } else if (process.platform === 'darwin') {
+        results.suggestions = [
+          'Try installing Icecast via Homebrew: brew install icecast',
+          'Check if icecast command is available in Terminal',
+          'Look for Icecast in /Applications or /usr/local/bin',
+          'Set ICECAST_CUSTOM_PATH environment variable to point to your installation'
+        ];
+      } else {
+        results.suggestions = [
+          'Try installing Icecast via package manager (apt, yum, brew)',
+          'Check if icecast2 or icecast commands are available',
+          'Look for Icecast in /usr/bin, /usr/local/bin, or /opt',
+          'Set ICECAST_CUSTOM_PATH environment variable to point to your installation'
+        ];
+      }
+    }
+    
+    return results;
   }
 
   async getDetailedStatus() {
@@ -233,58 +628,109 @@ class IcecastService {
         }
       }
 
-      // Generate config file if it doesn't exist
-      await this.generateConfigFile()
+      logger.icecast('Starting Icecast - checking config file')
+      
+      // Check if we have a valid config path
+      if (!this.configPath) {
+        throw new AppError('No Icecast configuration file path available. Please set ICECAST_CONFIG_PATH in your .env file.', 500)
+      }
+      
+      // Check if config file exists, generate only if needed
+      try {
+        await fs.access(this.configPath)
+        logger.icecast('Using existing config file', { path: this.configPath })
+      } catch (error) {
+        logger.icecast('Config file not found, generating new one', { path: this.configPath })
+        await this.generateConfigFile()
+      }
 
-      // Start Icecast process
+      logger.icecast('Starting Icecast - getting Icecast command')
+      // Get Icecast command
       const icecastCommand = await this.getIcecastCommand()
       
       logger.icecast('Starting Icecast server', { command: icecastCommand })
       
-      this.process = spawn(icecastCommand, ['-c', this.configPath], {
-        stdio: ['ignore', 'pipe', 'pipe'],
-        detached: false
-      })
-
-      // Handle process output
-      this.process.stdout.on('data', (data) => {
-        logger.icecast('Icecast stdout', { output: data.toString().trim() })
-      })
-
-      this.process.stderr.on('data', (data) => {
-        logger.icecast('Icecast stderr', { output: data.toString().trim() })
-      })
-
-      // Handle process exit
-      this.process.on('exit', (code, signal) => {
-        logger.icecast('Icecast process exited', { code, signal })
-        this.isRunning = false
-        this.process = null
-      })
-
-      this.process.on('error', (error) => {
-        logger.error('Icecast process error:', error)
-        this.isRunning = false
-        this.process = null
-      })
-
-      // Wait a moment and check if it started successfully
-      await new Promise(resolve => setTimeout(resolve, 3000))
-      
-      const status = await this.getStatus()
-      if (status.running) {
-        this.isRunning = true
-        this.stats.startTime = Date.now()
-        
-        logger.icecast('Icecast server started successfully')
-        return {
-          success: true,
-          message: 'Icecast server started successfully',
-          status: 'running',
-          pid: this.process.pid
+      if (icecastCommand === 'service') {
+        // Windows service - try to start the service
+        if (process.platform === 'win32') {
+          try {
+            await execAsync('net start Icecast')
+            logger.icecast('Icecast Windows service started')
+            
+            // Wait for service to be ready
+            await new Promise(resolve => setTimeout(resolve, 5000))
+            
+            const status = await this.getStatus()
+            if (status.running) {
+              this.isRunning = true
+              this.stats.startTime = Date.now()
+              
+              return {
+                success: true,
+                message: 'Icecast Windows service started successfully',
+                status: 'running',
+                service: true
+              }
+            } else {
+              throw new Error('Icecast service failed to start')
+            }
+          } catch (serviceError) {
+            logger.error('Failed to start Icecast Windows service:', serviceError)
+            throw new AppError(`Failed to start Icecast service: ${serviceError.message}`, 500)
+          }
         }
       } else {
-        throw new Error('Icecast failed to start')
+        // Direct process execution
+        this.process = spawn(icecastCommand, ['-c', this.configPath], {
+          stdio: ['ignore', 'pipe', 'pipe'],
+          detached: false
+        })
+
+        // Handle process output
+        this.process.stdout.on('data', (data) => {
+          logger.icecast('Icecast stdout', { output: data.toString().trim() })
+        })
+
+        this.process.stderr.on('data', (data) => {
+          logger.icecast('Icecast stderr', { output: data.toString().trim() })
+        })
+
+        // Handle process exit
+        this.process.on('exit', (code, signal) => {
+          logger.icecast('Icecast process exited', { code, signal })
+          this.isRunning = false
+          this.process = null
+        })
+
+        this.process.on('error', (error) => {
+          logger.error('Icecast process error:', error)
+          this.isRunning = false
+          this.process = null
+        })
+
+        // Wait for process to start and check status
+        await new Promise(resolve => setTimeout(resolve, 3000))
+        
+        const status = await this.getStatus()
+        if (status.running) {
+          this.isRunning = true
+          this.stats.startTime = Date.now()
+          
+          logger.icecast('Icecast server started successfully')
+          return {
+            success: true,
+            message: 'Icecast server started successfully',
+            status: 'running',
+            pid: this.process.pid
+          }
+        } else {
+          // Try to get more detailed error information
+          if (this.process && this.process.exitCode !== null) {
+            throw new Error(`Icecast failed to start with exit code: ${this.process.exitCode}`)
+          } else {
+            throw new Error('Icecast failed to start - process may have crashed')
+          }
+        }
       }
 
     } catch (error) {
@@ -295,7 +741,7 @@ class IcecastService {
 
   async stop() {
     try {
-      if (!this.isRunning || !this.process) {
+      if (!this.isRunning) {
         return {
           success: true,
           message: 'Icecast is not running',
@@ -305,23 +751,34 @@ class IcecastService {
 
       logger.icecast('Stopping Icecast server')
       
-      this.process.kill('SIGTERM')
-      
-      // Force kill after 10 seconds if not terminated
-      setTimeout(() => {
-        if (this.process && !this.process.killed) {
-          this.process.kill('SIGKILL')
-        }
-      }, 10000)
+      if (this.process) {
+        // Direct process - kill it
+        this.process.kill('SIGTERM')
+        
+        // Force kill after 10 seconds if not terminated
+        setTimeout(() => {
+          if (this.process && !this.process.killed) {
+            this.process.kill('SIGKILL')
+          }
+        }, 10000)
 
-      // Wait for process to exit
-      await new Promise((resolve) => {
-        if (this.process) {
-          this.process.on('exit', resolve)
-        } else {
-          resolve()
+        // Wait for process to exit
+        await new Promise((resolve) => {
+          if (this.process) {
+            this.process.on('exit', resolve)
+          } else {
+            resolve()
+          }
+        })
+      } else if (process.platform === 'win32') {
+        // Windows service - try to stop the service
+        try {
+          await execAsync('net stop Icecast')
+          logger.icecast('Icecast Windows service stopped')
+        } catch (serviceError) {
+          logger.warn('Failed to stop Icecast Windows service, may already be stopped:', serviceError.message)
         }
-      })
+      }
 
       this.isRunning = false
       this.process = null
@@ -350,22 +807,147 @@ class IcecastService {
 
   async getIcecastCommand() {
     try {
-      // Try icecast2 first
-      await execAsync('which icecast2')
-      return 'icecast2'
-    } catch (error) {
-      try {
-        // Try icecast
-        await execAsync('which icecast')
-        return 'icecast'
-      } catch (altError) {
-        throw new Error('Icecast executable not found')
+      // Step 1: Check for manually configured paths first (highest priority)
+      if (this.exePath) {
+        try {
+          await fs.access(this.exePath, fs.constants.X_OK);
+          logger.icecast('Using manually configured Icecast executable path', { path: this.exePath });
+          return this.exePath;
+        } catch (error) {
+          logger.icecast('Manual executable path check failed. Falling back to automatic search.', { error: error.message });
+        }
       }
+
+      // Step 2: Check for legacy customPath (deprecated but still supported)
+      if (config.icecast.customPath) {
+        const icecastPath = config.icecast.customPath;
+        const exeName = process.platform === 'win32' ? 'icecast.exe' : 'icecast';
+        const fullPath = path.join(icecastPath, exeName);
+
+        try {
+          await fs.access(fullPath);
+          return fullPath;
+        } catch (error) {
+          logger.icecast(`Legacy custom path check failed: ${fullPath}. Attempting default search.`, { error: error.message });
+        }
+      }
+
+      // Step 2: Search for the executable in common system-wide locations based on the platform
+      let commonPaths;
+      let exeName = 'icecast';
+
+      if (process.platform === 'win32') {
+        exeName = 'icecast.exe';
+        commonPaths = [
+          path.join(process.env.ProgramFiles, 'Icecast', exeName),
+          path.join(process.env['ProgramFiles(x86)'], 'Icecast', exeName),
+          path.join(process.env.ProgramFiles, 'Icecast2', exeName),
+          path.join(process.env['ProgramFiles(x86)'], 'Icecast2', exeName),
+          'C:\\icecast\\icecast.exe',
+          'C:\\icecast2\\icecast.exe',
+          // Add explicit paths for common installations
+          'C:\\Program Files\\Icecast\\icecast.exe',
+          'C:\\Program Files (x86)\\Icecast\\icecast.exe',
+          'C:\\Program Files\\Icecast2\\icecast.exe',
+          'C:\\Program Files (x86)\\Icecast2\\icecast.exe',
+          // Add bin subdirectories where executables are typically stored
+          'C:\\Program Files\\Icecast\\bin\\icecast.exe',
+          'C:\\Program Files (x86)\\Icecast\\bin\\icecast.exe',
+          'C:\\Program Files\\Icecast2\\bin\\icecast.exe',
+          'C:\\Program Files (x86)\\Icecast2\\bin\\icecast.exe'
+        ];
+      } else if (process.platform === 'darwin') { // macOS
+        commonPaths = [
+          '/Applications/Icecast/icecast',
+          '/usr/local/bin/icecast',
+          '/opt/local/bin/icecast',
+          '/usr/bin/icecast'
+        ];
+      } else if (['linux', 'freebsd', 'openbsd'].includes(process.platform)) { // Unix-like
+        commonPaths = [
+          '/usr/local/bin/icecast',
+          '/usr/bin/icecast',
+          '/opt/icecast/icecast',
+          '/bin/icecast'
+        ];
+      } else {
+        throw new Error(`Platform not supported: ${process.platform}`);
+      }
+
+      // Check if executable exists in common paths
+      for (const icecastPath of commonPaths) {
+        try {
+          await fs.access(icecastPath);
+          return icecastPath;
+        } catch (error) {
+          continue; // Path not found, continue to the next one
+        }
+      }
+
+      // Step 3: Check if the executable is in the system's PATH
+      try {
+        if (process.platform === 'win32') {
+          await execAsync(`where ${exeName}`);
+        } else {
+          await execAsync(`which ${exeName}`);
+        }
+        return exeName;
+      } catch (pathError) {
+        // Try alternative names
+        try {
+          if (process.platform === 'win32') {
+            await execAsync('where icecast2');
+            return 'icecast2';
+          } else {
+            await execAsync('which icecast2');
+            return 'icecast2';
+          }
+        } catch (altError) {
+          // Check if running as Windows service
+          if (process.platform === 'win32') {
+            try {
+              const { stdout } = await execAsync('sc query "Icecast"');
+              if (stdout.includes('RUNNING')) {
+                return 'service';
+              }
+            } catch (serviceError) {
+              // Service not found
+            }
+          }
+        }
+      }
+      
+      throw new Error(`Icecast executable not found on ${process.platform}`);
+    } catch (error) {
+      logger.error('Failed to find Icecast executable:', error);
+      throw new Error(`Icecast executable not found: ${error.message}`);
     }
   }
 
   async generateConfigFile() {
-    const configTemplate = `<?xml version="1.0"?>
+    try {
+      logger.icecast('Generating Icecast config file', { configPath: this.configPath })
+      
+      // Use Windows-style paths for Windows platform
+      const isWindows = process.platform === 'win32';
+      const baseDir = isWindows ? path.dirname(this.configPath).replace(/\\/g, '/') : path.dirname(this.configPath);
+      
+      // Use configured log paths if available, otherwise generate default paths
+      let logDir, webRoot, adminRoot;
+      
+      if (this.accessLogPath && this.errorLogPath) {
+        // Use configured log directory
+        logDir = path.dirname(this.accessLogPath).replace(/\\/g, '/');
+        webRoot = isWindows ? path.join(path.dirname(this.configPath), 'web').replace(/\\/g, '/') : path.join(path.dirname(this.configPath), 'web');
+        adminRoot = isWindows ? path.join(path.dirname(this.configPath), 'admin').replace(/\\/g, '/') : path.join(path.dirname(this.configPath), 'admin');
+      } else {
+        // Generate default paths
+        logDir = isWindows ? path.join(path.dirname(this.configPath), 'logs').replace(/\\/g, '/') : path.join(path.dirname(this.configPath), 'logs');
+        webRoot = isWindows ? path.join(path.dirname(this.configPath), 'web').replace(/\\/g, '/') : path.join(path.dirname(this.configPath), 'web');
+        adminRoot = isWindows ? path.join(path.dirname(this.configPath), 'admin').replace(/\\/g, '/') : path.join(path.dirname(this.configPath), 'admin');
+      }
+      
+      const configTemplate = `<?xml version="1.0"?>
 <icecast>
     <location>LANStreamer Server</location>
     <admin>admin@localhost</admin>
@@ -396,22 +978,26 @@ class IcecastService {
     </http-headers>
     <fileserve>1</fileserve>
     <paths>
-        <basedir>/usr/share/icecast2</basedir>
-        <logdir>/var/log/icecast2</logdir>
-        <webroot>/usr/share/icecast2/web</webroot>
-        <adminroot>/usr/share/icecast2/admin</adminroot>
+        <basedir>${baseDir}</basedir>
+        <logdir>${logDir}</logdir>
+        <webroot>${webRoot}</webroot>
+        <adminroot>${adminRoot}</adminroot>
         <alias source="/" destination="/status.xsl"/>
     </paths>
     <logging>
-        <accesslog>access.log</accesslog>
-        <errorlog>error.log</errorlog>
+        <accesslog>${this.accessLogPath ? path.basename(this.accessLogPath) : 'access.log'}</accesslog>
+        <errorlog>${this.errorLogPath ? path.basename(this.errorLogPath) : 'error.log'}</errorlog>
         <loglevel>3</loglevel>
         <logsize>10000</logsize>
     </logging>
 </icecast>`
 
-    await fs.writeFile(this.configPath, configTemplate)
-    logger.icecast('Icecast config file generated', { path: this.configPath })
+      await fs.writeFile(this.configPath, configTemplate)
+      logger.icecast('Icecast config file generated successfully', { path: this.configPath })
+    } catch (error) {
+      logger.error('Failed to generate Icecast config file:', error)
+      throw new Error(`Failed to generate config file: ${error.message}`)
+    }
   }
 
   async configure(newConfig) {

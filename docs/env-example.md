@@ -6,6 +6,7 @@ This file contains all the environment variables needed for LANStreamer to funct
 - [Technical Specification](LANStreamer-Technical-Specification.md) - System architecture and configuration requirements
 - [Authentication & Security](Authentication-Security-Specification.md) - Security-related environment variables
 - [Audio Monitoring Feature](Audio-Monitoring-Feature-Specification.md) - Monitoring configuration options
+- [Icecast Path Configuration](./env-example-icecast-paths.md) - Detailed Icecast path configuration examples
 
 ## Quick Setup
 
@@ -69,8 +70,28 @@ ICECAST_ADMIN_PASSWORD=CHANGE_THIS_VALUE_hackme
 # Icecast source password for stream connections (CRITICAL: Change in production!)
 ICECAST_SOURCE_PASSWORD=CHANGE_THIS_VALUE_hackme
 
-# Path to Icecast configuration file
-ICECAST_CONFIG_PATH=./config/icecast.xml
+# ===================================
+# ICECAST FILE PATHS (Manual Configuration)
+# ===================================
+
+# Path to Icecast executable (e.g., "C:\Program Files (x86)\Icecast\bin\icecast.exe")
+# Leave empty for automatic detection
+ICECAST_EXE_PATH=
+
+# Path to Icecast configuration file (e.g., "C:\Program Files (x86)\Icecast\icecast.xml")
+# Leave empty for automatic detection
+ICECAST_CONFIG_PATH=
+
+# Path to Icecast access log (e.g., "C:\Program Files (x86)\Icecast\log\access.log")
+# Leave empty for automatic detection
+ICECAST_ACCESS_LOG=
+
+# Path to Icecast error log (e.g., "C:\Program Files (x86)\Icecast\log\error.log")
+# Leave empty for automatic detection
+ICECAST_ERROR_LOG=
+
+# Note: Setting these paths will bypass automatic Icecast detection.
+# See docs/env-example-icecast-paths.md for detailed configuration examples.
 
 # ===================================
 # FFMPEG CONFIGURATION

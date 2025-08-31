@@ -43,7 +43,16 @@ const config = {
     port: parseInt(process.env.ICECAST_PORT) || 8000,
     adminPassword: process.env.ICECAST_ADMIN_PASSWORD || 'hackme',
     sourcePassword: process.env.ICECAST_SOURCE_PASSWORD || 'hackme',
-    configPath: process.env.ICECAST_CONFIG_PATH || '/usr/local/etc/icecast.xml'
+    // Manual path configuration (prioritized over automatic detection)
+    paths: {
+      exePath: process.env.ICECAST_EXE_PATH || null,
+      configPath: process.env.ICECAST_CONFIG_PATH || null,
+      accessLogPath: process.env.ICECAST_ACCESS_LOG || null,
+      errorLogPath: process.env.ICECAST_ERROR_LOG || null
+    },
+    // Legacy support
+    configPath: process.env.ICECAST_CONFIG_PATH || null,
+    customPath: process.env.ICECAST_CUSTOM_PATH || null
   },
 
   // FFmpeg Configuration

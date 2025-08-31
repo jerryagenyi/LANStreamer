@@ -3,6 +3,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import systemRouter from './routes/system.js';
 import streamsRouter from './routes/streams.js';
+import settingsRouter from './routes/settings.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -27,6 +28,7 @@ app.get('/api/health', (req, res) => {
 // API Routes
 app.use('/api/system', systemRouter);
 app.use('/api/streams', streamsRouter);
+app.use('/api/settings', settingsRouter);
 
 // Serve dashboard page
 app.get('/dashboard', (req, res) => {

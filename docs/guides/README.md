@@ -26,7 +26,7 @@ If you encounter issues with installation:
 
 1. Check the troubleshooting sections in each guide
 2. Review the [LANStreamer Technical Specification](../LANStreamer-Technical-Specification.md)
-3. Open an issue on our [GitHub repository](https://github.com/jerryagenyi/LANStreamer/issues)
+3. Open an issue on our [GitHub repository](https://github.com/jerryagenyi/LANStreamer/issues){:target="_blank"}
 
 ## Integration with LANStreamer
 

@@ -5,6 +5,9 @@ const { authenticate, authorize } = require('../middleware/auth')
 const { sanitizeInput } = require('../middleware/validation')
 const logger = require('../utils/logger')
 
+// Import settings routes (will need to convert to CommonJS)
+const settingsRoutes = require('./settings')
+
 /**
  * API Health Check
  */
@@ -222,5 +225,8 @@ router.use((err, req, res, next) => {
   req.app.locals.errorCount = (req.app.locals.errorCount || 0) + 1
   next(err)
 })
+
+// Settings routes
+router.use('/settings', settingsRoutes)
 
 module.exports = router

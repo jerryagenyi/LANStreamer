@@ -23,7 +23,7 @@ If FFmpeg is installed, you'll see version information. If not, follow the insta
 ### Method 1: Official Build (Recommended)
 
 1. **Download FFmpeg**
-   - Visit [https://ffmpeg.org/download.html](https://ffmpeg.org/download.html)
+   - Visit [https://ffmpeg.org/download.html](https://ffmpeg.org/download.html){:target="_blank"}
    - Click "Windows" and then "Windows builds by BtbN"
    - Download the latest `ffmpeg-master-latest-win64-gpl.zip`
 
@@ -110,7 +110,7 @@ sudo port install ffmpeg +universal
 
 ### Method 3: Manual Installation
 
-1. Download the latest macOS build from [https://evermeet.cx/ffmpeg/](https://evermeet.cx/ffmpeg/)
+1. Download the latest macOS build from [https://evermeet.cx/ffmpeg/](https://evermeet.cx/ffmpeg/){:target="_blank"}
 2. Extract and move to `/usr/local/bin/`
 3. Make executable: `chmod +x /usr/local/bin/ffmpeg`
 
@@ -273,9 +273,9 @@ ffmpeg -f alsa -list_devices true -i dummy
 
 If installation issues persist:
 
-1. Check the [FFmpeg documentation](https://ffmpeg.org/documentation.html)
-2. Visit the [FFmpeg community forums](https://ffmpeg.org/contact.html)
-3. Open an issue on our [LANStreamer repository](https://github.com/jerryagenyi/LANStreamer/issues) with:
+1. Check the [FFmpeg documentation](https://ffmpeg.org/documentation.html){:target="_blank"}
+2. Visit the [FFmpeg community forums](https://ffmpeg.org/contact.html){:target="_blank"}
+3. Open an issue on our [LANStreamer repository](https://github.com/jerryagenyi/LANStreamer/issues){:target="_blank"} with:
    - Your operating system and version
    - Installation method attempted
    - Complete error messages

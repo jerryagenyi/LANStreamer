@@ -6,6 +6,15 @@
 
 Icecast is a streaming media server that LANStreamer uses to broadcast audio streams over the network. This guide provides step-by-step instructions for installing and configuring Icecast on all supported platforms.
 
+According to the [official Icecast documentation](https://icecast.org/docs/icecast-2.4.1/basic-setup.html){:target="_blank"}, there are two major components involved:
+
+1. **The streaming server (Icecast)** - Where all listeners of your station will connect
+2. **The source client (LANStreamer)** - Runs on a separate machine and sends content to Icecast
+
+> **Important**: Not all source clients work with Icecast 2. You'll need to check that Icecast 2 is supported by your chosen source client (LANStreamer).
+
+> **Note**: This guide follows the official [Icecast Basic Setup documentation](https://icecast.org/docs/icecast-2.4.1/basic-setup.html){:target="_blank"} and adapts it for LANStreamer integration.
+
 ## Quick Status Check
 
 Before installation, check if Icecast is already installed and running:
@@ -23,22 +32,44 @@ sc query "Icecast"
 
 ---
 
+## Key Components
+
+According to the [official Icecast documentation](https://icecast.org/docs/icecast-2.4.1/basic-setup.html){:target="_blank"}, after installation you should have:
+
+* **Icecast binary** - The main server executable (`icecast.exe` on Windows, `icecast` on Unix-like systems)
+* **`conf` directory** - Contains the Icecast configuration file (`icecast.xml`) which defines all configuration parameters
+* **`admin` directory** - Contains XSLT files for the web-based administration interface
+* **`logs` directory** - Blank directory that will contain all logs (if specified in the config file)
+
+---
+
 ## Windows Installation
 
 ### Method 1: Official Installer (Recommended)
 
 1. **Download Icecast**
-   - Visit [https://icecast.org/download/](https://icecast.org/download/)
+   - Visit [https://icecast.org/download/](https://icecast.org/download/){:target="_blank"}
    - Download the latest Windows installer (`IcecastWin32-X.X.X-Setup.exe`)
 
-2. **Run the Installer**
+2. **Installation Directory Structure**
+   ```
+   C:\Program Files (x86)\Icecast\
+   ├── bin\           # Executables (icecast.exe)
+   ├── etc\           # Configuration files
+   ├── share\         # Web interface and resources
+   └── doc\           # Documentation
+   ```
+   
+   **Important**: The `icecast.exe` executable is located in the `bin` subdirectory, not directly in the Icecast folder.
+
+3. **Run the Installer**
    ```
    # Run as Administrator
    # Follow the installation wizard
    # Choose installation directory (default: C:\Program Files\Icecast)
    ```
 
-3. **Configure Icecast**
+4. **Configure Icecast**
    ```powershell
    # Navigate to installation directory
    cd "C:\Program Files\Icecast"
@@ -47,11 +78,28 @@ sc query "Icecast"
    notepad icecast.xml
    ```
 
-4. **Basic Configuration (icecast.xml)**
+5. **Basic Configuration (icecast.xml)**
+   
+   **Important**: The Icecast installer creates a properly configured `icecast.xml` file with correct Windows paths. 
+   **Do not delete or replace this file** unless you know what you're doing.
+   
+   According to the [official documentation](https://icecast.org/docs/icecast-2.4.1/basic-setup.html){:target="_blank"}, for a basic setup, the following entries should be specified and changed to suit your situation:
+   
+   - **`<hostname>`** - DNS name or IP address used for stream directory listings
+   - **`<source-password>`** - Used for source client authentication
+   - **`<admin-password>`** - Used for authenticating admin features
+   - **`<listen-socket>`** - Both port and bind-address configuration
+   
+   The default config includes:
+   - Relative paths (`./log`, `./web`, `./admin`) that work on Windows
+   - Proper authentication settings
+   - Correct port configuration (8000)
+   - Web interface setup
+   
    ```xml
    <icecast>
-       <location>Earth</location>
-       <admin>icemaster@localhost</admin>
+       <location>Manchester</location>
+       <admin>your-email@example.com</admin>
        
        <limits>
            <clients>100</clients>
@@ -95,17 +143,36 @@ sc query "Icecast"
    </icecast>
    ```
 
-5. **Start Icecast**
+6. **Start Icecast**
    ```powershell
-   # Start Icecast manually
-   icecast.exe -c icecast.xml
+   # IMPORTANT: Navigate to the Icecast installation directory first
+   cd "C:\Program Files (x86)\Icecast"
+   
+   # Start Icecast manually (must be run from Icecast directory)
+   .\icecast.exe -c icecast.xml
+   
+   # Or use full path from any directory
+   "C:\Program Files (x86)\Icecast\icecast.exe" -c "C:\Program Files (x86)\Icecast\icecast.xml"
    
    # Or install as Windows service
-   icecast.exe -install
+   .\icecast.exe -install
    
    # Start the service
    net start Icecast
    ```
+
+7. **Verify Server Started Successfully**
+   
+   According to the [official documentation](https://icecast.org/docs/icecast-2.4.1/basic-setup.html){:target="_blank"}, if no error messages are generated, check the `error.log` file for the 'server started' message. It should look like:
+   
+   ```
+   [2003-10-31  13:04:49] INFO main/main.c Icecast 2.3.0 server started
+   ```
+   
+   You can also verify the server started by visiting: `http://yourip:port/admin/stats.xml`
+   - You'll be prompted for username and password
+   - Enter username `admin` and the password you set for `<admin-password>`
+   - If successful, you'll see an XML tree representing Icecast statistics
 
 ### Method 2: Using Chocolatey
 
@@ -239,7 +306,7 @@ The main configuration file is `icecast.xml`. Key sections to configure:
 ```xml
 <authentication>
     <source-password>your_source_password</source-password>
-    <relay-password>your_relay_password</relay-password>
+    <relay-password>your_relay_password</relay_password>
     <admin-user>admin</admin-user>
     <admin-password>your_admin_password</admin-password>
 </authentication>
@@ -420,6 +487,27 @@ tasklist | findstr icecast
 3. **Start an audio stream**
 4. **Check stream appears in Icecast admin panel**
 
+### Source Client Configuration
+
+According to the [official documentation](https://icecast.org/docs/icecast-2.4.1/basic-setup.html){:target="_blank"}, you'll need to configure your source client (LANStreamer) with:
+
+- **IP address and Port** of the Icecast server (from `<listen-socket>` configuration)
+- **Source password** (from `<source-password>` configuration)
+- **Mountpoint** - Choose a mountpoint and specify it in the source client
+
+**Important Mountpoint Rules:**
+- All Ogg Vorbis streams should have mountpoints ending in `.ogg` (e.g., `/mystream.ogg`)
+- MP3 streams usually don't contain extensions (e.g., `/mystream`)
+- Mountpoints should not contain spaces or odd characters
+- Icecast doesn't need to know about each mountpoint in advance
+
+> **Note**: The steps outlined in this guide are related to the Unix version or Win32 console version of Icecast. Icecast is also available in a Win32 GUI version, and the steps are similar in setup, but not quite the same.
+
+**Testing the Stream:**
+Once your source is connected, listeners can access the stream at: `http://yourip:port/mountpoint-you-specified`
+- Example: `http://192.0.2.23:8000/mystream.ogg`
+- Add `.m3u` extension for playlist format: `http://192.0.2.23:8000/mystream.ogg.m3u`
+
 ---
 
 ## Troubleshooting
@@ -451,10 +539,29 @@ sudo tail -f /var/log/icecast2/error.log
 ```
 
 **Can't connect from LANStreamer**
-- Verify Icecast is running: `sudo systemctl status icecast`
+- Verify Icecast is running: `sudo systemctl status icecast` (Linux) or `sc query "Icecast"` (Windows)
 - Check firewall settings
 - Verify source password matches LANStreamer configuration
 - Check Icecast logs for connection attempts
+
+**Windows Path Issues**
+- **Error**: "FATAL: could not open error logging (/var/log/icecast2\error.log): No such file or directory"
+- **Cause**: Icecast config file contains Unix-style paths on Windows
+- **Solution**: 
+  - Ensure config file uses Windows-style paths
+  - Run Icecast from its installation directory: `cd "C:\Program Files (x86)\Icecast"`
+  - Use relative paths in config file or full Windows paths
+  - Check that log directories exist and are writable
+
+**Configuration File Path Problems**
+- **Error**: "ENOENT: no such file or directory, open 'config\icecast.xml'"
+- **Cause**: LANStreamer can't find or create the Icecast config file
+- **Solution**:
+  - **Recommended**: Use the existing Icecast config file at `C:\Program Files (x86)\Icecast\icecast.xml`
+  - Set `ICECAST_CONFIG_PATH=C:\Program Files (x86)\Icecast\icecast.xml` in your `.env` file
+  - The Icecast installer creates a properly configured config file with correct Windows paths
+  - LANStreamer will automatically use the existing config file instead of generating a new one
+  - Restart LANStreamer after making path changes
 
 ### Log Files
 

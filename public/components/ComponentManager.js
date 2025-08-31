@@ -25,7 +25,7 @@ class ComponentManager {
                 name: 'Audio Devices'
             },
             'icecast-server': {
-                component: 'IcecastServerPanel',
+                component: 'IcecastManager',
                 static: 'icecast-server-static',
                 name: 'Icecast Server'
             },
@@ -55,6 +55,7 @@ class ComponentManager {
      * Initialize a specific section with component or fallback to static
      */
     async initializeSection(sectionId, config) {
+        console.log(`Initializing section: ${sectionId} with config:`, config);
         const container = document.getElementById(sectionId);
         if (!container) {
             console.warn(`Container '${sectionId}' not found`);
@@ -64,12 +65,14 @@ class ComponentManager {
         try {
             // Check if component class exists
             const ComponentClass = window[config.component];
+            console.log(`Component class for ${sectionId}:`, ComponentClass, 'Type:', typeof ComponentClass);
             
             if (ComponentClass && typeof ComponentClass === 'function') {
                 // Component exists - use it
                 await this.useComponent(sectionId, ComponentClass, config);
             } else {
                 // Component doesn't exist - use static with notice
+                console.log(`Component class not found for ${sectionId}, using static fallback`);
                 this.useStaticWithNotice(sectionId, config);
             }
         } catch (error) {
@@ -83,6 +86,7 @@ class ComponentManager {
      */
     async useComponent(sectionId, ComponentClass, config) {
         try {
+            console.log(`Attempting to initialize ${config.name} component with class:`, ComponentClass.name);
             const componentInstance = new ComponentClass(sectionId);
             this.components.set(sectionId, componentInstance);
             

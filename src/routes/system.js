@@ -38,17 +38,40 @@ router.get('/icecast-status', async (req, res) => {
 });
 
 /**
+ * @route GET /api/system/icecast/search-installations
+ * @description Search for Icecast installations on the system
+ * @access Public
+ */
+router.get('/icecast/search-installations', async (req, res) => {
+  try {
+    const searchResults = await icecastService.searchForIcecastInstallations();
+    res.json(searchResults);
+  } catch (error) {
+    console.error('Error searching for Icecast installations:', error);
+    res.status(500).json({ 
+      error: 'Failed to search for Icecast installations',
+      message: error.message 
+    });
+  }
+});
+
+/**
  * @route POST /api/system/icecast/start
  * @description Start Icecast service
  * @access Public
  */
 router.post('/icecast/start', async (req, res) => {
   try {
-    await icecastService.start();
-    res.json({ message: 'Icecast started successfully' });
+    const result = await icecastService.start();
+    res.json({ 
+      success: true,
+      message: 'Icecast started successfully',
+      ...result
+    });
   } catch (error) {
     console.error('Error starting Icecast:', error);
     res.status(500).json({ 
+      success: false,
       error: 'Failed to start Icecast',
       message: error.message 
     });
@@ -62,12 +85,81 @@ router.post('/icecast/start', async (req, res) => {
  */
 router.post('/icecast/stop', async (req, res) => {
   try {
-    await icecastService.stop();
-    res.json({ message: 'Icecast stopped successfully' });
+    const result = await icecastService.stop();
+    res.json({ 
+      success: true,
+      message: 'Icecast stopped successfully',
+      ...result
+    });
   } catch (error) {
     console.error('Error stopping Icecast:', error);
     res.status(500).json({ 
+      success: false,
       error: 'Failed to stop Icecast',
+      message: error.message 
+    });
+  }
+});
+
+/**
+ * @route POST /api/system/icecast/restart
+ * @description Restart Icecast service
+ * @access Public
+ */
+router.post('/icecast/restart', async (req, res) => {
+  try {
+    const result = await icecastService.restart();
+    res.json({ 
+      success: true,
+      message: 'Icecast restarted successfully',
+      ...result
+    });
+  } catch (error) {
+    console.error('Error restarting Icecast:', error);
+    res.status(500).json({ 
+      success: false,
+      error: 'Failed to restart Icecast',
+      message: error.message 
+    });
+  }
+});
+
+/**
+ * @route GET /api/system/icecast/detailed-status
+ * @description Get detailed Icecast server status including mountpoints and configuration
+ * @access Public
+ */
+router.get('/icecast/detailed-status', async (req, res) => {
+  try {
+    const status = await icecastService.getDetailedStatus();
+    res.json(status);
+  } catch (error) {
+    console.error('Error getting detailed Icecast status:', error);
+    res.status(500).json({ 
+      success: false,
+      error: 'Failed to get detailed Icecast status',
+      message: error.message 
+    });
+  }
+});
+
+/**
+ * @route POST /api/system/icecast/check-installation
+ * @description Check if Icecast is properly installed and accessible
+ * @access Public
+ */
+router.post('/icecast/check-installation', async (req, res) => {
+  try {
+    const installation = await icecastService.checkInstallation();
+    res.json({
+      success: true,
+      ...installation
+    });
+  } catch (error) {
+    console.error('Error checking Icecast installation:', error);
+    res.status(500).json({ 
+      success: false,
+      error: 'Failed to check Icecast installation',
       message: error.message 
     });
   }
