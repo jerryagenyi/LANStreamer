@@ -430,3 +430,8 @@ class LobbyMusicPlayer {
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = LobbyMusicPlayer;
 }
+
+// Make available on window object for ComponentManager
+if (typeof window !== 'undefined') {
+    window.LobbyMusicPlayer = LobbyMusicPlayer;
+}
