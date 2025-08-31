@@ -434,11 +434,14 @@
                 this.activeStreams = {};
                 this.isLoading = false;
                 this.icecastStatus = 'unknown';
-                this.componentManager = new ComponentManager();
+                this.componentManager = null;
+                this.lobbyMusicPlayer = null;
                 this.init();
             }
 
             async init() {
+                // Initialize ComponentManager after all scripts have loaded
+                await this.initializeComponentManager();
                 await this.loadAudioDevices();
                 await this.checkIcecastStatus();
                 await this.checkFFmpegStatus();
@@ -448,7 +451,27 @@
                 this.updateStatusIndicators();
             }
 
+            async initializeComponentManager() {
+                // Ensure ComponentManager is available
+                if (typeof ComponentManager === 'undefined') {
+                    console.error('ComponentManager not loaded');
+                    return;
+                }
+                
+                this.componentManager = new ComponentManager();
+                console.log('ComponentManager initialized');
+            }
+
             async initializeComponents() {
+                if (!this.componentManager) {
+                    console.error('ComponentManager not available for component initialization');
+                    return;
+                }
+
+                // Debug: Check if LobbyMusicPlayer is available
+                console.log('LobbyMusicPlayer available:', typeof LobbyMusicPlayer !== 'undefined');
+                console.log('window.LobbyMusicPlayer:', typeof window.LobbyMusicPlayer);
+                
                 // Initialize all dashboard components with fallback to static
                 await this.componentManager.initializeAll();
                 
@@ -457,6 +480,12 @@
                 
                 // Store reference to lobby music player for dashboard integration
                 this.lobbyMusicPlayer = this.componentManager.getComponent('lobby-music-player');
+                
+                if (this.lobbyMusicPlayer) {
+                    console.log('✅ Lobby Music Player component successfully integrated');
+                } else {
+                    console.log('⚠️ Lobby Music Player component not found - using static fallback');
+                }
             }
 
             async loadAudioDevices() {
@@ -662,14 +691,27 @@
 
             // Development utilities
             getComponentStatus() {
+                if (!this.componentManager) {
+                    console.warn('ComponentManager not initialized');
+                    return null;
+                }
                 return this.componentManager.getStatusReport();
             }
 
             refreshComponent(sectionId) {
+                if (!this.componentManager) {
+                    console.warn('ComponentManager not initialized');
+                    return Promise.resolve();
+                }
                 return this.componentManager.refreshSection(sectionId);
             }
 
             testStaticFallback() {
+                if (!this.componentManager) {
+                    this.showNotification('ComponentManager not available', 'error');
+                    return;
+                }
+
                 // Temporarily disable LobbyMusicPlayer to test static fallback
                 const originalComponent = window.LobbyMusicPlayer;
                 window.LobbyMusicPlayer = undefined;

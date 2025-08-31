@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ComponentManager Debug Test</title>
+    <style>
+        body {
+            font-family: 'Courier New', monospace;
+            background: #1a1a1a;
+            color: #fff;
+            padding: 20px;
+            line-height: 1.4;
+        }
+        .test-section {
+            background: #2a2a2a;
+            border: 1px solid #444;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 10px 0;
+        }
+        .pass { color: #4CAF50; }
+        .fail { color: #F85149; }
+        .warn { color: #FFA500; }
+        .info { color: #00AEEF; }
+        pre {
+            background: #111;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 ComponentManager Debug Test</h1>
+    <div id="test-output"></div>
+    <div id="debug-containers" style="display: none;">
+        <div id="lobby-music-player"></div>
+        <div id="lobby-music-static"><div>Static content</div></div>
+    </div>
+
+    <!-- Include the actual components -->
+    <script src="/components/ComponentManager.js"></script>
+    <script src="/components/LobbyMusicPlayer.js"></script>
+
+    <script>
+        const output = document.getElementById('test-output');
+        
+        function log(message, type = 'info') {
+            const div = document.createElement('div');
+            div.className = type;
+            div.innerHTML = message;
+            output.appendChild(div);
+        }
+
+        function logSection(title) {
+            const div = document.createElement('div');
+            div.className = 'test-section';
+            div.innerHTML = `<h3>${title}</h3>`;
+            output.appendChild(div);
+            return div;
+        }
+
+        async function debugComponentManager() {
+            log('<h2>🔍 Debugging ComponentManager Issue</h2>');
+            
+            // Test 1: Check if classes are loaded
+            const section1 = logSection('1. Class Loading Check');
+            try {
+                log(`ComponentManager available: ${typeof ComponentManager !== 'undefined' ? '✅' : '❌'}`, 
+                    typeof ComponentManager !== 'undefined' ? 'pass' : 'fail');
+                log(`LobbyMusicPlayer available: ${typeof LobbyMusicPlayer !== 'undefined' ? '✅' : '❌'}`, 
+                    typeof LobbyMusicPlayer !== 'undefined' ? 'pass' : 'fail');
+                
+                if (typeof ComponentManager !== 'undefined') {
+                    const manager = new ComponentManager();
+                    log(`ComponentManager instance created: ✅`, 'pass');
+                    log(`Registry contains lobby-music-player: ${manager.componentRegistry['lobby-music-player'] ? '✅' : '❌'}`, 
+                        manager.componentRegistry['lobby-music-player'] ? 'pass' : 'fail');
+                }
+            } catch (error) {
+                log(`Class loading error: ${error.message}`, 'fail');
+            }
+
+            // Test 2: Component Detection Logic
+            const section2 = logSection('2. Component Detection Logic');
+            try {
+                const manager = new ComponentManager();
+                const config = manager.componentRegistry['lobby-music-player'];
+                
+                log(`Config: ${JSON.stringify(config)}`, 'info');
+                log(`Looking for component: ${config.component}`, 'info');
+                log(`window.${config.component}: ${typeof window[config.component]}`, 'info');
+                log(`window.LobbyMusicPlayer: ${typeof window.LobbyMusicPlayer}`, 'info');
+                
+                const ComponentClass = window[config.component];
+                log(`Component class found: ${ComponentClass ? '✅' : '❌'}`, ComponentClass ? 'pass' : 'fail');
+                log(`Is function: ${typeof ComponentClass === 'function' ? '✅' : '❌'}`, 
+                    typeof ComponentClass === 'function' ? 'pass' : 'fail');
+                
+                if (ComponentClass) {
+                    log(`Constructor name: ${ComponentClass.name}`, 'info');
+                    log(`Constructor string: ${ComponentClass.toString().substring(0, 100)}...`, 'info');
+                }
+            } catch (error) {
+                log(`Detection logic error: ${error.message}`, 'fail');
+            }
+
+            // Test 3: Manual Component Creation
+            const section3 = logSection('3. Manual Component Creation');
+            try {
+                if (typeof LobbyMusicPlayer !== 'undefined') {
+                    const testContainer = document.getElementById('lobby-music-player');
+                    const instance = new LobbyMusicPlayer('lobby-music-player');
+                    log(`Manual component creation: ✅`, 'pass');
+                    log(`Instance type: ${typeof instance}`, 'info');
+                    log(`Instance constructor: ${instance.constructor.name}`, 'info');
+                } else {
+                    log(`Cannot test manual creation - LobbyMusicPlayer not available`, 'fail');
+                }
+            } catch (error) {
+                log(`Manual creation error: ${error.message}`, 'fail');
+                log(`Error stack: <pre>${error.stack}</pre>`, 'fail');
+            }
+
+            // Test 4: Full ComponentManager Simulation
+            const section4 = logSection('4. Full ComponentManager Simulation');
+            try {
+                const manager = new ComponentManager();
+                
+                // Check containers exist
+                const container = document.getElementById('lobby-music-player');
+                const staticContainer = document.getElementById('lobby-music-static');
+                
+                log(`Main container exists: ${container ? '✅' : '❌'}`, container ? 'pass' : 'fail');
+                log(`Static container exists: ${staticContainer ? '✅' : '❌'}`, staticContainer ? 'pass' : 'fail');
+                
+                // Try initialization
+                const config = manager.componentRegistry['lobby-music-player'];
+                await manager.initializeSection('lobby-music-player', config);
+                
+                // Check result
+                const componentInstance = manager.getComponent('lobby-music-player');
+                log(`Component instance after init: ${componentInstance ? '✅' : '❌'}`, 
+                    componentInstance ? 'pass' : 'fail');
+                
+                if (componentInstance) {
+                    log(`Instance type: ${typeof componentInstance}`, 'pass');
+                    log(`Instance constructor: ${componentInstance.constructor.name}`, 'pass');
+                } else {
+                    log(`No component instance - checking why...`, 'warn');
+                    
+                    // Debug the initialization process
+                    const ComponentClass = window[config.component];
+                    if (!ComponentClass) {
+                        log(`❌ Component class not found in window object`, 'fail');
+                        log(`Available on window: ${Object.keys(window).filter(k => k.includes('Lobby')).join(', ')}`, 'info');
+                    } else if (typeof ComponentClass !== 'function') {
+                        log(`❌ Component class is not a function: ${typeof ComponentClass}`, 'fail');
+                    } else {
+                        log(`❌ Component class exists but initialization failed`, 'fail');
+                    }
+                }
+                
+                // Check what's in the container
+                log(`Container content: <pre>${container ? container.innerHTML.substring(0, 200) : 'No container'}</pre>`, 'info');
+                
+                // Test status report
+                const report = manager.getStatusReport();
+                log(`Status report: <pre>${JSON.stringify(report, null, 2)}</pre>`, 'info');
+                
+            } catch (error) {
+                log(`Full simulation error: ${error.message}`, 'fail');
+                log(`Error stack: <pre>${error.stack}</pre>`, 'fail');
+            }
+
+            // Test 5: Global Scope Investigation
+            const section5 = logSection('5. Global Scope Investigation');
+            try {
+                log(`window object keys containing 'Lobby': ${Object.keys(window).filter(k => k.toLowerCase().includes('lobby')).join(', ')}`, 'info');
+                log(`window object keys containing 'Component': ${Object.keys(window).filter(k => k.toLowerCase().includes('component')).join(', ')}`, 'info');
+                log(`window object keys containing 'Music': ${Object.keys(window).filter(k => k.toLowerCase().includes('music')).join(', ')}`, 'info');
+                
+                // Check if component is available under different names
+                const possibleNames = ['LobbyMusicPlayer', 'lobbyMusicPlayer', 'LobbyBackgroundMusicPlayer'];
+                for (const name of possibleNames) {
+                    log(`window.${name}: ${typeof window[name]}`, window[name] ? 'pass' : 'info');
+                }
+                
+            } catch (error) {
+                log(`Global scope investigation error: ${error.message}`, 'fail');
+            }
+
+            log('<h3>🏁 Debug Test Complete</h3>');
+            log('Check the results above to identify the issue with component detection.');
+        }
+
+        // Run debug test when page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            setTimeout(debugComponentManager, 500); // Small delay to ensure scripts are loaded
+        });
+    </script>
+</body>
+</html>
