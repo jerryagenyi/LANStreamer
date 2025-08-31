@@ -43,6 +43,13 @@ This directory contains comprehensive documentation for the LANStreamer project.
   - Default credential management and security warnings
   - Browser permission handling and session management
 
+### Installation & Setup Guides
+
+- **[Installation Guides](./guides/)** - Complete setup instructions for dependencies
+  - **[FFmpeg Installation Guide](./guides/ffmpeg-installation.md)** - Cross-platform FFmpeg setup
+  - **[Icecast Installation Guide](./guides/icecast-installation.md)** - Icecast server installation
+  - Platform coverage: Windows, macOS, Linux with troubleshooting
+
 ### Configuration Documentation
 
 - **[env-example.md](./env-example.md)** - Environment Configuration Guide

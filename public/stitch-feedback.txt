@@ -1,11 +1,27 @@
 I gave these feedback to imporve the Google Stitch Design. Extract the functional aspects from these to know what to include in the coding of the design based off the final design we have now:
 
-in the icecast section, i dont want the service status where it currently is. I want it on the same line as the title but to thr right as a dot. A green dot for when online and a grayed out dot for when it is offline.
+-----------------------------------
+-in the icecast section, i dont want the service status where it currently is. I want it on the same line as the title but to thr right as a dot. A green dot for when online and a grayed out dot for when it is offline.
 
 
-
+-----------------------------------
 we dont need the second icecast server modal box below the first one (ref: both are on the right. then the lobby background music area should say '<music file name>' instead of 'of '128kbps'. Use this file as an example 'Slack-Huddle-Hold-Music_Daniel-Simmons.mp3'. If the file name is too long, it should be hidden with 3 dotes '...' after the visitble part of the file name. it should also include a minimal button to change the music file. also the Lobby Background Music should have a border on top separating it from Main Room Audio section. Below Main Room Aido and before the border you will put there underneath it, there should be a button to say to add new stream. this will bring up a modal to allow you select audio streams.
 
 
-
+-----------------------------------
 move the 'add new stream' button to immediately after 'main audio'. also add volume control to 'Lobby Background Music' to inclde mute and volume control.
+
+
+-----------------------------------
+the main room audio should include an option to change this audio source. then move the 192kbs to be in parenthesis after the 'Live' status. then on the line of the title 'FFmpeg streams, to the right should be the status for ffmpeg should be shown. if installed, it should be a green dot showing that it is installed and running; it should be a grayed out dot if not installed. it should have tool tip giving the status. if not installed, it should include a link in the tootle tip to how to download and get it installed (it should be a guide in our github repo. same too for icecast)
+
+-----------------------------------
+
+the main room audio should include an option to change this audio source (it will bring up a dropdown for selecting audio source). Also somewhere should be an option or icon to refresh all sources and devices (both audio and video. then move the 192kbs to be in parenthesis after the 'Live' status. then on the line of the title 'FFmpeg streams, to the right should be the status for ffmpeg should be shown. if installed, it should be a green dot showing that it is installed and running; it should be a grayed out dot if not installed. it should have tool tip giving the status. if not installed, it should include a link in the tool tip to how to download and get it installed (it should be a guide in our github repo. same too for icecast). on top Icecast server section should be another section with two bttons to start all streams and end all streams. the icecast server section should only show 'Listeners' not 'Peak Listeners'. the audio devices section should be split into 2 columns - audio input devices and audio output devices - and all devices should be presented as lists in both columns. then below this section should be the section for video sources being captured by ffmpeg. the Logo should be changed to https://github.com/jerryagenyi/LANStreamer/blob/main/public/assets/lanstreamer-logo.png; no logo text, just the logo.
+
+-----------------------------------
+
+FFMpeg status should read 'FFmpeg Installed and Running'. if not installed should read 'Fpeg not installed (or should we use 'not detected'?) with a in to ou guide on hw to install it (). change 'Audio Devices' to 'Audio Devices captured by FFmpeg'. for the Audio devices section, please add to the right also 'Refresh device list'. emember for both 'Audio Devices' and 'Video Sources captured by FFmpeg'. ensure the geneated code is very well commentd to describe the functions and anything that needs o be understood.
+
+-----------------------------------
+-----------------------------------

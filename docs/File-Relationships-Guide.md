@@ -19,7 +19,11 @@ docs/
 ├── Audio-Monitoring-Feature-Specification.md  # Audio Monitoring Feature
 ├── Authentication-Security-Specification.md   # Security & Authentication
 ├── LANStreamer-Audio-Pipeline-Concepts.md     # Audio Pipeline Educational Guide
-└── env-example.md                             # Environment Configuration
+├── env-example.md                             # Environment Configuration
+└── guides/                                    # Installation & Setup Guides
+    ├── README.md                              # Installation guides overview
+    ├── ffmpeg-installation.md                 # FFmpeg setup instructions
+    └── icecast-installation.md               # Icecast setup instructions
 ```
 
 ## File Relationships & Update Dependencies
@@ -254,6 +258,14 @@ When updating any documentation file, use this checklist to ensure consistency:
 3. [ ] Update `docs/env-example.md` if configuration changes
 4. [ ] Update main `README.md` if setup process changes
 5. [ ] Update `docs/LANStreamer-TDD.md` if testing strategy changes
+6. [ ] Update installation guides if dependencies change
+
+### ✅ **For Installation Guide Updates:**
+1. [ ] Update `docs/guides/README.md` with overview changes
+2. [ ] Update dashboard tooltips in `public/index.html` with new guide links
+3. [ ] Update `docs/README.md` if new guides are added
+4. [ ] Update `docs/LANStreamer-Technical-Specification.md` if setup requirements change
+5. [ ] Update main `README.md` prerequisites section if needed
 
 ## Documentation Quality Standards
 
@@ -280,6 +292,7 @@ When updating any documentation file, use this checklist to ensure consistency:
 | API Change | Technical Spec | Feature Specs, TDD, env-example |
 | UI Update | UI Design | Feature Specs, Technical Spec |
 | Config Change | env-example | Technical Spec, README |
+| Installation Guide | guides/*.md | Dashboard tooltips, README, Technical Spec |
 | Implementation Complete | TDD | README (both), TODO |
 | Test Strategy Change | TDD | Feature Specs, assets/README |
 
