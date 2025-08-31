@@ -4,6 +4,12 @@
 
 The Audio Monitoring feature enables Event Admins to listen to live audio streams through local output devices for quality control purposes. This is essential for professional live event management where stream quality must be verified before broadcasting to listeners.
 
+**Related Documentation:**
+- [Product Requirements](LANStreamer-PRD.md) - User story and business requirements for monitoring feature
+- [Technical Specification](LANStreamer-Technical-Specification.md) - Core system architecture and API details
+- [UI Design Specification](Admin-Dashboard-UI-Design.md) - Visual design for monitoring controls and interface
+- [TDD Plan](LANStreamer-TDD.md) - Testing strategy for monitoring feature implementation
+
 ## User Story
 
 > **As an Event Admin,** I want to be able to monitor any live audio stream on a specific output device so I can check its quality before broadcasting to listeners.
@@ -128,6 +134,7 @@ ffmpeg -f dshow -i audio="Input Device Name" -f wasapi default:RENDER:"Output De
 ☐ Monitor this Stream
     [Monitoring Output Device Dropdown] ← Only output devices (conditional)
 [Start/Stop Toggle] [Status: Live + Monitoring]
+[Device Permission Status] ← Browser permission indicator
 ```
 
 ### UI Behavior
@@ -135,12 +142,14 @@ ffmpeg -f dshow -i audio="Input Device Name" -f wasapi default:RENDER:"Output De
 #### Monitoring Checkbox
 - **Unchecked (default):** Monitoring dropdown hidden
 - **Checked:** Monitoring dropdown visible with output devices
-- **Disabled when:** Stream is not running
+- **Disabled when:** Stream is not running or device permissions not granted
+- **Permission dependency:** Requires browser audio permissions to be granted
 
 #### Monitoring Dropdown
-- **Population:** Only devices with `type: "output"`
-- **Visibility:** Controlled by monitoring checkbox
-- **Placeholder:** "Select monitoring device..."
+- **Population:** Only devices with `type: "output"` (requires browser permissions)
+- **Visibility:** Controlled by monitoring checkbox and permission status
+- **Placeholder:** "Select monitoring device..." or "Grant audio permissions first"
+- **Permission State:** Greyed out if browser permissions not granted
 - **Error State:** Red border if selected device disconnected
 
 #### Status Indicators
@@ -181,7 +190,12 @@ ffmpeg -f dshow -i audio="Input Device Name" -f wasapi default:RENDER:"Output De
 
 ### Common Error Scenarios
 
-#### 1. Output Device Disconnected During Monitoring
+#### 1. Browser Permissions Not Granted
+- **Detection:** `getUserMedia()` API call fails
+- **UI Response:** Show permission request button, disable monitoring controls
+- **User Action:** "Grant Audio Permissions" button triggers permission dialog
+
+#### 2. Output Device Disconnected During Monitoring
 - **Detection:** Monitor FFmpeg process exit
 - **UI Response:** Show warning icon, disable monitoring dropdown
 - **User Action:** Notification with option to select new device
@@ -199,9 +213,11 @@ ffmpeg -f dshow -i audio="Input Device Name" -f wasapi default:RENDER:"Output De
 ### Error Messages
 
 #### User-Friendly Messages
+- "Audio permissions required. Please allow microphone access in your browser."
 - "Monitoring device disconnected. Please select a new device."
 - "Unable to start monitoring. Check device availability."
 - "Monitoring stopped to prevent audio feedback."
+- "Browser permissions denied. Enable audio access in browser settings and refresh."
 
 ## Configuration
 
@@ -246,8 +262,10 @@ ENABLE_MONITORING_FEATURE=true
 
 ### Phase 2: UI Integration
 1. ✅ Update dashboard UI with monitoring controls
-2. ✅ Implement conditional dropdown visibility
+2. ✅ Implement conditional dropdown visibility  
 3. ✅ Add monitoring status indicators
+4. ✅ Integrate browser permission handling
+5. ✅ Add permission-aware UI states
 
 ### Phase 3: Error Handling & Polish
 1. ⏳ Implement comprehensive error handling

@@ -1,0 +1,249 @@
+<html><head>
+    <meta charset="utf-8"/>
+    <link crossorigin="" href="https://fonts.gstatic.com/" rel="preconnect"/>
+    <link as="style" href="https://fonts.googleapis.com/css2?display=swap&amp;family=Inter%3Awght%40400%3B500%3B700%3B900&amp;family=Noto+Sans%3Awght%40400%3B500%3B700%3B900" onload="this.rel='stylesheet'" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet"/>
+    <title>Stitch Design</title>
+    <link href="data:image/x-icon;base64," rel="icon" type="image/x-icon"/>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <style type="text/tailwindcss">
+        :root {
+          --primary-color: #00AEEF;
+          --live-color: #4CAF50;
+          --dark-bg: #111111;
+          --card-bg: #1A1A1A;
+          --border-color: #2F2F2F;
+        }
+        .status-icon {
+            transition: all 0.3s ease-in-out;
+        }
+        .status-icon-outline {
+            stroke: var(--primary-color);
+            stroke-width: 2px;
+            fill: transparent;
+        }
+        .status-icon-fill {
+            fill: var(--primary-color);
+            stroke: none;
+        }
+        .status-icon-live .status-icon-fill {
+            fill: var(--live-color);
+        }
+        .status-icon-live .status-icon-outline {
+            stroke: var(--live-color);
+        }
+        .btn-gradient {
+            background-image: linear-gradient(to right, #00AEEF, #0088CC);
+            box-shadow: 0 4px 15px 0 rgba(0, 174, 239, 0.3);
+        }
+        .btn-gradient:hover {
+            background-image: linear-gradient(to right, #0088CC, #00AEEF);
+            box-shadow: 0 6px 20px 0 rgba(0, 174, 239, 0.4);
+        }
+        .btn-stop-gradient {
+            background-image: linear-gradient(to right, #F85149, #D43F3A);
+            box-shadow: 0 4px 15px 0 rgba(248, 81, 73, 0.3);
+        }
+        .btn-stop-gradient:hover {
+            background-image: linear-gradient(to right, #D43F3A, #F85149);
+            box-shadow: 0 6px 20px 0 rgba(248, 81, 73, 0.4);
+        }
+        .pulse-live {
+            animation: pulse-live 2s infinite;
+        }
+        @keyframes pulse-live {
+            0%, 100% {
+                box-shadow: 0 0 0 0 rgba(76, 175, 80, 0.7);
+            }
+            70% {
+                box-shadow: 0 0 0 10px rgba(76, 175, 80, 0);
+            }
+        }
+      </style>
+    </head>
+    <body class="bg-[var(--dark-bg)]">
+    <div class="relative flex size-full min-h-screen flex-col bg-gradient-to-br from-[#111111] to-[#0A0A0A] dark group/design-root overflow-x-hidden" style='font-family: Inter, "Noto Sans", sans-serif;'>
+    <header class="sticky top-0 z-50 flex items-center justify-between whitespace-nowrap border-b border-solid border-[var(--border-color)] bg-[var(--dark-bg)]/80 px-10 py-4 backdrop-blur-lg">
+    <div class="flex items-center gap-4 text-white">
+    <div class="size-8 text-[var(--primary-color)]">
+    <svg fill="none" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+    <g clip-path="url(#clip0_6_330)">
+    <path clip-rule="evenodd" d="M24 0.757355L47.2426 24L24 47.2426L0.757355 24L24 0.757355ZM21 35.7574V12.2426L9.24264 24L21 35.7574Z" fill="currentColor" fill-rule="evenodd"></path>
+    </g>
+    <defs>
+    <clipPath id="clip0_6_330"><rect fill="white" height="48" width="48"></rect></clipPath>
+    </defs>
+    </svg>
+    </div>
+    <h1 class="text-xl font-bold tracking-wider">LANStreamer</h1>
+    </div>
+    <div class="flex items-center gap-3">
+    <div class="group relative flex items-center">
+    <button class="flex h-10 w-10 cursor-pointer items-center justify-center rounded-lg border border-[var(--border-color)] bg-[var(--card-bg)] text-gray-400 transition-all hover:bg-[var(--primary-color)]/10 hover:text-[var(--primary-color)]">
+    <span class="material-symbols-outlined status-icon"> volume_up </span></button>
+    <div class="absolute top-full right-0 mt-2 w-72 rounded-lg bg-[var(--card-bg)] border border-[var(--border-color)] p-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none group-hover:pointer-events-auto shadow-2xl shadow-black/50">
+    <h4 class="font-bold text-white mb-2">Audio Devices</h4>
+    <p class="text-sm text-gray-400">2 Devices Online</p>
+    </div>
+    </div>
+    <div class="group relative flex items-center">
+    <button class="flex h-10 w-10 cursor-pointer items-center justify-center rounded-lg border border-[var(--border-color)] bg-[var(--card-bg)] text-gray-400 transition-all hover:bg-[var(--live-color)]/10 hover:text-[var(--live-color)]">
+    <span class="material-symbols-outlined status-icon status-icon-live"> settings_input_component </span></button>
+    <div class="absolute top-full right-0 mt-2 w-72 rounded-lg bg-[var(--card-bg)] border border-[var(--border-color)] p-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none group-hover:pointer-events-auto shadow-2xl shadow-black/50">
+    <h4 class="font-bold text-white mb-2">FFmpeg Streams</h4>
+    <p class="text-sm text-gray-400">1 Stream Live</p>
+    </div>
+    </div>
+    <div class="group relative flex items-center">
+    <button class="flex h-10 w-10 cursor-pointer items-center justify-center rounded-lg border border-[var(--border-color)] bg-[var(--card-bg)] text-gray-400 transition-all hover:bg-[var(--primary-color)]/10 hover:text-[var(--primary-color)]">
+    <span class="material-symbols-outlined status-icon"> router </span></button>
+    <div class="absolute top-full right-0 mt-2 w-72 rounded-lg bg-[var(--card-bg)] border border-[var(--border-color)] p-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none group-hover:pointer-events-auto shadow-2xl shadow-black/50">
+    <h4 class="font-bold text-white mb-2">Icecast Server</h4>
+    <p class="text-sm text-gray-400">Server Online</p>
+    </div>
+    </div>
+    <div class="group relative flex items-center">
+    <button class="flex h-10 w-10 cursor-pointer items-center justify-center rounded-lg border border-[var(--border-color)] bg-[var(--card-bg)] text-gray-400 transition-all hover:bg-yellow-500/10 hover:text-yellow-500">
+    <span class="material-symbols-outlined status-icon"> warning </span></button>
+    <div class="absolute top-full right-0 mt-2 w-72 rounded-lg bg-[var(--card-bg)] border border-[var(--border-color)] p-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none group-hover:pointer-events-auto shadow-2xl shadow-black/50">
+    <h4 class="font-bold text-white mb-2">System Status</h4>
+    <p class="text-sm text-yellow-500">Security Warning Active</p>
+    </div>
+    </div>
+    <div class="ml-4 h-10 w-px bg-[var(--border-color)]"></div>
+    <div class="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-10 ml-4" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuDSIzxTEv03JUEwpU1vqD79kbeH63SzCaGfIIFbumOYFeslE7o8s5BELsy84X5hdHbqgGM91dgl8SECCQAuQUyN5TzULy0C6hTXlMd2FdmoEp4c0WAiQhyasooFF0UAFZoOLRnhrfiUJjHhWPasQr2g2MWISZolmDkAER-lahc8ZqnqZSr95hHY9Z-0DIFIJDnrExTC0CHjbWsTgsGY2Pj1xH87e8JybvN0dCpF-U1oWs_K8Q3OXkC3yMhMSgHVXCilnq_8LYez-3g");'></div>
+    </div>
+    </header>
+    <main class="flex-1 px-4 sm:px-6 lg:px-10 py-8">
+    <div class="mx-auto max-w-7xl">
+    <div class="mb-8 p-4 rounded-xl bg-yellow-500/10 border border-yellow-500/50 text-yellow-400">
+    <div class="flex items-center gap-3">
+    <span class="material-symbols-outlined text-2xl"> warning </span>
+    <p class="font-medium">
+    <strong>Security Warning:</strong> Your LANStreamer instance is running in development mode. For production use, please configure SSL and authentication.
+                  </p>
+    </div>
+    </div>
+    <div class="grid grid-cols-1 xl:grid-cols-3 gap-8">
+    <div class="xl:col-span-2 space-y-8">
+    <div class="bg-[var(--card-bg)] border border-[var(--border-color)] rounded-2xl p-6 shadow-2xl shadow-black/30">
+    <h2 class="text-xl font-bold text-white mb-4">FFmpeg Streams</h2>
+    <div class="space-y-4">
+    <div class="bg-[#111111] border border-[var(--border-color)] rounded-xl p-4 flex items-center justify-between">
+    <div class="flex items-center gap-4">
+    <div class="w-2 h-10 rounded-full bg-[var(--live-color)] pulse-live"></div>
+    <div>
+    <p class="font-semibold text-white">Main Room Audio</p>
+    <p class="text-sm text-[var(--live-color)] font-medium flex items-center gap-1">
+    <span class="material-symbols-outlined text-sm"> circle </span> Live
+                              </p>
+    </div>
+    </div>
+    <div class="flex items-center gap-4">
+    <span class="text-sm font-mono text-gray-500">192 kbps</span>
+    <button class="inline-flex items-center justify-center gap-2 rounded-md px-4 py-2 text-sm font-semibold text-white shadow-lg transition-all duration-300 btn-stop-gradient">
+    <span class="material-symbols-outlined"> stop </span>
+                                  Stop
+                                </button>
+    </div>
+    </div>
+    <div class="bg-[#111111] border border-[var(--border-color)] rounded-xl p-4 flex items-center justify-between">
+    <div class="flex items-center gap-4">
+    <div class="w-2 h-10 rounded-full bg-gray-600"></div>
+    <div>
+    <p class="font-semibold text-white">Lobby Background Music</p>
+    <p class="text-sm text-gray-500 font-medium flex items-center gap-1">
+    <span class="material-symbols-outlined text-sm"> circle </span> Stopped
+                              </p>
+    </div>
+    </div>
+    <div class="flex items-center gap-4">
+    <span class="text-sm font-mono text-gray-500">128 kbps</span>
+    <button class="inline-flex items-center justify-center gap-2 rounded-md px-4 py-2 text-sm font-semibold text-white shadow-lg transition-all duration-300 btn-gradient">
+    <span class="material-symbols-outlined"> play_arrow </span>
+                                  Start
+                                </button>
+    </div>
+    </div>
+    </div>
+    </div>
+    <div class="bg-[var(--card-bg)] border border-[var(--border-color)] rounded-2xl p-6 shadow-2xl shadow-black/30">
+    <h2 class="text-xl font-bold text-white mb-4">Audio Devices</h2>
+    <div class="space-y-4">
+    <div class="flex items-center justify-between p-4 bg-[#111111] rounded-xl border border-[var(--border-color)]">
+    <div class="flex items-center gap-3">
+    <span class="material-symbols-outlined text-2xl text-[var(--live-color)]"> mic </span>
+    <div>
+    <p class="font-semibold text-white">Focusrite Scarlett 2i2</p>
+    <p class="text-sm text-gray-400">USB Audio Device</p>
+    </div>
+    </div>
+    <label class="inline-flex relative items-center cursor-pointer" for="device-toggle-1">
+    <input checked="" class="sr-only peer" id="device-toggle-1" type="checkbox" value=""/>
+    <div class="w-11 h-6 bg-[#21262D] peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-[var(--primary-color)]/50 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[var(--primary-color)]"></div>
+    </label>
+    </div>
+    <div class="flex items-center justify-between p-4 bg-[#111111] rounded-xl border border-[var(--border-color)]">
+    <div class="flex items-center gap-3">
+    <span class="material-symbols-outlined text-2xl text-[var(--live-color)]"> headphones </span>
+    <div>
+    <p class="font-semibold text-white">Realtek Digital Output</p>
+    <p class="text-sm text-gray-400">Onboard Audio</p>
+    </div>
+    </div>
+    <label class="inline-flex relative items-center cursor-pointer" for="device-toggle-2">
+    <input class="sr-only peer" id="device-toggle-2" type="checkbox" value=""/>
+    <div class="w-11 h-6 bg-[#21262D] peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-[var(--primary-color)]/50 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[var(--primary-color)]"></div>
+    </label>
+    </div>
+    </div>
+    </div>
+    </div>
+    <div class="space-y-8">
+    <div class="bg-[var(--card-bg)] border border-[var(--border-color)] rounded-2xl p-6 shadow-2xl shadow-black/30">
+    <h2 class="text-xl font-bold text-white mb-4">Icecast Server</h2>
+    <div class="space-y-5">
+    <div>
+    <div class="flex justify-between items-center mb-1">
+    <p class="text-sm font-medium text-gray-300">Listeners</p>
+    <p class="text-sm font-bold text-white">42</p>
+    </div>
+    <div class="w-full bg-[#111111] rounded-full h-2.5">
+    <div class="bg-[var(--primary-color)] h-2.5 rounded-full" style="width: 42%"></div>
+    </div>
+    </div>
+    <div>
+    <div class="flex justify-between items-center mb-1">
+    <p class="text-sm font-medium text-gray-300">Peak Listeners</p>
+    <p class="text-sm font-bold text-white">128</p>
+    </div>
+    <div class="w-full bg-[#111111] rounded-full h-2.5">
+    <div class="bg-[var(--primary-color)] h-2.5 rounded-full" style="width: 100%"></div>
+    </div>
+    </div>
+    <div>
+    <div class="flex justify-between items-center mb-1">
+    <p class="text-sm font-medium text-gray-300">Server Status</p>
+    <p class="text-sm font-bold text-[var(--live-color)]">Online</p>
+    </div>
+    <div class="w-full bg-[#111111] rounded-full h-2.5">
+    <div class="bg-[var(--live-color)] h-2.5 rounded-full" style="width: 100%"></div>
+    </div>
+    </div>
+    <div class="border-t border-[var(--border-color)] pt-4 mt-4 text-xs text-gray-500">
+    <p>
+    <strong>Host:</strong> localhost:8000
+                      </p>
+    <p>
+    <strong>Uptime:</strong> 72:34:12
+                      </p>
+    </div>
+    </div>
+    </div>
+    </div>
+    </div>
+    </div>
+    </main>
+    </div>
+    
+    </body></html>

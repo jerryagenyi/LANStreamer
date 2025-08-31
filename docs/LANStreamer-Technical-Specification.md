@@ -3,6 +3,13 @@
 ## 1. Executive Summary
 LANStreamer is a Node.js-based application that transforms a standard Windows PC into a multi-channel audio streaming server for local area networks. This document outlines the system architecture, technology stack, file structure, and implementation details for the project.
 
+**Related Documentation:**
+- [Product Requirements](LANStreamer-PRD.md) - Business requirements and user stories
+- [UI Design Specification](Admin-Dashboard-UI-Design.md) - Visual design guidelines and frontend requirements
+- [Audio Monitoring Feature](Audio-Monitoring-Feature-Specification.md) - Professional monitoring implementation details
+- [Authentication & Security](Authentication-Security-Specification.md) - Security requirements and implementation
+- [Environment Configuration](env-example.md) - Configuration variables and deployment settings
+
 ## Document Information
 - **Project**: LANStreamer
 - **Version**: 1.0.0
@@ -27,10 +34,81 @@ LANStreamer is a Node.js-based application that transforms a standard Windows PC
 - **HTTP Client:** Axios for API communication
 - **Real-time:** Socket.io-client for WebSocket connections
 
-### 2.3 External Dependencies
+### 2.3 Browser APIs and Client-Side Security
+
+#### 2.3.1 Device Permission Management
+**Implementation:** `navigator.mediaDevices.getUserMedia()` JavaScript API
+**Purpose:** Request browser permissions for audio/video device access
+**Security:** Browser-enforced permission system with user consent
+
+**Permission Request Flow:**
+```javascript
+async function requestDevicePermissions() {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    // Permission granted - cleanup and proceed
+    stream.getTracks().forEach(track => track.stop());
+    return { status: 'granted' };
+  } catch (error) {
+    if (error.name === 'NotAllowedError') {
+      return { status: 'denied', error: 'User denied permission' };
+    }
+    return { status: 'error', error: error.message };
+  }
+}
+```
+
+**Permission States:**
+- `granted` - User allowed device access
+- `denied` - User blocked device access  
+- `prompt` - Permission not yet requested
+
+#### 2.3.2 Authentication Security Implementation
+
+**JWT Token Structure:**
+```json
+{
+  "userId": "admin",
+  "role": "administrator", 
+  "iat": 1640995200,
+  "exp": 1641081600,
+  "isDefaultCredentials": true
+}
+```
+
+**Security Configuration:**
+```javascript
+const JWT_CONFIG = {
+  secret: process.env.JWT_SECRET || 'change-this-secret',
+  expiresIn: process.env.JWT_EXPIRES_IN || '24h',
+  algorithm: 'HS256'
+};
+```
+
+**Password Validation:**
+```javascript
+function validatePassword(password) {
+  const requirements = {
+    minLength: password.length >= 8,
+    hasLetter: /[a-zA-Z]/.test(password),
+    hasNumber: /\d/.test(password),
+    hasSymbol: /[!@#$%^&*(),.?":{}|<>]/.test(password),
+    notDefault: password !== 'admin'
+  };
+  
+  return {
+    isValid: Object.values(requirements).every(req => req),
+    requirements
+  };
+}
+```
+
+### 2.4 External Dependencies
 - **Audio Processing:** FFmpeg for audio encoding and streaming
-- **Streaming Server:** Icecast for audio stream distribution
+- **Streaming Server:** Icecast for audio stream distribution  
 - **Audio Hardware:** Support for multi-channel USB audio interfaces
+
+**Audio Concepts:** For detailed understanding of audio pipeline concepts and hardware integration, see [Audio Pipeline Concepts](LANStreamer-Audio-Pipeline-Concepts.md).
 
 ### 2.4 Development & Testing Tools
 - **E2E Testing:** Playwright

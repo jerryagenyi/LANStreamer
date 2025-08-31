@@ -146,6 +146,8 @@ Comprehensive documentation is available in the [`docs/`](docs/) directory:
 ### 🎨 **Design & Features**
 - **[UI Design Specifications](docs/Admin-Dashboard-UI-Design.md)** - Complete visual design guidelines
 - **[Audio Monitoring Feature](docs/Audio-Monitoring-Feature-Specification.md)** - Professional monitoring capabilities
+- **[Audio Pipeline Concepts](docs/LANStreamer-Audio-Pipeline-Concepts.md)** - Understanding audio routing and hardware integration
+- **[Authentication & Security](docs/Authentication-Security-Specification.md)** - Login system and security measures
 
 ### ⚙️ **Configuration & Maintenance**
 - **[Environment Configuration Guide](docs/env-example.md)** - Detailed environment setup

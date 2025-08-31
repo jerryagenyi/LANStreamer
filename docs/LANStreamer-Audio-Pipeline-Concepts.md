@@ -6,6 +6,11 @@
 
 Think of it like this: **FFmpeg is a recording engineer, and it needs a microphone to listen to.** The DVS, VLC output, XR18 channels, and your computer's audio devices are all just different types of "microphones" that FFmpeg can capture from.
 
+**Related Documentation:**
+- [Technical Specification](LANStreamer-Technical-Specification.md) - Implementation details for audio processing
+- [Product Requirements](LANStreamer-PRD.md) - Business context and audio feature requirements
+- [Audio Monitoring Feature](Audio-Monitoring-Feature-Specification.md) - Professional audio monitoring concepts
+
 ## The Virtual Audio Pipeline
 
 Every LANStreamer setup follows this basic flow:

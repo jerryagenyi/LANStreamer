@@ -14,7 +14,7 @@ This document outlines the requirements for **LANStreamer v1.0**, a desktop appl
 - **As an Event Admin,** I want to name each audio stream (e.g., "French Interpretation," "Main Stage Audio") so they are clearly identifiable to listeners.
 - **As an Event Admin,** I want to start and stop all streams with a single click and also be able to manage each stream individually.
 - **As an Event Admin,** I want to see a clear, real-time status indicator (e.g., "Live," "Stopped," "Error") for each stream.
-- **As an Event Admin,** I want to be able to monitor any live audio stream on a specific output device so I can check its quality before broadcasting to listeners.
+- **As an Event Admin,** I want to be able to monitor any live audio stream on a specific output device so I can check its quality before broadcasting to listeners. *(See [Audio Monitoring Feature Specification](Audio-Monitoring-Feature-Specification.md) for detailed implementation)*
 - **As a Listener,** I want to connect to a simple web page on my phone, see a list of available audio streams, and click one to start listening immediately.
 - **As a Listener,** I want the audio to play directly in my mobile web browser without needing to download a special app.
 
@@ -29,6 +29,7 @@ This document outlines the requirements for **LANStreamer v1.0**, a desktop appl
     - Ability to name/label stream mount points (e.g., `/french`, `/spanish`).
     - Start/Stop controls for individual and all streams.
     - Real-time status display for each FFmpeg/Icecast process.
+    - *(UI Design: See [Admin Dashboard UI Design](Admin-Dashboard-UI-Design.md) for complete visual specifications)*
 - **Web-Based Player (Listener):**
     - A simple, mobile-first webpage served on the local network (e.g., `http://[SERVER_IP]:PORT/listen`).
     - Dynamically updated list of active streams.
@@ -57,6 +58,8 @@ This document outlines the requirements for **LANStreamer v1.0**, a desktop appl
 - **Audio Device Discovery:** The backend must be able to programmatically list available audio input devices on the Windows host.
 - **Error Handling:** The application must gracefully handle errors (e.g., FFmpeg process failure, device disconnection) and display a clear message to the admin.
 - **Audio Assets:** Sample audio files are stored in the `/assets` directory for testing and demonstration purposes.
+
+**Detailed Technical Implementation:** See [Technical Specification](LANStreamer-Technical-Specification.md) for complete API documentation and system architecture.
 
 ---
 

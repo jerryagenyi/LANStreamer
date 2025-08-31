@@ -2,6 +2,11 @@
 
 This file contains all the environment variables needed for LANStreamer to function properly. Copy the content below to create your own `.env` file in the project root.
 
+**Related Documentation:**
+- [Technical Specification](LANStreamer-Technical-Specification.md) - System architecture and configuration requirements
+- [Authentication & Security](Authentication-Security-Specification.md) - Security-related environment variables
+- [Audio Monitoring Feature](Audio-Monitoring-Feature-Specification.md) - Monitoring configuration options
+
 ## Quick Setup
 
 1. Copy this content to a new file named `.env` in your project root

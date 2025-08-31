@@ -33,6 +33,16 @@ This directory contains comprehensive documentation for the LANStreamer project.
   - Device type differentiation (input vs output) for DVS/Dante setups
   - Quality control workflow for live event management
 
+- **[LANStreamer-Audio-Pipeline-Concepts.md](./LANStreamer-Audio-Pipeline-Concepts.md)** - Audio Pipeline Educational Guide
+  - **Moved:** Comprehensive guide to understanding audio routing concepts
+  - Hardware integration approaches (XR18, DVS, Virtual Cables)
+  - Troubleshooting methodology and best practices
+
+- **[Authentication-Security-Specification.md](./Authentication-Security-Specification.md)** - Security & Authentication
+  - **New:** Complete authentication system specification
+  - Default credential management and security warnings
+  - Browser permission handling and session management
+
 ### Configuration Documentation
 
 - **[env-example.md](./env-example.md)** - Environment Configuration Guide

@@ -92,12 +92,28 @@ class IcecastService {
 
   async getStatus() {
     try {
+      // First check if Icecast is installed
+      const installationCheck = await this.checkInstallation();
+      
+      if (!installationCheck.installed) {
+        return {
+          installed: false,
+          running: false,
+          status: 'not-installed',
+          uptime: 0,
+          version: null,
+          port: config.icecast.port
+        }
+      }
+      
       if (!this.isRunning) {
         return {
+          installed: true,
           running: false,
           status: 'stopped',
           uptime: 0,
-          version: null
+          version: installationCheck.version,
+          port: config.icecast.port
         }
       }
 
@@ -119,8 +135,10 @@ class IcecastService {
       const stats = result.icestats
       
       return {
+        installed: true,
         running: true,
         status: 'running',
+        port: config.icecast.port,
         uptime: parseInt(stats.server_start_iso8601) ? 
           Date.now() - new Date(stats.server_start_iso8601).getTime() : 0,
         version: stats.server_id || 'unknown',

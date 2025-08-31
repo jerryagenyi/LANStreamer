@@ -1,0 +1,11 @@
+I gave these feedback to imporve the Google Stitch Design. Extract the functional aspects from these to know what to include in the coding of the design based off the final design we have now:
+
+in the icecast section, i dont want the service status where it currently is. I want it on the same line as the title but to thr right as a dot. A green dot for when online and a grayed out dot for when it is offline.
+
+
+
+we dont need the second icecast server modal box below the first one (ref: both are on the right. then the lobby background music area should say '<music file name>' instead of 'of '128kbps'. Use this file as an example 'Slack-Huddle-Hold-Music_Daniel-Simmons.mp3'. If the file name is too long, it should be hidden with 3 dotes '...' after the visitble part of the file name. it should also include a minimal button to change the music file. also the Lobby Background Music should have a border on top separating it from Main Room Audio section. Below Main Room Aido and before the border you will put there underneath it, there should be a button to say to add new stream. this will bring up a modal to allow you select audio streams.
+
+
+
+move the 'add new stream' button to immediately after 'main audio'. also add volume control to 'Lobby Background Music' to inclde mute and volume control.

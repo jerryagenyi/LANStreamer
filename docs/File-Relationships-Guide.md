@@ -4,6 +4,8 @@
 
 This document maps the relationships between LANStreamer documentation files and indicates which files should be updated when making changes to maintain consistency across the project.
 
+**Note:** This document serves as a maintenance guide for all other documentation. For feature-specific information, see the individual specification documents listed in [Documentation Index](README.md).
+
 ## Documentation Structure
 
 ```
@@ -15,6 +17,8 @@ docs/
 ├── LANStreamer-Technical-Specification.md     # Technical Architecture
 ├── Admin-Dashboard-UI-Design.md               # UI Design Specifications
 ├── Audio-Monitoring-Feature-Specification.md  # Audio Monitoring Feature
+├── Authentication-Security-Specification.md   # Security & Authentication
+├── LANStreamer-Audio-Pipeline-Concepts.md     # Audio Pipeline Educational Guide
 └── env-example.md                             # Environment Configuration
 ```
 
@@ -140,6 +144,22 @@ docs/
 
 ---
 
+#### `docs/Authentication-Security-Specification.md`
+**Relationship:** Security and authentication system specification
+**Update When Changed:**
+- `docs/Admin-Dashboard-UI-Design.md` - Login UI and security warnings
+- `docs/env-example.md` - Security environment variables
+- Root `.env.example` - Authentication configuration
+- `docs/LANStreamer-Technical-Specification.md` - Security API requirements
+
+**Must Update When:**
+- Login workflow requirements change
+- Security measures are enhanced
+- Default credential policies are modified
+- Authentication API specifications change
+
+---
+
 #### `docs/env-example.md`
 **Relationship:** Environment configuration and deployment
 **Update When Changed:**
@@ -155,6 +175,18 @@ docs/
 ---
 
 ### Supporting Files
+
+#### `docs/LANStreamer-Audio-Pipeline-Concepts.md`
+**Relationship:** Educational documentation explaining audio routing concepts
+**Update When Changed:**
+- Manual setup guides - When hardware support changes
+- Main `README.md` - If core concepts change
+- `docs/README.md` - When adding/removing concept references
+
+**Must Update When:**
+- New hardware routing methods are added
+- Core audio concepts change
+- Troubleshooting approaches are updated
 
 #### `assets/README.md`
 **Relationship:** Test assets and media file documentation

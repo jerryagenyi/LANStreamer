@@ -4,6 +4,11 @@
 
 This document outlines a Test-Driven Development (TDD) plan for the LANStreamer project. It serves as a practical, step-by-step guide for implementing features by writing tests first. This approach ensures code quality, reduces bugs, and simplifies future maintenance.
 
+**Related Documentation:**
+- [Product Requirements](LANStreamer-PRD.md) - Features and user stories being implemented
+- [Technical Specification](LANStreamer-Technical-Specification.md) - API details and system architecture
+- [UI Design Specification](Admin-Dashboard-UI-Design.md) - Visual design for dashboard features
+
 ## 2. Testing Strategy
 
 ### Unit Tests
@@ -82,6 +87,8 @@ To simulate the full user journey in a real browser. We will use **Playwright**.
 ### Step 8: Audio Monitoring Feature 🔄
 
 **Objective:** Implement audio monitoring capability that allows Event Admins to listen to streams through local output devices for quality control.
+
+**Feature Specification:** See [Audio Monitoring Feature Specification](Audio-Monitoring-Feature-Specification.md) for complete technical and UI requirements.
 
 **Test:** Write comprehensive tests for the monitoring feature:
 

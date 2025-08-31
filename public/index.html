@@ -4,350 +4,262 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>LANStreamer Dashboard</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
+    <link rel="icon" type="image/svg+xml" href="/assets/placeholder-logo.svg">
+    <link crossorigin="" href="https://fonts.gstatic.com/" rel="preconnect"/>
+    <link as="style" href="https://fonts.googleapis.com/css2?display=swap&family=Inter:wght@400;500;700;900&family=Noto+Sans:wght@400;500;700;900" onload="this.rel='stylesheet'" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet"/>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <style type="text/tailwindcss">
+        :root {
+          --primary-color: #00AEEF;
+          --live-color: #4CAF50;
+          --dark-bg: #111111;
+          --card-bg: #1A1A1A;
+          --border-color: #2F2F2F;
         }
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #f5f5f5;
-            padding: 20px;
+        .status-icon {
+            transition: all 0.3s ease-in-out;
         }
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            background: white;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            padding: 30px;
+        .status-icon-outline {
+            stroke: var(--primary-color);
+            stroke-width: 2px;
+            fill: transparent;
         }
-        h1 {
-            color: #333;
-            margin-bottom: 30px;
-            text-align: center;
+        .status-icon-fill {
+            fill: var(--primary-color);
+            stroke: none;
         }
-        .audio-devices-list {
-            margin-bottom: 30px;
+        .status-icon-live .status-icon-fill {
+            fill: var(--live-color);
         }
-        .audio-device-item {
-            background: #f8f9fa;
-            border: 1px solid #e9ecef;
-            border-radius: 5px;
-            padding: 15px;
-            margin-bottom: 10px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+        .status-icon-live .status-icon-outline {
+            stroke: var(--live-color);
         }
-        .device-name {
-            font-weight: 500;
-            color: #495057;
+        .btn-gradient {
+            background-image: linear-gradient(to right, #00AEEF, #0088CC);
+            box-shadow: 0 4px 15px 0 rgba(0, 174, 239, 0.3);
         }
-        .btn {
-            padding: 8px 16px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 14px;
-            transition: all 0.2s;
+        .btn-gradient:hover {
+            background-image: linear-gradient(to right, #0088CC, #00AEEF);
+            box-shadow: 0 6px 20px 0 rgba(0, 174, 239, 0.4);
         }
-        .btn-success {
-            background-color: #28a745;
-            color: white;
+        .btn-stop-gradient {
+            background-image: linear-gradient(to right, #F85149, #D43F3A);
+            box-shadow: 0 4px 15px 0 rgba(248, 81, 73, 0.3);
         }
-        .btn-success:hover {
-            background-color: #218838;
+        .btn-stop-gradient:hover {
+            background-image: linear-gradient(to right, #D43F3A, #F85149);
+            box-shadow: 0 6px 20px 0 rgba(248, 81, 73, 0.4);
         }
-        .btn-danger {
+        .pulse-live {
+            animation: pulse-live 2s infinite;
+        }
+        @keyframes pulse-live {
+            0%, 100% {
+                box-shadow: 0 0 0 0 rgba(76, 175, 80, 0.7);
+            }
+            70% {
+                box-shadow: 0 0 0 10px rgba(76, 175, 80, 0);
+            }
+        }
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 8px;
+        }
+        .status-dot.connecting {
+            background-color: #ffa500;
+            animation: pulse 2s infinite;
+        }
+        .status-dot.online {
+            background-color: var(--live-color);
+        }
+        .status-dot.offline {
             background-color: #dc3545;
-            color: white;
         }
-        .btn-danger:hover {
-            background-color: #c82333;
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
         }
-        .btn:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-        }
-        .active-streams {
-            margin-top: 30px;
-        }
-        .stream-item {
-            background: #e8f5e8;
-            border: 1px solid #28a745;
-            border-radius: 5px;
-            padding: 20px;
-            margin-bottom: 15px;
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-        }
-        .stream-info {
-            flex: 1;
-        }
-        .stream-title {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin-bottom: 8px;
-        }
-        .stream-url {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            margin-bottom: 5px;
-            font-size: 14px;
-        }
-        .stream-url a {
-            color: #007bff;
-            text-decoration: none;
-            font-family: monospace;
-        }
-        .stream-url a:hover {
-            text-decoration: underline;
-        }
-        .stream-uptime {
-            font-size: 12px;
-            color: #6c757d;
-        }
-        .stream-controls {
-            display: flex;
-            flex-direction: column;
-            gap: 5px;
-        }
-        .btn-small {
-            padding: 4px 8px;
-            font-size: 12px;
-            border: 1px solid #ced4da;
-            background: #f8f9fa;
-            cursor: pointer;
-            border-radius: 3px;
-        }
-        .btn-small:hover {
-            background: #e9ecef;
-        }
-        .status-indicator {
-            color: #28a745;
-            font-weight: bold;
-        }
-        .control-buttons {
-            margin: 20px 0;
-            text-align: center;
-        }
-        .control-buttons .btn {
-            margin: 0 10px;
-        }
-        .loading {
-            opacity: 0.6;
-            pointer-events: none;
-        }
-        .section-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin: 30px 0 15px 0;
-        }
-        .section-header h2 {
-            margin: 0;
-        }
-        .btn-secondary {
-            background-color: #6c757d;
-            color: white;
-        }
-        .btn-secondary:hover {
-            background-color: #5a6268;
-        }
-        .btn-large {
-            padding: 12px 24px;
-            font-size: 18px;
-            font-weight: bold;
-        }
-        .device-selection {
-            background: #f8f9fa;
-            border: 1px solid #e9ecef;
-            border-radius: 5px;
-            padding: 20px;
-            margin-bottom: 20px;
-        }
-        .selection-row {
-            display: flex;
-            align-items: center;
-            margin-bottom: 15px;
-        }
-        .selection-row:last-child {
-            margin-bottom: 0;
-        }
-        .selection-row label {
-            width: 120px;
-            font-weight: 500;
-            color: #495057;
-        }
-        .device-dropdown, .quality-dropdown {
-            flex: 1;
-            padding: 8px 12px;
-            border: 1px solid #ced4da;
-            border-radius: 4px;
-            font-size: 14px;
-            background: white;
-        }
-        .device-info {
-            background: #e8f5e8;
-            border: 1px solid #c3e6c3;
-            border-radius: 5px;
-            padding: 20px;
-            margin-bottom: 20px;
-        }
-        .device-info h3 {
-            margin: 0 0 15px 0;
-            color: #155724;
-        }
-        .info-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr 1fr;
-            gap: 15px;
-        }
-        .info-item {
-            display: flex;
-            flex-direction: column;
-        }
-        .info-item .label {
-            font-weight: 500;
-            color: #495057;
-            margin-bottom: 5px;
-        }
-        .service-status {
-            background: #fff3cd;
-            border: 1px solid #ffeaa7;
-            border-radius: 5px;
-            padding: 20px;
-            margin-bottom: 20px;
-        }
-        .service-status h2 {
-            margin: 0 0 15px 0;
-            color: #856404;
-        }
-        .status-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr 1fr;
-            gap: 15px;
-            margin-bottom: 15px;
-        }
-        .status-item {
-            display: flex;
-            flex-direction: column;
-        }
-        .status-item .label {
-            font-weight: 500;
-            color: #495057;
-            margin-bottom: 5px;
-        }
-        .service-controls {
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-        }
-        .service-controls .btn {
-            flex: 1;
-            min-width: 120px;
-        }
-        @media (max-width: 768px) {
-            .info-grid, .status-grid {
-                grid-template-columns: 1fr;
-            }
-            .section-header {
-                flex-direction: column;
-                align-items: stretch;
-                gap: 10px;
-            }
-            .service-controls {
-                flex-direction: column;
-            }
+        .hidden {
+            display: none;
         }
     </style>
 </head>
-<body>
-    <div class="container">
-        <h1>LANStreamer Dashboard</h1>
+<body class="bg-[var(--dark-bg)]">
+    <div class="relative flex size-full min-h-screen flex-col bg-gradient-to-br from-[#111111] to-[#0A0A0A] dark group/design-root overflow-x-hidden" style='font-family: Inter, "Noto Sans", sans-serif;'>
         
-        <div class="service-status">
-            <h2>Icecast Server Status</h2>
-            <div class="status-grid">
-                <div class="status-item">
-                    <span class="label">Status:</span>
-                    <span id="icecastStatus" class="status-indicator">Checking...</span>
+        <header class="sticky top-0 z-50 flex items-center justify-between whitespace-nowrap border-b border-solid border-[var(--border-color)] bg-[var(--dark-bg)]/80 px-10 py-4 backdrop-blur-lg">
+            <div class="flex items-center gap-4 text-white">
+                <div class="size-8 text-[var(--primary-color)]">
+                    <img src="/assets/lanstreamer-logo.png" alt="LANStreamer" class="h-8 w-auto" id="logo-image" onerror="this.style.display='none'; document.getElementById('logo-fallback').style.display='block';">
+                    <div id="logo-fallback" style="display: none;">
+                        <svg fill="none" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+                            <g clip-path="url(#clip0_6_330)">
+                                <path clip-rule="evenodd" d="M24 0.757355L47.2426 24L24 47.2426L0.757355 24L24 0.757355ZM21 35.7574V12.2426L9.24264 24L21 35.7574Z" fill="currentColor" fill-rule="evenodd"></path>
+                            </g>
+                            <defs>
+                                <clipPath id="clip0_6_330"><rect fill="white" height="48" width="48"></rect></clipPath>
+                            </defs>
+                        </svg>
+                    </div>
                 </div>
-                <div class="status-item">
-                    <span class="label">URL:</span>
-                    <span id="icecastUrl">http://localhost:8000</span>
-                </div>
-                <div class="status-item">
-                    <span class="label">Admin:</span>
-                    <a id="icecastAdmin" href="http://localhost:8000/admin/" target="_blank">Admin Panel</a>
-                </div>
+                <h1 class="text-xl font-bold tracking-wider">LANStreamer</h1>
             </div>
-            <div class="service-controls">
-                <button id="startIcecastBtn" class="btn btn-success">Start Icecast</button>
-                <button id="stopIcecastBtn" class="btn btn-danger">Stop Icecast</button>
-                <button id="checkIcecastBtn" class="btn btn-secondary">Check Status</button>
+            
+            <div class="flex items-center gap-3">
+                <!-- Audio Devices Status -->
+                <div class="group relative flex items-center">
+                    <button id="audio-devices-indicator" class="flex h-10 w-10 cursor-pointer items-center justify-center rounded-lg border border-[var(--border-color)] bg-[var(--card-bg)] text-gray-400 transition-all hover:bg-[var(--primary-color)]/10 hover:text-[var(--primary-color)]">
+                        <span class="material-symbols-outlined status-icon">volume_up</span>
+                    </button>
+                    <div class="absolute top-full right-0 mt-2 w-72 rounded-lg bg-[var(--card-bg)] border border-[var(--border-color)] p-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none group-hover:pointer-events-auto shadow-2xl shadow-black/50">
+                        <h4 class="font-bold text-white mb-2">Audio Devices</h4>
+                        <p class="text-sm text-gray-400" id="audio-devices-status">Checking devices...</p>
+                    </div>
+                </div>
+                
+                <!-- FFmpeg Status -->
+                <div class="group relative flex items-center">
+                    <button id="ffmpeg-indicator" class="flex h-10 w-10 cursor-pointer items-center justify-center rounded-lg border border-[var(--border-color)] bg-[var(--card-bg)] text-gray-400 transition-all hover:bg-[var(--live-color)]/10 hover:text-[var(--live-color)]">
+                        <span class="material-symbols-outlined status-icon status-icon-live">settings_input_component</span>
+                    </button>
+                    <div class="absolute top-full right-0 mt-2 w-72 rounded-lg bg-[var(--card-bg)] border border-[var(--border-color)] p-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none group-hover:pointer-events-auto shadow-2xl shadow-black/50">
+                        <h4 class="font-bold text-white mb-2">FFmpeg Streams</h4>
+                        <p class="text-sm text-gray-400" id="ffmpeg-status-text">Checking status...</p>
+                    </div>
+                </div>
+                
+                <!-- Icecast Status -->
+                <div class="group relative flex items-center">
+                    <button id="icecast-indicator" class="flex h-10 w-10 cursor-pointer items-center justify-center rounded-lg border border-[var(--border-color)] bg-[var(--card-bg)] text-gray-400 transition-all hover:bg-[var(--primary-color)]/10 hover:text-[var(--primary-color)]">
+                        <span class="material-symbols-outlined status-icon">router</span>
+                    </button>
+                    <div class="absolute top-full right-0 mt-2 w-72 rounded-lg bg-[var(--card-bg)] border border-[var(--border-color)] p-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none group-hover:pointer-events-auto shadow-2xl shadow-black/50">
+                        <h4 class="font-bold text-white mb-2">Icecast Server</h4>
+                        <p class="text-sm text-gray-400" id="icecast-status-text">Checking status...</p>
+                    </div>
+                </div>
+                
+                <!-- Security Warning -->
+                <div class="group relative flex items-center">
+                    <button id="security-indicator" class="flex h-10 w-10 cursor-pointer items-center justify-center rounded-lg border border-[var(--border-color)] bg-[var(--card-bg)] text-gray-400 transition-all hover:bg-yellow-500/10 hover:text-yellow-500">
+                        <span class="material-symbols-outlined status-icon">warning</span>
+                    </button>
+                    <div class="absolute top-full right-0 mt-2 w-72 rounded-lg bg-[var(--card-bg)] border border-[var(--border-color)] p-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none group-hover:pointer-events-auto shadow-2xl shadow-black/50">
+                        <h4 class="font-bold text-white mb-2">System Status</h4>
+                        <p class="text-sm text-yellow-500" id="security-status-text">Security Warning Active</p>
+                    </div>
+                </div>
+                
+                <!-- Divider -->
+                <div class="ml-4 h-10 w-px bg-[var(--border-color)]"></div>
+                
+                <!-- User Avatar -->
+                <div class="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-10 ml-4" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuDSIzxTEv03JUEwpU1vqD79kbeH63SzCaGfIIFbumOYFeslE7o8s5BELsy84X5hdHbqgGM91dgl8SECCQAuQUyN5TzULy0C6hTXlMd2FdmoEp4c0WAiQhyasooFF0UAFZoOLRnhrfiUJjHhWPasQr2g2MWISZolmDkAER-lahc8ZqnqZSr95hHY9Z-0DIFIJDnrExTC0CHjbWsTgsGY2Pj1xH87e8JybvN0dCpF-U1oWs_K8Q3OXkC3yMhMSgHVXCilnq_8LYez-3g");'></div>
             </div>
-        </div>
+        </header>
 
-        <div class="control-buttons">
-            <button id="startStreamBtn" class="btn btn-success btn-large">🎵 Start Stream</button>
-            <button id="stopAllBtn" class="btn btn-danger">Stop All Streams</button>
-        </div>
-        
-        <div class="section-header">
-            <h2>Audio Source Selection</h2>
-            <button id="refreshDevicesBtn" class="btn btn-secondary">🔄 Refresh Devices</button>
-        </div>
-        
-        <div class="device-selection">
-            <div class="selection-row">
-                <label for="audioDeviceSelect">Audio Device:</label>
-                <select id="audioDeviceSelect" class="device-dropdown">
-                    <option value="">Loading devices...</option>
-                </select>
-            </div>
-            <div class="selection-row">
-                <label for="videoSourceSelect">Video Source:</label>
-                <select id="videoSourceSelect" class="device-dropdown">
-                    <option value="none">No Video</option>
-                    <option value="screen">Screen Capture</option>
-                    <option value="webcam">Webcam</option>
-                    <option value="window">Window Capture</option>
-                </select>
-            </div>
-        </div>
-
-        <div id="selectedDeviceInfo" class="device-info">
-            <h3>Selected Configuration</h3>
-            <div class="info-grid">
-                <div class="info-item">
-                    <span class="label">Audio:</span>
-                    <span id="selectedAudioName">None selected</span>
+        <main class="flex-1 px-4 sm:px-6 lg:px-10 py-8">
+            <div class="mx-auto max-w-7xl">
+                
+                <!-- Security Warning -->
+                <div id="security-warning" class="mb-8 p-4 rounded-xl bg-yellow-500/10 border border-yellow-500/50 text-yellow-400">
+                    <div class="flex items-center gap-3">
+                        <span class="material-symbols-outlined text-2xl">warning</span>
+                        <p class="font-medium">
+                            <strong>Security Warning:</strong> Your LANStreamer instance is running in development mode. For production use, please configure SSL and authentication.
+                        </p>
+                    </div>
                 </div>
-                <div class="info-item">
-                    <span class="label">Video:</span>
-                    <span id="selectedVideoName">No video</span>
-                </div>
-                <div class="info-item">
-                    <span class="label">Quality:</span>
-                    <select id="qualitySelect" class="quality-dropdown">
-                        <option value="high">High (320kbps)</option>
-                        <option value="medium" selected>Medium (128kbps)</option>
-                        <option value="low">Low (64kbps)</option>
-                    </select>
+                
+                <!-- Main Grid Layout -->
+                <div class="grid grid-cols-1 xl:grid-cols-3 gap-8">
+                    <div class="xl:col-span-2 space-y-8">
+                        
+                        <!-- FFmpeg Streams Section -->
+                        <div class="bg-[var(--card-bg)] border border-[var(--border-color)] rounded-2xl p-6 shadow-2xl shadow-black/30">
+                            <div class="flex items-center justify-between mb-4">
+                                <h2 class="text-xl font-bold text-white">FFmpeg Streams</h2>
+                                <button id="addStreamBtn" class="inline-flex items-center justify-center gap-2 rounded-md px-4 py-2 text-sm font-semibold text-white shadow-lg transition-all duration-300 btn-gradient">
+                                    <span class="material-symbols-outlined">add</span>
+                                    Add Stream
+                                </button>
+                            </div>
+                            <div id="streams-container" class="space-y-4">
+                                <!-- Streams will be dynamically populated here -->
+                                <div class="bg-[#111111] border border-[var(--border-color)] rounded-xl p-4 flex items-center justify-center">
+                                    <p class="text-gray-400">No active streams. Click "Add Stream" to get started.</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Audio Devices Section -->
+                        <div class="bg-[var(--card-bg)] border border-[var(--border-color)] rounded-2xl p-6 shadow-2xl shadow-black/30">
+                            <div class="flex items-center justify-between mb-4">
+                                <h2 class="text-xl font-bold text-white">Audio Devices</h2>
+                                <button id="refreshDevicesBtn" class="inline-flex items-center justify-center gap-2 rounded-md px-3 py-1.5 text-sm font-semibold text-white shadow-lg transition-all duration-300 bg-[var(--card-bg)] border border-[var(--border-color)] hover:bg-[var(--border-color)]">
+                                    <span class="material-symbols-outlined">refresh</span>
+                                    Refresh
+                                </button>
+                            </div>
+                            <div id="audio-devices-container" class="space-y-4">
+                                <!-- Audio devices will be dynamically populated here -->
+                                <div class="bg-[#111111] border border-[var(--border-color)] rounded-xl p-4 flex items-center justify-center">
+                                    <p class="text-gray-400">Loading audio devices...</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Sidebar -->
+                    <div class="space-y-8">
+                        <!-- Icecast Server Panel -->
+                        <div class="bg-[var(--card-bg)] border border-[var(--border-color)] rounded-2xl p-6 shadow-2xl shadow-black/30">
+                            <h2 class="text-xl font-bold text-white mb-4">Icecast Server</h2>
+                            <div class="space-y-5">
+                                <div>
+                                    <div class="flex justify-between items-center mb-1">
+                                        <p class="text-sm font-medium text-gray-300">Listeners</p>
+                                        <p class="text-sm font-bold text-white" id="listener-count">0</p>
+                                    </div>
+                                    <div class="w-full bg-[#111111] rounded-full h-2.5">
+                                        <div id="listener-bar" class="bg-[var(--primary-color)] h-2.5 rounded-full" style="width: 0%"></div>
+                                    </div>
+                                </div>
+                                <div>
+                                    <div class="flex justify-between items-center mb-1">
+                                        <p class="text-sm font-medium text-gray-300">Peak Listeners</p>
+                                        <p class="text-sm font-bold text-white" id="peak-listeners">0</p>
+                                    </div>
+                                    <div class="w-full bg-[#111111] rounded-full h-2.5">
+                                        <div id="peak-bar" class="bg-[var(--primary-color)] h-2.5 rounded-full" style="width: 0%"></div>
+                                    </div>
+                                </div>
+                                <div>
+                                    <div class="flex justify-between items-center mb-1">
+                                        <p class="text-sm font-medium text-gray-300">Server Status</p>
+                                        <p class="text-sm font-bold flex items-center" id="server-status-container">
+                                            <span class="status-dot connecting" id="server-status-dot"></span>
+                                            <span id="server-status">Connecting...</span>
+                                        </p>
+                                    </div>
+                                    <div class="w-full bg-[#111111] rounded-full h-2.5">
+                                        <div id="server-bar" class="h-2.5 rounded-full" style="width: 0%"></div>
+                                    </div>
+                                </div>
+                                <div class="border-t border-[var(--border-color)] pt-4 mt-4 text-xs text-gray-500">
+                                    <p><strong>Host:</strong> <span id="server-host">localhost:8000</span></p>
+                                    <p><strong>Uptime:</strong> <span id="server-uptime">--:--:--</span></p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
-        </div>
-        
-        <h2>Active Streams</h2>
-        <div id="activeStreams" class="active-streams">
-            <p>No active streams</p>
-        </div>
+        </main>
     </div>
 
     <script>
@@ -355,9 +267,6 @@
             constructor() {
                 this.audioDevices = [];
                 this.activeStreams = {};
-                this.selectedAudioDevice = null;
-                this.selectedVideoSource = 'none';
-                this.selectedQuality = 'medium';
                 this.isLoading = false;
                 this.icecastStatus = 'unknown';
                 this.init();
@@ -368,58 +277,58 @@
                 await this.checkIcecastStatus();
                 this.setupEventListeners();
                 this.startStatusPolling();
-                this.updateSelectedDeviceInfo();
+                this.updateStatusIndicators();
             }
 
             async loadAudioDevices() {
                 try {
                     const response = await fetch('/api/system/audio-devices');
                     this.audioDevices = await response.json();
-                    this.renderAudioDeviceDropdown();
+                    this.renderAudioDevices();
+                    this.updateHeaderTooltip('audio-devices-status', `${this.audioDevices.length} Devices Online`);
                 } catch (error) {
                     console.error('Failed to load audio devices:', error);
-                    const select = document.getElementById('audioDeviceSelect');
-                    select.innerHTML = '<option value="">Failed to load devices</option>';
+                    this.updateHeaderTooltip('audio-devices-status', 'Failed to load devices');
+                    this.renderAudioDevicesError();
                 }
             }
 
-            renderAudioDeviceDropdown() {
-                const select = document.getElementById('audioDeviceSelect');
+            renderAudioDevices() {
+                const container = document.getElementById('audio-devices-container');
                 
                 if (this.audioDevices.length === 0) {
-                    select.innerHTML = '<option value="">No audio devices found</option>';
+                    container.innerHTML = `
+                        <div class="bg-[#111111] border border-[var(--border-color)] rounded-xl p-4 flex items-center justify-center">
+                            <p class="text-gray-400">No audio devices detected. Please connect a device.</p>
+                        </div>
+                    `;
                     return;
                 }
 
-                select.innerHTML = [
-                    '<option value="">Select an audio device...</option>',
-                    ...this.audioDevices.map(device => 
-                        `<option value="${device.id}">${device.name} (${device.id})</option>`
-                    )
-                ].join('');
-
-                // Auto-select first device if none selected
-                if (!this.selectedAudioDevice && this.audioDevices.length > 0) {
-                    this.selectedAudioDevice = this.audioDevices[0];
-                    select.value = this.selectedAudioDevice.id;
-                    this.updateSelectedDeviceInfo();
-                }
+                container.innerHTML = this.audioDevices.map(device => `
+                    <div class="flex items-center justify-between p-4 bg-[#111111] rounded-xl border border-[var(--border-color)]">
+                        <div class="flex items-center gap-3">
+                            <span class="material-symbols-outlined text-2xl text-[var(--live-color)]">mic</span>
+                            <div>
+                                <p class="font-semibold text-white">${device.name}</p>
+                                <p class="text-sm text-gray-400">${device.id}</p>
+                            </div>
+                        </div>
+                        <label class="inline-flex relative items-center cursor-pointer">
+                            <input class="sr-only peer device-toggle" type="checkbox" data-device-id="${device.id}"/>
+                            <div class="w-11 h-6 bg-[#21262D] peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-[var(--primary-color)]/50 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[var(--primary-color)]"></div>
+                        </label>
+                    </div>
+                `).join('');
             }
 
-            updateSelectedDeviceInfo() {
-                const audioName = document.getElementById('selectedAudioName');
-                const videoName = document.getElementById('selectedVideoName');
-
-                audioName.textContent = this.selectedAudioDevice ? 
-                    this.selectedAudioDevice.name : 'None selected';
-                
-                const videoOptions = {
-                    'none': 'No video',
-                    'screen': 'Screen capture',
-                    'webcam': 'Webcam',
-                    'window': 'Window capture'
-                };
-                videoName.textContent = videoOptions[this.selectedVideoSource] || 'Unknown';
+            renderAudioDevicesError() {
+                const container = document.getElementById('audio-devices-container');
+                container.innerHTML = `
+                    <div class="bg-[#111111] border border-[var(--border-color)] rounded-xl p-4 flex items-center justify-center">
+                        <p class="text-red-400">Failed to load audio devices</p>
+                    </div>
+                `;
             }
 
             async checkIcecastStatus() {
@@ -427,294 +336,55 @@
                     const response = await fetch('/api/system/icecast-status');
                     const data = await response.json();
                     this.icecastStatus = data.running ? 'running' : 'stopped';
-                    this.updateIcecastUI();
+                    this.updateIcecastUI(data);
+                    this.updateHeaderTooltip('icecast-status-text', data.running ? 'Server Online' : 'Server Offline');
                 } catch (error) {
                     console.error('Failed to check Icecast status:', error);
                     this.icecastStatus = 'unknown';
-                    this.updateIcecastUI();
+                    this.updateHeaderTooltip('icecast-status-text', 'Status Unknown');
                 }
             }
 
-            updateIcecastUI() {
-                const statusElement = document.getElementById('icecastStatus');
-                const startBtn = document.getElementById('startIcecastBtn');
-                const stopBtn = document.getElementById('stopIcecastBtn');
+            updateIcecastUI(data) {
+                const serverStatus = document.getElementById('server-status');
+                const serverStatusDot = document.getElementById('server-status-dot');
+                const serverBar = document.getElementById('server-bar');
+                const listenerCount = document.getElementById('listener-count');
+                const listenerBar = document.getElementById('listener-bar');
+                const serverHost = document.getElementById('server-host');
+                const serverUptime = document.getElementById('server-uptime');
 
-                statusElement.className = 'status-indicator';
-                
-                switch (this.icecastStatus) {
-                    case 'running':
-                        statusElement.textContent = '🟢 Running';
-                        statusElement.style.color = '#28a745';
-                        startBtn.disabled = true;
-                        stopBtn.disabled = false;
-                        break;
-                    case 'stopped':
-                        statusElement.textContent = '🔴 Stopped';
-                        statusElement.style.color = '#dc3545';
-                        startBtn.disabled = false;
-                        stopBtn.disabled = true;
-                        break;
-                    default:
-                        statusElement.textContent = '⚠️ Unknown';
-                        statusElement.style.color = '#ffc107';
-                        startBtn.disabled = false;
-                        stopBtn.disabled = false;
-                        break;
-                }
-            }
-
-            renderActiveStreams() {
-                const container = document.getElementById('activeStreams');
-                const streams = Object.values(this.activeStreams);
-                
-                if (streams.length === 0) {
-                    container.innerHTML = '<p>No active streams</p>';
-                    return;
-                }
-
-                container.innerHTML = streams.map(stream => {
-                    const streamUrl = `http://localhost:8000/${stream.id}`;
-                    return `
-                        <div class="stream-item" data-stream-id="${stream.id}">
-                            <div class="stream-info">
-                                <div class="stream-title">
-                                    <span class="device-name">${stream.name}</span>
-                                    <span class="status-indicator">🔴 Live</span>
-                                </div>
-                                <div class="stream-url">
-                                    <span class="label">Listen URL:</span>
-                                    <a href="${streamUrl}" target="_blank">${streamUrl}</a>
-                                    <button class="btn btn-small copy-url-btn" data-url="${streamUrl}">📋</button>
-                                </div>
-                                ${stream.uptime ? `<div class="stream-uptime">Uptime: ${this.formatUptime(stream.uptime)}</div>` : ''}
-                            </div>
-                            <div class="stream-controls">
-                                <button class="btn btn-danger stop-stream-btn" data-stream-id="${stream.id}">
-                                    Stop
-                                </button>
-                            </div>
-                        </div>
-                    `;
-                }).join('');
-
-                // Add click handlers for copy buttons
-                document.querySelectorAll('.copy-url-btn').forEach(btn => {
-                    btn.addEventListener('click', (e) => {
-                        const url = e.target.dataset.url;
-                        navigator.clipboard.writeText(url).then(() => {
-                            e.target.textContent = '✓';
-                            setTimeout(() => {
-                                e.target.textContent = '📋';
-                            }, 1000);
-                        });
-                    });
-                });
-            }
-
-            formatUptime(seconds) {
-                const hours = Math.floor(seconds / 3600);
-                const minutes = Math.floor((seconds % 3600) / 60);
-                const secs = seconds % 60;
-                
-                if (hours > 0) {
-                    return `${hours}h ${minutes}m ${secs}s`;
-                } else if (minutes > 0) {
-                    return `${minutes}m ${secs}s`;
+                if (data.running) {
+                    serverStatus.textContent = 'Online';
+                    serverStatusDot.className = 'status-dot online';
+                    serverBar.className = 'bg-[var(--live-color)] h-2.5 rounded-full';
+                    serverBar.style.width = '100%';
+                    
+                    listenerCount.textContent = data.listeners || 0;
+                    const listenerPercent = Math.min((data.listeners || 0) / 100 * 100, 100);
+                    listenerBar.style.width = `${listenerPercent}%`;
+                    
+                    if (data.uptime) {
+                        serverUptime.textContent = this.formatUptime(data.uptime);
+                    }
+                } else if (data.installed === false) {
+                    serverStatus.textContent = 'Not Found';
+                    serverStatusDot.className = 'status-dot offline';
+                    serverBar.className = 'bg-red-400 h-2.5 rounded-full';
+                    serverBar.style.width = '0%';
+                    
+                    listenerCount.textContent = '0';
+                    listenerBar.style.width = '0%';
+                    serverUptime.textContent = '--:--:--';
                 } else {
-                    return `${secs}s`;
-                }
-            }
-
-            setupEventListeners() {
-                // Audio device selection
-                document.getElementById('audioDeviceSelect').addEventListener('change', (e) => {
-                    const deviceId = e.target.value;
-                    this.selectedAudioDevice = this.audioDevices.find(d => d.id === deviceId);
-                    this.updateSelectedDeviceInfo();
-                });
-
-                // Video source selection
-                document.getElementById('videoSourceSelect').addEventListener('change', (e) => {
-                    this.selectedVideoSource = e.target.value;
-                    this.updateSelectedDeviceInfo();
-                });
-
-                // Quality selection
-                document.getElementById('qualitySelect').addEventListener('change', (e) => {
-                    this.selectedQuality = e.target.value;
-                });
-
-                // Refresh devices button
-                document.getElementById('refreshDevicesBtn').addEventListener('click', async () => {
-                    await this.loadAudioDevices();
-                });
-
-                // Icecast controls
-                document.getElementById('startIcecastBtn').addEventListener('click', async () => {
-                    await this.startIcecast();
-                });
-
-                document.getElementById('stopIcecastBtn').addEventListener('click', async () => {
-                    await this.stopIcecast();
-                });
-
-                document.getElementById('checkIcecastBtn').addEventListener('click', async () => {
-                    await this.checkIcecastStatus();
-                });
-
-                // Stream controls
-                document.getElementById('startStreamBtn').addEventListener('click', async () => {
-                    await this.startSelectedStream();
-                });
-
-                document.getElementById('stopAllBtn').addEventListener('click', () => {
-                    this.stopAllStreams();
-                });
-
-                // Stream management
-                document.addEventListener('click', async (e) => {
-                    if (e.target.classList.contains('stop-stream-btn')) {
-                        const streamId = e.target.dataset.streamId;
-                        await this.stopStream(streamId);
-                    }
-                });
-            }
-
-            async startSelectedStream() {
-                if (this.isLoading) return;
-                
-                if (!this.selectedAudioDevice) {
-                    alert('Please select an audio device first');
-                    return;
-                }
-
-                this.setLoading(true);
-
-                try {
-                    const qualitySettings = {
-                        'low': { bitrate: '64k', sampleRate: 22050 },
-                        'medium': { bitrate: '128k', sampleRate: 44100 },
-                        'high': { bitrate: '320k', sampleRate: 48000 }
-                    };
-
-                    const streamConfig = {
-                        id: `stream_${Date.now()}`,
-                        deviceId: this.selectedAudioDevice.id,
-                        name: `${this.selectedAudioDevice.name} (${this.selectedQuality})`,
-                        audioDevice: this.selectedAudioDevice,
-                        videoSource: this.selectedVideoSource,
-                        quality: qualitySettings[this.selectedQuality]
-                    };
-
-                    const response = await fetch('/api/streams/start', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify(streamConfig)
-                    });
-
-                    if (response.ok) {
-                        const result = await response.json();
-                        console.log('Stream started:', result);
-                        await this.loadStreamStatus();
-                    } else {
-                        const error = await response.json();
-                        console.error('Failed to start stream:', error);
-                        alert(`Failed to start stream: ${error.error || 'Unknown error'}`);
-                    }
-                } catch (error) {
-                    console.error('Error starting stream:', error);
-                    alert(`Error starting stream: ${error.message}`);
-                } finally {
-                    this.setLoading(false);
-                }
-            }
-
-            async startIcecast() {
-                try {
-                    const response = await fetch('/api/system/icecast/start', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        }
-                    });
-
-                    if (response.ok) {
-                        await this.checkIcecastStatus();
-                    } else {
-                        const error = await response.json();
-                        alert(`Failed to start Icecast: ${error.error || 'Unknown error'}`);
-                    }
-                } catch (error) {
-                    console.error('Error starting Icecast:', error);
-                    alert(`Error starting Icecast: ${error.message}`);
-                }
-            }
-
-            async stopIcecast() {
-                try {
-                    const response = await fetch('/api/system/icecast/stop', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        }
-                    });
-
-                    if (response.ok) {
-                        await this.checkIcecastStatus();
-                    } else {
-                        const error = await response.json();
-                        alert(`Failed to stop Icecast: ${error.error || 'Unknown error'}`);
-                    }
-                } catch (error) {
-                    console.error('Error stopping Icecast:', error);
-                    alert(`Error stopping Icecast: ${error.message}`);
-                }
-            }
-
-            async stopStream(streamId) {
-                if (this.isLoading) return;
-                this.setLoading(true);
-
-                try {
-                    const response = await fetch('/api/streams/stop', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({ id: streamId })
-                    });
-
-                    if (response.ok) {
-                        delete this.activeStreams[streamId];
-                        this.renderActiveStreams();
-                    }
-                } catch (error) {
-                    console.error('Error stopping stream:', error);
-                } finally {
-                    this.setLoading(false);
-                }
-            }
-
-
-
-            async stopAllStreams() {
-                try {
-                    const response = await fetch('/api/streams/stop-all', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        }
-                    });
-
-                    if (response.ok) {
-                        this.activeStreams = {};
-                        this.renderActiveStreams();
-                    }
-                } catch (error) {
-                    console.error('Error stopping all streams:', error);
+                    serverStatus.textContent = 'Connecting...';
+                    serverStatusDot.className = 'status-dot connecting';
+                    serverBar.className = 'bg-orange-400 h-2.5 rounded-full';
+                    serverBar.style.width = '50%';
+                    
+                    listenerCount.textContent = '0';
+                    listenerBar.style.width = '0%';
+                    serverUptime.textContent = '--:--:--';
                 }
             }
 
@@ -729,27 +399,175 @@
                     });
                     
                     this.renderActiveStreams();
+                    this.updateHeaderTooltip('ffmpeg-status-text', 
+                        Object.keys(this.activeStreams).length > 0 ? 
+                        `${Object.keys(this.activeStreams).length} Stream${Object.keys(this.activeStreams).length > 1 ? 's' : ''} Live` : 
+                        'No Active Streams'
+                    );
                 } catch (error) {
                     console.error('Failed to load stream status:', error);
+                    this.updateHeaderTooltip('ffmpeg-status-text', 'Status Unknown');
                 }
             }
 
+            renderActiveStreams() {
+                const container = document.getElementById('streams-container');
+                const streams = Object.values(this.activeStreams);
+                
+                if (streams.length === 0) {
+                    container.innerHTML = `
+                        <div class="bg-[#111111] border border-[var(--border-color)] rounded-xl p-4 flex items-center justify-center">
+                            <p class="text-gray-400">No active streams. Click "Add Stream" to get started.</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                container.innerHTML = streams.map(stream => `
+                    <div class="bg-[#111111] border border-[var(--border-color)] rounded-xl p-4 flex items-center justify-between">
+                        <div class="flex items-center gap-4">
+                            <div class="w-2 h-10 rounded-full bg-[var(--live-color)] pulse-live"></div>
+                            <div>
+                                <p class="font-semibold text-white">${stream.name}</p>
+                                <p class="text-sm text-[var(--live-color)] font-medium flex items-center gap-1">
+                                    <span class="material-symbols-outlined text-sm">circle</span> Live
+                                </p>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-4">
+                            <span class="text-sm font-mono text-gray-500">${stream.quality?.bitrate || '128k'}</span>
+                            <button class="inline-flex items-center justify-center gap-2 rounded-md px-4 py-2 text-sm font-semibold text-white shadow-lg transition-all duration-300 btn-stop-gradient" onclick="dashboard.stopStream('${stream.id}')">
+                                <span class="material-symbols-outlined">stop</span>
+                                Stop
+                            </button>
+                        </div>
+                    </div>
+                `).join('');
+            }
+
+            async stopStream(streamId) {
+                if (this.isLoading) return;
+                this.setLoading(true);
+
+                try {
+                    const response = await fetch('/api/streams/stop', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ id: streamId })
+                    });
+
+                    if (response.ok) {
+                        delete this.activeStreams[streamId];
+                        this.renderActiveStreams();
+                        this.showNotification('Stream stopped successfully', 'success');
+                    }
+                } catch (error) {
+                    console.error('Error stopping stream:', error);
+                    this.showNotification('Failed to stop stream', 'error');
+                } finally {
+                    this.setLoading(false);
+                }
+            }
+
+            updateHeaderTooltip(elementId, text) {
+                const element = document.getElementById(elementId);
+                if (element) {
+                    element.textContent = text;
+                }
+            }
+
+            updateStatusIndicators() {
+                // Update header indicator colors based on status
+                const audioIndicator = document.getElementById('audio-devices-indicator');
+                const ffmpegIndicator = document.getElementById('ffmpeg-indicator');
+                const icecastIndicator = document.getElementById('icecast-indicator');
+                
+                // Audio devices indicator
+                if (this.audioDevices.length > 0) {
+                    audioIndicator.querySelector('.status-icon').className = 'material-symbols-outlined status-icon text-[var(--live-color)]';
+                }
+                
+                // FFmpeg indicator
+                if (Object.keys(this.activeStreams).length > 0) {
+                    ffmpegIndicator.querySelector('.status-icon').className = 'material-symbols-outlined status-icon status-icon-live text-[var(--live-color)]';
+                }
+                
+                // Icecast indicator
+                if (this.icecastStatus === 'running') {
+                    icecastIndicator.querySelector('.status-icon').className = 'material-symbols-outlined status-icon text-[var(--live-color)]';
+                }
+            }
+
+            formatUptime(seconds) {
+                const hours = Math.floor(seconds / 3600);
+                const minutes = Math.floor((seconds % 3600) / 60);
+                const secs = seconds % 60;
+                return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+            }
+
+            setupEventListeners() {
+                // Refresh devices button
+                document.getElementById('refreshDevicesBtn').addEventListener('click', async () => {
+                    await this.loadAudioDevices();
+                    this.showNotification('Audio devices refreshed', 'info');
+                });
+
+                // Add stream button
+                document.getElementById('addStreamBtn').addEventListener('click', () => {
+                    this.showNotification('Stream configuration modal will be implemented in next phase', 'info');
+                });
+            }
+
             startStatusPolling() {
-                setInterval(() => {
-                    this.loadStreamStatus();
+                // Poll every 5 seconds
+                setInterval(async () => {
+                    await this.loadStreamStatus();
+                    await this.checkIcecastStatus();
+                    this.updateStatusIndicators();
                 }, 5000);
+            }
+
+            showNotification(message, type = 'info') {
+                const notification = document.createElement('div');
+                notification.className = `fixed top-20 right-4 z-50 p-3 rounded-lg shadow-lg transition-all duration-300 transform translate-x-full`;
+                
+                const colors = {
+                    'info': 'bg-blue-500',
+                    'success': 'bg-green-500', 
+                    'error': 'bg-red-500'
+                };
+                
+                notification.className += ` ${colors[type] || colors.info} text-white`;
+                notification.textContent = message;
+                
+                document.body.appendChild(notification);
+                
+                // Slide in
+                setTimeout(() => {
+                    notification.classList.remove('translate-x-full');
+                }, 100);
+                
+                // Slide out and remove
+                setTimeout(() => {
+                    notification.classList.add('translate-x-full');
+                    setTimeout(() => {
+                        if (notification.parentNode) {
+                            notification.parentNode.removeChild(notification);
+                        }
+                    }, 300);
+                }, 3000);
             }
 
             setLoading(loading) {
                 this.isLoading = loading;
-                const container = document.querySelector('.container');
-                container.classList.toggle('loading', loading);
+                // Could add loading states to buttons here
             }
         }
 
         // Initialize dashboard when page loads
+        let dashboard;
         document.addEventListener('DOMContentLoaded', () => {
-            new LANStreamerDashboard();
+            dashboard = new LANStreamerDashboard();
         });
     </script>
 </body>
