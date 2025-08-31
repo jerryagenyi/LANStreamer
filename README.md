@@ -15,8 +15,11 @@ LANStreamer/
 ├── frontend/                               # Frontend code (Vue.js)
 ├── tests/                                  # Automated tests
 ├── docs/                                   # Comprehensive documentation
+│   ├── README.md                           # Documentation index and overview  
+│   ├── File-Relationships-Guide.md         # Documentation maintenance guide
 │   ├── LANStreamer-PRD.md                  # Product Requirements Document
 │   ├── LANStreamer-TDD.md                  # Test-Driven Development Plan
+│   ├── LANStreamer-Technical-Specification.md # Technical Architecture
 │   ├── Admin-Dashboard-UI-Design.md        # UI Design Specifications
 │   ├── Audio-Monitoring-Feature-Specification.md # Monitoring Feature Specs
 │   └── env-example.md                      # Environment Configuration Guide
@@ -42,7 +45,7 @@ LANStreamer/
 
 LANStreamer simplifies the workflow by acting as a central control panel for three core components:
 
-1.  **Audio Device:** A multi-channel audio interface (e.g., Behringer XR18) captures audio and sends it to the host PC.
+1.  **Audio Input:** Any detected audio device (microphone, audio interface, virtual audio cable) provides audio to the host PC.
 2.  **FFmpeg:** This powerful tool reads the audio channels, encodes them, and pushes them to the streaming server.
 3.  **Icecast:** The open-source streaming server that broadcasts the streams to any connected client on the network.
 
@@ -66,8 +69,32 @@ LANStreamer simplifies the workflow by acting as a central control panel for thr
 ### Prerequisites
 
 - A PC running Windows, macOS, or Linux.
-- A multi-channel audio interface (e.g., Behringer XR18).
-- The **X AIR EDIT** application for routing your audio interface channels.
+- Audio input devices (built-in microphone, USB audio interface, virtual audio cables, etc.).
+
+### Audio Device Configuration
+
+LANStreamer automatically detects and works with **any audio devices** available on your system. No specific hardware or software is required - the application is designed to be flexible and work with your existing setup.
+
+#### For Simple Use Cases
+- **Single Audio Source**: Use your computer's built-in microphone or a USB microphone
+- **Basic Streaming**: Perfect for presentations, meetings, or simple audio broadcasting
+- **Demo Mode**: Optional test audio file for demonstrations (see [`assets/README.md`](assets/README.md))
+
+#### For Professional/Multi-Channel Applications
+For advanced scenarios like **language interpretation** where you need multiple audio sources:
+
+1. **Audio Routing**: You're responsible for routing your audio sources to devices that LANStreamer can detect
+2. **Professional Interfaces**: Use multi-channel audio interfaces (e.g., Behringer XR18, Focusrite Scarlett series)
+3. **Virtual Audio**: Use virtual audio routing software like VB-Cable, Dante Virtual Soundcard (DVS), or similar
+
+#### Example: Language Interpretation Setup
+If using **Dante Virtual Soundcard** for interpretation:
+1. Configure audio routing in **Dante Controller** (not LANStreamer)
+2. Route interpreter microphones and floor audio to virtual audio channels
+3. LANStreamer detects these virtual channels as available input devices
+4. Create separate streams for each language using LANStreamer's interface
+
+> **📝 Note:** Detailed setup guides for specific hardware configurations are available in the [`manual-setup/`](manual-setup/) folder.
 
 ### Running the Web Application (Recommended)
 
@@ -106,9 +133,31 @@ If you wish to understand the core components or run the system without the web 
 
 ---
 
+## Documentation
+
+Comprehensive documentation is available in the [`docs/`](docs/) directory:
+
+### 📋 **Core Documentation**
+- **[Documentation Index](docs/README.md)** - Overview and current implementation status
+- **[Product Requirements](docs/LANStreamer-PRD.md)** - Features, user stories, and project scope
+- **[Technical Specifications](docs/LANStreamer-Technical-Specification.md)** - API documentation and system architecture
+- **[Test-Driven Development Plan](docs/LANStreamer-TDD.md)** - Development methodology and testing strategy
+
+### 🎨 **Design & Features**
+- **[UI Design Specifications](docs/Admin-Dashboard-UI-Design.md)** - Complete visual design guidelines
+- **[Audio Monitoring Feature](docs/Audio-Monitoring-Feature-Specification.md)** - Professional monitoring capabilities
+
+### ⚙️ **Configuration & Maintenance**
+- **[Environment Configuration Guide](docs/env-example.md)** - Detailed environment setup
+- **[File Relationships Guide](docs/File-Relationships-Guide.md)** - Documentation maintenance
+
+### 🔧 **Setup Guides**
+- **[Manual Setup](manual-setup/README.md)** - Hardware-specific configuration guides
+- **[Test Assets](assets/README.md)** - Sample audio files and testing resources
+
 ## Configuration
 
-The application uses environment variables. Create a `.env` file in the root directory by copying `.env.example`.
+The application uses environment variables. Create a `.env` file in the root directory by copying `.env.example`. For detailed configuration options, see the [Environment Configuration Guide](docs/env-example.md).
 
 ## Technology Stack
 

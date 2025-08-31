@@ -40,6 +40,13 @@ This directory contains comprehensive documentation for the LANStreamer project.
   - Security considerations and production deployment settings
   - Platform-specific configuration notes
 
+### Maintenance Documentation
+
+- **[File-Relationships-Guide.md](./File-Relationships-Guide.md)** - Documentation Maintenance Guide
+  - **New:** File dependencies and update relationships
+  - Change propagation checklist for documentation consistency
+  - Maintenance schedule and quality standards
+
 ## Development Workflow
 
 This project follows a **Test-Driven Development (TDD)** approach:

@@ -27,7 +27,19 @@ A comprehensive step-by-step solution for setting up your multi-language audio s
 
 ## Overview
 
-This guide provides an alternative to the FFmpeg-based LANStreamer setup, designed for environments using Dante-enabled mixers or audio interfaces. It uses Dante Virtual Soundcard (DVS) to expose Dante audio channels as Windows audio devices, then offers multiple streaming software options including Ezstream (recommended), FFmpeg, VLC, OBS, and others.
+This guide provides an alternative to the FFmpeg-based LANStreamer setup, designed for environments using Dante-enabled mixers or audio interfaces. It uses Dante Virtual Soundcard (DVS) to expose Dante audio channels as Windows audio devices, then offers multiple streaming software options including FFmpeg (recommended), Ezstream, VLC, OBS, and others.
+
+### ✅ **Real-World Testing Status**
+- **Steps 1-7**: ✅ **Successfully tested and confirmed working**
+- **FFmpeg Direct Streaming**: ✅ **Confirmed working with live audio**
+- **Ezstream Setup**: ⚠️ **Known issues** - use FFmpeg approach instead
+- **Other options**: 🔄 **Available but not extensively tested**
+
+### 🎯 **Recommended Focus Based on Testing**
+Based on what I have personlally tested - For reliable production deployment, focus on:
+1. **Option A (Single Stream Testing)** - Working and tested
+2. **Option B (Multi-Stream Production)** - Working and tested
+3. **Skip Option C (Ezstream)** initially due to known complexity issues
 
 > 📖 **Understanding the Concept**: Before starting, read [LANStreamer Audio Pipeline Concepts](LANStreamer-Audio-Pipeline-Concepts.md) to understand how audio flows from sources to listeners. This is especially important for Dante setups where network audio routing can be complex.
 
@@ -189,8 +201,8 @@ Since DVS exposes each Dante receive channel as separate Windows audio devices, 
 
 | Software | Pros | Cons | Best For |
 |----------|------|------|----------|
-| **Ezstream** | Purpose-built for Icecast, reliable, handles MP3 natively, stdin piping | Linux/WSL only, command-line | **Recommended for reliability** |
-| **FFmpeg** | Most flexible, single batch file, professional quality | Complex setup, streaming protocol issues | Production environments (when working) |
+| **FFmpeg** | ✅ **Tested & Working**, single batch file, professional quality, Windows native | Learning curve for configuration | ⭐ **RECOMMENDED: Production environments** |
+| **Ezstream** | Purpose-built for Icecast, handles MP3 natively, stdin piping | ⚠️ **Setup complexity issues**, Linux/WSL only, command-line | Avoid initially - use FFmpeg instead |
 | **OBS Studio** | GUI-based, multiple sources, familiar to many users | Heavier resource usage, more complex setup | Users comfortable with streaming software |
 | **VLC Media Player** | Lightweight, often pre-installed, simple commands | Limited streaming features, basic quality controls | Quick testing and simple setups |
 | **GStreamer** | Modular, lightweight, powerful pipeline | Steeper learning curve, verbose syntax | Advanced users, custom pipelines |
@@ -1111,12 +1123,24 @@ If FFmpeg direct streaming doesn't work for your setup, try these alternatives i
 
 ## Recommended Setup Order
 
-1. **Start with FFmpeg Direct (Windows)** - Now working reliably with DVS ✅ **RECOMMENDED**
-2. **Try Ezstream + FFmpeg (WSL)** - Alternative if you prefer Linux environment
-3. **Use VLC** - Quick to test, likely already installed
-4. **Use OBS** - If you need GUI and are familiar with streaming software
-5. **Consider GStreamer** - For advanced users who need custom pipelines
-6. **Fall back to BUTT** - Multiple instances required, GUI-based fallback only
+### ✅ **Proven & Tested (Real-World)**
+1. **FFmpeg Direct (Windows)** - ✅ **TESTED & WORKING** ⭐ **HIGHLY RECOMMENDED**
+   - **Steps 1-7**: Confirmed working with live audio streaming
+   - **Option A & B**: Both single and multi-stream approaches tested
+   - **Production Ready**: Use `stream.bat` and `start_dvs_streams.bat`
+
+### ⚠️ **Alternative Options (Use Only If Needed)**
+2. **Ezstream + FFmpeg (WSL)** - ⚠️ **Known setup complexity** - avoid initially
+3. **VLC** - Quick to test, likely already installed, but limited features
+4. **OBS** - If you need GUI and are familiar with streaming software
+5. **GStreamer** - For advanced users who need custom pipelines
+6. **BUTT** - Multiple instances required, GUI-based fallback only
+
+### 🎯 **Production Deployment Recommendation**
+- **Start with Steps 1-7** (confirmed working)
+- **Use Option A for testing**, then **Option B for production**
+- **Save time** by skipping Ezstream setup initially
+- **Focus resources** on what's proven to work reliably
 
 ## Troubleshooting All Options
 
@@ -1405,7 +1429,16 @@ Use the same HTML interface from the standard LANStreamer guide, updating the st
 
 ## Summary
 
-This DVS-based LANStreamer setup provides a professional-grade alternative to the FFmpeg approach, particularly suitable for environments already using Dante audio networking. While it requires commercial software licenses, it offers:
+This DVS-based LANStreamer setup provides a professional-grade alternative to the FFmpeg approach, particularly suitable for environments already using Dante audio networking. 
+
+### ✅ **Real-World Implementation Success**
+This guide has been **successfully implemented and tested** in a live environment:
+- **Steps 1-7**: All confirmed working with actual DVS hardware
+- **Live Audio Streaming**: Successfully streaming audio through FFmpeg to Icecast
+- **Production Ready**: The FFmpeg direct approach (Options A & B) is production-ready
+- **Time Efficient**: Focus on proven methods saves implementation time
+
+While it requires commercial software licenses, it offers:
 
 ### Key Benefits
 - **Professional Audio Routing**: Dante's industry-standard networking
