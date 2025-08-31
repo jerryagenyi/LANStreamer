@@ -178,6 +178,33 @@
   - [ ] Automated releases and packaging
   - [ ] Documentation generation
 
+#### Icecast Configuration Management
+- [ ] **Dynamic Configuration System**
+  - [ ] Environment variable support for Icecast XML configuration
+  - [ ] Template-based configuration generation
+  - [ ] Script preprocessing for `icecast.xml` from `.env` variables
+  - [ ] Dynamic client limits based on system capacity
+- [ ] **Configuration Options**
+  - [ ] **Option 1**: Preprocessing with `envsubst` script
+    ```bash
+    envsubst < icecast.template.xml > /etc/icecast2/icecast.xml
+    ```
+  - [ ] **Option 2**: Shell substitution with `sed`/`awk`
+    ```bash
+    sed -i "s/CLIENT_LIMIT_PLACEHOLDER/$MAX_CLIENTS/" /etc/icecast2/icecast.xml
+    ```
+  - [ ] **Option 3**: Config management tools (Ansible, Chef, Docker templating)
+- [ ] **Docker Integration**
+  - [ ] Entrypoint script to generate `icecast.xml` from template and `.env`
+  - [ ] Mount volume with preprocessed config
+  - [ ] Scale listener limits based on container resources or host metrics
+- [ ] **Template Variables**
+  - [ ] `MAX_CLIENTS` - Maximum concurrent listeners
+  - [ ] `ADMIN_PASSWORD` - Icecast admin password from environment
+  - [ ] `SOURCE_PASSWORD` - Stream source password from environment
+  - [ ] `PORT` - Icecast server port configuration
+  - [ ] `HOSTNAME` - Server hostname/IP configuration
+
 ---
 
 ### 🐛 Known Issues to Address

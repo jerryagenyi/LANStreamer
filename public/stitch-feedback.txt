@@ -1,3 +1,9 @@
+TODO:
+- change logo to our logo and update its URL to link back to dashboard if in admin mode, else it should link back to home page 'localhost/3001'.
+
+
+=======
+
 I gave these feedback to imporve the Google Stitch Design. Extract the functional aspects from these to know what to include in the coding of the design based off the final design we have now:
 
 -----------------------------------
@@ -23,5 +29,12 @@ the main room audio should include an option to change this audio source (it wil
 
 FFMpeg status should read 'FFmpeg Installed and Running'. if not installed should read 'Fpeg not installed (or should we use 'not detected'?) with a in to ou guide on hw to install it (). change 'Audio Devices' to 'Audio Devices captured by FFmpeg'. for the Audio devices section, please add to the right also 'Refresh device list'. emember for both 'Audio Devices' and 'Video Sources captured by FFmpeg'. ensure the geneated code is very well commentd to describe the functions and anything that needs o be understood.
 
+-----------------------------------=====
+
+there should be option to edit a stream and to delete it.
 -----------------------------------
------------------------------------
+
+under icecast server, listeners should be over 100, eg x/100. because that is our max listeners.
+
+
+ there should also be a link under uptime to also say 'not installed' and give a link or guide to installation and setup to read 'setup icecast server' and link it to (https://github.com/jerryagenyi/LANStreamer/blob/main/docs/guides/icecast-installation.md).

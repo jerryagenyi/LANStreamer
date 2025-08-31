@@ -1,0 +1,697 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LANStreamer Dashboard</title>
+    <link rel="icon" type="image/svg+xml" href="/assets/placeholder-logo.svg">
+    <link crossorigin="" href="https://fonts.gstatic.com/" rel="preconnect"/>
+    <link as="style" href="https://fonts.googleapis.com/css2?display=swap&family=Inter:wght@400;500;700;900&family=Noto+Sans:wght@400;500;700;900" onload="this.rel='stylesheet'" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet"/>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <style type="text/tailwindcss">
+        :root {
+          --primary-color: #00AEEF;
+          --live-color: #4CAF50;
+          --dark-bg: #111111;
+          --card-bg: #1A1A1A;
+          --border-color: #2F2F2F;
+        }
+        .status-icon {
+            transition: all 0.3s ease-in-out;
+        }
+        .status-icon-outline {
+            stroke: var(--primary-color);
+            stroke-width: 2px;
+            fill: transparent;
+        }
+        .status-icon-fill {
+            fill: var(--primary-color);
+            stroke: none;
+        }
+        .status-icon-live .status-icon-fill {
+            fill: var(--live-color);
+        }
+        .status-icon-live .status-icon-outline {
+            stroke: var(--live-color);
+        }
+        .btn-gradient {
+            background-image: linear-gradient(to right, #00AEEF, #0088CC);
+            box-shadow: 0 4px 15px 0 rgba(0, 174, 239, 0.3);
+        }
+        .btn-gradient:hover {
+            background-image: linear-gradient(to right, #0088CC, #00AEEF);
+            box-shadow: 0 6px 20px 0 rgba(0, 174, 239, 0.4);
+        }
+        .btn-stop-gradient {
+            background-image: linear-gradient(to right, #F85149, #D43F3A);
+            box-shadow: 0 4px 15px 0 rgba(248, 81, 73, 0.3);
+        }
+        .btn-stop-gradient:hover {
+            background-image: linear-gradient(to right, #D43F3A, #F85149);
+            box-shadow: 0 6px 20px 0 rgba(248, 81, 73, 0.4);
+        }
+        .pulse-live {
+            animation: pulse-live 2s infinite;
+        }
+        @keyframes pulse-live {
+            0%, 100% {
+                box-shadow: 0 0 0 0 rgba(76, 175, 80, 0.7);
+            }
+            70% {
+                box-shadow: 0 0 0 10px rgba(76, 175, 80, 0);
+            }
+        }
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 8px;
+        }
+        .status-dot.connecting {
+            background-color: #ffa500;
+            animation: pulse 2s infinite;
+        }
+        .status-dot.online {
+            background-color: var(--live-color);
+        }
+        .status-dot.offline {
+            background-color: #dc3545;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        .hidden {
+            display: none;
+        }
+        input[type=range] {
+            -webkit-appearance: none;
+            appearance: none;
+            background: transparent;
+            cursor: pointer;
+            width: 100%;
+        }
+        input[type=range]:focus {
+            outline: none;
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            background-color: #2F2F2F;
+            border-radius: 0.5rem;
+            height: 0.5rem;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            margin-top: -4px;
+            background-color: var(--primary-color);
+            border-radius: 50%;
+            height: 1rem;
+            width: 1rem;
+            box-shadow: 0 0 5px rgba(0, 174, 239, 0.5);
+         }
+        input[type=range]::-moz-range-track {
+            background-color: #2F2F2F;
+            border-radius: 0.5rem;
+            height: 0.5rem;
+        }
+        input[type=range]::-moz-range-thumb {
+            background-color: var(--primary-color);
+            border: none;
+            border-radius: 50%;
+            height: 1rem;
+            width: 1rem;
+            box-shadow: 0 0 5px rgba(0, 174, 239, 0.5);
+        }
+    </style>
+</head>
+<body class="bg-[var(--dark-bg)]">
+    <div class="relative flex size-full min-h-screen flex-col bg-gradient-to-br from-[#111111] to-[#0A0A0A] dark group/design-root overflow-x-hidden" style='font-family: Inter, "Noto Sans", sans-serif;'>
+        
+        <!-- Header with Logo and Status Indicators -->
+        <header class="sticky top-0 z-50 flex items-center justify-between whitespace-nowrap border-b border-solid border-[var(--border-color)] bg-[var(--dark-bg)]/80 px-10 py-4 backdrop-blur-lg">
+            <!-- Logo Section (Only show image OR text, never both) -->
+            <div class="flex items-center gap-4 text-white">
+                <div class="size-8 text-[var(--primary-color)]">
+                    <img src="/assets/lanstreamer-logo.png" alt="LANStreamer" class="h-8 w-auto" id="logo-image" onerror="this.style.display='none'; document.getElementById('logo-fallback').style.display='block';">
+                    <div id="logo-fallback" style="display: none;">
+                        <span class="text-xl font-bold tracking-wider">LANStreamer</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Status Indicators Section -->
+            <div class="flex items-center gap-3">
+                <!-- Refresh Button -->
+                <button class="flex h-10 w-10 cursor-pointer items-center justify-center rounded-lg border border-[var(--border-color)] bg-[var(--card-bg)] text-gray-400 transition-all hover:bg-[var(--primary-color)]/10 hover:text-[var(--primary-color)]">
+                    <span class="material-symbols-outlined">refresh</span>
+                </button>
+                
+                <!-- Audio Devices Status -->
+                <div class="group relative flex items-center">
+                    <button id="audio-devices-indicator" class="flex h-10 w-10 cursor-pointer items-center justify-center rounded-lg border border-[var(--border-color)] bg-[var(--card-bg)] text-gray-400 transition-all hover:bg-[var(--primary-color)]/10 hover:text-[var(--primary-color)]">
+                        <span class="material-symbols-outlined status-icon">volume_up</span>
+                    </button>
+                    <div class="absolute top-full right-0 mt-2 w-72 rounded-lg bg-[var(--card-bg)] border border-[var(--border-color)] p-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none group-hover:pointer-events-auto shadow-2xl shadow-black/50">
+                        <h4 class="font-bold text-white mb-2">Audio Devices</h4>
+                        <p class="text-sm text-gray-400" id="audio-devices-status">2 Devices Online</p>
+                    </div>
+                </div>
+                
+                <!-- FFmpeg Status -->
+                <div class="group relative flex items-center">
+                    <button id="ffmpeg-indicator" class="flex h-10 w-10 cursor-pointer items-center justify-center rounded-lg border border-[var(--border-color)] bg-[var(--card-bg)] text-gray-400 transition-all hover:bg-[var(--live-color)]/10 hover:text-[var(--live-color)]">
+                        <span class="material-symbols-outlined status-icon status-icon-live">settings_input_component</span>
+                    </button>
+                    <div class="absolute top-full right-0 mt-2 w-72 rounded-lg bg-[var(--card-bg)] border border-[var(--border-color)] p-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none group-hover:pointer-events-auto shadow-2xl shadow-black/50">
+                        <h4 class="font-bold text-white mb-2">FFmpeg Streams</h4>
+                        <p class="text-sm text-gray-400" id="ffmpeg-status-text">1 Stream Live</p>
+                    </div>
+                </div>
+                
+                <!-- Icecast Status -->
+                <div class="group relative flex items-center">
+                    <button id="icecast-indicator" class="flex h-10 w-10 cursor-pointer items-center justify-center rounded-lg border border-[var(--border-color)] bg-[var(--card-bg)] text-gray-400 transition-all hover:bg-[var(--primary-color)]/10 hover:text-[var(--primary-color)]">
+                        <span class="material-symbols-outlined status-icon">router</span>
+                    </button>
+                    <div class="absolute top-full right-0 mt-2 w-72 rounded-lg bg-[var(--card-bg)] border border-[var(--border-color)] p-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none group-hover:pointer-events-auto shadow-2xl shadow-black/50">
+                        <h4 class="font-bold text-white mb-2">Icecast Server</h4>
+                        <p class="text-sm text-gray-400" id="icecast-status-text">Server Online</p>
+                    </div>
+                </div>
+                
+                <!-- Security Warning -->
+                <div class="group relative flex items-center">
+                    <button id="security-indicator" class="flex h-10 w-10 cursor-pointer items-center justify-center rounded-lg border border-[var(--border-color)] bg-[var(--card-bg)] text-gray-400 transition-all hover:bg-yellow-500/10 hover:text-yellow-500">
+                        <span class="material-symbols-outlined status-icon">warning</span>
+                    </button>
+                    <div class="absolute top-full right-0 mt-2 w-72 rounded-lg bg-[var(--card-bg)] border border-[var(--border-color)] p-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none group-hover:pointer-events-auto shadow-2xl shadow-black/50">
+                        <h4 class="font-bold text-white mb-2">System Status</h4>
+                        <p class="text-sm text-yellow-500" id="security-status-text">Security Warning Active</p>
+                    </div>
+                </div>
+                
+                <!-- Divider -->
+                <div class="ml-4 h-10 w-px bg-[var(--border-color)]"></div>
+                
+                <!-- User Avatar -->
+                <div class="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-10 ml-4" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuDSIzxTEv03JUEwpU1vqD79kbeH63SzCaGfIIFbumOYFeslE7o8s5BELsy84X5hdHbqgGM91dgl8SECCQAuQUyN5TzULy0C6hTXlMd2FdmoEp4c0WAiQhyasooFF0UAFZoOLRnhrfiUJjHhWPasQr2g2MWISZolmDkAER-lahc8ZqnqZSr95hHY9Z-0DIFIJDnrExTC0CHjbWsTgsGY2Pj1xH87e8JybvN0dCpF-U1oWs_K8Q3OXkC3yMhMSgHVXCilnq_8LYez-3g");'></div>
+            </div>
+        </header>
+
+        <main class="flex-1 px-4 sm:px-6 lg:px-10 py-8">
+            <div class="mx-auto max-w-7xl">
+                
+                <!-- Security Warning Banner -->
+                <div id="security-warning" class="mb-8 p-4 rounded-xl bg-yellow-500/10 border border-yellow-500/50 text-yellow-400">
+                    <div class="flex items-center gap-3">
+                        <span class="material-symbols-outlined text-2xl">warning</span>
+                        <p class="font-medium">
+                            <strong>Security Warning:</strong> Your LANStreamer instance is running in development mode. For production use, please configure SSL and authentication.
+                        </p>
+                    </div>
+                </div>
+                
+                <!-- Main Grid Layout -->
+                <div class="grid grid-cols-1 xl:grid-cols-3 gap-8">
+                    <!-- Left Column (Primary Controls) -->
+                    <div class="xl:col-span-2 space-y-8">
+                        
+                        <!-- FFmpeg Streams Section -->
+                        <div class="bg-[var(--card-bg)] border border-[var(--border-color)] rounded-2xl p-6 shadow-2xl shadow-black/30">
+                            <div class="flex items-center justify-between mb-4">
+                                <h2 class="text-xl font-bold text-white">FFmpeg Streams</h2>
+                                <div class="group relative flex items-center">
+                                    <div class="flex items-center gap-2 cursor-pointer">
+                                        <span class="h-3 w-3 rounded-full bg-[var(--live-color)]"></span>
+                                        <span class="text-sm font-medium text-gray-300">FFmpeg Installed and Running</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div id="streams-container" class="space-y-4">
+                                <!-- Main Room Audio Stream -->
+                                <div class="bg-[#111111] border border-[var(--border-color)] rounded-xl p-4 flex items-center justify-between">
+                                    <div class="flex items-center gap-4">
+                                        <div class="w-2 h-10 rounded-full bg-[var(--live-color)] pulse-live"></div>
+                                        <div>
+                                            <p class="font-semibold text-white">Main Room Audio</p>
+                                            <p class="text-sm text-[var(--live-color)] font-medium flex items-center gap-1">
+                                                <span class="material-symbols-outlined text-sm">circle</span> Live <span class="text-gray-500 font-mono">(192kbps)</span>
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <div class="flex items-center gap-4">
+                                        <select class="bg-[var(--card-bg)] border border-[var(--border-color)] rounded px-3 py-2 text-sm text-white">
+                                            <option>Focusrite Scarlett 2i2</option>
+                                        </select>
+                                        <button class="inline-flex items-center justify-center gap-2 rounded-md px-4 py-2 text-sm font-semibold text-white shadow-lg transition-all duration-300 btn-stop-gradient">
+                                            <span class="material-symbols-outlined">stop</span>
+                                            Stop
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <!-- Add New Stream Button (moved to after streams) -->
+                                <button id="addStreamBtn" class="w-full inline-flex items-center justify-center gap-2 rounded-md px-4 py-3 text-sm font-semibold text-white shadow-lg transition-all duration-300 btn-gradient border-2 border-dashed border-[var(--border-color)] bg-transparent hover:bg-[var(--primary-color)]/10">
+                                    <span class="material-symbols-outlined">add</span>
+                                    Add New Stream
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- Audio Devices Section -->
+                        <div class="bg-[var(--card-bg)] border border-[var(--border-color)] rounded-2xl p-6 shadow-2xl shadow-black/30">
+                            <div class="flex items-center justify-between mb-4">
+                                <h2 class="text-xl font-bold text-white">Audio Devices captured by FFmpeg</h2>
+                                <button id="refreshDevicesBtn" class="inline-flex items-center justify-center gap-2 rounded-md px-3 py-1.5 text-sm font-semibold text-white shadow-lg transition-all duration-300 bg-[var(--card-bg)] border border-[var(--border-color)] hover:bg-[var(--border-color)]">
+                                    <span class="material-symbols-outlined">refresh</span>
+                                    Refresh device list
+                                </button>
+                            </div>
+                            
+                            <!-- Two-Column Device Layout -->
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <!-- Audio Input Devices -->
+                                <div>
+                                    <h3 class="font-semibold text-white mb-3">Audio Input Devices</h3>
+                                    <div class="space-y-3">
+                                        <div class="flex items-center justify-between p-3 bg-[#111111] rounded-lg border border-[var(--border-color)]">
+                                            <div class="flex items-center gap-3">
+                                                <span class="material-symbols-outlined text-xl text-[var(--live-color)]">mic</span>
+                                                <div>
+                                                    <p class="font-semibold text-white text-sm">Focusrite Scarlett 2i2</p>
+                                                    <p class="text-xs text-gray-400">USB Audio Device</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="flex items-center justify-between p-3 bg-[#111111] rounded-lg border border-[var(--border-color)]">
+                                            <div class="flex items-center gap-3">
+                                                <span class="material-symbols-outlined text-xl text-gray-500">mic_off</span>
+                                                <div>
+                                                    <p class="font-semibold text-white text-sm">Default Microphone</p>
+                                                    <p class="text-xs text-gray-400">System Default</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Audio Output Devices -->
+                                <div>
+                                    <h3 class="font-semibold text-white mb-3">Audio Output Devices</h3>
+                                    <div class="space-y-3">
+                                        <div class="flex items-center justify-between p-3 bg-[#111111] rounded-lg border border-[var(--border-color)]">
+                                            <div class="flex items-center gap-3">
+                                                <span class="material-symbols-outlined text-xl text-[var(--live-color)]">headphones</span>
+                                                <div>
+                                                    <p class="font-semibold text-white text-sm">Realtek Digital Output</p>
+                                                    <p class="text-xs text-gray-400">Onboard Audio</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="flex items-center justify-between p-3 bg-[#111111] rounded-lg border border-[var(--border-color)]">
+                                            <div class="flex items-center gap-3">
+                                                <span class="material-symbols-outlined text-xl text-[var(--live-color)]">speaker</span>
+                                                <div>
+                                                    <p class="font-semibold text-white text-sm">Monitor Speakers</p>
+                                                    <p class="text-xs text-gray-400">NVIDIA High Definition Audio</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Video Sources Section -->
+                        <div class="bg-[var(--card-bg)] border border-[var(--border-color)] rounded-2xl p-6 shadow-2xl shadow-black/30">
+                            <div class="flex items-center justify-between mb-4">
+                                <h2 class="text-xl font-bold text-white">Video Sources captured by FFmpeg</h2>
+                                <button class="inline-flex items-center justify-center gap-2 rounded-md px-3 py-1.5 text-sm font-semibold text-white shadow-lg transition-all duration-300 bg-[var(--card-bg)] border border-[var(--border-color)] hover:bg-[var(--border-color)]">
+                                    <span class="material-symbols-outlined">refresh</span>
+                                    Refresh device list
+                                </button>
+                            </div>
+                            <div class="bg-[#111111] border border-[var(--border-color)] rounded-xl p-4 flex items-center justify-center">
+                                <p class="text-gray-400">No video sources detected - Connect a camera or capture card</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Right Column (Sidebar) -->
+                    <div class="space-y-8">
+                        <!-- Stream Controls (Top Position) -->
+                        <div class="bg-[var(--card-bg)] border border-[var(--border-color)] rounded-2xl p-6 shadow-2xl shadow-black/30">
+                            <div class="flex items-center justify-between mb-4">
+                                <h2 class="text-xl font-bold text-white">Stream Controls</h2>
+                                <div class="flex items-center gap-2">
+                                    <span class="text-sm font-mono text-gray-400 bg-[#111111] border border-[var(--border-color)] px-2 py-0.5 rounded-md">1/2 running</span>
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-1 gap-3">
+                                <button class="inline-flex items-center justify-center gap-2 rounded-md px-4 py-3 text-sm font-semibold text-white shadow-lg transition-all duration-300 btn-gradient">
+                                    <span class="material-symbols-outlined">play_arrow</span>
+                                    Start All Streams
+                                </button>
+                                <button class="inline-flex items-center justify-center gap-2 rounded-md px-4 py-3 text-sm font-semibold text-white shadow-lg transition-all duration-300 btn-stop-gradient">
+                                    <span class="material-symbols-outlined">stop</span>
+                                    End All Streams
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- Icecast Server Panel -->
+                        <div class="bg-[var(--card-bg)] border border-[var(--border-color)] rounded-2xl p-6 shadow-2xl shadow-black/30">
+                            <div class="flex justify-between items-start mb-4">
+                                <h2 class="text-xl font-bold text-white">Icecast Server</h2>
+                                <div class="group relative flex items-center">
+                                    <div class="flex items-center gap-2 cursor-pointer">
+                                        <span class="h-3 w-3 rounded-full bg-red-600"></span>
+                                        <span class="text-sm font-medium text-gray-300">Not Installed</span>
+                                    </div>
+                                    <div class="absolute top-full right-0 mt-2 w-72 rounded-lg bg-[var(--card-bg)] border border-[var(--border-color)] p-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none group-hover:pointer-events-auto shadow-2xl shadow-black/50 z-10">
+                                        <h4 class="font-bold text-white mb-2">Icecast Not Found</h4>
+                                        <p class="text-sm text-gray-400 mb-3">The Icecast server is not detected on this system. Please install it to enable streaming.</p>
+                                        <a class="inline-flex items-center gap-2 rounded-md px-3 py-1.5 text-sm font-semibold text-white bg-[var(--primary-color)]/10 hover:bg-[var(--primary-color)]/20 border border-[var(--border-color)] transition-all duration-300" href="https://github.com/jerryagenyi/LANStreamer/blob/main/docs/guides/icecast-installation.md" target="_blank">
+                                            <span class="material-symbols-outlined text-base">info</span>
+                                            View Installation Guide
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="space-y-5 opacity-50">
+                                <div>
+                                    <div class="flex justify-between items-center mb-1">
+                                        <p class="text-sm font-medium text-gray-400">Listeners</p>
+                                        <p class="text-sm font-bold text-white">0 / 0</p>
+                                    </div>
+                                    <div class="w-full bg-[#111111] rounded-full h-2.5">
+                                        <div class="bg-gray-600 h-2.5 rounded-full" style="width: 0%"></div>
+                                    </div>
+                                </div>
+                                <div class="border-t border-[var(--border-color)] pt-4 mt-4 text-xs text-gray-500 space-y-1">
+                                    <p><strong>Host:</strong> -</p>
+                                    <p><strong>Uptime:</strong> -</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Lobby Background Music -->
+                        <div class="bg-[var(--card-bg)] border border-[var(--border-color)] rounded-2xl p-6 shadow-2xl shadow-black/30">
+                            <h2 class="text-xl font-bold text-white mb-4">Lobby Background Music</h2>
+                            <div class="bg-[#111111] border border-[var(--border-color)] rounded-xl p-4 space-y-4">
+                                <div class="flex items-center justify-between">
+                                    <div class="flex items-center gap-4">
+                                        <div class="w-2 h-10 rounded-full bg-gray-600"></div>
+                                        <div>
+                                            <p class="font-semibold text-white">Background Music</p>
+                                            <p class="text-sm text-gray-500 font-medium flex items-center gap-1">
+                                                <span class="material-symbols-outlined text-sm">circle</span> Stopped
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <div class="flex items-center gap-4">
+                                        <button class="inline-flex items-center justify-center gap-2 rounded-md px-4 py-2 text-sm font-semibold text-white shadow-lg transition-all duration-300 btn-gradient">
+                                            <span class="material-symbols-outlined">play_arrow</span>
+                                            Start
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="pt-4 border-t border-gray-800 space-y-4">
+                                    <div class="flex items-center justify-between">
+                                        <p class="text-sm font-mono text-gray-400 truncate max-w-[200px] md:max-w-xs">Slack-Huddle-Hold-Music_Daniel-Simmons.mp3</p>
+                                        <button class="text-sm font-semibold text-[var(--primary-color)] hover:text-white transition-colors">Change</button>
+                                    </div>
+                                    <div class="flex items-center gap-4">
+                                        <button id="mute-btn" class="flex h-8 w-8 items-center justify-center rounded-md border border-[var(--border-color)] bg-[#2A2A2A] text-gray-400 hover:bg-[var(--primary-color)]/20 hover:text-[var(--primary-color)] transition-colors">
+                                            <span class="material-symbols-outlined text-base">volume_off</span>
+                                        </button>
+                                        <div class="flex-1">
+                                            <input id="volume-slider" class="w-full" max="100" min="0" type="range" value="75"/>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        class LANStreamerDashboard {
+            constructor() {
+                this.audioDevices = [];
+                this.activeStreams = {};
+                this.isLoading = false;
+                this.icecastStatus = 'unknown';
+                this.init();
+            }
+
+            async init() {
+                await this.loadAudioDevices();
+                await this.checkIcecastStatus();
+                await this.checkFFmpegStatus();
+                this.setupEventListeners();
+                this.startStatusPolling();
+                this.updateStatusIndicators();
+            }
+
+            async loadAudioDevices() {
+                try {
+                    const response = await fetch('/api/system/audio-devices');
+                    this.audioDevices = await response.json();
+                    this.renderAudioDevices();
+                    this.updateHeaderTooltip('audio-devices-status', `${this.audioDevices.length} Devices Online`);
+                } catch (error) {
+                    console.error('Failed to load audio devices:', error);
+                    this.updateHeaderTooltip('audio-devices-status', 'Failed to load devices');
+                    this.renderAudioDevicesError();
+                }
+            }
+
+            renderAudioDevices() {
+                // Audio devices are now statically rendered in the HTML
+                // This method can be used for dynamic updates when needed
+                console.log('Audio devices loaded:', this.audioDevices);
+            }
+
+            renderAudioDevicesError() {
+                console.error('Error rendering audio devices');
+            }
+
+            async checkIcecastStatus() {
+                try {
+                    const response = await fetch('/api/system/icecast-status');
+                    const data = await response.json();
+                    this.icecastStatus = data.running ? 'running' : 'stopped';
+                    this.updateIcecastUI(data);
+                    
+                    if (data.running) {
+                        this.updateHeaderTooltip('icecast-status-text', 'Server Online');
+                    } else if (data.installed === false) {
+                        this.updateHeaderTooltip('icecast-status-text', 
+                            `Icecast not found. <a href="https://github.com/jerryagenyi/LANStreamer/blob/main/docs/guides/icecast-installation.md" target="_blank" class="text-blue-400 hover:text-blue-300 underline">Installation Guide</a>`, 
+                            true
+                        );
+                    } else {
+                        this.updateHeaderTooltip('icecast-status-text', 'Server Offline');
+                    }
+                } catch (error) {
+                    console.error('Failed to check Icecast status:', error);
+                    this.icecastStatus = 'unknown';
+                    this.updateHeaderTooltip('icecast-status-text', 'Status Unknown');
+                }
+            }
+
+            async checkFFmpegStatus() {
+                try {
+                    const response = await fetch('/api/system/ffmpeg-check');
+                    const data = await response.json();
+                    
+                    if (data.installed) {
+                        this.updateHeaderTooltip('ffmpeg-status-text', `FFmpeg ${data.version || 'installed'}`);
+                    } else {
+                        this.updateHeaderTooltip('ffmpeg-status-text', 
+                            `FFmpeg not found. <a href="https://github.com/jerryagenyi/LANStreamer/blob/main/docs/guides/ffmpeg-installation.md" target="_blank" class="text-blue-400 hover:text-blue-300 underline">Installation Guide</a>`, 
+                            true
+                        );
+                    }
+                } catch (error) {
+                    console.error('Failed to check FFmpeg status:', error);
+                    this.updateHeaderTooltip('ffmpeg-status-text', 'Status Unknown');
+                }
+            }
+
+            updateIcecastUI(data) {
+                const serverStatus = document.getElementById('icecast-status-text');
+                const serverStatusDot = document.getElementById('icecast-status-dot');
+                const listenerCount = document.getElementById('listener-count');
+                const listenerBar = document.getElementById('listener-bar');
+                const serverHost = document.getElementById('server-host');
+                const serverUptime = document.getElementById('server-uptime');
+
+                if (data.running) {
+                    if (serverStatus) serverStatus.textContent = 'Online';
+                    if (serverStatusDot) serverStatusDot.className = 'status-dot online';
+                    
+                    if (listenerCount) listenerCount.textContent = `${data.listeners || 42} / 128`;
+                    const listenerPercent = Math.min((data.listeners || 42) / 128 * 100, 100);
+                    if (listenerBar) listenerBar.style.width = `${listenerPercent}%`;
+                    
+                    if (data.uptime && serverUptime) {
+                        serverUptime.textContent = this.formatUptime(data.uptime);
+                    }
+                } else if (data.installed === false) {
+                    if (serverStatus) serverStatus.textContent = 'Not Found';
+                    if (serverStatusDot) serverStatusDot.className = 'status-dot offline';
+                    if (listenerCount) listenerCount.textContent = '0 / 128';
+                    if (listenerBar) listenerBar.style.width = '0%';
+                    if (serverUptime) serverUptime.textContent = '--:--:--';
+                } else {
+                    if (serverStatus) serverStatus.textContent = 'Connecting...';
+                    if (serverStatusDot) serverStatusDot.className = 'status-dot connecting';
+                    if (listenerCount) listenerCount.textContent = '0 / 128';
+                    if (listenerBar) listenerBar.style.width = '0%';
+                    if (serverUptime) serverUptime.textContent = '--:--:--';
+                }
+            }
+
+            updateHeaderTooltip(elementId, content, isHtml = false) {
+                const element = document.getElementById(elementId);
+                if (element) {
+                    if (isHtml) {
+                        element.innerHTML = content;
+                    } else {
+                        element.textContent = content;
+                    }
+                }
+            }
+
+            updateStatusIndicators() {
+                // Update header indicator colors based on status
+                const audioIndicator = document.getElementById('audio-devices-indicator');
+                const ffmpegIndicator = document.getElementById('ffmpeg-indicator');
+                const icecastIndicator = document.getElementById('icecast-indicator');
+                
+                // Update audio devices indicator
+                if (this.audioDevices.length > 0 && audioIndicator) {
+                    audioIndicator.querySelector('.status-icon').className = 'material-symbols-outlined status-icon text-[var(--live-color)]';
+                }
+                
+                // Update FFmpeg indicator
+                if (Object.keys(this.activeStreams).length > 0 && ffmpegIndicator) {
+                    ffmpegIndicator.querySelector('.status-icon').className = 'material-symbols-outlined status-icon status-icon-live text-[var(--live-color)]';
+                }
+                
+                // Update Icecast indicator
+                if (this.icecastStatus === 'running' && icecastIndicator) {
+                    icecastIndicator.querySelector('.status-icon').className = 'material-symbols-outlined status-icon text-[var(--live-color)]';
+                }
+            }
+
+            formatUptime(seconds) {
+                const hours = Math.floor(seconds / 3600);
+                const minutes = Math.floor((seconds % 3600) / 60);
+                const secs = seconds % 60;
+                return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+            }
+
+            setupEventListeners() {
+                // Refresh devices button
+                const refreshBtn = document.getElementById('refreshDevicesBtn');
+                if (refreshBtn) {
+                    refreshBtn.addEventListener('click', async () => {
+                        await this.loadAudioDevices();
+                        this.showNotification('Audio devices refreshed', 'info');
+                    });
+                }
+
+                // Add stream button
+                const addStreamBtn = document.getElementById('addStreamBtn');
+                if (addStreamBtn) {
+                    addStreamBtn.addEventListener('click', () => {
+                        this.showNotification('Stream configuration modal will be implemented in next phase', 'info');
+                    });
+                }
+
+                // Volume controls
+                const volumeSlider = document.getElementById('volume-slider');
+                const volumeDisplay = document.getElementById('volume-display');
+                const muteBtn = document.getElementById('mute-btn');
+
+                if (volumeSlider && volumeDisplay) {
+                    volumeSlider.addEventListener('input', (e) => {
+                        volumeDisplay.textContent = `${e.target.value}%`;
+                    });
+                }
+
+                if (muteBtn) {
+                    muteBtn.addEventListener('click', () => {
+                        const icon = muteBtn.querySelector('.material-symbols-outlined');
+                        const slider = document.getElementById('volume-slider');
+                        
+                        if (icon.textContent === 'volume_off') {
+                            icon.textContent = 'volume_up';
+                            slider.value = 75;
+                        } else {
+                            icon.textContent = 'volume_off';
+                            slider.value = 0;
+                        }
+                    });
+                }
+            }
+
+            startStatusPolling() {
+                // Poll every 5 seconds for status updates
+                setInterval(async () => {
+                    await this.checkIcecastStatus();
+                    await this.checkFFmpegStatus();
+                    this.updateStatusIndicators();
+                }, 5000);
+            }
+
+            showNotification(message, type = 'info') {
+                const notification = document.createElement('div');
+                notification.className = `fixed top-20 right-4 z-50 p-3 rounded-lg shadow-lg transition-all duration-300 transform translate-x-full`;
+                
+                const colors = {
+                    'info': 'bg-blue-500',
+                    'success': 'bg-green-500', 
+                    'error': 'bg-red-500'
+                };
+                
+                notification.className += ` ${colors[type] || colors.info} text-white`;
+                notification.textContent = message;
+                
+                document.body.appendChild(notification);
+                
+                // Slide in
+                setTimeout(() => {
+                    notification.classList.remove('translate-x-full');
+                }, 100);
+                
+                // Slide out and remove
+                setTimeout(() => {
+                    notification.classList.add('translate-x-full');
+                    setTimeout(() => {
+                        if (notification.parentNode) {
+                            notification.parentNode.removeChild(notification);
+                        }
+                    }, 300);
+                }, 3000);
+            }
+        }
+
+        // Initialize dashboard when page loads
+        let dashboard;
+        document.addEventListener('DOMContentLoaded', () => {
+            dashboard = new LANStreamerDashboard();
+        });
+    </script>
+</body>
+</html>
