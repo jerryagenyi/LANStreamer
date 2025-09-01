@@ -24,11 +24,14 @@ This document outlines the requirements for **LANStreamer v1.0**, a desktop appl
 
 - **Packaged Application:** A single, standalone executable for Windows (`.exe`) that bundles the Node.js server and the web frontend. No installation of external dependencies (like Node.js) is required for the end-user.
 - **Web-Based Dashboard (Admin):**
-    - Runs locally, accessible at `http://localhost:PORT`.
-    - Audio device detection and selection.
+    - Runs locally, accessible at `http://localhost:3001`.
+    - **Icecast Server Management:** Automatic detection, installation validation, and process control with Windows-specific optimizations.
+    - **Audio device detection and selection:** Real-time discovery of available audio input devices.
+    - **Component-Based Architecture:** Dynamic loading of UI components with static fallbacks for enhanced reliability.
     - Ability to name/label stream mount points (e.g., `/french`, `/spanish`).
-    - Start/Stop controls for individual and all streams.
-    - Real-time status display for each FFmpeg/Icecast process.
+    - Start/Stop controls for individual and all streams with process ID tracking.
+    - **Real-time status display** for each FFmpeg/Icecast process with file validation indicators.
+    - **Configuration validation** and troubleshooting assistance.
     - *(UI Design: See [Admin Dashboard UI Design](Admin-Dashboard-UI-Design.md) for complete visual specifications)*
 - **Web-Based Player (Listener):**
     - A simple, mobile-first webpage served on the local network (e.g., `http://[SERVER_IP]:PORT/listen`).
@@ -60,6 +63,36 @@ This document outlines the requirements for **LANStreamer v1.0**, a desktop appl
 - **Audio Assets:** Sample audio files are stored in the `/assets` directory for testing and demonstration purposes.
 
 **Detailed Technical Implementation:** See [Technical Specification](LANStreamer-Technical-Specification.md) for complete API documentation and system architecture.
+
+## 5.1 Current Implementation Status (v1.0-alpha)
+
+### ✅ **Completed Features**
+- **Backend Infrastructure:** Node.js/Express server with comprehensive API endpoints
+- **Icecast Integration:** Complete Windows-specific detection, validation, and process management
+- **Component Architecture:** Dynamic loading system with static fallbacks
+- **Configuration Management:** Environment-based configuration with `.env` support
+- **Installation Detection:** Multi-path search with file validation for Icecast installations
+- **Process Management:** Windows `tasklist`/`taskkill` integration with PID tracking
+- **Error Handling:** Comprehensive logging and user-friendly error reporting
+- **Admin Dashboard Core:** Icecast server management panel with real-time status
+
+### 🚧 **In Development**
+- Audio device detection and selection interface
+- Stream configuration and mount point management
+- FFmpeg integration for audio streaming
+- Listener web player interface
+
+### 📋 **Planned**
+- QR code generation for listener access
+- Real-time stream monitoring and statistics
+- Final packaging as standalone `.exe`
+
+**Installation Guides:** Complete setup documentation available:
+- [Icecast Installation Guide](guides/icecast-installation.md)
+- [FFmpeg Installation Guide](guides/ffmpeg-installation.md)
+- [Environment Configuration](env-example.md)
+
+**Development Progress:** See [CHANGELOG.md](CHANGELOG.md) for complete development history and current implementation status.
 
 ---
 

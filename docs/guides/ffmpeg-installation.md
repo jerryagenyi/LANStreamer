@@ -20,7 +20,33 @@ If FFmpeg is installed, you'll see version information. If not, follow the insta
 
 ## Windows Installation
 
-### Method 1: Official Build (Recommended)
+### Method 1: Using winget (Recommended for Windows 10/11)
+
+**This is the easiest and most reliable method for Windows 10/11:**
+
+1. **Install via winget** (Windows Package Manager)
+   ```powershell
+   # Open Command Prompt or PowerShell as Administrator
+   winget install FFmpeg
+   ```
+
+2. **Verify Installation**
+   ```powershell
+   # Restart your terminal, then test
+   ffmpeg -version
+   ```
+
+**✨ Why winget is Recommended:**
+- ✅ **Automatic PATH configuration** - No manual setup required!
+- ✅ Always gets the latest stable version
+- ✅ Handles updates automatically
+- ✅ Works on corporate/restricted networks
+- ✅ No need to choose installation location
+- ✅ Installs to: `%LOCALAPPDATA%\Microsoft\WinGet\Packages\Gyan.FFmpeg.Microsoft.WinGet.Source_*\bin\`
+
+### Method 2: Official Build (Manual Installation)
+
+**Only use this if winget fails or you need a specific version:**
 
 1. **Download FFmpeg**
    - Visit [https://ffmpeg.org/download.html](https://ffmpeg.org/download.html){:target="_blank"}
@@ -56,7 +82,7 @@ If FFmpeg is installed, you'll see version information. If not, follow the insta
    ffmpeg -version
    ```
 
-### Method 2: Using Chocolatey
+### Method 3: Using Chocolatey
 
 ```powershell
 # Install Chocolatey first (if not installed)
@@ -66,13 +92,6 @@ iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocola
 
 # Install FFmpeg
 choco install ffmpeg -y
-```
-
-### Method 3: Using winget
-
-```powershell
-# Install using Windows Package Manager
-winget install FFmpeg
 ```
 
 ---
@@ -169,6 +188,11 @@ sudo snap install ffmpeg
 
 ### Windows
 
+**winget (Recommended):**
+```powershell
+winget upgrade FFmpeg
+```
+
 **Official Build:**
 - Download the latest version and replace existing files
 - Or use the same installation method as above
@@ -176,11 +200,6 @@ sudo snap install ffmpeg
 **Chocolatey:**
 ```powershell
 choco upgrade ffmpeg -y
-```
-
-**winget:**
-```powershell
-winget upgrade FFmpeg
 ```
 
 ### macOS
@@ -233,17 +252,56 @@ ffmpeg -codecs
 ffmpeg -f lavfi -i "sine=frequency=1000:duration=5" -c:a aac test_audio.aac
 ```
 
-### LANStreamer Integration Test
+### Audio Device Testing
 
-```bash
-# Test audio device listing (Windows)
+**Windows (DirectShow):**
+```cmd
+# List available audio input devices
 ffmpeg -list_devices true -f dshow -i dummy
 
-# Test audio device listing (macOS)
+# Test specific audio device
+ffmpeg -f dshow -i audio="Your Audio Device Name" -f null -
+```
+
+**macOS (AVFoundation):**
+```bash
+# List available audio input devices
 ffmpeg -f avfoundation -list_devices true -i ""
 
-# Test audio device listing (Linux)
+# Test default audio input
+ffmpeg -f avfoundation -i ":0" -f null -
+```
+
+**Linux (ALSA):**
+```bash
+# List available audio input devices
 ffmpeg -f alsa -list_devices true -i dummy
+
+# Test default audio input
+ffmpeg -f alsa -i default -f null -
+```
+
+### LANStreamer Integration Test
+
+**Test audio device listing:**
+```bash
+# Windows
+ffmpeg -list_devices true -f dshow -i dummy
+
+# macOS
+ffmpeg -f avfoundation -list_devices true -i ""
+
+# Linux
+ffmpeg -f alsa -list_devices true -i dummy
+```
+
+**Test streaming to Icecast:**
+```bash
+# Basic streaming test (Windows)
+ffmpeg -f dshow -i audio="Your Audio Device" -acodec libmp3lame -b:a 128k -ar 44100 -ac 1 -f mp3 icecast://source:password@localhost:8000/stream
+
+# Basic streaming test (macOS/Linux)
+ffmpeg -f avfoundation -i ":0" -acodec libmp3lame -b:a 128k -ar 44100 -ac 1 -f mp3 icecast://source:password@localhost:8000/stream
 ```
 
 ---
@@ -253,7 +311,8 @@ ffmpeg -f alsa -list_devices true -i dummy
 ### Common Issues
 
 **"ffmpeg is not recognized as an internal or external command" (Windows)**
-- Solution: Ensure FFmpeg is properly added to the system PATH
+- **If using winget**: FFmpeg should work immediately after installation. If not, restart your terminal.
+- **If using manual installation**: Ensure FFmpeg is properly added to the system PATH
 - Restart Command Prompt/PowerShell after adding to PATH
 
 **Permission denied errors (Linux/macOS)**
@@ -268,6 +327,12 @@ ffmpeg -f alsa -list_devices true -i dummy
 - Windows: May need to run as Administrator
 - Linux: Add user to `audio` group: `sudo usermod -a -G audio $USER`
 - macOS: Grant microphone permissions in System Preferences
+
+**Windows-specific troubleshooting:**
+- **If winget fails**: Try running as Administrator or check Windows Update
+- **If manual installation fails**: Verify the PATH points to the folder containing `ffmpeg.exe`
+- **If static build has no executables**: Download from [gyan.dev](https://www.gyan.dev/ffmpeg/builds/) instead
+- **For remote/corporate PCs**: Winget method usually works best
 
 ### Getting Help
 
@@ -300,6 +365,28 @@ LANStreamer uses these FFmpeg features:
 - **Streaming**: Direct streaming to Icecast servers
 - **Quality Control**: Bitrate and quality adjustments
 
+### Common FFmpeg Commands for LANStreamer
+
+**Basic audio streaming:**
+```bash
+# Windows DirectShow
+ffmpeg -f dshow -i audio="Device Name" -acodec libmp3lame -b:a 128k -ar 44100 -ac 1 -f mp3 icecast://source:password@localhost:8000/stream
+
+# macOS AVFoundation
+ffmpeg -f avfoundation -i ":0" -acodec libmp3lame -b:a 128k -ar 44100 -ac 1 -f mp3 icecast://source:password@localhost:8000/stream
+
+# Linux ALSA
+ffmpeg -f alsa -i default -acodec libmp3lame -b:a 128k -ar 44100 -ac 1 -f mp3 icecast://source:password@localhost:8000/stream
+```
+
+**Multi-stream setup (Windows):**
+```batch
+@echo off
+REM Start multiple FFmpeg streams
+start "Stream 1" ffmpeg -f dshow -i audio="Device 1" -acodec libmp3lame -b:a 128k -ar 44100 -ac 1 -f mp3 icecast://source:password@localhost:8000/stream1
+start "Stream 2" ffmpeg -f dshow -i audio="Device 2" -acodec libmp3lame -b:a 128k -ar 44100 -ac 1 -f mp3 icecast://source:password@localhost:8000/stream2
+```
+
 For advanced FFmpeg configuration with LANStreamer, see the [Technical Specification](../LANStreamer-Technical-Specification.md).
 
 ---
@@ -309,3 +396,4 @@ For advanced FFmpeg configuration with LANStreamer, see the [Technical Specifica
 - [Icecast Installation Guide](./icecast-installation.md)
 - [LANStreamer Technical Specification](../LANStreamer-Technical-Specification.md)
 - [Audio Pipeline Concepts](../LANStreamer-Audio-Pipeline-Concepts.md)
+- [Manual Setup Guides](../manual-setup/README.md)

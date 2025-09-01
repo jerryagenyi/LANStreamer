@@ -1,10 +1,12 @@
 # Icecast Installation Guide
 
-> **Complete guide for installing and updating Icecast streaming server on Windows, macOS, and Linux**
+> **Complete guide for installing and configuring Icecast streaming server on Windows, macOS, and Linux**
 
 ## Overview
 
 Icecast is a streaming media server that LANStreamer uses to broadcast audio streams over the network. This guide provides step-by-step instructions for installing and configuring Icecast on all supported platforms.
+
+**Important Configuration Note**: Icecast loads its configuration from `icecast.xml` in the root Icecast directory. **Important**: On Windows, the `icecast.exe` executable is located in the `bin` subdirectory, but the `icecast.xml` config file must be in the root Icecast directory. When you run Icecast, it looks for `icecast.xml` in the directory where you execute the command from (typically the root Icecast directory).
 
 According to the [official Icecast documentation](https://icecast.org/docs/icecast-2.4.1/basic-setup.html){:target="_blank"}, there are two major components involved:
 
@@ -28,6 +30,9 @@ ps aux | grep icecast
 
 # Check Windows service
 sc query "Icecast"
+
+# Check if process is running (Windows)
+tasklist | findstr icecast
 ```
 
 ---
@@ -72,7 +77,7 @@ According to the [official Icecast documentation](https://icecast.org/docs/iceca
 4. **Configure Icecast**
    ```powershell
    # Navigate to installation directory
-   cd "C:\Program Files\Icecast"
+   cd "C:\Program Files (x86)\Icecast"
    
    # Edit configuration file
    notepad icecast.xml
@@ -563,6 +568,50 @@ sudo tail -f /var/log/icecast2/error.log
   - LANStreamer will automatically use the existing config file instead of generating a new one
   - Restart LANStreamer after making path changes
 
+**Configuring Full Paths for Log Files**
+If you want to specify absolute paths for access and error logs instead of relative paths, you can edit the `icecast.xml` file:
+
+1. **Navigate to Icecast directory**:
+   ```powershell
+   cd "C:\Program Files (x86)\Icecast"
+   ```
+
+2. **Edit the configuration file**:
+   ```powershell
+   notepad icecast.xml
+   ```
+
+3. **Update the logging section** to use full paths:
+   ```xml
+   <logging>
+       <accesslog>C:\Program Files (x86)\Icecast\logs\access.log</accesslog>
+       <errorlog>C:\Program Files (x86)\Icecast\logs\error.log</errorlog>
+       <loglevel>3</loglevel>
+       <logsize>10000</logsize>
+   </logging>
+   ```
+
+4. **Ensure log directories exist**:
+   ```powershell
+   # Create logs directory if it doesn't exist
+   mkdir "C:\Program Files (x86)\Icecast\logs" -Force
+   ```
+
+5. **Restart Icecast** after making changes:
+   ```powershell
+   # Stop Icecast if running
+   net stop Icecast
+   
+   # Start Icecast again
+   net start Icecast
+   ```
+
+**Benefits of Full Paths**:
+- ✅ **Eliminates path-related errors** when running from different directories
+- ✅ **More reliable** in production environments
+- ✅ **Easier troubleshooting** - you know exactly where logs are located
+- ✅ **Works consistently** regardless of where Icecast is started from
+
 ### Log Files
 
 **Windows:**
@@ -642,3 +691,4 @@ const icecastConfig = {
 - [LANStreamer Technical Specification](../LANStreamer-Technical-Specification.md)
 - [Audio Pipeline Concepts](../LANStreamer-Audio-Pipeline-Concepts.md)
 - [Authentication & Security Specification](../Authentication-Security-Specification.md)
+- [Manual Setup Guides](../manual-setup/README.md)

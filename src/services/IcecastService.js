@@ -390,56 +390,46 @@ class IcecastService {
   }
 
   async searchForIcecastInstallations() {
+    logger.icecast('Searching for Icecast installations...');
+    
     const results = {
-      found: false,
-      installations: [],
+      installed: false,
+      installationPath: null,
+      files: {
+        executable: false,
+        batchFile: false,
+        config: false,
+        logDir: false,
+        accessLog: false,
+        errorLog: false
+      },
+      searchedPaths: [],
       suggestions: []
     }
     
-    // Step 1: Check for a manually specified path first
-    if (config.icecast.customPath) {
-      const icecastPath = config.icecast.customPath;
-      const exeName = process.platform === 'win32' ? 'icecast.exe' : 'icecast';
-      const fullPath = path.join(icecastPath, exeName);
-
-      try {
-        await fs.access(fullPath);
-        results.installations.push({
-          path: fullPath,
-          type: 'executable',
-          platform: process.platform,
-          source: 'custom_path'
-        });
-        results.found = true;
-      } catch (error) {
-        // Custom path doesn't exist
-      }
-    }
-    
-    // Step 2: Search common system-wide locations based on platform
+    // Windows-specific search paths (prioritize Program Files installations)
     let searchPaths = [];
     
-         if (process.platform === 'win32') {
-               searchPaths = [
-          path.join(process.env.ProgramFiles, 'Icecast'),
-          path.join(process.env['ProgramFiles(x86)'], 'Icecast'),
-          path.join(process.env.ProgramFiles, 'Icecast2'),
-          path.join(process.env['ProgramFiles(x86)'], 'Icecast2'),
-          'C:\\icecast',
-          'C:\\icecast2',
-          process.env.LOCALAPPDATA + '\\Programs\\Icecast',
-          process.env.APPDATA + '\\Icecast',
-          // Add explicit paths for common installations
-          'C:\\Program Files\\Icecast',
-          'C:\\Program Files (x86)\\Icecast',
-          'C:\\Program Files\\Icecast2',
-          'C:\\Program Files (x86)\\Icecast2',
-          // Add bin subdirectories where executables are typically stored
-          'C:\\Program Files\\Icecast\\bin',
-          'C:\\Program Files (x86)\\Icecast\\bin',
-          'C:\\Program Files\\Icecast2\\bin',
-          'C:\\Program Files (x86)\\Icecast2\\bin'
-        ];
+    if (process.platform === 'win32') {
+      searchPaths = [
+        'C:\\Program Files (x86)\\Icecast',
+        'C:\\Program Files\\Icecast',
+        'C:\\Program Files (x86)\\Icecast2',
+        'C:\\Program Files\\Icecast2',
+        'C:\\icecast',
+        'C:\\icecast2'
+      ];
+      
+      // Add environment-based paths
+      if (process.env.ProgramFiles) {
+        searchPaths.push(path.join(process.env.ProgramFiles, 'Icecast'));
+      }
+      if (process.env['ProgramFiles(x86)']) {
+        searchPaths.push(path.join(process.env['ProgramFiles(x86)'], 'Icecast'));
+      }
+      if (process.env.LOCALAPPDATA) {
+        searchPaths.push(path.join(process.env.LOCALAPPDATA, 'Programs', 'Icecast'));
+      }
     } else if (process.platform === 'darwin') { // macOS
       searchPaths = [
         '/Applications/Icecast',
@@ -447,7 +437,7 @@ class IcecastService {
         '/opt/local/bin',
         '/usr/bin'
       ];
-    } else if (['linux', 'freebsd', 'openbsd'].includes(process.platform)) { // Unix-like
+    } else { // Linux/Unix
       searchPaths = [
         '/usr/local/bin',
         '/usr/bin',
@@ -456,97 +446,119 @@ class IcecastService {
       ];
     }
     
-    // Search for executables in common paths
+    results.searchedPaths = searchPaths;
+    
+    // Check each search path for a complete Icecast installation
     for (const searchPath of searchPaths) {
       try {
-        const exeName = process.platform === 'win32' ? 'icecast.exe' : 'icecast';
-        const icecastExe = path.join(searchPath, exeName);
-        await fs.access(icecastExe);
+        logger.icecast(`Checking path: ${searchPath}`);
         
-        results.installations.push({
-          path: icecastExe,
-          type: 'executable',
-          platform: process.platform,
-          source: 'common_path'
-        });
-        results.found = true;
+        if (await this.directoryExists(searchPath)) {
+          logger.icecast(`Directory exists: ${searchPath}`);
+          
+          // For Windows, validate the complete installation structure
+          if (process.platform === 'win32') {
+            const files = await this.validateIcecastFiles(searchPath);
+            logger.icecast(`File validation results for ${searchPath}:`, files);
+            
+            // Check if we have at least the essential files
+            if (files.executable && files.config) {
+              results.installed = true;
+              results.installationPath = searchPath;
+              results.files = files;
+              
+              // Set configuration path if found
+              if (files.config) {
+                this.configPath = path.join(searchPath, 'icecast.xml');
+              }
+              
+              logger.icecast(`Valid Icecast installation found at: ${searchPath}`);
+              break;
+            }
+          } else {
+            // For Unix-like systems, just check if the executable exists
+            const exeName = 'icecast';
+            const icecastExe = path.join(searchPath, exeName);
+            
+            if (await this.fileExists(icecastExe)) {
+              results.installed = true;
+              results.installationPath = searchPath;
+              results.files.executable = true;
+              
+              logger.icecast(`Icecast executable found at: ${icecastExe}`);
+              break;
+            }
+          }
+        } else {
+          logger.icecast(`Directory does not exist: ${searchPath}`);
+        }
       } catch (error) {
-        // Path doesn't exist
+        logger.error(`Error checking path ${searchPath}:`, error);
       }
     }
     
-    // Step 3: Check if executable is in PATH
-    try {
-      const exeName = process.platform === 'win32' ? 'icecast.exe' : 'icecast';
-      if (process.platform === 'win32') {
-        const { stdout } = await execAsync(`where ${exeName}`);
-        const pathResult = stdout.trim().split('\n')[0]; // Take first result
-        if (pathResult) {
-          results.installations.push({
-            path: pathResult,
-            type: 'executable',
-            platform: process.platform,
-            source: 'path'
-          });
-          results.found = true;
+    // If not found in standard locations, check if it's in PATH
+    if (!results.installed) {
+      try {
+        const exeName = process.platform === 'win32' ? 'icecast.exe' : 'icecast';
+        if (process.platform === 'win32') {
+          const { stdout } = await execAsync(`where ${exeName}`);
+          const pathResult = stdout.trim().split('\n')[0];
+          if (pathResult) {
+            results.installed = true;
+            results.installationPath = path.dirname(pathResult);
+            results.files.executable = true;
+            logger.icecast(`Icecast found in PATH: ${pathResult}`);
+          }
+        } else {
+          const { stdout } = await execAsync(`which ${exeName}`);
+          if (stdout.trim()) {
+            results.installed = true;
+            results.installationPath = path.dirname(stdout.trim());
+            results.files.executable = true;
+            logger.icecast(`Icecast found in PATH: ${stdout.trim()}`);
+          }
         }
-      } else {
-        const { stdout } = await execAsync(`which ${exeName}`);
-        if (stdout.trim()) {
-          results.installations.push({
-            path: stdout.trim(),
-            type: 'executable',
-            platform: process.platform,
-            source: 'path'
-          });
-          results.found = true;
-        }
+      } catch (error) {
+        // Not in PATH
       }
-    } catch (error) {
-      // Not in PATH
     }
     
-    // Step 4: Check Windows services
-    if (process.platform === 'win32') {
+    // Check Windows services as fallback
+    if (!results.installed && process.platform === 'win32') {
       try {
         const { stdout } = await execAsync('sc query "Icecast"');
         if (stdout.includes('SERVICE_NAME: Icecast')) {
-          results.installations.push({
-            path: 'service',
-            type: 'service',
-            platform: 'windows',
-            source: 'service'
-          });
-          results.found = true;
+          results.installed = true;
+          results.installationPath = 'service';
+          logger.icecast('Icecast Windows service detected');
         }
       } catch (error) {
         // Service not found
       }
     }
     
-    // Generate suggestions if nothing found
-    if (!results.found) {
+    // Generate suggestions if not found
+    if (!results.installed) {
       if (process.platform === 'win32') {
         results.suggestions = [
-          'Check if Icecast is installed in Program Files',
-          'Look for Icecast in your Downloads or custom installation folder',
-          'Try running "icecast -v" in Command Prompt to see if it\'s in PATH',
-          'Check Windows Services for Icecast service',
-          'Set ICECAST_CUSTOM_PATH environment variable to point to your installation'
+          'Download Icecast from https://icecast.org/download/',
+          'Install Icecast to C:\\Program Files (x86)\\Icecast',
+          'Ensure the installation includes icecast.exe in the bin folder',
+          'Check that icecast.xml config file exists in the root folder',
+          'Set ICECAST_EXE_PATH in .env to point to your installation'
         ];
       } else if (process.platform === 'darwin') {
         results.suggestions = [
-          'Try installing Icecast via Homebrew: brew install icecast',
+          'Install via Homebrew: brew install icecast',
           'Check if icecast command is available in Terminal',
-          'Look for Icecast in /Applications or /usr/local/bin',
-          'Set ICECAST_CUSTOM_PATH environment variable to point to your installation'
+          'Download from https://icecast.org/download/'
         ];
       } else {
         results.suggestions = [
-          'Try installing Icecast via package manager (apt, yum, brew)',
-          'Check if icecast2 or icecast commands are available',
-          'Look for Icecast in /usr/bin, /usr/local/bin, or /opt',
-          'Set ICECAST_CUSTOM_PATH environment variable to point to your installation'
+          'Install via package manager: sudo apt install icecast2 (Ubuntu/Debian)',
+          'Install via package manager: sudo dnf install icecast (Fedora)',
+          'Check if icecast or icecast2 commands are available'
         ];
       }
     }
@@ -1069,6 +1081,143 @@ class IcecastService {
     
     if (this.isRunning && this.process) {
       await this.stop()
+    }
+  }
+
+  /**
+   * Helper function to check if a file exists
+   */
+  async fileExists(filePath) {
+    try {
+      await fs.access(filePath);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * Helper function to check if a directory exists
+   */
+  async directoryExists(dirPath) {
+    try {
+      const stats = await fs.stat(dirPath);
+      return stats.isDirectory();
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * Validate all required Icecast files exist for Windows installation
+   */
+  async validateIcecastFiles(installationPath) {
+    const files = {
+      executable: await this.fileExists(path.join(installationPath, 'bin', 'icecast.exe')),
+      batchFile: await this.fileExists(path.join(installationPath, 'icecast.bat')),
+      config: await this.fileExists(path.join(installationPath, 'icecast.xml')),
+      logDir: await this.directoryExists(path.join(installationPath, 'logs')),
+      accessLog: await this.fileExists(path.join(installationPath, 'logs', 'access.log')),
+      errorLog: await this.fileExists(path.join(installationPath, 'logs', 'error.log'))
+    };
+
+    return files;
+  }
+
+  /**
+   * Check if Icecast process is running (enhanced for Windows)
+   */
+  async isIcecastRunning() {
+    try {
+      if (process.platform === 'win32') {
+        const { stdout } = await execAsync('tasklist /FI "IMAGENAME eq icecast.exe" /FO CSV');
+        return stdout.includes('icecast.exe');
+      } else {
+        const { stdout } = await execAsync('ps aux | grep icecast | grep -v grep');
+        return stdout.trim().length > 0;
+      }
+    } catch (error) {
+      logger.error('Error checking if Icecast is running:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Get Icecast process ID (enhanced for Windows)
+   */
+  async getIcecastProcessId() {
+    try {
+      if (process.platform === 'win32') {
+        const { stdout } = await execAsync('tasklist /FI "IMAGENAME eq icecast.exe" /FO CSV');
+        const lines = stdout.trim().split('\n');
+        if (lines.length > 1) {
+          const processLine = lines[1].split(',');
+          if (processLine.length > 1) {
+            return processLine[1].replace(/"/g, ''); // Remove quotes
+          }
+        }
+      } else {
+        const { stdout } = await execAsync('pgrep icecast');
+        return stdout.trim();
+      }
+    } catch (error) {
+      logger.error('Error getting Icecast process ID:', error);
+    }
+    return null;
+  }
+
+  /**
+   * Validate Icecast configuration file
+   */
+  async validateConfiguration() {
+    if (!this.configPath) {
+      // Try to find config path if not set
+      const searchResults = await this.searchForIcecastInstallations();
+      if (searchResults.found && searchResults.installations.length > 0) {
+        // Look for a Windows installation with config file
+        const windowsInstall = searchResults.installations.find(install => 
+          install.platform === 'win32' && install.path.includes('Program Files')
+        );
+        if (windowsInstall) {
+          const basePath = path.dirname(windowsInstall.path);
+          this.configPath = path.join(basePath, 'icecast.xml');
+        }
+      }
+      
+      if (!this.configPath) {
+        throw new Error('Icecast configuration file path not found');
+      }
+    }
+
+    if (!await this.fileExists(this.configPath)) {
+      throw new Error('Icecast configuration file not found');
+    }
+
+    try {
+      const configContent = await fs.readFile(this.configPath, 'utf8');
+      
+      // Basic validation - check for required elements
+      const required = ['<hostname>', '<port>', '<source-password>', '<admin-password>'];
+      const missing = required.filter(element => !configContent.includes(element));
+      
+      if (missing.length > 0) {
+        return {
+          valid: false,
+          errors: missing.map(el => `Missing required element: ${el}`)
+        };
+      }
+
+      // Check for the log directory fix (paths starting with ./)
+      const hasFixedPaths = configContent.includes('./logs/') || configContent.includes('.\\logs\\');
+      
+      return {
+        valid: true,
+        hasFixedPaths,
+        message: hasFixedPaths ? 'Configuration includes log path fix' : 'Configuration valid'
+      };
+
+    } catch (error) {
+      throw new Error(`Failed to validate configuration: ${error.message}`);
     }
   }
 }

@@ -9,6 +9,7 @@ LANStreamer is a Node.js-based application that transforms a standard Windows PC
 - [Audio Monitoring Feature](Audio-Monitoring-Feature-Specification.md) - Professional monitoring implementation details
 - [Authentication & Security](Authentication-Security-Specification.md) - Security requirements and implementation
 - [Environment Configuration](env-example.md) - Configuration variables and deployment settings
+- [Development Progress](CHANGELOG.md) - Complete implementation history and current status
 
 ## Document Information
 - **Project**: LANStreamer
@@ -119,49 +120,184 @@ function validatePassword(password) {
 - **Version Control:** Git
 
 ## 3. System Architecture
-### 3.1 Component Architecture
-- **Express Server:** Main HTTP server handling API requests and serving the frontend.
-- **WebSocket Service:** Manages real-time communication for live updates.
-- **Service Layer:** Contains the business logic for system, audio, streaming, and device management.
-- **Data Layer:** Uses file-based JSON storage for configuration and stream data.
+
+### 3.1 Current Implementation Architecture
+
+**Backend Services:**
+- **Express Server:** Main HTTP server (`src/server.js`) running on port 3001
+- **Route Handlers:** Modular API endpoints organized by functionality:
+  - `src/routes/system.js` - System management (Icecast, FFmpeg, audio devices)
+  - `src/routes/streams.js` - Audio streaming control
+  - `src/routes/settings.js` - Configuration management
+  - `src/routes/auth.js` - Authentication endpoints
+- **Service Layer:** Business logic services:
+  - `IcecastService.js` - Windows-specific Icecast management
+  - `AudioDeviceService.js` - Audio hardware detection
+  - `StreamService.js` - FFmpeg process management
+- **Configuration:** Environment-based configuration with `.env` support
+- **Logging:** Winston-based logging with file rotation
+
+**Frontend Architecture:**
+- **Component-Based UI:** Dynamic loading with static fallbacks
+- **Component Manager:** `ComponentManager.js` handles dynamic loading
+- **Core Components:**
+  - `IcecastManager.js` - Icecast server control panel
+  - `LobbyMusicPlayer.js` - Audio playback interface
+- **Static Templates:** HTML fallbacks when components fail to load
+- **Responsive Design:** Tailwind CSS with Material Symbols icons
+
+**Process Management:**
+- **Windows Integration:** Native Windows `tasklist`/`taskkill` commands
+- **Process Tracking:** PID monitoring and lifecycle management  
+- **File Validation:** Comprehensive installation verification
+- **Error Recovery:** Graceful failure handling with user feedback
 
 ## 4. File Structure
 The file structure outlined in the `README.md` is accurate and will be followed. Key development will occur within `vue-app/src` (backend) and `vue-app/frontend/src` (frontend).
 
-## 5. Key Implementation Details
-- **Stream Management:** The backend will generate and execute FFmpeg commands with the necessary arguments to encode audio from the selected device and push it to the Icecast server.
-- **Real-time Communication:** WebSockets will be used to push live updates (stream status, audio levels) from the backend to the frontend without requiring the client to constantly poll the API.
-- **Error Handling:** A centralised error handling strategy will ensure that all failures (e.g., FFmpeg process crashes, device disconnection) are caught, logged, and presented to the user via a clear, human-readable message.
+## 5. Current API Implementation
+
+### 5.1 Implemented Endpoints
+
+**System Management (`/api/system/*`):**
+```javascript
+GET /api/health                              // Server health check
+GET /api/system/audio-devices                // List available audio devices
+GET /api/system/ffmpeg-check                 // Verify FFmpeg installation
+GET /api/system/ffmpeg-processes             // List running FFmpeg processes
+
+// Icecast Management
+GET /api/system/icecast-status               // Basic Icecast status
+GET /api/system/icecast/detailed-status      // Detailed status with mountpoints
+POST /api/system/icecast/start               // Start Icecast server
+POST /api/system/icecast/stop                // Stop Icecast server  
+POST /api/system/icecast/restart             // Restart Icecast server
+POST /api/system/icecast/check-installation  // Verify Icecast installation
+GET /api/system/icecast/search-installations // Search for installations
+GET /api/system/icecast/validate-config      // Validate configuration
+```
+
+**Stream Management (`/api/streams/*`):**
+```javascript
+GET /api/streams                             // List active streams
+POST /api/streams/start                      // Start audio stream
+POST /api/streams/stop                       // Stop audio stream
+```
+
+**Configuration (`/api/settings/*`):**
+```javascript
+GET /api/settings                            // Get current settings
+POST /api/settings/update                    // Update settings
+```
+
+### 5.2 Icecast Service Implementation
+
+**Windows-Specific Features:**
+- **Installation Detection:** Multi-path search including Program Files directories
+- **File Validation:** Comprehensive checking of `icecast.exe`, `icecast.xml`, batch files
+- **Process Management:** Windows `tasklist`/`taskkill` integration with PID tracking
+- **Configuration Validation:** XML parsing and path verification
+- **Error Recovery:** Graceful handling of missing files and permissions
+
+**Configuration Example:**
+```javascript
+// Environment variables for manual path configuration
+ICECAST_EXE_PATH="C:\Program Files (x86)\Icecast\bin\icecast.exe"
+ICECAST_CONFIG_PATH="C:\Program Files (x86)\Icecast\icecast.xml"
+ICECAST_ACCESS_LOG="C:\Program Files (x86)\Icecast\logs\access.log"
+ICECAST_ERROR_LOG="C:\Program Files (x86)\Icecast\logs\error.log"
+```
+
+### 5.3 Component Architecture Implementation
+
+**Dynamic Loading System:**
+```javascript
+// ComponentManager.js handles component lifecycle
+const componentRegistry = {
+  'icecast-server': IcecastManager,
+  'lobby-music-player': LobbyMusicPlayer
+};
+
+// Fallback to static HTML if component fails
+if (component && componentClass) {
+  new componentClass(targetId);
+} else {
+  container.innerHTML = staticTemplate;
+}
+```
+
+**Error Handling Strategy:**
+- Service-level error catching with detailed logging
+- User-friendly error messages in the UI
+- Graceful degradation when external processes fail
+- Comprehensive installation troubleshooting
+
+### 5.4 Future Implementation Details
+- **Stream Management:** FFmpeg command generation for audio encoding
+- **Real-time Communication:** WebSocket integration for live updates
+- **Audio Device Integration:** Hardware detection and configuration
 
 ## 6. Deployment
 The final deliverable will be a single `.exe` file created using a packager like **pkg** or **nexe**. This will bundle the Node.js server, Vue.js frontend, and the FFmpeg/Icecast binaries into one executable, eliminating external dependencies for the end-user.
 
 ---
 
-## 7. Development Roadmap (TDD Plan)
-This section outlines a practical, step-by-step guide for implementing features by writing tests first.
+## 7. Development Status & Roadmap
 
-### Step 1: Backend - Core Server and Health Check
-- **Objective:** Establish the foundational Express server and verify that it is running.
-- **Test:** Write an integration test using Supertest to make a `GET` request to `/api/health`. The test will assert that the response status is `200` and the body contains a success message.
-- **Implementation:** Create `src/server.js` with a basic Express app and a single health-check route.
+### 7.1 Completed Implementation ✅
 
-### Step 2: Backend - Audio Device Service (Mocked)
-- **Objective:** Create the service responsible for retrieving audio devices and define the expected data structure.
-- **Test:** Write a unit test for `src/services/AudioDeviceService.js`. The test will call the `getAudioDevices()` method and assert that it returns a consistent array of mocked device objects.
-- **Implementation:** Create the `AudioDeviceService` class. For now, the `getAudioDevices()` method will simply return a hardcoded, mock array of devices.
+**Backend Foundation:**
+- ✅ **Express Server:** Core HTTP server with health check (`src/server.js`)
+- ✅ **Route Structure:** Modular API endpoints with proper separation of concerns
+- ✅ **Icecast Integration:** Complete Windows-specific management service
+- ✅ **Configuration System:** Environment-based configuration with `.env` support
+- ✅ **Error Handling:** Comprehensive logging and user-friendly error reporting
 
-### Step 3: Backend - Audio Device API Endpoint
-- **Objective:** Expose the list of audio devices via an API endpoint for the frontend to consume.
-- **Test:** Write an integration test using Supertest. The test will send a `GET` request to `/api/system/audio-devices` and assert that the response body matches the data returned by the mocked `AudioDeviceService`.
-- **Implementation:** Create `src/routes/system.js`, import the `AudioDeviceService`, create the route, and register it with the main Express app.
+**System Management:**
+- ✅ **Installation Detection:** Multi-path Icecast discovery with file validation
+- ✅ **Process Management:** Windows `tasklist`/`taskkill` integration with PID tracking  
+- ✅ **Configuration Validation:** XML parsing and troubleshooting assistance
+- ✅ **Audio Device Service:** Basic device detection infrastructure
 
-### Step 4: Backend - FFmpeg Process Management (Simulated)
-- **Objective:** Create a service to manage the FFmpeg process lifecycle without actually spawning a process yet.
-- **Test:** Write a unit test for `src/services/FFmpegService.js`. The test will create an instance of the service, call the `start()` method, and assert that an internal state flag (e.g., `this.is_running`) is set to `true`. A separate test will verify the `stop()` method works correctly.
-- **Implementation:** Create the `FFmpegService` class with `start()`, `stop()`, and `get_status()` methods. These methods will, for now, only manipulate internal state variables.
+**Frontend Architecture:**
+- ✅ **Component System:** Dynamic loading with static fallbacks
+- ✅ **Icecast Manager:** Complete UI for server control and monitoring
+- ✅ **Installation Validation:** File status grid and troubleshooting interface
+- ✅ **Responsive Design:** Tailwind CSS with Material Symbols
 
-### Step 5: Backend - Stream Control API Endpoints
-- **Objective:** Create API endpoints to start and stop streams.
-- **Test:** Write integration tests using Supertest. The tests will send `POST` requests to `/api/streams/start` and `/api/streams/stop` with a configuration payload. Using test spies, assert that the corresponding `FFmpegService` methods are called with the correct parameters.
-- **Implementation:** Create `src/routes/streams.js` and wire it up to the `FFmpegService`.
+### 7.2 Current Development Priorities 🚧
+
+**Audio Streaming Pipeline:**
+- 🚧 **FFmpeg Integration:** Command generation and process management
+- 🚧 **Stream Configuration:** Mount point setup and audio device mapping
+- 🚧 **Real-time Monitoring:** Audio levels and stream health indicators
+
+**User Interface Completion:**
+- 🚧 **Stream Management UI:** Start/stop controls for individual streams
+- 🚧 **Audio Device Selection:** Device picker with real-time detection
+- 🚧 **Listener Interface:** Mobile-first web player for stream consumption
+
+### 7.3 Upcoming Features 📋
+
+**Core Functionality:**
+- 📋 **WebSocket Integration:** Real-time status updates without polling
+- 📋 **QR Code Generation:** Easy listener access to stream URLs
+- 📋 **Stream Statistics:** Listener counts and connection monitoring
+- 📋 **Advanced Error Recovery:** Automatic restart and health monitoring
+
+**Deployment & Distribution:**
+- 📋 **Executable Packaging:** Single `.exe` file with bundled dependencies
+- 📋 **Installation Wizard:** Guided setup for Icecast and FFmpeg
+- 📋 **Documentation:** Complete user manual and troubleshooting guide
+
+### 7.4 Technical Debt & Optimizations
+
+**Performance:**
+- Address repetitive "Icecast installation verified" logging
+- Implement caching for installation detection results
+- Optimize component loading and error boundaries
+
+**Testing Coverage:**
+- Expand Playwright E2E tests for core workflows
+- Add comprehensive unit tests for service classes
+- Implement integration tests for process management

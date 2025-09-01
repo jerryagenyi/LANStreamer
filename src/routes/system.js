@@ -245,4 +245,26 @@ router.get('/ffmpeg-processes', async (req, res) => {
   }
 });
 
+/**
+ * @route GET /api/system/icecast/validate-config
+ * @description Validate Icecast configuration file
+ * @access Public
+ */
+router.get('/icecast/validate-config', async (req, res) => {
+  try {
+    const validation = await icecastService.validateConfiguration();
+    res.json({
+      success: true,
+      ...validation
+    });
+  } catch (error) {
+    console.error('Error validating Icecast configuration:', error);
+    res.status(500).json({ 
+      success: false,
+      error: 'Failed to validate Icecast configuration',
+      message: error.message 
+    });
+  }
+});
+
 export default router;

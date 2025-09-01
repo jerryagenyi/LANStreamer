@@ -152,6 +152,11 @@ class IcecastManager {
             return;
         }
 
+        if (!this.status.files.batchFile) {
+            this.showNotification('Icecast batch file not found', 'error');
+            return;
+        }
+
         try {
             this.isLoading = true;
             this.updateActionButtons();
@@ -237,26 +242,14 @@ class IcecastManager {
             this.isLoading = true;
             this.updateActionButtons();
             
-            const response = await fetch('/api/system/icecast/restart', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                }
-            });
-            
-            const result = await response.json();
-            
-            if (result.success) {
-                this.status.running = true;
-                this.status.processId = result.processId;
-                
-                // Wait a moment for server to restart
-                await new Promise(resolve => setTimeout(resolve, 3000));
-                await this.checkStatus();
-                this.showNotification('Icecast server restarted successfully', 'success');
-            } else {
-                throw new Error(result.message || 'Failed to restart server');
+            // Stop first if running
+            if (this.status.running || this.status.processId) {
+                await this.stopServer();
+                await new Promise(resolve => setTimeout(resolve, 2000));
             }
+            
+            // Then start
+            await this.startServer();
             
         } catch (error) {
             console.error('Failed to restart Icecast server:', error);
@@ -294,7 +287,7 @@ class IcecastManager {
                             <span class="material-symbols-rounded text-sm">refresh</span>
                         </button>
                         ${!this.status.installed ? `
-                        <button id="search-installations-btn" class="inline-flex items-center justify-center gap-2 rounded-md px-2 py-1 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 transition-all duration-300" title="Search for Icecast installations">
+                        <button id="detect-installation-btn" class="inline-flex items-center justify-center gap-2 rounded-md px-2 py-1 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 transition-all duration-300" title="Detect Icecast installation">
                             <span class="material-symbols-rounded text-sm">search</span>
                         </button>
                         ` : ''}
@@ -310,6 +303,16 @@ class IcecastManager {
                 ${this.renderInstallationStatus()}
                 
                 <div class="space-y-5 ${!this.status.installed ? 'opacity-50' : ''}">
+                    <!-- Server Status -->
+                    <div class="flex items-center gap-4 p-3 bg-[#111111] border border-[var(--border-color)] rounded-xl">
+                        <span class="material-symbols-rounded text-2xl ${statusColor.replace('bg-', 'text-')}">${statusIcon}</span>
+                        <div class="flex-1">
+                            <p class="font-semibold text-white">${this.getServerStatusText()}</p>
+                            <p class="text-sm text-gray-400">${this.getServerStatusDescription()}</p>
+                        </div>
+                        ${this.status.processId ? `<span class="text-xs text-gray-500 font-mono">PID: ${this.status.processId}</span>` : ''}
+                    </div>
+                    
                     <!-- Action Buttons -->
                     <div class="flex gap-2 pt-4 border-t border-[var(--border-color)]">
                         <button id="start-btn" class="flex-1 inline-flex items-center justify-center gap-2 rounded-md px-3 py-2 text-sm font-semibold text-white shadow-lg transition-all duration-300 btn-gradient disabled:opacity-50 disabled:cursor-not-allowed" ${!this.status.installed || this.status.running ? 'disabled' : ''}>
@@ -326,23 +329,13 @@ class IcecastManager {
                         </button>
                     </div>
                     
-                    <!-- Server Status -->
-                    <div class="flex items-center gap-4 p-3 bg-[#111111] border border-[var(--border-color)] rounded-xl">
-                        <span class="material-symbols-rounded text-2xl ${statusColor.replace('bg-', 'text-')}">${statusIcon}</span>
-                        <div class="flex-1">
-                            <p class="font-semibold text-white">${this.getServerStatusText()}</p>
-                            <p class="text-sm text-gray-400">${this.getServerStatusDescription()}</p>
-                        </div>
-                        ${this.status.processId ? `<span class="text-xs text-gray-500 font-mono">PID: ${this.status.processId}</span>` : ''}
-                    </div>
-                    
                     <!-- Server Info -->
                     <div class="border-t border-[var(--border-color)] pt-4 mt-4 text-xs text-gray-500 space-y-1">
                         <p><strong>Installation:</strong> ${this.status.installationPath || 'Not detected'}</p>
                         <p><strong>Host:</strong> ${this.status.host || 'localhost'}</p>
                         <p><strong>Port:</strong> ${this.status.port || '8000'}</p>
                         <p><strong>Uptime:</strong> ${this.formatUptime(this.status.uptime)}</p>
-                        <p><strong>Listeners:</strong> ${this.status.listeners || 0}/100</p>
+                        <p><strong>Listeners:</strong> ${this.status.listeners || 0} / 100</p>
                         ${this.status.version ? `<p><strong>Version:</strong> ${this.status.version}</p>` : ''}
                         ${this.status.platform ? `<p><strong>Platform:</strong> ${this.status.platform}</p>` : ''}
                     </div>
@@ -357,12 +350,17 @@ class IcecastManager {
                 <div class="mb-4 p-4 bg-red-500/10 border border-red-500/30 rounded-xl">
                     <div class="flex items-center gap-3 mb-3">
                         <span class="material-symbols-rounded text-red-400">error</span>
-                        <p class="font-medium text-red-400">Not Installed - <a href="https://github.com/jerryagenyi/LANStreamer/blob/main/docs/guides/icecast-installation.md" target="_blank" class="text-blue-400 hover:text-blue-300 underline">setup guide</a></p>
+                        <p class="font-medium text-red-400">Icecast Server Not Detected</p>
                     </div>
                     <p class="text-sm text-gray-400 mb-3">Searched the following locations:</p>
                     <ul class="text-xs text-gray-500 space-y-1 ml-4">
                         ${this.defaultPaths.map(path => `<li>• ${path}</li>`).join('')}
                     </ul>
+                    <div class="mt-3">
+                        <a href="https://icecast.org/download/" target="_blank" class="text-blue-400 hover:text-blue-300 underline text-sm">
+                            Download Icecast Server
+                        </a>
+                    </div>
                 </div>
             `;
         }
@@ -424,7 +422,7 @@ class IcecastManager {
                 this.detectIcecastInstallation();
             }
         });
-        container.querySelector('#search-installations-btn')?.addEventListener('click', () => this.detectIcecastInstallation());
+        container.querySelector('#detect-installation-btn')?.addEventListener('click', () => this.detectIcecastInstallation());
         container.querySelector('#validate-config-btn')?.addEventListener('click', () => this.validateConfiguration());
     }
 

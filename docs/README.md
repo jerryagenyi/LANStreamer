@@ -38,6 +38,11 @@ For the best development experience, use `npm run dev:live`:
   - API specifications and data models
   - System requirements and dependencies
 
+- **[CHANGELOG.md](./CHANGELOG.md)** - Development Progress & History
+  - Complete tracking of all features, fixes, and improvements
+  - Version history with detailed implementation status
+  - Known issues and technical debt documentation
+
 ### Design & Feature Documentation
 
 - **[Admin-Dashboard-UI-Design.md](./Admin-Dashboard-UI-Design.md)** - UI Design Specifications

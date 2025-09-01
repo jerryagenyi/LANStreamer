@@ -180,6 +180,7 @@ Comprehensive documentation is available in the [`docs/`](docs/) directory:
 - **[Product Requirements](docs/LANStreamer-PRD.md)** - Features, user stories, and project scope
 - **[Technical Specifications](docs/LANStreamer-Technical-Specification.md)** - API documentation and system architecture
 - **[Test-Driven Development Plan](docs/LANStreamer-TDD.md)** - Development methodology and testing strategy
+- **[Changelog](docs/CHANGELOG.md)** - Complete development history and progress tracking
 
 ### 🎨 **Design & Features**
 - **[UI Design Specifications](docs/Admin-Dashboard-UI-Design.md)** - Complete visual design guidelines
