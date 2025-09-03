@@ -1,0 +1,3 @@
+but I just ran npm run now and the icecast.exe is running, but the play button is active. First screenshot is icecast.exe is not running, confirmed by the localhost:8000 page being dead. But then I pressed play button and it threw an error.
+
+Screenshot 2 shows I have started icecast.exe.

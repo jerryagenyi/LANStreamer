@@ -1,6 +1,69 @@
 /**
  * Lobby Background Music Player Component
  * Handles music file selection, playback controls, and volume management
+ * 
+ * DEPENDENCIES & INTEGRATION:
+ * ===========================
+ * Backend API Endpoints:
+ * - GET /api/settings/music - Retrieve saved music settings
+ * - POST /api/settings/music - Save music settings (filename, volume, loop, muted)
+ * - DELETE /api/settings/music - Clear saved music settings
+ * 
+ * File System:
+ * - /assets/ directory - Default music files location
+ * - Supports: MP3, WAV, OGG, M4A formats
+ * - Default file: Slack-Huddle-Hold-Music_Daniel-Simmons.mp3
+ * 
+ * Browser APIs:
+ * - HTML5 Audio API - Core audio playback functionality
+ * - File API - User file selection and blob creation
+ * - URL.createObjectURL() - File blob handling
+ * 
+ * UI Components:
+ * - Material Symbols icons - Play, pause, stop, volume, loop controls
+ * - Tailwind CSS classes - Styling and responsive design
+ * - Progress bar - Seek functionality and time display
+ * 
+ * WORKFLOW:
+ * =========
+ * 1. INITIALIZATION:
+ *    - Load last played file from server storage
+ *    - Create HTML5 audio element with event listeners
+ *    - Render UI with current state
+ *    - Set up event delegation for controls
+ * 
+ * 2. FILE MANAGEMENT:
+ *    - User selects file via file input (hidden)
+ *    - File converted to blob URL for playback
+ *    - Settings saved to server storage
+ *    - Error handling for unsupported formats
+ * 
+ * 3. PLAYBACK CONTROL:
+ *    - Play: Load file if needed, start audio playback
+ *    - Pause: Pause current playback, maintain position
+ *    - Stop: Pause and reset to beginning
+ *    - Volume: Adjust audio level (0-100%)
+ *    - Loop: Enable/disable continuous playback
+ * 
+ * 4. STATE MANAGEMENT:
+ *    - Track playing/paused/stopped states
+ *    - Monitor audio loading and error states
+ *    - Update UI elements based on current state
+ *    - Handle audio errors gracefully
+ * 
+ * 5. PERSISTENCE:
+ *    - Save user preferences to server
+ *    - Restore settings on component reload
+ *    - Handle missing or corrupted files
+ *    - Fallback to default music file
+ * 
+ * ERROR HANDLING:
+ * ===============
+ * - File format validation
+ * - Audio loading failures
+ * - Network storage errors
+ * - Browser compatibility issues
+ * - Emergency stop for infinite error loops
  */
 class LobbyMusicPlayer {
     constructor(containerId) {

@@ -41,7 +41,7 @@ tasklist | findstr icecast
 
 According to the [official Icecast documentation](https://icecast.org/docs/icecast-2.4.1/basic-setup.html){:target="_blank"}, after installation you should have:
 
-* **Icecast binary** - The main server executable (`icecast.exe` on Windows, `icecast` on Unix-like systems)
+* **Icecast binary** - The main server executable (`icecast.exe` on Windows inside the bin folder, `icecast` on Unix-like systems)
 * **`conf` directory** - Contains the Icecast configuration file (`icecast.xml`) which defines all configuration parameters
 * **`admin` directory** - Contains XSLT files for the web-based administration interface
 * **`logs` directory** - Blank directory that will contain all logs (if specified in the config file)
@@ -692,3 +692,4 @@ const icecastConfig = {
 - [Audio Pipeline Concepts](../LANStreamer-Audio-Pipeline-Concepts.md)
 - [Authentication & Security Specification](../Authentication-Security-Specification.md)
 - [Manual Setup Guides](../manual-setup/README.md)
+- [Official Icecast Documentation](https://icecast.org/docs/icecast-latest/){:target="_blank"} - Complete and up-to-date Icecast reference

@@ -79,6 +79,82 @@ musicPlayer.destroy();
 - `getPlayState()` - Get current playback state
 - `destroy()` - Clean up component
 
+### IcecastManager
+**File**: `IcecastManager.js`  
+**Purpose**: Comprehensive Icecast server management with autonomous operation capabilities
+
+**Features**:
+- ✅ **Installation Detection**: Multi-platform search with Windows-specific path handling
+- ✅ **File Validation**: Comprehensive validation of executable, config, batch files, and directories
+- ✅ **Process Management**: Start, stop, restart, and force kill Icecast processes
+- ✅ **Real-time Monitoring**: Live status updates, uptime tracking, listener counts
+- ✅ **Configuration Management**: Validate Icecast XML configuration files
+- ✅ **Windows Integration**: Service detection, process ID tracking, port monitoring
+- ✅ **Error Recovery**: Automatic restart, health monitoring, graceful degradation
+- ✅ **Network Diagnostics**: Admin interface accessibility, port conflict detection
+- ✅ **Autonomous Operation**: Self-healing, external process detection, status determination
+
+**Core Capabilities**:
+- **Installation Detection & Validation**: Checks for `icecast.exe`, `icecast.xml`, `icecast.bat` across multiple paths
+- **Process Management & Monitoring**: Uses `tasklist`, `netstat`, `taskkill` for Windows process control
+- **Service Integration**: Monitors Windows services with `sc query` commands
+- **Configuration Management**: Parses and validates `icecast.xml` syntax and paths
+- **Logging & Diagnostics**: Real-time access to `access.log` and `error.log` files
+- **Network & Connectivity**: Tests admin interface at `http://localhost:8000/admin/`
+- **Error Recovery & Resilience**: Automatic health checks and recovery procedures
+
+**Usage**:
+```javascript
+// Initialize the component
+const icecastManager = new IcecastManager('container-id');
+
+// Check current status
+const status = icecastManager.status;
+
+// Start server
+await icecastManager.startServer();
+
+// Validate configuration
+await icecastManager.validateConfiguration();
+
+// Cleanup when done
+icecastManager.destroy();
+```
+
+**API Methods**:
+- `detectIcecastInstallation()` - Search for and validate Icecast installation
+- `checkStatus()` - Get current server status and statistics
+- `validateConfiguration()` - Validate Icecast XML configuration
+- `startServer()` - Start Icecast server process
+- `stopServer()` - Stop Icecast server gracefully
+- `restartServer()` - Restart server with full cycle
+- `updateActionButtons()` - Update UI button states
+- `updateStatusIndicators()` - Update external status displays
+- `startAutoRefresh()` - Begin automatic status monitoring
+- `stopAutoRefresh()` - Stop automatic status monitoring
+- `destroy()` - Clean up component and intervals
+
+**Status Information**:
+- **Installation Status**: Detected paths, file validation results
+- **Process Status**: Running state, Process ID (PID), port activity
+- **Server Stats**: Uptime, listeners, sources, connections
+- **Health Status**: Overall system health (healthy/degraded/warning/critical)
+- **Configuration**: XML validation, path accessibility, error detection
+
+**Workflow**:
+1. **Initialization**: Detect Icecast installation, validate files, check current status
+2. **Status Monitoring**: Continuous monitoring of process, port, and admin interface
+3. **User Control**: Handle start/stop/restart commands with proper error handling
+4. **Health Management**: Monitor system health and trigger recovery procedures
+5. **External Detection**: Detect manually started instances and integrate with them
+
+**Dependencies**:
+- Backend API endpoints (`/api/system/icecast/*`)
+- Windows system commands (`tasklist`, `netstat`, `taskkill`, `sc`)
+- Icecast configuration files (`icecast.xml`)
+- Network connectivity to localhost:8000
+- File system access to Program Files directories
+
 ## Integration Guide
 
 ### 1. Include Component Script

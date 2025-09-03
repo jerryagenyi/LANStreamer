@@ -336,7 +336,11 @@ class IcecastService {
         }
       }
       
-      if (!this.isRunning) {
+      // Check if Icecast process is actually running (even if not started by us)
+      const processRunning = await this.isIcecastRunning();
+      
+      if (!processRunning) {
+        this.isRunning = false; // Sync our internal state
         return {
           installed: true,
           running: false,
@@ -345,6 +349,9 @@ class IcecastService {
           version: installationCheck.version,
           port: config.icecast.port
         }
+      } else {
+        // Process is running - sync our internal state
+        this.isRunning = true;
       }
 
       const response = await fetch(`http://${config.icecast.host}:${config.icecast.port}/admin/stats.xml`, {
@@ -693,7 +700,21 @@ class IcecastService {
         }
       } else {
         // Direct process execution
-        this.process = spawn(icecastCommand, ['-c', this.configPath], {
+        let command, args;
+        
+        if (icecastCommand.endsWith('.bat')) {
+          // For batch files, use cmd.exe to execute them
+          command = 'cmd.exe';
+          args = ['/c', icecastCommand, '-c', this.configPath];
+          logger.icecast('Executing Icecast batch file', { command, args });
+        } else {
+          // For executable files, run directly
+          command = icecastCommand;
+          args = ['-c', this.configPath];
+          logger.icecast('Executing Icecast executable', { command, args });
+        }
+        
+        this.process = spawn(command, args, {
           stdio: ['ignore', 'pipe', 'pipe'],
           detached: false
         })
@@ -753,7 +774,11 @@ class IcecastService {
 
   async stop() {
     try {
-      if (!this.isRunning) {
+      // Check if any icecast process is actually running (even if not started by us)
+      const processRunning = await this.isIcecastRunning()
+      
+      if (!processRunning) {
+        this.isRunning = false // Sync our state
         return {
           success: true,
           message: 'Icecast is not running',
@@ -783,12 +808,25 @@ class IcecastService {
           }
         })
       } else if (process.platform === 'win32') {
-        // Windows service - try to stop the service
+        // Windows - try multiple methods to stop icecast
         try {
-          await execAsync('net stop Icecast')
-          logger.icecast('Icecast Windows service stopped')
-        } catch (serviceError) {
-          logger.warn('Failed to stop Icecast Windows service, may already be stopped:', serviceError.message)
+          // Try Windows service first
+          try {
+            await execAsync('net stop Icecast')
+            logger.icecast('Icecast Windows service stopped')
+          } catch (serviceError) {
+            logger.warn('Windows service stop failed, trying process kill:', serviceError.message)
+          }
+          
+          // Force kill any remaining icecast.exe processes
+          try {
+            await execAsync('taskkill /IM icecast.exe /F')
+            logger.icecast('Force killed icecast.exe processes')
+          } catch (killError) {
+            logger.warn('Process kill failed (may not be running):', killError.message)
+          }
+        } catch (error) {
+          logger.warn('Stop methods failed:', error.message)
         }
       }
 
@@ -812,9 +850,43 @@ class IcecastService {
   async restart() {
     logger.icecast('Restarting Icecast server')
     
-    await this.stop()
-    await new Promise(resolve => setTimeout(resolve, 2000))
-    return await this.start()
+    try {
+      // Stop the server first
+      logger.icecast('Restart: Stopping server...')
+      await this.stop()
+      
+      // Wait for clean shutdown and verify port is free
+      logger.icecast('Restart: Waiting for clean shutdown...')
+      await new Promise(resolve => setTimeout(resolve, 3000)) // Increased wait time
+      
+      // Verify no icecast processes are still running
+      const stillRunning = await this.isIcecastRunning()
+      if (stillRunning) {
+        logger.warn('Restart: Icecast process still detected after stop, forcing kill...')
+        if (process.platform === 'win32') {
+          try {
+            await execAsync('taskkill /IM icecast.exe /F')
+            await new Promise(resolve => setTimeout(resolve, 2000)) // Wait after force kill
+          } catch (error) {
+            logger.warn('Force kill failed:', error.message)
+          }
+        }
+      }
+      
+      // Start the server
+      logger.icecast('Restart: Starting server...')
+      const result = await this.start()
+      
+      logger.icecast('Restart: Completed successfully')
+      return {
+        success: true,
+        message: 'Icecast restarted successfully',
+        ...result
+      }
+    } catch (error) {
+      logger.error('Restart failed:', error)
+      throw new AppError(`Failed to restart Icecast: ${error.message}`, 500)
+    }
   }
 
   async getIcecastCommand() {
@@ -849,20 +921,24 @@ class IcecastService {
       let exeName = 'icecast';
 
       if (process.platform === 'win32') {
-        exeName = 'icecast.exe';
+        // Priority order: batch files first (easier to run), then executables
         commonPaths = [
-          path.join(process.env.ProgramFiles, 'Icecast', exeName),
-          path.join(process.env['ProgramFiles(x86)'], 'Icecast', exeName),
-          path.join(process.env.ProgramFiles, 'Icecast2', exeName),
-          path.join(process.env['ProgramFiles(x86)'], 'Icecast2', exeName),
-          'C:\\icecast\\icecast.exe',
-          'C:\\icecast2\\icecast.exe',
-          // Add explicit paths for common installations
-          'C:\\Program Files\\Icecast\\icecast.exe',
-          'C:\\Program Files (x86)\\Icecast\\icecast.exe',
-          'C:\\Program Files\\Icecast2\\icecast.exe',
-          'C:\\Program Files (x86)\\Icecast2\\icecast.exe',
-          // Add bin subdirectories where executables are typically stored
+          // Batch files (highest priority - these tend to work better on Windows)
+          path.join(process.env['ProgramFiles(x86)'], 'Icecast', 'icecast.bat'),
+          path.join(process.env.ProgramFiles, 'Icecast', 'icecast.bat'),
+          'C:\\Program Files (x86)\\Icecast\\icecast.bat',
+          'C:\\Program Files\\Icecast\\icecast.bat',
+          'C:\\icecast\\icecast.bat',
+          'C:\\icecast2\\icecast.bat',
+          
+          // Executable files (fallback) - NOTE: icecast.exe is always in the bin subdirectory
+          path.join(process.env.ProgramFiles, 'Icecast', 'bin', 'icecast.exe'),
+          path.join(process.env['ProgramFiles(x86)'], 'Icecast', 'bin', 'icecast.exe'),
+          path.join(process.env.ProgramFiles, 'Icecast2', 'bin', 'icecast.exe'),
+          path.join(process.env['ProgramFiles(x86)'], 'Icecast2', 'bin', 'icecast.exe'),
+          'C:\\icecast\\bin\\icecast.exe',
+          'C:\\icecast2\\bin\\icecast.exe',
+          // Add explicit paths for common installations (all in bin subdirectory)
           'C:\\Program Files\\Icecast\\bin\\icecast.exe',
           'C:\\Program Files (x86)\\Icecast\\bin\\icecast.exe',
           'C:\\Program Files\\Icecast2\\bin\\icecast.exe',

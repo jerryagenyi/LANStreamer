@@ -1,6 +1,99 @@
 /**
  * Enhanced Icecast Server Manager Component
  * Handles Windows-specific Icecast detection, status monitoring, and control operations
+ * 
+ * DEPENDENCIES & INTEGRATION:
+ * ===========================
+ * Backend API Endpoints:
+ * - GET /api/system/icecast/search-installations - Search for Icecast installations
+ * - GET /api/system/icecast-status - Get current server status and statistics
+ * - POST /api/system/icecast/start - Start Icecast server process
+ * - POST /api/system/icecast/stop - Stop Icecast server gracefully
+ * - POST /api/system/icecast/restart - Restart server with full cycle
+ * - GET /api/system/icecast/validate-config - Validate configuration files
+ * 
+ * Windows System Commands:
+ * - tasklist | findstr /I icecast.exe - Check if process is running
+ * - taskkill /IM icecast.exe /F - Force kill icecast.exe process by name
+ * - netstat -ano | findstr :8000 - Check if port 8000 is active
+ * - tasklist /FI "IMAGENAME eq icecast.exe" /FO TABLE - Get PID and details for icecast.exe
+ * - taskkill /PID {PID} /F - Force kill process by ID
+ * - sc query "Icecast" - Check Windows service status
+ * - net start/stop Icecast - Control Windows service
+ * 
+ * Icecast Installation Files:
+ * - C:\Program Files (x86)\Icecast\bin\icecast.exe - Main executable (ALWAYS in bin subfolder)
+ * - C:\Program Files (x86)\Icecast\icecast.xml - Configuration file
+ * - C:\Program Files (x86)\Icecast\icecast.bat - Windows batch file (calls bin\icecast.exe)
+ * - C:\Program Files (x86)\Icecast\logs\ - Log directory
+ * - C:\Program Files (x86)\Icecast\web\ - Web interface files
+ * - C:\Program Files (x86)\Icecast\admin\ - Admin interface files
+ * 
+ * IMPORTANT: icecast.exe is NEVER at the root - it's always in the bin\ subdirectory
+ * The icecast.bat file is the standard way to start Icecast as it correctly references bin\icecast.exe
+ * 
+ * Network Services:
+ * - http://localhost:8000/admin/ - Icecast admin interface
+ * - Port 8000 - Default Icecast listening port
+ * - HTTP status endpoints for health monitoring
+ * 
+ * File System Access:
+ * - Program Files directories (x86 and x64)
+ * - Configuration file parsing (XML)
+ * - Log file access and monitoring
+ * - Directory structure validation
+ * 
+ * WORKFLOW:
+ * =========
+ * 1. INSTALLATION DETECTION:
+ *    - Search predefined paths for Icecast installation
+ *    - Validate required files (exe, xml, bat, directories)
+ *    - Check file permissions and accessibility
+ *    - Store installation path for future operations
+ * 
+ * 2. STATUS MONITORING:
+ *    - Check if icecast.exe process is running (tasklist)
+ *    - Verify port 8000 is active (netstat)
+ *    - Test admin interface accessibility (HTTP GET)
+ *    - Monitor Windows service status (sc query)
+ *    - Track uptime, listeners, and connections
+ * 
+ * 3. PROCESS MANAGEMENT:
+ *    - Start: Execute icecast.bat with proper working directory
+ *    - Stop: Send termination signal to process ID
+ *    - Restart: Stop then start with status verification
+ *    - Force Kill: Use taskkill for unresponsive processes
+ *    - Process ID tracking for precise control
+ * 
+ * 4. CONFIGURATION VALIDATION:
+ *    - Parse icecast.xml for syntax errors
+ *    - Validate log and web directory paths
+ *    - Check file permissions and accessibility
+ *    - Detect configuration conflicts and issues
+ *    - Provide detailed error reporting
+ * 
+ * 5. HEALTH MONITORING:
+ *    - Determine overall system health status
+ *    - Monitor process, port, and admin interface
+ *    - Track error rates and recovery attempts
+ *    - Automatic health checks every 10 seconds
+ *    - Graceful degradation on failures
+ * 
+ * 6. ERROR RECOVERY:
+ *    - Automatic restart on process crashes
+ *    - Configuration validation before startup
+ *    - Fallback to manual process control
+ *    - User notification of issues and resolutions
+ *    - Logging of all operations and errors
+ * 
+ * AUTONOMOUS CAPABILITIES:
+ * ========================
+ * - Self-detection of external Icecast instances
+ * - Automatic health monitoring and recovery
+ * - Configuration validation and error reporting
+ * - Process lifecycle management without user intervention
+ * - Integration with Windows services and process management
+ * - Real-time status updates and health assessment
  */
 class IcecastManager {
     constructor(containerId) {
@@ -48,6 +141,8 @@ class IcecastManager {
             await this.detectIcecastInstallation();
             if (this.status.installed) {
                 await this.checkStatus();
+                // Force a render after checking status to ensure button states are correct
+                this.render();
             }
         } catch (error) {
             console.warn('Failed to detect Icecast installation or check status:', error);
@@ -168,16 +263,20 @@ class IcecastManager {
             
             const result = await response.json();
             
-            if (result.success) {
+            // Check both HTTP status and result.success
+            if (response.ok && result.success) {
                 this.status.running = true;
                 this.status.processId = result.processId;
                 
                 // Wait a moment for server to start
                 await new Promise(resolve => setTimeout(resolve, 3000));
                 await this.checkStatus();
+                this.render(); // Re-render to update button states
                 this.showNotification('Icecast server started successfully', 'success');
             } else {
-                throw new Error(result.message || 'Failed to start server');
+                // Log detailed error information for debugging
+                console.error('Start failed - HTTP Status:', response.status, 'Result:', result);
+                throw new Error(result.message || result.error || `HTTP ${response.status}: Failed to start server`);
             }
         } catch (error) {
             console.error('Failed to start Icecast server:', error);
@@ -214,6 +313,7 @@ class IcecastManager {
                 this.status.running = false;
                 this.status.processId = null;
                 await this.checkStatus();
+                this.render(); // Re-render to update button states
                 this.showNotification('Icecast server stopped successfully', 'success');
             } else {
                 throw new Error(result.message || 'Failed to stop server');
@@ -247,12 +347,17 @@ class IcecastManager {
             const result = await response.json();
             
             if (result.success) {
-                this.status.running = true;
-                this.status.processId = result.processId;
+                // Don't immediately update status - wait for actual restart to complete
+                // The restart process handles stopping and starting internally
                 
-                // Wait a moment for server to restart
-                await new Promise(resolve => setTimeout(resolve, 3000));
+                // Wait longer for the complete restart cycle
+                await new Promise(resolve => setTimeout(resolve, 6000));
+                
+                // Check actual status after restart completes
                 await this.checkStatus();
+                
+                // Only render after we know the actual state
+                this.render(); // Re-render to update button states
                 this.showNotification('Icecast server restarted successfully', 'success');
             } else {
                 throw new Error(result.message || 'Failed to restart server');
@@ -261,6 +366,9 @@ class IcecastManager {
         } catch (error) {
             console.error('Failed to restart Icecast server:', error);
             this.showNotification(`Failed to restart server: ${error.message}`, 'error');
+            // Check status even on error to sync button states
+            await this.checkStatus();
+            this.render();
         } finally {
             this.isLoading = false;
             this.updateActionButtons();
@@ -314,15 +422,15 @@ class IcecastManager {
                     <div class="flex gap-2 pt-4 border-t border-[var(--border-color)]">
                         <button id="start-btn" class="flex-1 inline-flex items-center justify-center gap-2 rounded-md px-3 py-2 text-sm font-semibold text-white shadow-lg transition-all duration-300 btn-gradient disabled:opacity-50 disabled:cursor-not-allowed" ${!this.status.installed || this.status.running ? 'disabled' : ''}>
                             <span class="material-symbols-rounded text-base">play_arrow</span>
-                            Start
+                            Start Server
                         </button>
-                        <button id="stop-btn" class="flex-1 inline-flex items-center justify-center gap-2 rounded-md px-3 py-2 text-sm font-semibold text-white shadow-lg transition-all duration-300 btn-stop-gradient disabled:opacity-50 disabled:cursor-not-allowed" ${!this.status.installed || !this.status.running ? 'disabled' : ''}>
+                        <button id="icecast-stop-btn" class="flex-1 inline-flex items-center justify-center gap-2 rounded-md px-3 py-2 text-sm font-semibold text-white shadow-lg transition-all duration-300 btn-stop-gradient disabled:opacity-50 disabled:cursor-not-allowed" ${!this.status.installed || !this.status.running ? 'disabled' : ''}>
                             <span class="material-symbols-rounded text-base">stop</span>
-                            Stop
+                            Stop Server
                         </button>
-                        <button id="restart-btn" class="flex-1 inline-flex items-center justify-center gap-2 rounded-md px-3 py-2 text-sm font-semibold text-white shadow-lg transition-all duration-300 bg-[var(--card-bg)] border border-[var(--border-color)] hover:bg-[var(--border-color)] disabled:opacity-50 disabled:cursor-not-allowed" ${!this.status.installed ? 'disabled' : ''}>
+                        <button id="restart-btn" class="flex-1 inline-flex items-center justify-center gap-2 rounded-md px-3 py-2 text-sm font-semibold text-white shadow-lg transition-all duration-300 bg-[var(--card-bg)] border border-[var(--border-color)] hover:bg-[var(--border-color)] disabled:opacity-50 disabled:cursor-not-allowed" ${!this.status.installed || !this.status.running ? 'disabled' : ''}>
                             <span class="material-symbols-rounded text-base">restart_alt</span>
-                            Restart
+                            Restart Server
                         </button>
                     </div>
                     
@@ -349,6 +457,9 @@ class IcecastManager {
                 </div>
             </div>
         `;
+        
+        // Re-setup event listeners after rendering
+        this.setupEventListeners();
     }
 
     renderInstallationStatus() {
@@ -415,7 +526,7 @@ class IcecastManager {
 
         // Action buttons
         container.querySelector('#start-btn')?.addEventListener('click', () => this.startServer());
-        container.querySelector('#stop-btn')?.addEventListener('click', () => this.stopServer());
+        container.querySelector('#icecast-stop-btn')?.addEventListener('click', () => this.stopServer());
         container.querySelector('#restart-btn')?.addEventListener('click', () => this.restartServer());
         container.querySelector('#refresh-status-btn')?.addEventListener('click', () => {
             if (this.status.installed) {
@@ -430,22 +541,22 @@ class IcecastManager {
 
     updateActionButtons() {
         const startBtn = document.querySelector('#start-btn');
-        const stopBtn = document.querySelector('#stop-btn');
+        const stopBtn = document.querySelector('#icecast-stop-btn');
         const restartBtn = document.querySelector('#restart-btn');
         
         if (startBtn) startBtn.disabled = this.isLoading || !this.status.installed || this.status.running;
         if (stopBtn) stopBtn.disabled = this.isLoading || !this.status.installed || !this.status.running;
-        if (restartBtn) restartBtn.disabled = this.isLoading || !this.status.installed;
+        if (restartBtn) restartBtn.disabled = this.isLoading || !this.status.installed || !this.status.running;
         
         // Update button text during loading
         if (this.isLoading) {
-            if (startBtn && startBtn.disabled) startBtn.innerHTML = '<span class="material-symbols-rounded text-base animate-spin">refresh</span> Starting...';
-            if (stopBtn && stopBtn.disabled) stopBtn.innerHTML = '<span class="material-symbols-rounded text-base animate-spin">refresh</span> Stopping...';
-            if (restartBtn && restartBtn.disabled) restartBtn.innerHTML = '<span class="material-symbols-rounded text-base animate-spin">refresh</span> Restarting...';
+            if (startBtn && startBtn.disabled) startBtn.innerHTML = '<span class="material-symbols-rounded text-base animate-spin">refresh</span> Starting Server...';
+            if (stopBtn && stopBtn.disabled) stopBtn.innerHTML = '<span class="material-symbols-rounded text-base animate-spin">refresh</span> Stopping Server...';
+            if (restartBtn && restartBtn.disabled) restartBtn.innerHTML = '<span class="material-symbols-rounded text-base animate-spin">refresh</span> Restarting Server...';
         } else {
-            if (startBtn) startBtn.innerHTML = '<span class="material-symbols-rounded text-base">play_arrow</span> Start';
-            if (stopBtn) stopBtn.innerHTML = '<span class="material-symbols-rounded text-base">stop</span> Stop';
-            if (restartBtn) restartBtn.innerHTML = '<span class="material-symbols-rounded text-base">restart_alt</span> Restart';
+            if (startBtn) startBtn.innerHTML = '<span class="material-symbols-rounded text-base">play_arrow</span> Start Server';
+            if (stopBtn) stopBtn.innerHTML = '<span class="material-symbols-rounded text-base">stop</span> Stop Server';
+            if (restartBtn) restartBtn.innerHTML = '<span class="material-symbols-rounded text-base">restart_alt</span> Restart Server';
         }
     }
 
@@ -554,9 +665,18 @@ class IcecastManager {
         
         this.statusCheckInterval = setInterval(() => {
             if (!this.isLoading && this.status.installed) {
-                this.checkStatus();
+                this.checkStatusAndUpdateButtons();
             }
-        }, 10000); // Check every 10 seconds
+        }, 5000); // Check every 5 seconds for better responsiveness
+    }
+
+    async checkStatusAndUpdateButtons() {
+        try {
+            await this.checkStatus();
+            this.render(); // Update button states based on new status
+        } catch (error) {
+            console.warn('Auto status check failed:', error);
+        }
     }
 
     stopAutoRefresh() {

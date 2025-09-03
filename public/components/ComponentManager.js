@@ -2,6 +2,89 @@
  * Component Manager
  * Handles conditional rendering between components and static content
  * Shows development status and graceful fallbacks
+ * At poduction, to replace static elements with error messages and what to do to fix it
+ * 
+ * DEPENDENCIES & INTEGRATION:
+ * ===========================
+ * Component Classes (Expected on window object):
+ * - LobbyMusicPlayer - Background music player component
+ * - IcecastManager - Icecast server management component
+ * - StreamControlPanel - Stream control interface (future)
+ * - AudioDeviceSelector - Audio device selection (future)
+ * - FFmpegStreamsPanel - FFmpeg stream management (future)
+ * - VideoSourcesPanel - Video source management (future)
+ * 
+ * HTML Structure Requirements:
+ * - Main container IDs must match componentRegistry keys
+ * - Static fallback containers with IDs ending in '-static'
+ * - Material Symbols icons for status indicators
+ * - Tailwind CSS classes for styling
+ * 
+ * Component Registration System:
+ * - componentRegistry object defines all available sections
+ * - Each section has component class name and static fallback ID
+ * - Components must be available on window object
+ * - Static content serves as development fallback
+ * 
+ * Browser APIs:
+ * - DOM manipulation and event handling
+ * - ES6 modules and class instantiation
+ * - Async/await for component initialization
+ * - Error handling and fallback mechanisms
+ * 
+ * WORKFLOW:
+ * =========
+ * 1. INITIALIZATION:
+ *    - Scan componentRegistry for all registered sections
+ *    - Check if component classes exist on window object
+ *    - Initialize components or fall back to static content
+ *    - Add development status indicators to each section
+ * 
+ * 2. COMPONENT LOADING:
+ *    - Attempt to instantiate component class
+ *    - Pass container ID to component constructor
+ *    - Store component instance for future reference
+ *    - Handle initialization errors gracefully
+ * 
+ * 3. STATIC FALLBACK:
+ *    - If component class not found, use static content
+ *    - Move static HTML from fallback container to main container
+ *    - Add notice about using static content
+ *    - Maintain functionality without interactive features
+ * 
+ * 4. STATUS REPORTING:
+ *    - Track which sections use components vs static content
+ *    - Provide development status overview
+ *    - Log component availability and initialization results
+ *    - Enable debugging and development tracking
+ * 
+ * 5. COMPONENT MANAGEMENT:
+ *    - Store references to all component instances
+ *    - Provide access to components via getComponent()
+ *    - Handle component cleanup and destruction
+ *    - Support dynamic component refresh and reload
+ * 
+ * 6. ERROR HANDLING:
+ *    - Graceful fallback when components fail to load
+ *    - User-friendly error messages and status indicators
+ *    - Development mode notifications and debugging info
+ *    - Recovery mechanisms for failed initializations
+ * 
+ * DEVELOPMENT FEATURES:
+ * =====================
+ * - Visual indicators for component vs static usage
+ * - Console logging for debugging and development
+ * - Component refresh capabilities for testing
+ * - Status reporting for development progress tracking
+ * - Graceful degradation when components unavailable
+ * 
+ * INTEGRATION PATTERNS:
+ * =====================
+ * - Components must follow standard constructor pattern
+ * - Components should implement destroy() method
+ * - Static content should provide basic functionality
+ * - Status indicators show development progress
+ * - Error boundaries prevent complete failure
  */
 class ComponentManager {
     constructor() {
