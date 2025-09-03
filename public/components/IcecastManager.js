@@ -126,6 +126,7 @@ class IcecastManager {
         this.isLoading = false;
         this.statusCheckInterval = null;
         this.autoRefresh = true;
+        this.installationDetailsExpanded = false; // Track expanded state
         this.defaultPaths = [
             'C:\\Program Files (x86)\\Icecast',
             'C:\\Program Files\\Icecast',
@@ -155,6 +156,14 @@ class IcecastManager {
         if (this.autoRefresh && this.status.installed) {
             this.startAutoRefresh();
         }
+        
+        // Make this instance globally accessible for the onclick handler
+        window.icecastManager = this;
+    }
+
+    toggleInstallationDetails() {
+        this.installationDetailsExpanded = !this.installationDetailsExpanded;
+        this.render();
     }
 
     async detectIcecastInstallation() {
@@ -171,6 +180,7 @@ class IcecastManager {
             if (data.installed) {
                 console.log('Icecast installation detected at:', data.installationPath);
                 console.log('File validation results:', data.files);
+                console.log('Log directory status:', data.files.logDir);
             } else {
                 console.log('Icecast not detected. Searched paths:', data.searchedPaths);
             }
@@ -249,7 +259,7 @@ class IcecastManager {
 
         try {
             this.isLoading = true;
-            this.updateActionButtons();
+            this.updateActionButtons('start');
             
             const response = await fetch('/api/system/icecast/start', {
                 method: 'POST',
@@ -283,7 +293,7 @@ class IcecastManager {
             this.showNotification(`Failed to start server: ${error.message}`, 'error');
         } finally {
             this.isLoading = false;
-            this.updateActionButtons();
+            this.updateActionButtons(); // No loading button parameter = normal state
         }
     }
 
@@ -295,7 +305,7 @@ class IcecastManager {
 
         try {
             this.isLoading = true;
-            this.updateActionButtons();
+            this.updateActionButtons('stop');
             
             const response = await fetch('/api/system/icecast/stop', {
                 method: 'POST',
@@ -323,7 +333,7 @@ class IcecastManager {
             this.showNotification(`Failed to stop server: ${error.message}`, 'error');
         } finally {
             this.isLoading = false;
-            this.updateActionButtons();
+            this.updateActionButtons(); // No loading button parameter = normal state
         }
     }
 
@@ -335,7 +345,7 @@ class IcecastManager {
 
         try {
             this.isLoading = true;
-            this.updateActionButtons();
+            this.updateActionButtons('restart');
             
             const response = await fetch('/api/system/icecast/restart', {
                 method: 'POST',
@@ -371,7 +381,7 @@ class IcecastManager {
             this.render();
         } finally {
             this.isLoading = false;
-            this.updateActionButtons();
+            this.updateActionButtons(); // No loading button parameter = normal state
         }
     }
 
@@ -479,40 +489,51 @@ class IcecastManager {
         }
 
         return `
-            <div class="mb-4 p-4 bg-green-500/10 border border-green-500/30 rounded-xl">
-                <div class="flex items-center gap-3 mb-3">
-                    <span class="material-symbols-rounded text-green-400">check_circle</span>
-                    <p class="font-medium text-green-400">Icecast Installation Detected</p>
-                </div>
-                <div class="grid grid-cols-2 gap-3 text-xs">
-                    <div class="space-y-1">
-                        <p class="text-gray-400">Files Status:</p>
-                        <div class="flex items-center gap-2">
-                            <span class="material-symbols-rounded text-xs ${this.status.files.executable ? 'text-green-400' : 'text-red-400'}">${this.status.files.executable ? 'check' : 'close'}</span>
-                            <span class="text-gray-500">Executable</span>
-                        </div>
-                        <div class="flex items-center gap-2">
-                            <span class="material-symbols-rounded text-xs ${this.status.files.batchFile ? 'text-green-400' : 'text-red-400'}">${this.status.files.batchFile ? 'check' : 'close'}</span>
-                            <span class="text-gray-500">Batch File</span>
-                        </div>
-                        <div class="flex items-center gap-2">
-                            <span class="material-symbols-rounded text-xs ${this.status.files.config ? 'text-green-400' : 'text-red-400'}">${this.status.files.config ? 'check' : 'close'}</span>
-                            <span class="text-gray-500">Configuration</span>
-                        </div>
+            <div class="mb-4 bg-green-500/10 border border-green-500/30 rounded-xl">
+                <!-- Collapsible Header -->
+                <div class="flex items-center justify-between p-4 cursor-pointer" onclick="window.icecastManager.toggleInstallationDetails();">
+                    <div class="flex items-center gap-3">
+                        <span class="material-symbols-rounded text-green-400">check_circle</span>
+                        <p class="font-medium text-green-400">Icecast Installation Detected</p>
                     </div>
-                    <div class="space-y-1">
-                        <p class="text-gray-400">Directories:</p>
-                        <div class="flex items-center gap-2">
-                            <span class="material-symbols-rounded text-xs ${this.status.files.logDir ? 'text-green-400' : 'text-red-400'}">${this.status.files.logDir ? 'check' : 'close'}</span>
-                            <span class="text-gray-500">Log Directory</span>
+                    <div class="flex items-center gap-2">
+                        <span class="text-xs text-gray-400">Icecast Info</span>
+                        <span class="material-symbols-rounded text-gray-400 expand-icon transition-transform duration-300 ${this.installationDetailsExpanded ? 'rotate-180' : ''}">expand_more</span>
+                    </div>
+                </div>
+                
+                <!-- Collapsible Content -->
+                <div class="installation-details overflow-hidden transition-all duration-300 ${this.installationDetailsExpanded ? 'max-h-96 px-4 pb-4' : 'max-h-0'}">`
+                    <div class="grid grid-cols-2 gap-3 text-xs">
+                        <div class="space-y-1">
+                            <p class="text-gray-400">Files Status:</p>
+                            <div class="flex items-center gap-2">
+                                <span class="material-symbols-rounded text-xs ${this.status.files.executable ? 'text-green-400' : 'text-red-400'}">${this.status.files.executable ? 'check' : 'close'}</span>
+                                <span class="text-gray-500">Executable</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <span class="material-symbols-rounded text-xs ${this.status.files.batchFile ? 'text-green-400' : 'text-red-400'}">${this.status.files.batchFile ? 'check' : 'close'}</span>
+                                <span class="text-gray-500">Batch File</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <span class="material-symbols-rounded text-xs ${this.status.files.config ? 'text-green-400' : 'text-red-400'}">${this.status.files.config ? 'check' : 'close'}</span>
+                                <span class="text-gray-500">Configuration</span>
+                            </div>
                         </div>
-                        <div class="flex items-center gap-2">
-                            <span class="material-symbols-rounded text-xs ${this.status.files.accessLog ? 'text-green-400' : 'text-yellow-400'}">${this.status.files.accessLog ? 'check' : 'schedule'}</span>
-                            <span class="text-gray-500">Access Log</span>
-                        </div>
-                        <div class="flex items-center gap-2">
-                            <span class="material-symbols-rounded text-xs ${this.status.files.errorLog ? 'text-green-400' : 'text-yellow-400'}">${this.status.files.errorLog ? 'check' : 'schedule'}</span>
-                            <span class="text-gray-500">Error Log</span>
+                        <div class="space-y-1">
+                            <p class="text-gray-400">Directories:</p>
+                            <div class="flex items-center gap-2">
+                                <span class="material-symbols-rounded text-xs ${this.status.files.logDir ? 'text-green-400' : 'text-red-400'}">${this.status.files.logDir ? 'check' : 'close'}</span>
+                                <span class="text-gray-500">Log Directory ${this.status.files.logDir !== undefined ? `(${this.status.files.logDir})` : '(undefined)'}</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <span class="material-symbols-rounded text-xs ${this.status.files.accessLog ? 'text-green-400' : 'text-yellow-400'}">${this.status.files.accessLog ? 'check' : 'schedule'}</span>
+                                <span class="text-gray-500">Access Log ${this.status.files.accessLog ? '' : '(created when server runs)'}</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <span class="material-symbols-rounded text-xs ${this.status.files.errorLog ? 'text-green-400' : 'text-yellow-400'}">${this.status.files.errorLog ? 'check' : 'schedule'}</span>
+                                <span class="text-gray-500">Error Log ${this.status.files.errorLog ? '' : '(created when server runs)'}</span>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -539,24 +560,39 @@ class IcecastManager {
         container.querySelector('#validate-config-btn')?.addEventListener('click', () => this.validateConfiguration());
     }
 
-    updateActionButtons() {
+    updateActionButtons(loadingButton = null) {
         const startBtn = document.querySelector('#start-btn');
         const stopBtn = document.querySelector('#icecast-stop-btn');
         const restartBtn = document.querySelector('#restart-btn');
         
-        if (startBtn) startBtn.disabled = this.isLoading || !this.status.installed || this.status.running;
-        if (stopBtn) stopBtn.disabled = this.isLoading || !this.status.installed || !this.status.running;
-        if (restartBtn) restartBtn.disabled = this.isLoading || !this.status.installed || !this.status.running;
+        // Disable buttons based on loading state and server status
+        if (startBtn) startBtn.disabled = (loadingButton !== null) || !this.status.installed || this.status.running;
+        if (stopBtn) stopBtn.disabled = (loadingButton !== null) || !this.status.installed || !this.status.running;
+        if (restartBtn) restartBtn.disabled = (loadingButton !== null) || !this.status.installed || !this.status.running;
         
-        // Update button text during loading
-        if (this.isLoading) {
-            if (startBtn && startBtn.disabled) startBtn.innerHTML = '<span class="material-symbols-rounded text-base animate-spin">refresh</span> Starting Server...';
-            if (stopBtn && stopBtn.disabled) stopBtn.innerHTML = '<span class="material-symbols-rounded text-base animate-spin">refresh</span> Stopping Server...';
-            if (restartBtn && restartBtn.disabled) restartBtn.innerHTML = '<span class="material-symbols-rounded text-base animate-spin">refresh</span> Restarting Server...';
-        } else {
-            if (startBtn) startBtn.innerHTML = '<span class="material-symbols-rounded text-base">play_arrow</span> Start Server';
-            if (stopBtn) stopBtn.innerHTML = '<span class="material-symbols-rounded text-base">stop</span> Stop Server';
-            if (restartBtn) restartBtn.innerHTML = '<span class="material-symbols-rounded text-base">restart_alt</span> Restart Server';
+        // Update button text - only show spinner for the specific loading button
+        if (startBtn) {
+            if (loadingButton === 'start') {
+                startBtn.innerHTML = '<span class="material-symbols-rounded text-base animate-spin">refresh</span> Starting Server...';
+            } else {
+                startBtn.innerHTML = '<span class="material-symbols-rounded text-base">play_arrow</span> Start Server';
+            }
+        }
+        
+        if (stopBtn) {
+            if (loadingButton === 'stop') {
+                stopBtn.innerHTML = '<span class="material-symbols-rounded text-base animate-spin">refresh</span> Stopping Server...';
+            } else {
+                stopBtn.innerHTML = '<span class="material-symbols-rounded text-base">stop</span> Stop Server';
+            }
+        }
+        
+        if (restartBtn) {
+            if (loadingButton === 'restart') {
+                restartBtn.innerHTML = '<span class="material-symbols-rounded text-base animate-spin">refresh</span> Restarting Server...';
+            } else {
+                restartBtn.innerHTML = '<span class="material-symbols-rounded text-base">restart_alt</span> Restart Server';
+            }
         }
     }
 

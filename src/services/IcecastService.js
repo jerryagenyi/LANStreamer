@@ -463,10 +463,11 @@ class IcecastService {
         if (await this.directoryExists(searchPath)) {
           logger.icecast(`Directory exists: ${searchPath}`);
           
-          // For Windows, validate the complete installation structure
-          if (process.platform === 'win32') {
-            const files = await this.validateIcecastFiles(searchPath);
-            logger.icecast(`File validation results for ${searchPath}:`, files);
+                      // For Windows, validate the complete installation structure
+            if (process.platform === 'win32') {
+              const files = await this.validateIcecastFiles(searchPath);
+              logger.icecast(`File validation results for ${searchPath}:`, files);
+              logger.icecast(`Log directory check for ${path.join(searchPath, 'logs')}:`, files.logDir);
             
             // Check if we have at least the essential files
             if (files.executable && files.config) {
@@ -1188,15 +1189,34 @@ class IcecastService {
    * Validate all required Icecast files exist for Windows installation
    */
   async validateIcecastFiles(installationPath) {
+    const logsDir = path.join(installationPath, 'logs');
+    const logDirExists = await this.directoryExists(logsDir);
+    
+    logger.icecast(`Checking logs directory: ${logsDir}, exists: ${logDirExists}`);
+    
+    // Check for any existing log files (they may not exist until first run)
+    let accessLogExists = false;
+    let errorLogExists = false;
+    
+    if (logDirExists) {
+      accessLogExists = await this.fileExists(path.join(logsDir, 'access.log'));
+      errorLogExists = await this.fileExists(path.join(logsDir, 'error.log'));
+      
+      // If log directory exists, consider logs "available" (they'll be created when Icecast runs)
+      accessLogExists = accessLogExists || logDirExists;
+      errorLogExists = errorLogExists || logDirExists;
+    }
+    
     const files = {
       executable: await this.fileExists(path.join(installationPath, 'bin', 'icecast.exe')),
       batchFile: await this.fileExists(path.join(installationPath, 'icecast.bat')),
       config: await this.fileExists(path.join(installationPath, 'icecast.xml')),
-      logDir: await this.directoryExists(path.join(installationPath, 'logs')),
-      accessLog: await this.fileExists(path.join(installationPath, 'logs', 'access.log')),
-      errorLog: await this.fileExists(path.join(installationPath, 'logs', 'error.log'))
+      logDir: logDirExists,
+      accessLog: accessLogExists,
+      errorLog: errorLogExists
     };
 
+    logger.icecast(`File validation complete:`, files);
     return files;
   }
 
