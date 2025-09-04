@@ -2,6 +2,7 @@ import { spawn, exec } from 'child_process'
 import { promisify } from 'util'
 import fs from 'fs-extra'
 import path from 'path'
+import os from 'os'
 import xml2js from 'xml2js'
 import fetch from 'node-fetch'
 
@@ -39,6 +40,111 @@ class IcecastService {
       startTime: null,
       connections: 0,
       sources: 0
+    }
+  }
+
+  /**
+   * Device Config System - Smart path caching for faster startup
+   */
+
+  /**
+   * Get the device config file path
+   */
+  getDeviceConfigPath() {
+    const homeDir = os.homedir()
+    const configDir = path.join(homeDir, '.lanstreamer')
+    return path.join(configDir, 'device-config.json')
+  }
+
+  /**
+   * Load saved device configuration
+   */
+  async loadDeviceConfig() {
+    try {
+      const configPath = this.getDeviceConfigPath()
+      
+      if (!await fs.pathExists(configPath)) {
+        logger.icecast('No saved device config found')
+        return null
+      }
+
+      const configData = await fs.readJson(configPath)
+      logger.icecast('Loaded device config', { 
+        path: configData.icecastPath,
+        source: configData.source 
+      })
+      
+      return {
+        isValid: true,
+        paths: {
+          exe: configData.icecastPath,
+          config: configData.configPath,
+          accessLog: configData.accessLogPath,
+          errorLog: configData.errorLogPath
+        },
+        version: configData.version,
+        source: configData.source || 'saved'
+      }
+    } catch (error) {
+      logger.warn('Failed to load device config:', error.message)
+      return null
+    }
+  }
+
+  /**
+   * Save device configuration for faster future startup
+   */
+  async saveDeviceConfig(installation) {
+    try {
+      const configPath = this.getDeviceConfigPath()
+      const configDir = path.dirname(configPath)
+      
+      // Ensure config directory exists
+      await fs.ensureDir(configDir)
+      
+      const configData = {
+        icecastPath: installation.paths.exe,
+        configPath: installation.paths.config,
+        accessLogPath: installation.paths.accessLog,
+        errorLogPath: installation.paths.errorLog,
+        rootPath: path.dirname(installation.paths.exe),
+        source: installation.source,
+        lastValidated: new Date().toISOString(),
+        version: installation.version
+      }
+      
+      await fs.writeJson(configPath, configData, { spaces: 2 })
+      logger.icecast('Saved device config', { 
+        path: configData.icecastPath,
+        configFile: configPath 
+      })
+    } catch (error) {
+      logger.warn('Failed to save device config:', error.message)
+    }
+  }
+
+  /**
+   * Validate that a saved path still works
+   */
+  async validateSavedPath(exePath) {
+    try {
+      if (!exePath) return false
+      
+      // Check if file exists and is executable
+      await fs.access(exePath, fs.constants.X_OK)
+      
+      // Try to get version to ensure it's actually Icecast
+      const version = await this._getIcecastVersion(exePath)
+      if (!version || version === 'unknown') {
+        logger.warn('Saved path exists but version check failed', { path: exePath })
+        return false
+      }
+      
+      logger.icecast('Saved path validation successful', { path: exePath, version })
+      return true
+    } catch (error) {
+      logger.warn('Saved path validation failed', { path: exePath, error: error.message })
+      return false
     }
   }
 
