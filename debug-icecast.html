@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug Icecast Manager</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background: #1a1a1a; color: white; }
+        .debug { margin: 10px 0; padding: 10px; border: 1px solid #333; border-radius: 5px; }
+        .error { background: #5a2d2d; }
+        .success { background: #2d5a2d; }
+        .warning { background: #5a5a2d; }
+        pre { background: #333; padding: 10px; border-radius: 5px; overflow-x: auto; }
+        #icecast-container { border: 2px solid #666; padding: 20px; margin: 20px 0; }
+    </style>
+</head>
+<body>
+    <h1>Debug Icecast Manager Component</h1>
+    
+    <div class="debug">
+        <h3>Component Loading Status</h3>
+        <div id="component-status">Loading...</div>
+    </div>
+    
+    <div class="debug">
+        <h3>API Test Results</h3>
+        <div id="api-results">Testing APIs...</div>
+    </div>
+    
+    <div class="debug">
+        <h3>Icecast Manager Component</h3>
+        <div id="icecast-container">
+            <!-- IcecastManager will render here -->
+        </div>
+    </div>
+
+    <!-- Include the component -->
+    <script src="/components/IcecastManager.js"></script>
+    
+    <script>
+        const statusDiv = document.getElementById('component-status');
+        const apiDiv = document.getElementById('api-results');
+        
+        function updateStatus(message, type = 'success') {
+            statusDiv.innerHTML += `<div class="${type}">${message}</div>`;
+        }
+        
+        function updateAPI(message, type = 'success') {
+            apiDiv.innerHTML += `<div class="${type}">${message}</div>`;
+        }
+        
+        async function testAPIs() {
+            try {
+                // Test installation detection
+                const installResponse = await fetch('/api/system/icecast/search-installations');
+                const installData = await installResponse.json();
+                updateAPI(`Installation Detection: ${installData.found ? 'Found' : 'Not Found'}`, installData.found ? 'success' : 'error');
+                
+                // Test security check
+                const securityResponse = await fetch('/api/system/icecast/security-check');
+                const securityData = await securityResponse.json();
+                updateAPI(`Security Check: ${securityData.hasVulnerabilities ? 'Vulnerabilities Found' : 'No Issues'}`, securityData.hasVulnerabilities ? 'warning' : 'success');
+                updateAPI(`<pre>${JSON.stringify(securityData, null, 2)}</pre>`);
+                
+                // Test status
+                const statusResponse = await fetch('/api/system/icecast-status');
+                const statusData = await statusResponse.json();
+                updateAPI(`Status Check: ${statusData.installed ? 'Installed' : 'Not Installed'}`, statusData.installed ? 'success' : 'error');
+                
+            } catch (error) {
+                updateAPI(`API Error: ${error.message}`, 'error');
+            }
+        }
+        
+        // Check if component loaded
+        if (typeof IcecastManager !== 'undefined') {
+            updateStatus('✅ IcecastManager class loaded successfully');
+            
+            try {
+                // Initialize the component
+                const manager = new IcecastManager('icecast-container');
+                updateStatus('✅ IcecastManager instance created');
+                
+                // Wait a bit for initialization
+                setTimeout(() => {
+                    updateStatus(`Component status: installed=${manager.status.installed}, running=${manager.status.running}`);
+                    if (manager.status.security) {
+                        updateStatus(`Security status: ${manager.status.security.hasVulnerabilities ? 'Has vulnerabilities' : 'No vulnerabilities'}`);
+                    } else {
+                        updateStatus('Security status: Not checked yet', 'warning');
+                    }
+                }, 3000);
+                
+            } catch (error) {
+                updateStatus(`❌ Error creating IcecastManager: ${error.message}`, 'error');
+            }
+        } else {
+            updateStatus('❌ IcecastManager class not found', 'error');
+        }
+        
+        // Test APIs
+        testAPIs();
+    </script>
+</body>
+</html>

@@ -245,6 +245,25 @@ router.get('/icecast/detailed-status', async (req, res) => {
 });
 
 /**
+ * @route GET /api/system/icecast/security-check
+ * @description Check for security vulnerabilities in Icecast configuration
+ * @access Public
+ */
+router.get('/icecast/security-check', async (req, res) => {
+  try {
+    const securityCheck = await icecastService.checkSecurityVulnerabilities();
+    res.json(securityCheck);
+  } catch (error) {
+    console.error('Error checking Icecast security:', error);
+    res.status(500).json({ 
+      success: false,
+      error: 'Failed to check Icecast security',
+      message: error.message 
+    });
+  }
+});
+
+/**
  * @route POST /api/system/icecast/check-installation
  * @description Check if Icecast is properly installed and accessible
  * @access Public

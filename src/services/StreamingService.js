@@ -12,6 +12,67 @@ class StreamingService {
   constructor() {
     this.activeStreams = {}
     this.ffmpegService = FFmpegService
+    this.streamsConfigPath = join(process.cwd(), 'config', 'streams.json')
+    this.loadPersistentStreams()
+  }
+
+  /**
+   * Load persistent streams from config file
+   */
+  loadPersistentStreams() {
+    try {
+      if (fs.existsSync(this.streamsConfigPath)) {
+        const data = fs.readFileSync(this.streamsConfigPath, 'utf8')
+        const persistentStreams = JSON.parse(data)
+        
+        // Convert persistent streams to active streams (without process references)
+        Object.keys(persistentStreams).forEach(streamId => {
+          const stream = persistentStreams[streamId]
+          this.activeStreams[streamId] = {
+            ...stream,
+            status: 'stopped', // Mark as stopped since server restarted
+            ffmpegProcess: null,
+            needsRestart: true // Flag to indicate this stream needs to be restarted
+          }
+        })
+        
+        logger.info(`Loaded ${Object.keys(persistentStreams).length} persistent streams`)
+      }
+    } catch (error) {
+      logger.error('Failed to load persistent streams:', error)
+    }
+  }
+
+  /**
+   * Save streams to persistent storage
+   */
+  savePersistentStreams() {
+    try {
+      // Ensure config directory exists
+      const configDir = dirname(this.streamsConfigPath)
+      if (!fs.existsSync(configDir)) {
+        fs.mkdirSync(configDir, { recursive: true })
+      }
+
+      // Save only the stream configuration (not process references)
+      const persistentData = {}
+      Object.keys(this.activeStreams).forEach(streamId => {
+        const stream = this.activeStreams[streamId]
+        persistentData[streamId] = {
+          id: stream.id,
+          deviceId: stream.deviceId,
+          inputFile: stream.inputFile,
+          name: stream.name,
+          config: stream.config,
+          createdAt: stream.createdAt || stream.startedAt
+        }
+      })
+
+      fs.writeFileSync(this.streamsConfigPath, JSON.stringify(persistentData, null, 2))
+      logger.info(`Saved ${Object.keys(persistentData).length} streams to persistent storage`)
+    } catch (error) {
+      logger.error('Failed to save persistent streams:', error)
+    }
   }
 
   /**
@@ -46,8 +107,13 @@ class StreamingService {
         status: 'running',
         ffmpegProcess: ffmpegProcess,
         startedAt: new Date(),
-        config: streamConfig
+        createdAt: new Date(),
+        config: streamConfig,
+        needsRestart: false
       }
+
+      // Save to persistent storage
+      this.savePersistentStreams()
 
       logger.info(`Stream ${streamId} started successfully`)
       return this.activeStreams[streamId]
@@ -113,6 +179,9 @@ class StreamingService {
    * @returns {Array} Command line arguments
    */
   buildFFmpegArgs(streamId, streamConfig) {
+    const bitrate = streamConfig.bitrate || 192;
+    const icecastUrl = `icecast://source:hackme@localhost:8000/${streamId}`;
+
     let args = []
 
     // Check if we're streaming from a file or device
@@ -122,27 +191,35 @@ class StreamingService {
         '-re',                          // Read input at native frame rate
         '-i', streamConfig.inputFile,   // Input file
         '-acodec', 'mp3',               // Audio codec
-        '-ab', '128k',                  // Audio bitrate
+        '-ab', `${bitrate}k`,           // Audio bitrate from config
         '-ar', '44100',                 // Sample rate
         '-ac', '2',                     // Audio channels
         '-f', 'mp3',                    // Output format
-        `icecast://source:hackme@localhost:8000/stream`, // Icecast URL
+        icecastUrl,                     // Unique Icecast URL per stream
         '-loglevel', 'info'             // Show info level logs
       ]
     } else {
-      // Device input mode (original)
+      // Device input mode
       args = [
         '-f', 'dshow',                    // DirectShow input format
         '-i', `audio="${streamConfig.deviceId}"`, // Audio input device
         '-acodec', 'mp3',                 // Audio codec
-        '-ab', '128k',                    // Audio bitrate
+        '-ab', `${bitrate}k`,             // Audio bitrate from config
         '-ar', '44100',                   // Sample rate
         '-ac', '2',                       // Audio channels
         '-f', 'mp3',                      // Output format
-        `icecast://source:hackme@localhost:8000/stream`, // Icecast URL
+        icecastUrl,                       // Unique Icecast URL per stream
         '-loglevel', 'info'               // Show info level logs
       ]
     }
+
+    logger.info(`Built FFmpeg args for stream ${streamId}:`, {
+      streamId,
+      bitrate: `${bitrate}k`,
+      icecastUrl,
+      inputType: streamConfig.inputFile ? 'file' : 'device',
+      inputSource: streamConfig.inputFile || streamConfig.deviceId
+    });
 
     return args
   }
@@ -173,13 +250,54 @@ class StreamingService {
         }, 5000)
       }
 
-      // Remove from active streams
-      delete this.activeStreams[streamId]
+      // Update stream status instead of deleting
+      stream.status = 'stopped'
+      stream.stoppedAt = new Date()
+      stream.needsRestart = true
+      stream.ffmpegProcess = null
+
+      // Save to persistent storage
+      this.savePersistentStreams()
       
       logger.info(`Stream ${streamId} stopped successfully`)
       
     } catch (error) {
       logger.error(`Failed to stop stream ${streamId}:`, error)
+      throw error
+    }
+  }
+
+  /**
+   * Restart a stopped stream
+   * @param {string} streamId - Stream ID to restart
+   * @returns {object} Result of the operation
+   */
+  async restartStream(streamId) {
+    const stream = this.activeStreams[streamId]
+    if (!stream) {
+      throw new Error(`Stream ${streamId} not found`)
+    }
+
+    try {
+      logger.info(`Restarting stream: ${streamId}`)
+      
+      // Start FFmpeg process
+      const ffmpegProcess = await this.startFFmpegProcess(streamId, stream.config)
+
+      // Update stream information
+      stream.status = 'running'
+      stream.ffmpegProcess = ffmpegProcess
+      stream.startedAt = new Date()
+      stream.needsRestart = false
+
+      // Save to persistent storage
+      this.savePersistentStreams()
+
+      logger.info(`Stream ${streamId} restarted successfully`)
+      return { success: true, message: 'Stream restarted successfully' }
+      
+    } catch (error) {
+      logger.error(`Failed to restart stream ${streamId}:`, error)
       throw error
     }
   }

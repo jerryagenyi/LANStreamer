@@ -817,14 +817,16 @@ class IcecastService {
 
   async getDetailedStatus() {
     try {
-      const [status, mountpoints] = await Promise.all([
+      const [status, mountpoints, securityCheck] = await Promise.all([
         this.getStatus(),
-        this.getMountpoints()
+        this.getMountpoints(),
+        this.checkSecurityVulnerabilities()
       ])
 
       return {
         ...status,
         mountpoints,
+        security: securityCheck,
         config: {
           host: config.icecast.host,
           port: config.icecast.port,
@@ -834,6 +836,99 @@ class IcecastService {
     } catch (error) {
       logger.error('Failed to get detailed Icecast status:', error)
       throw new AppError('Failed to retrieve Icecast status', 500)
+    }
+  }
+
+  /**
+   * Check for security vulnerabilities in Icecast configuration
+   */
+  async checkSecurityVulnerabilities() {
+    try {
+      // Try multiple config path sources
+      let configPath = this.paths?.config || this.configPath;
+
+      // If no path found, try the project's config directory
+      if (!configPath || !await fs.pathExists(configPath)) {
+        const projectConfigPath = path.join(process.cwd(), 'config', 'icecast.xml');
+        if (await fs.pathExists(projectConfigPath)) {
+          configPath = projectConfigPath;
+          logger.icecast('Using project config file for security check', { path: configPath });
+        }
+      }
+
+      if (!configPath || !await fs.pathExists(configPath)) {
+        logger.icecast('No Icecast config file found for security check');
+        return {
+          hasVulnerabilities: false,
+          message: 'Configuration file not found'
+        };
+      }
+
+      const configContent = await fs.readFile(configPath, 'utf8');
+      logger.icecast('Security check - reading config file', {
+        path: configPath,
+        contentLength: configContent.length
+      });
+
+      // Check for default credentials
+      const hasDefaultAdmin = configContent.includes('<admin-user>admin</admin-user>');
+      const hasDefaultPassword = configContent.includes('<admin-password>hackme</admin-password>');
+      const hasDefaultSourcePassword = configContent.includes('<source-password>hackme</source-password>');
+      const hasDefaultRelayPassword = configContent.includes('<relay-password>hackme</relay-password>');
+
+      logger.icecast('Security check - credential detection', {
+        hasDefaultAdmin,
+        hasDefaultPassword,
+        hasDefaultSourcePassword,
+        hasDefaultRelayPassword
+      });
+      
+      const vulnerabilities = [];
+      
+      if (hasDefaultAdmin && hasDefaultPassword) {
+        vulnerabilities.push({
+          type: 'default_admin_credentials',
+          severity: 'critical',
+          message: 'Default admin credentials (admin/hackme) are in use',
+          description: 'Anyone can access the Icecast admin panel and control your server',
+          fix: 'Change admin-user and admin-password in icecast.xml',
+          adminUrl: `http://${config.icecast.host}:${config.icecast.port}/admin/`
+        });
+      }
+      
+      if (hasDefaultSourcePassword) {
+        vulnerabilities.push({
+          type: 'default_source_password',
+          severity: 'high',
+          message: 'Default source password (hackme) is in use',
+          description: 'Anyone can stream to your Icecast server',
+          fix: 'Change source-password in icecast.xml'
+        });
+      }
+      
+      if (hasDefaultRelayPassword) {
+        vulnerabilities.push({
+          type: 'default_relay_password',
+          severity: 'high',
+          message: 'Default relay password (hackme) is in use',
+          description: 'Anyone can relay your streams',
+          fix: 'Change relay-password in icecast.xml'
+        });
+      }
+      
+      return {
+        hasVulnerabilities: vulnerabilities.length > 0,
+        vulnerabilities,
+        configPath,
+        lastChecked: new Date().toISOString()
+      };
+      
+    } catch (error) {
+      logger.icecast('Failed to check security vulnerabilities', { error: error.message });
+      return {
+        hasVulnerabilities: false,
+        error: error.message
+      };
     }
   }
 

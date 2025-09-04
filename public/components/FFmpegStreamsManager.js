@@ -1,0 +1,776 @@
+/**
+ * FFmpeg Streams Manager Component
+ * Manages FFmpeg audio streams with real-time status updates
+ */
+class FFmpegStreamsManager {
+    constructor(containerId = 'ffmpeg-streams') {
+        this.activeStreams = [];
+        this.audioDevices = [];
+        this.isInitialized = false;
+        this.statusCheckInterval = null;
+        this.containerId = containerId;
+        this.container = null;
+
+        console.log('🎤 FFmpegStreamsManager constructor called with containerId:', containerId);
+
+        // Auto-initialize immediately to ensure component loads
+        this.init().catch(error => {
+            console.error('Failed to auto-initialize FFmpegStreamsManager:', error);
+        });
+    }
+
+    /**
+     * Initialize the FFmpeg Streams Manager
+     */
+    async init() {
+        try {
+            console.log('Initializing FFmpeg Streams Manager...');
+            console.log('Container ID:', this.containerId);
+            
+            this.container = document.getElementById(this.containerId);
+            if (!this.container) {
+                console.error('FFmpeg streams container not found for ID:', this.containerId);
+                console.log('Available containers:', Array.from(document.querySelectorAll('[id*="ffmpeg"]')).map(el => el.id));
+                return;
+            }
+            
+            console.log('Container found:', this.container);
+
+            // Load initial data
+            await this.loadStreams();
+            await this.loadAudioDevices();
+            
+            // Render the component
+            this.render();
+            
+            // Start status polling
+            this.startStatusPolling();
+            
+            this.isInitialized = true;
+            console.log('FFmpeg Streams Manager initialized successfully');
+            
+        } catch (error) {
+            console.error('Failed to initialize FFmpeg Streams Manager:', error);
+            this.renderError('Failed to initialize FFmpeg Streams Manager');
+        }
+    }
+
+    /**
+     * Load active streams from the API
+     */
+    async loadStreams() {
+        try {
+            console.log('📡 Loading streams from API...');
+            const response = await fetch('/api/streams/status');
+            const data = await response.json();
+
+            console.log('📊 API Response:', data);
+
+            // The API returns { total, running, errors, streams } format
+            if (data.streams) {
+                this.activeStreams = data.streams;
+                console.log(`✅ Loaded ${this.activeStreams.length} streams (${data.running} running)`);
+            } else {
+                this.activeStreams = [];
+                console.log('⚠️ No streams found in API response');
+            }
+        } catch (error) {
+            console.error('❌ Failed to load streams:', error);
+            this.activeStreams = [];
+        }
+    }
+
+    /**
+     * Load available audio devices
+     */
+    async loadAudioDevices() {
+        try {
+            const response = await fetch('/api/system/audio-devices');
+            const data = await response.json();
+            
+            // Handle both old format (array) and new format (object with devices array)
+            this.audioDevices = data.devices || data || [];
+        } catch (error) {
+            console.error('Failed to load audio devices:', error);
+            this.audioDevices = [];
+        }
+    }
+
+    /**
+     * Start a new stream
+     */
+    async startStream(streamConfig) {
+        try {
+            // First check if Icecast server is running
+            const icecastStatus = await this.checkIcecastStatus();
+            if (!icecastStatus.running) {
+                this.showNotification('Icecast server is not running. Please start the Icecast server first.', 'error');
+                return;
+            }
+
+            const response = await fetch('/api/streams/start', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(streamConfig)
+            });
+
+            const data = await response.json();
+            
+            if (data.message === 'Stream started successfully') {
+                await this.loadStreams();
+                this.render();
+                
+                // Generate stream URL and show success message
+                const streamUrl = `http://localhost:8000/${streamConfig.id || 'stream'}`;
+                this.showNotification(`Stream started successfully! Stream is now available in the list below.`, 'success');
+            } else {
+                throw new Error(data.error || 'Failed to start stream');
+            }
+        } catch (error) {
+            console.error('Failed to start stream:', error);
+            this.showNotification(`Failed to start stream: ${error.message}`, 'error');
+        }
+    }
+
+    /**
+     * Check if Icecast server is running
+     */
+    async checkIcecastStatus() {
+        try {
+            const response = await fetch('/api/system/icecast-status');
+            const data = await response.json();
+            return data;
+        } catch (error) {
+            console.error('Failed to check Icecast status:', error);
+            return { running: false };
+        }
+    }
+
+    /**
+     * Stop a stream
+     */
+    async stopStream(streamId) {
+        try {
+            const response = await fetch('/api/streams/stop', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ id: streamId })
+            });
+
+            const data = await response.json();
+            
+            if (data.message === 'Stream stopped successfully') {
+                await this.loadStreams();
+                this.render();
+                this.showNotification('Stream stopped successfully', 'success');
+            } else {
+                throw new Error(data.error || 'Failed to stop stream');
+            }
+        } catch (error) {
+            console.error('Failed to stop stream:', error);
+            this.showNotification(`Failed to stop stream: ${error.message}`, 'error');
+        }
+    }
+
+    /**
+     * Restart a stopped stream
+     */
+    async restartStream(streamId) {
+        try {
+            const response = await fetch('/api/streams/restart', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ id: streamId })
+            });
+
+            const data = await response.json();
+            
+            if (data.message === 'Stream restarted successfully') {
+                await this.loadStreams();
+                this.render();
+                this.showNotification('Stream restarted successfully', 'success');
+            } else {
+                throw new Error(data.error || 'Failed to restart stream');
+            }
+        } catch (error) {
+            console.error('Failed to restart stream:', error);
+            this.showNotification(`Failed to restart stream: ${error.message}`, 'error');
+        }
+    }
+
+    /**
+     * Delete a stream (remove from list)
+     */
+    async deleteStream(streamId) {
+        try {
+            // First stop the stream if it's running
+            const stream = this.activeStreams.find(s => s.id === streamId);
+            if (stream && stream.status === 'running') {
+                await this.stopStream(streamId);
+            }
+
+            // For now, we'll just refresh the list to remove stopped streams
+            // In a full implementation, you might want a dedicated delete endpoint
+            await this.loadStreams();
+            this.render();
+            this.showNotification('Stream removed from list', 'success');
+        } catch (error) {
+            console.error('Failed to delete stream:', error);
+            this.showNotification(`Failed to delete stream: ${error.message}`, 'error');
+        }
+    }
+
+    /**
+     * Start status polling
+     */
+    startStatusPolling() {
+        // Poll every 5 seconds for status updates
+        this.statusCheckInterval = setInterval(async () => {
+            if (this.isInitialized) {
+                await this.loadStreams();
+                this.render();
+            }
+        }, 5000);
+    }
+
+    /**
+     * Stop status polling
+     */
+    stopStatusPolling() {
+        if (this.statusCheckInterval) {
+            clearInterval(this.statusCheckInterval);
+            this.statusCheckInterval = null;
+        }
+    }
+
+    /**
+     * Render the component
+     */
+    render() {
+        if (!this.container) {
+            console.error('❌ Cannot render: container not found');
+            return;
+        }
+
+        console.log('🎨 Rendering FFmpeg Streams Manager...');
+        console.log('📊 Active streams:', this.activeStreams.length);
+        console.log('🎵 Stream details:', this.activeStreams);
+
+        this.container.innerHTML = `
+            <div class="bg-[var(--card-bg)] border border-[var(--border-color)] rounded-2xl p-6 shadow-2xl shadow-black/30">
+                <!-- Header -->
+                <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+                    <div>
+                        <h2 class="text-2xl font-bold text-white flex items-center gap-2">
+                            <span class="material-symbols-rounded text-[var(--primary-color)]">radio</span>
+                            🎤 Audio Streams
+                        </h2>
+                        <p class="text-gray-400 text-sm mt-1">Stream audio from any input source to your network</p>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <div class="flex items-center gap-2 px-3 py-1.5 bg-green-500/10 border border-green-500/20 rounded-full">
+                            <div class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+                            <span class="text-xs font-medium text-green-400">FFmpeg Ready</span>
+                        </div>
+                        <button id="add-stream-btn" class="inline-flex items-center justify-center gap-2 rounded-md px-4 py-2.5 text-sm font-semibold text-white bg-[var(--live-color)] hover:bg-[var(--live-color)]/80 transition-all duration-300 shadow-lg">
+                            <span class="material-symbols-rounded">add</span>
+                            🔴 Start New Stream
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Streams Content -->
+                <div class="space-y-4">
+                    ${this.renderStreams()}
+                </div>
+            </div>
+        `;
+
+        this.setupEventListeners();
+    }
+
+    /**
+     * Render active streams (including stopped ones)
+     */
+    renderStreams() {
+        console.log('🎨 Rendering streams:', this.activeStreams.length);
+
+        if (this.activeStreams.length === 0) {
+            return `
+                <div class="text-center py-12 px-6">
+                    <div class="mb-6">
+                        <div class="w-16 h-16 mx-auto mb-4 bg-[var(--primary-color)]/10 rounded-full flex items-center justify-center">
+                            <span class="material-symbols-rounded text-3xl text-[var(--primary-color)]">radio</span>
+                        </div>
+                        <h3 class="text-xl font-semibold text-white mb-2">Ready to Stream!</h3>
+                        <p class="text-gray-400 mb-4">No active streams yet. Start streaming audio from any input source.</p>
+                    </div>
+
+                    <div class="bg-[#111111] border border-[var(--border-color)] rounded-xl p-6 max-w-md mx-auto">
+                        <h4 class="text-white font-medium mb-3">🚀 Quick Start Guide:</h4>
+                        <div class="text-left space-y-2 text-sm text-gray-300">
+                            <div class="flex items-center gap-2">
+                                <span class="w-5 h-5 bg-[var(--primary-color)] text-white rounded-full flex items-center justify-center text-xs font-bold">1</span>
+                                <span>Click <strong>"🔴 Start New Stream"</strong> above</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <span class="w-5 h-5 bg-[var(--primary-color)] text-white rounded-full flex items-center justify-center text-xs font-bold">2</span>
+                                <span>Select your audio input source</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <span class="w-5 h-5 bg-[var(--primary-color)] text-white rounded-full flex items-center justify-center text-xs font-bold">3</span>
+                                <span>Click <strong>"Go Live"</strong> to start streaming</span>
+                            </div>
+                        </div>
+
+                        <div class="mt-4 p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+                            <p class="text-xs text-blue-300">
+                                💡 <strong>Pro Tip:</strong> Install VoiceMeeter to route audio from music players, DJ software, or any application to LANStreamer.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        return this.activeStreams.map(stream => {
+            const startTime = stream.startedAt ? new Date(stream.startedAt) : new Date();
+            const uptime = this.formatUptime(stream.uptime || (Date.now() - startTime.getTime()));
+            const streamUrl = `http://localhost:8000/${stream.id}`;
+
+            console.log(`🎵 Rendering stream: ${stream.id} (${stream.status}) with URL: ${streamUrl}`);
+
+            // Determine status styling and icon
+            let statusColor, statusIcon, statusText, statusBg;
+            switch (stream.status) {
+                case 'running':
+                    statusColor = 'text-green-400';
+                    statusIcon = 'radio';
+                    statusText = 'LIVE';
+                    statusBg = 'bg-green-500/10 border-green-500/20';
+                    break;
+                case 'stopped':
+                    statusColor = 'text-gray-400';
+                    statusIcon = 'stop_circle';
+                    statusText = 'STOPPED';
+                    statusBg = 'bg-gray-500/10 border-gray-500/20';
+                    break;
+                case 'error':
+                    statusColor = 'text-red-400';
+                    statusIcon = 'error';
+                    statusText = 'ERROR';
+                    statusBg = 'bg-red-500/10 border-red-500/20';
+                    break;
+                default:
+                    statusColor = 'text-yellow-400';
+                    statusIcon = 'help';
+                    statusText = 'UNKNOWN';
+                    statusBg = 'bg-yellow-500/10 border-yellow-500/20';
+            }
+
+            return `
+            <div class="bg-[#111111] border border-[var(--border-color)] rounded-xl p-5 hover:border-[var(--primary-color)]/30 transition-all duration-300">
+                <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                    <!-- Stream Info -->
+                    <div class="flex items-center gap-4 flex-1">
+                        <div class="relative">
+                            <div class="w-3 h-3 rounded-full ${stream.status === 'running' ? 'bg-[var(--live-color)] pulse-live' : stream.status === 'error' ? 'bg-red-500' : 'bg-gray-500'}"></div>
+                            ${stream.status === 'running' ? '<div class="absolute inset-0 w-3 h-3 rounded-full bg-[var(--live-color)] animate-ping opacity-75"></div>' : ''}
+                        </div>
+                        <div class="flex-1">
+                            <div class="flex items-center gap-2 mb-1">
+                                <h3 class="font-semibold text-white text-lg">${stream.name || stream.id}</h3>
+                                <span class="px-2 py-1 text-xs font-medium ${statusBg} ${statusColor} border rounded-full flex items-center gap-1">
+                                    <span class="material-symbols-rounded text-xs">${statusIcon}</span>
+                                    ${statusText}
+                                </span>
+                            </div>
+                            <div class="flex flex-wrap items-center gap-3 text-sm text-gray-400">
+                                <span class="flex items-center gap-1">
+                                    <span class="material-symbols-rounded text-sm">mic</span>
+                                    ${this.getDeviceName(stream.deviceId)}
+                                </span>
+                                <span class="flex items-center gap-1">
+                                    <span class="material-symbols-rounded text-sm">high_quality</span>
+                                    ${stream.config?.bitrate || '192'} kbps
+                                </span>
+                                <span class="flex items-center gap-1">
+                                    <span class="material-symbols-rounded text-sm">schedule</span>
+                                    ${uptime}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Stream Actions -->
+                    <div class="flex items-center gap-3 w-full sm:w-auto">
+                        <div class="flex items-center gap-2 flex-1 sm:flex-initial">
+                            ${stream.status === 'running' ? `
+                                <button
+                                    onclick="navigator.clipboard.writeText('${streamUrl}'); ffmpegStreamsManager.showNotification('Stream URL copied!', 'success')"
+                                    class="inline-flex items-center justify-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-gray-300 bg-[#2A2A2A] hover:bg-[#3A3A3A] border border-[var(--border-color)] transition-all duration-300"
+                                    title="Copy stream URL"
+                                >
+                                    <span class="material-symbols-rounded text-sm">link</span>
+                                    Copy URL
+                                </button>
+                                <button
+                                    onclick="ffmpegStreamsManager.stopStream('${stream.id}')"
+                                    class="inline-flex items-center justify-center gap-2 rounded-md px-4 py-2 text-sm font-semibold text-white bg-red-600 hover:bg-red-700 transition-all duration-300 shadow-lg"
+                                >
+                                    <span class="material-symbols-rounded">stop</span>
+                                    Stop Stream
+                                </button>
+                            ` : `
+                                <button
+                                    onclick="ffmpegStreamsManager.restartStream('${stream.id}')"
+                                    class="inline-flex items-center justify-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-green-300 bg-green-600/20 hover:bg-green-600/30 border border-green-600/30 transition-all duration-300"
+                                    title="Restart stream"
+                                >
+                                    <span class="material-symbols-rounded text-sm">play_arrow</span>
+                                    Restart
+                                </button>
+                                <button
+                                    onclick="ffmpegStreamsManager.deleteStream('${stream.id}')"
+                                    class="inline-flex items-center justify-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-red-300 bg-red-600/20 hover:bg-red-600/30 border border-red-600/30 transition-all duration-300"
+                                    title="Delete stream"
+                                >
+                                    <span class="material-symbols-rounded text-sm">delete</span>
+                                    Delete
+                                </button>
+                            `}
+                        </div>
+                    </div>
+                </div>
+
+                ${stream.status === 'running' ? `
+                    <!-- Stream URL Display -->
+                    <div class="mt-4 p-3 bg-[#0A0A0A] border border-[var(--border-color)] rounded-lg">
+                        <div class="flex items-center justify-between gap-2">
+                            <div class="flex items-center gap-2 flex-1">
+                                <span class="material-symbols-rounded text-sm text-[var(--primary-color)]">radio</span>
+                                <span class="text-xs text-gray-400">Listen via:</span>
+                                <code class="text-xs text-[var(--primary-color)] font-mono bg-[var(--primary-color)]/10 px-2 py-1 rounded flex-1 truncate">${streamUrl}</code>
+                            </div>
+                            <div class="flex items-center gap-1">
+                                                             <button
+                                 onclick="navigator.clipboard.writeText('${streamUrl}').then(() => {
+                                     const btn = this;
+                                     const originalText = btn.innerHTML;
+                                     btn.innerHTML = '<span class=\\"material-symbols-rounded text-sm\\">check</span>';
+                                     btn.classList.add('text-green-400');
+                                     setTimeout(() => {
+                                         btn.innerHTML = originalText;
+                                         btn.classList.remove('text-green-400');
+                                     }, 2000);
+                                 })"
+                                 class="text-xs text-gray-400 hover:text-white transition-colors px-1"
+                                 title="Copy stream URL to clipboard"
+                             >
+                                 <span class="material-symbols-rounded text-sm">content_copy</span>
+                             </button>
+                             <button
+                                 onclick="window.open('${streamUrl}', '_blank')"
+                                 class="text-xs text-gray-400 hover:text-white transition-colors px-1"
+                                 title="Test stream in browser"
+                             >
+                                 <span class="material-symbols-rounded text-sm">open_in_new</span>
+                             </button>
+                             ${stream.status === 'stopped' ? `
+                             <button
+                                 onclick="ffmpegStreamsManager.restartStream('${stream.id}')"
+                                 class="text-xs text-blue-400 hover:text-blue-300 transition-colors px-1"
+                                 title="Restart this stream"
+                             >
+                                 <span class="material-symbols-rounded text-sm">restart_alt</span>
+                             </button>
+                             ` : ''}
+                            </div>
+                        </div>
+                        <div class="mt-2 text-xs text-gray-500">
+                            💡 Stream is live! Click copy button to share this URL.
+                        </div>
+                    </div>
+                ` : stream.status === 'stopped' ? `
+                    <!-- Stream Status Info -->
+                    <div class="mt-4 p-3 bg-gray-500/10 border border-gray-500/20 rounded-lg">
+                        <div class="flex items-center gap-2">
+                            <span class="material-symbols-rounded text-sm text-gray-400">info</span>
+                            <span class="text-xs text-gray-400">Stream stopped. Use restart button to start streaming again.</span>
+                        </div>
+                    </div>
+                ` : `
+                    <!-- Error Status Info -->
+                    <div class="mt-4 p-3 bg-red-500/10 border border-red-500/20 rounded-lg">
+                        <div class="flex items-center gap-2">
+                            <span class="material-symbols-rounded text-sm text-red-400">error</span>
+                            <span class="text-xs text-red-400">Stream encountered an error. Check logs or restart the stream.</span>
+                        </div>
+                    </div>
+                `}
+            </div>
+        `;
+        }).join('');
+    }
+
+    /**
+     * Render error state
+     */
+    renderError(message) {
+        if (!this.container) return;
+
+        this.container.innerHTML = `
+            <div class="bg-[var(--card-bg)] border border-[var(--border-color)] rounded-2xl p-6 shadow-2xl shadow-black/30">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-xl font-bold text-white">FFmpeg Streams</h2>
+                    <div class="group relative flex items-center">
+                        <div class="flex items-center gap-2 cursor-pointer">
+                            <span class="h-3 w-3 rounded-full bg-red-500"></span>
+                            <span class="text-sm font-medium text-gray-300">Error</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="text-center py-8">
+                    <span class="material-symbols-rounded text-4xl text-red-500 mb-2">error</span>
+                    <p class="text-red-400 mb-2">${message}</p>
+                    <button onclick="ffmpegStreamsManager.init()" class="inline-flex items-center gap-2 rounded-md px-4 py-2 text-sm font-semibold text-white bg-[var(--primary-color)]/10 hover:bg-[var(--primary-color)]/20 border border-[var(--border-color)] transition-all duration-300">
+                        <span class="material-symbols-rounded">refresh</span>
+                        Retry
+                    </button>
+                </div>
+            </div>
+        `;
+    }
+
+    /**
+     * Setup event listeners
+     */
+    setupEventListeners() {
+        const addStreamBtn = document.getElementById('add-stream-btn');
+        if (addStreamBtn) {
+            addStreamBtn.addEventListener('click', () => {
+                this.showAddStreamModal();
+            });
+        }
+    }
+
+    /**
+     * Show add stream modal with improved UX
+     */
+    showAddStreamModal() {
+        // Create modal for adding new stream
+        const modal = document.createElement('div');
+        modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+        modal.innerHTML = `
+            <div class="bg-[var(--card-bg)] border border-[var(--border-color)] rounded-2xl p-6 shadow-2xl shadow-black/30 max-w-lg w-full mx-4">
+                <div class="flex items-center gap-3 mb-6">
+                    <span class="material-symbols-rounded text-2xl text-[var(--primary-color)]">radio</span>
+                    <h3 class="text-xl font-bold text-white">🎤 Start New Audio Stream</h3>
+                </div>
+
+                <div class="mb-4 p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+                    <div class="flex items-start gap-2">
+                        <span class="material-symbols-rounded text-blue-400 text-lg mt-0.5">info</span>
+                        <div class="text-sm">
+                            <p class="text-blue-300 font-medium">Quick Start</p>
+                            <p class="text-blue-200/80">Select your audio input source and click "Go Live" to start streaming immediately.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <form id="add-stream-form">
+                    <div class="space-y-5">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">
+                                <span class="material-symbols-rounded text-sm mr-1">label</span>
+                                Stream Name
+                            </label>
+                            <input type="text" id="stream-name" class="w-full bg-[#2A2A2A] border border-[var(--border-color)] text-white text-sm rounded-md focus:ring-[var(--primary-color)] focus:border-[var(--primary-color)] block px-3 py-2.5" placeholder="e.g., Main Room Audio, DJ Mix, Podcast" required>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">
+                                <span class="material-symbols-rounded text-sm mr-1">mic</span>
+                                Audio Input Source
+                            </label>
+                            <select id="stream-device" class="w-full bg-[#2A2A2A] border border-[var(--border-color)] text-white text-sm rounded-md focus:ring-[var(--primary-color)] focus:border-[var(--primary-color)] block px-3 py-2.5" required>
+                                <option value="">🎯 Select your audio source...</option>
+                                ${this.audioDevices.map(device => `
+                                    <option value="${device.id}">
+                                        ${device.virtual ? '🔗' : '🎤'} ${device.name}
+                                        ${device.fallback ? ' (Fallback)' : ''}
+                                        ${device.virtual ? ' (Virtual)' : ''}
+                                    </option>
+                                `).join('')}
+                            </select>
+                            <p class="text-xs text-gray-400 mt-1">💡 Install VoiceMeeter for virtual audio routing</p>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">
+                                <span class="material-symbols-rounded text-sm mr-1">high_quality</span>
+                                Stream Quality
+                            </label>
+                            <select id="stream-bitrate" class="w-full bg-[#2A2A2A] border border-[var(--border-color)] text-white text-sm rounded-md focus:ring-[var(--primary-color)] focus:border-[var(--primary-color)] block px-3 py-2.5">
+                                <option value="128">🎵 128 kbps - Good (smaller file size)</option>
+                                <option value="192" selected>🎶 192 kbps - High Quality (recommended)</option>
+                                <option value="256">🎼 256 kbps - Very High Quality</option>
+                                <option value="320">🎹 320 kbps - Maximum Quality</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="flex gap-3 mt-8">
+                        <button type="submit" class="flex-1 inline-flex items-center justify-center gap-2 rounded-md px-4 py-3 text-sm font-semibold text-white bg-[var(--live-color)] hover:bg-[var(--live-color)]/80 transition-all duration-300 shadow-lg">
+                            <span class="material-symbols-rounded">play_arrow</span>
+                            🔴 Go Live
+                        </button>
+                        <button type="button" onclick="this.closest('.fixed').remove()" class="flex-1 inline-flex items-center justify-center gap-2 rounded-md px-4 py-3 text-sm font-semibold text-white bg-gray-600 hover:bg-gray-700 transition-all duration-300">
+                            <span class="material-symbols-rounded">close</span>
+                            Cancel
+                        </button>
+                    </div>
+                </form>
+            </div>
+        `;
+
+        document.body.appendChild(modal);
+
+        // Handle form submission
+        const form = modal.querySelector('#add-stream-form');
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const submitBtn = form.querySelector('button[type="submit"]');
+            const originalText = submitBtn.innerHTML;
+
+            // Show loading state
+            submitBtn.innerHTML = `
+                <div class="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                Starting Stream...
+            `;
+            submitBtn.disabled = true;
+
+            try {
+                const streamConfig = {
+                    name: document.getElementById('stream-name').value,
+                    deviceId: document.getElementById('stream-device').value,
+                    bitrate: parseInt(document.getElementById('stream-bitrate').value),
+                    id: `stream_${Date.now()}`
+                };
+
+                modal.remove();
+                await this.startStream(streamConfig);
+            } catch (error) {
+                // Restore button state on error
+                submitBtn.innerHTML = originalText;
+                submitBtn.disabled = false;
+                this.showNotification(`Failed to start stream: ${error.message}`, 'error');
+            }
+        });
+
+        // Close modal on escape key
+        modal.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                modal.remove();
+            }
+        });
+
+        // Close modal on backdrop click
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                modal.remove();
+            }
+        });
+    }
+
+    /**
+     * Get device name from device ID
+     */
+    getDeviceName(deviceId) {
+        const device = this.audioDevices.find(d => d.id === deviceId);
+        if (device) {
+            const icon = device.virtual ? '🔗' : '🎤';
+            return `${icon} ${device.name}`;
+        }
+        return `🎤 ${deviceId || 'Unknown Device'}`;
+    }
+
+    /**
+     * Format uptime duration
+     */
+    formatUptime(milliseconds) {
+        const seconds = Math.floor(milliseconds / 1000);
+        const minutes = Math.floor(seconds / 60);
+        const hours = Math.floor(minutes / 60);
+
+        if (hours > 0) {
+            return `${hours}h ${minutes % 60}m`;
+        } else if (minutes > 0) {
+            return `${minutes}m ${seconds % 60}s`;
+        } else {
+            return `${seconds}s`;
+        }
+    }
+
+    /**
+     * Show notification
+     */
+    showNotification(message, type = 'info') {
+        // Use the existing notification system if available
+        if (window.showNotification) {
+            window.showNotification(message, type);
+        } else {
+            // Create a simple toast notification
+            const toast = document.createElement('div');
+            toast.className = `fixed top-4 right-4 z-50 px-4 py-3 rounded-lg shadow-lg transition-all duration-300 ${
+                type === 'success' ? 'bg-green-600 text-white' :
+                type === 'error' ? 'bg-red-600 text-white' :
+                'bg-blue-600 text-white'
+            }`;
+            toast.innerHTML = `
+                <div class="flex items-center gap-2">
+                    <span class="material-symbols-rounded text-sm">
+                        ${type === 'success' ? 'check_circle' : type === 'error' ? 'error' : 'info'}
+                    </span>
+                    ${message}
+                </div>
+            `;
+
+            document.body.appendChild(toast);
+
+            // Auto remove after 3 seconds
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateX(100%)';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+    }
+
+    /**
+     * Cleanup
+     */
+    destroy() {
+        this.stopStatusPolling();
+        this.isInitialized = false;
+    }
+}
+
+// Debug logging
+console.log('FFmpegStreamsManager script loaded');
+console.log('FFmpegStreamsManager class:', typeof FFmpegStreamsManager);
+
+// Create global instance
+window.ffmpegStreamsManager = new FFmpegStreamsManager();
+
+// Also make the class available globally
+window.FFmpegStreamsManager = FFmpegStreamsManager;
+
+console.log('FFmpegStreamsManager added to window:', typeof window.FFmpegStreamsManager);

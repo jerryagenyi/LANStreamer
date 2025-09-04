@@ -46,6 +46,17 @@
   - [ ] Improve IcecastService validation to distinguish between "not found" vs "found but invalid structure"
   - [ ] Remove redundant "Search Again" button (COMPLETED ✅)
   - [ ] Better error messaging for edge cases like missing config files vs missing executables
+- [ ] **Phase 7: FFmpeg Streams Critical Issues (HIGH PRIORITY 🚨)**
+  - [ ] **Fix FFmpeg Streams Section Visibility** - Section has gone hidden after refresh
+  - [ ] **Stream URL Display** - Show stream URLs with "Stream created, listen via [URL]" messages
+  - [ ] **Copy-to-Clipboard Functionality** - Click stream URL to copy to clipboard
+  - [ ] **Icecast Dependency Check** - Verify Icecast is running before creating streams
+  - [ ] **Stream Lifecycle Management** - Handle what happens when Icecast goes down after streams are created
+  - [ ] **Stream Status Monitoring** - Real-time monitoring of stream health
+  - [ ] **Persistent Stream URLs** - Display stream URLs permanently near each active stream
+  - [ ] **Auto-copy Stream URLs** - Automatically copy stream URL when stream starts
+  - [ ] **Stream Failure Recovery** - Graceful handling when Icecast server fails
+  - [ ] **Dependency Order Clarification** - Document FFmpeg → Icecast relationship and startup order
 
 ### 🔧 Recent Fixes & Improvements (COMPLETED)
 - [x] **Service State Management Fix**

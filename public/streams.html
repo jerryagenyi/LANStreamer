@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LANStreamer - Live Streams</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #3b82f6;
+            --live-color: #ef4444;
+            --card-bg: #1a1a1a;
+            --border-color: #374151;
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #0f0f23 0%, #1a1a2e 50%, #16213e 100%);
+            min-height: 100vh;
+        }
+        
+        .pulse-live {
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        .btn-gradient {
+            background: linear-gradient(135deg, var(--primary-color), #1d4ed8);
+        }
+        
+        .btn-stop-gradient {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+        }
+    </style>
+</head>
+<body class="text-white">
+    <div class="min-h-screen">
+        <!-- Header -->
+        <header class="bg-black/20 backdrop-blur-sm border-b border-[var(--border-color)]">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex items-center justify-between h-16">
+                    <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 bg-[var(--primary-color)] rounded-lg flex items-center justify-center">
+                            <span class="material-symbols-rounded text-white text-lg">radio</span>
+                        </div>
+                        <h1 class="text-xl font-bold text-white">LANStreamer</h1>
+                        <span class="text-sm text-gray-400">Live Streams</span>
+                    </div>
+                    <div class="flex items-center gap-4">
+                        <div class="flex items-center gap-2">
+                            <div class="w-2 h-2 rounded-full bg-green-500 pulse-live"></div>
+                            <span class="text-sm text-gray-300">Live</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <!-- Page Title -->
+            <div class="mb-8">
+                <h2 class="text-3xl font-bold text-white mb-2">Live Audio Streams</h2>
+                <p class="text-gray-400">Click play to listen to any available stream</p>
+            </div>
+
+            <!-- Streams Container -->
+            <div id="streams-container" class="space-y-6">
+                <!-- Loading State -->
+                <div id="loading-state" class="text-center py-12">
+                    <div class="w-16 h-16 mx-auto mb-4 bg-[var(--primary-color)]/10 rounded-full flex items-center justify-center">
+                        <span class="material-symbols-rounded text-3xl text-[var(--primary-color)] animate-spin">refresh</span>
+                    </div>
+                    <p class="text-gray-400">Loading live streams...</p>
+                </div>
+
+                <!-- No Streams State -->
+                <div id="no-streams-state" class="text-center py-12 hidden">
+                    <div class="w-16 h-16 mx-auto mb-4 bg-gray-500/10 rounded-full flex items-center justify-center">
+                        <span class="material-symbols-rounded text-3xl text-gray-500">radio</span>
+                    </div>
+                    <h3 class="text-xl font-semibold text-white mb-2">No Live Streams</h3>
+                    <p class="text-gray-400">There are currently no active streams. Check back later!</p>
+                </div>
+
+                <!-- Streams List -->
+                <div id="streams-list" class="space-y-4 hidden">
+                    <!-- Streams will be dynamically inserted here -->
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Audio Player (Hidden) -->
+    <audio id="audio-player" preload="none"></audio>
+
+    <script>
+        class StreamListener {
+            constructor() {
+                this.audioPlayer = document.getElementById('audio-player');
+                this.currentStream = null;
+                this.streams = [];
+                this.init();
+            }
+
+            async init() {
+                console.log('🎧 StreamListener initialized');
+                await this.loadStreams();
+                this.startAutoRefresh();
+            }
+
+            async loadStreams() {
+                try {
+                    console.log('📡 Loading streams...');
+                    const response = await fetch('/api/streams/status');
+                    const data = await response.json();
+                    
+                    console.log('📊 Streams data:', data);
+                    
+                    if (data.streams && data.streams.length > 0) {
+                        this.streams = data.streams.filter(stream => stream.status === 'running');
+                        this.renderStreams();
+                    } else {
+                        this.showNoStreams();
+                    }
+                } catch (error) {
+                    console.error('❌ Failed to load streams:', error);
+                    this.showError('Failed to load streams');
+                }
+            }
+
+            renderStreams() {
+                const loadingState = document.getElementById('loading-state');
+                const noStreamsState = document.getElementById('no-streams-state');
+                const streamsList = document.getElementById('streams-list');
+
+                if (this.streams.length === 0) {
+                    loadingState.classList.add('hidden');
+                    noStreamsState.classList.remove('hidden');
+                    streamsList.classList.add('hidden');
+                    return;
+                }
+
+                loadingState.classList.add('hidden');
+                noStreamsState.classList.add('hidden');
+                streamsList.classList.remove('hidden');
+
+                streamsList.innerHTML = this.streams.map(stream => this.renderStream(stream)).join('');
+            }
+
+            renderStream(stream) {
+                const streamUrl = `http://localhost:8000/${stream.id}`;
+                const isPlaying = this.currentStream === stream.id;
+                const uptime = this.formatUptime(stream.uptime || 0);
+
+                return `
+                    <div class="bg-[var(--card-bg)] border border-[var(--border-color)] rounded-xl p-6 hover:border-[var(--primary-color)]/30 transition-all duration-300">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-4 flex-1">
+                                <div class="relative">
+                                    <div class="w-3 h-3 rounded-full bg-[var(--live-color)] pulse-live"></div>
+                                    <div class="absolute inset-0 w-3 h-3 rounded-full bg-[var(--live-color)] animate-ping opacity-75"></div>
+                                </div>
+                                <div class="flex-1">
+                                    <h3 class="font-semibold text-white text-lg mb-1">${stream.name || stream.id}</h3>
+                                    <div class="flex items-center gap-4 text-sm text-gray-400">
+                                        <span class="flex items-center gap-1">
+                                            <span class="material-symbols-rounded text-sm">schedule</span>
+                                            ${uptime}
+                                        </span>
+                                        <span class="flex items-center gap-1">
+                                            <span class="material-symbols-rounded text-sm">radio</span>
+                                            ${stream.config?.bitrate || '192'} kbps
+                                        </span>
+                                        <span class="flex items-center gap-1">
+                                            <span class="material-symbols-rounded text-sm">mic</span>
+                                            ${stream.deviceId || 'Audio Device'}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="flex items-center gap-3">
+                                ${isPlaying ? `
+                                    <button 
+                                        onclick="streamListener.stopStream()"
+                                        class="inline-flex items-center gap-2 rounded-md px-6 py-3 text-sm font-semibold text-white shadow-lg transition-all duration-300 btn-stop-gradient"
+                                    >
+                                        <span class="material-symbols-rounded text-base">stop</span>
+                                        Stop
+                                    </button>
+                                ` : `
+                                    <button 
+                                        onclick="streamListener.playStream('${stream.id}', '${streamUrl}')"
+                                        class="inline-flex items-center gap-2 rounded-md px-6 py-3 text-sm font-semibold text-white shadow-lg transition-all duration-300 btn-gradient"
+                                    >
+                                        <span class="material-symbols-rounded text-base">play_arrow</span>
+                                        Play
+                                    </button>
+                                `}
+                                
+                                <button 
+                                    onclick="streamListener.copyStreamUrl('${streamUrl}')"
+                                    class="inline-flex items-center gap-2 rounded-md px-4 py-3 text-sm font-medium text-gray-300 bg-[#2A2A2A] hover:bg-[#3A3A3A] border border-[var(--border-color)] transition-all duration-300"
+                                    title="Copy stream URL"
+                                >
+                                    <span class="material-symbols-rounded text-base">content_copy</span>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        ${isPlaying ? `
+                            <div class="mt-4 p-3 bg-green-500/10 border border-green-500/20 rounded-lg">
+                                <div class="flex items-center gap-2">
+                                    <span class="material-symbols-rounded text-green-400">volume_up</span>
+                                    <span class="text-green-300 text-sm">Now playing: ${stream.name || stream.id}</span>
+                                </div>
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+            }
+
+            async playStream(streamId, streamUrl) {
+                try {
+                    console.log(`🎵 Playing stream: ${streamId} from ${streamUrl}`);
+                    
+                    // Stop current stream if playing
+                    if (this.currentStream) {
+                        this.stopStream();
+                    }
+
+                    // Set up audio player
+                    this.audioPlayer.src = streamUrl;
+                    this.audioPlayer.load();
+                    
+                    // Play the stream
+                    await this.audioPlayer.play();
+                    this.currentStream = streamId;
+                    
+                    // Update UI
+                    this.renderStreams();
+                    
+                    // Show notification
+                    this.showNotification(`Now playing: ${streamId}`, 'success');
+                    
+                } catch (error) {
+                    console.error('❌ Failed to play stream:', error);
+                    this.showNotification(`Failed to play stream: ${error.message}`, 'error');
+                }
+            }
+
+            stopStream() {
+                console.log('⏹️ Stopping stream');
+                
+                this.audioPlayer.pause();
+                this.audioPlayer.src = '';
+                this.currentStream = null;
+                
+                // Update UI
+                this.renderStreams();
+                
+                this.showNotification('Stream stopped', 'info');
+            }
+
+            copyStreamUrl(url) {
+                navigator.clipboard.writeText(url).then(() => {
+                    this.showNotification('Stream URL copied to clipboard!', 'success');
+                }).catch(error => {
+                    console.error('Failed to copy URL:', error);
+                    this.showNotification('Failed to copy URL', 'error');
+                });
+            }
+
+            showNoStreams() {
+                const loadingState = document.getElementById('loading-state');
+                const noStreamsState = document.getElementById('no-streams-state');
+                const streamsList = document.getElementById('streams-list');
+
+                loadingState.classList.add('hidden');
+                noStreamsState.classList.remove('hidden');
+                streamsList.classList.add('hidden');
+            }
+
+            showError(message) {
+                const loadingState = document.getElementById('loading-state');
+                const noStreamsState = document.getElementById('no-streams-state');
+                const streamsList = document.getElementById('streams-list');
+
+                loadingState.classList.add('hidden');
+                noStreamsState.classList.remove('hidden');
+                streamsList.classList.add('hidden');
+                
+                noStreamsState.innerHTML = `
+                    <div class="w-16 h-16 mx-auto mb-4 bg-red-500/10 rounded-full flex items-center justify-center">
+                        <span class="material-symbols-rounded text-3xl text-red-500">error</span>
+                    </div>
+                    <h3 class="text-xl font-semibold text-white mb-2">Error Loading Streams</h3>
+                    <p class="text-gray-400">${message}</p>
+                `;
+            }
+
+            showNotification(message, type = 'info') {
+                // Create a simple toast notification
+                const toast = document.createElement('div');
+                toast.className = `fixed top-4 right-4 z-50 px-4 py-3 rounded-lg shadow-lg transition-all duration-300 ${
+                    type === 'success' ? 'bg-green-600 text-white' :
+                    type === 'error' ? 'bg-red-600 text-white' :
+                    'bg-blue-600 text-white'
+                }`;
+                toast.innerHTML = `
+                    <div class="flex items-center gap-2">
+                        <span class="material-symbols-rounded text-sm">${type === 'success' ? 'check_circle' : type === 'error' ? 'error' : 'info'}</span>
+                        <span>${message}</span>
+                    </div>
+                `;
+                
+                document.body.appendChild(toast);
+                
+                // Remove after 3 seconds
+                setTimeout(() => {
+                    toast.remove();
+                }, 3000);
+            }
+
+            formatUptime(seconds) {
+                if (!seconds) return 'Just started';
+                
+                const hours = Math.floor(seconds / 3600);
+                const minutes = Math.floor((seconds % 3600) / 60);
+                const secs = seconds % 60;
+                
+                if (hours > 0) {
+                    return `${hours}h ${minutes}m`;
+                } else if (minutes > 0) {
+                    return `${minutes}m ${secs}s`;
+                } else {
+                    return `${secs}s`;
+                }
+            }
+
+            startAutoRefresh() {
+                // Refresh streams every 10 seconds
+                setInterval(() => {
+                    this.loadStreams();
+                }, 10000);
+            }
+        }
+
+        // Initialize when page loads
+        let streamListener;
+        document.addEventListener('DOMContentLoaded', () => {
+            streamListener = new StreamListener();
+        });
+    </script>
+</body>
+</html>

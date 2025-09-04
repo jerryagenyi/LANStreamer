@@ -148,28 +148,18 @@ class ComponentManager {
         try {
             // Check if component class exists
             const ComponentClass = window[config.component];
-            console.log(`🔍 Component class for ${sectionId}:`, ComponentClass, 'Type:', typeof ComponentClass);
-            console.log(`🔍 Looking for component: ${config.component} on window object`);
-            console.log(`🔍 Available components on window:`, Object.keys(window).filter(key => key.includes('Manager') || key.includes('Player')));
-
-            // Special debugging for FFmpeg streams
-            if (sectionId === 'ffmpeg-streams') {
-                console.log('🎤 FFmpeg Streams Debug:');
-                console.log('- Container exists:', !!document.getElementById(sectionId));
-                console.log('- Component class:', ComponentClass);
-                console.log('- Global instance:', window.ffmpegStreamsManager);
-            }
-
+            console.log(`Component class for ${sectionId}:`, ComponentClass, 'Type:', typeof ComponentClass);
+            
             if (ComponentClass && typeof ComponentClass === 'function') {
                 // Component exists - use it
                 await this.useComponent(sectionId, ComponentClass, config);
             } else {
                 // Component doesn't exist - use static with notice
-                console.log(`⚠️ Component class not found for ${sectionId}, using static fallback`);
+                console.log(`Component class not found for ${sectionId}, using static fallback`);
                 this.useStaticWithNotice(sectionId, config);
             }
         } catch (error) {
-            console.error(`❌ Error initializing ${config.name}:`, error);
+            console.error(`Error initializing ${config.name}:`, error);
             this.useStaticWithNotice(sectionId, config);
         }
     }
@@ -179,36 +169,16 @@ class ComponentManager {
      */
     async useComponent(sectionId, ComponentClass, config) {
         try {
-            console.log(`🚀 Attempting to initialize ${config.name} component with class:`, ComponentClass.name);
-
-            // Special handling for FFmpeg streams - don't create new instance if global one exists
-            let componentInstance;
-            if (sectionId === 'ffmpeg-streams' && window.ffmpegStreamsManager) {
-                console.log('🎤 Using existing global FFmpeg streams manager instance');
-                componentInstance = window.ffmpegStreamsManager;
-                // Ensure it's initialized
-                if (!componentInstance.isInitialized) {
-                    console.log('🎤 Initializing existing FFmpeg streams manager');
-                    await componentInstance.init();
-                }
-            } else {
-                componentInstance = new ComponentClass(sectionId);
-
-                // Initialize the component if it has an init method
-                if (typeof componentInstance.init === 'function') {
-                    console.log(`🔧 Calling init() method for ${config.name} component`);
-                    await componentInstance.init();
-                }
-            }
-
+            console.log(`Attempting to initialize ${config.name} component with class:`, ComponentClass.name);
+            const componentInstance = new ComponentClass(sectionId);
             this.components.set(sectionId, componentInstance);
-
+            
             // Add development status indicator
             this.addComponentStatus(sectionId, 'component', config.name);
-
+            
             console.log(`✅ ${config.name} - Using Component`);
         } catch (error) {
-            console.error(`❌ Failed to initialize ${config.name} component:`, error);
+            console.error(`Failed to initialize ${config.name} component:`, error);
             this.useStaticWithNotice(sectionId, config);
         }
     }

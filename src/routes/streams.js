@@ -41,6 +41,26 @@ router.post('/stop', async (req, res) => {
 });
 
 /**
+ * @route POST /api/streams/restart
+ * @description Restart a stopped stream.
+ * @access Public
+ */
+router.post('/restart', async (req, res) => {
+  try {
+    const { id } = req.body;
+    const result = await streamingService.restartStream(id);
+    res.status(200).json({ 
+      message: 'Stream restarted successfully', 
+      streamId: id,
+      result: result
+    });
+  } catch (error) {
+    logger.error('Error restarting stream:', error);
+    res.status(500).json({ message: 'Error restarting stream', error: error.message });
+  }
+});
+
+/**
  * @route GET /api/streams/status
  * @description Get status of all active streams.
  * @access Public

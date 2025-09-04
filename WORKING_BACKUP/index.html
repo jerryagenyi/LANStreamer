@@ -96,8 +96,14 @@
     </header>
     <main class="flex-1 px-4 sm:px-6 lg:px-10 py-8">
     <div class="mx-auto max-w-7xl">
-    <!-- Security Warning Banner (will be populated by JavaScript) -->
-    <div id="security-warning-banner"></div>
+    <div class="mb-8 p-4 rounded-xl bg-yellow-500/10 border border-yellow-500/50 text-yellow-400">
+    <div class="flex items-center gap-3">
+    <span class="material-symbols-rounded text-2xl"> warning </span>
+    <p class="font-medium">
+    <strong>Security Warning:</strong> Your LANStreamer instance is running in development mode. For production use, please configure SSL and authentication.
+                  </p>
+    </div>
+    </div>
     <div class="grid grid-cols-1 xl:grid-cols-3 gap-8">
         <!-- Left Column (Primary Controls) -->
         <div class="xl:col-span-2 space-y-8">
@@ -108,20 +114,8 @@
             <!-- Audio Devices - Component or Static -->
             <div id="audio-devices"></div>
             
-            <!-- Video Sources - Collapsible Panel (Hidden by default) -->
-            <div class="collapsible-section">
-                <button id="video-sources-toggle" class="w-full flex items-center justify-between p-3 bg-[var(--card-bg)] border border-[var(--border-color)] rounded-xl hover:bg-[var(--card-bg)]/80 transition-all duration-300">
-                    <div class="flex items-center gap-3">
-                        <span class="material-symbols-rounded text-gray-400">videocam</span>
-                        <span class="text-gray-300 font-medium">Video Sources</span>
-                        <span class="text-xs text-gray-500">(Future Feature)</span>
-                    </div>
-                    <span class="material-symbols-rounded text-gray-400 transition-transform duration-300" id="video-sources-arrow">expand_more</span>
-                </button>
-                <div id="video-sources-content" class="hidden mt-2">
-                    <div id="video-sources"></div>
-                </div>
-            </div>
+            <!-- Video Sources - Component or Static -->
+            <div id="video-sources"></div>
         </div>
         
         <!-- Right Column (Sidebar) -->
@@ -135,20 +129,8 @@
             <!-- IcecastManager component will be initialized here -->
         </div>
             
-            <!-- Lobby Background Music - Collapsible Panel (Hidden by default) -->
-            <div class="collapsible-section">
-                <button id="lobby-music-toggle" class="w-full flex items-center justify-between p-3 bg-[var(--card-bg)] border border-[var(--border-color)] rounded-xl hover:bg-[var(--card-bg)]/80 transition-all duration-300">
-                    <div class="flex items-center gap-3">
-                        <span class="material-symbols-rounded text-gray-400">music_note</span>
-                        <span class="text-gray-300 font-medium">Lobby Background Music</span>
-                        <span class="text-xs text-gray-500">(Listening Only - Not for Streaming)</span>
-                    </div>
-                    <span class="material-symbols-rounded text-gray-400 transition-transform duration-300" id="lobby-music-arrow">expand_more</span>
-                </button>
-                <div id="lobby-music-content" class="hidden mt-2">
-                    <div id="lobby-music-player"></div>
-                </div>
-            </div>
+            <!-- Lobby Background Music - Component or Static -->
+            <div id="lobby-music-player"></div>
         </div>
     </div>
 
@@ -381,27 +363,10 @@
 
     <!-- Debug script loading -->
     <script>
-        console.log('🔍 Script loading check:');
+        console.log('Script loading check:');
         console.log('- ComponentManager:', typeof ComponentManager);
         console.log('- FFmpegStreamsManager:', typeof FFmpegStreamsManager);
         console.log('- window.FFmpegStreamsManager:', typeof window.FFmpegStreamsManager);
-        console.log('- ffmpeg-streams container:', document.getElementById('ffmpeg-streams'));
-
-        // Additional debugging for FFmpeg streams
-        setTimeout(() => {
-            console.log('🔍 Post-load check:');
-            console.log('- FFmpeg container exists:', !!document.getElementById('ffmpeg-streams'));
-            console.log('- FFmpeg container content:', document.getElementById('ffmpeg-streams')?.innerHTML?.length || 0, 'chars');
-            console.log('- Global ffmpegStreamsManager:', typeof window.ffmpegStreamsManager);
-            console.log('- FFmpeg manager initialized:', window.ffmpegStreamsManager?.isInitialized);
-
-            // Force render if component exists but container is empty
-            const container = document.getElementById('ffmpeg-streams');
-            if (container && container.innerHTML.trim().length === 0 && window.ffmpegStreamsManager) {
-                console.log('🔧 Container empty, forcing FFmpeg component initialization...');
-                window.ffmpegStreamsManager.init().catch(console.error);
-            }
-        }, 2000);
     </script>
     
     <script>
@@ -424,13 +389,10 @@
                 await this.initializeComponents();
                 this.setupEventListeners();
                 this.startStatusPolling();
-
-                // Check for security vulnerabilities
-                await this.checkSecurityWarning();
-
+                
                 // Force render audio devices to ensure dynamic content is shown
                 this.renderAudioDevices();
-
+                
                 // Icecast Manager will be initialized by ComponentManager with proper fallback
             }
 
@@ -682,12 +644,12 @@
                     const data = await response.json();
                     this.icecastStatus = data.running ? 'running' : 'stopped';
                     this.updateIcecastUI(data);
-
+                    
                     if (data.running) {
                         this.updateHeaderTooltip('icecast-status-text', 'Server Online');
                     } else if (data.installed === false) {
-                        this.updateHeaderTooltip('icecast-status-text',
-                            `Icecast not found. <a href="https://github.com/jerryagenyi/LANStreamer/blob/main/docs/guides/icecast-installation.md" target="_blank" class="text-blue-400 hover:text-blue-300 underline">Installation Guide</a>`,
+                        this.updateHeaderTooltip('icecast-status-text', 
+                            `Icecast not found. <a href="https://github.com/jerryagenyi/LANStreamer/blob/main/docs/guides/icecast-installation.md" target="_blank" class="text-blue-400 hover:text-blue-300 underline">Installation Guide</a>`, 
                             true
                         );
                     } else {
@@ -697,141 +659,6 @@
                     console.error('Failed to check Icecast status:', error);
                     this.icecastStatus = 'unknown';
                     this.updateHeaderTooltip('icecast-status-text', 'Status Unknown');
-                }
-            }
-
-            async checkSecurityWarning() {
-                try {
-                    const response = await fetch('/api/system/icecast/security-check');
-                    const data = await response.json();
-
-                    if (data.hasVulnerabilities) {
-                        this.showSecurityWarning(data);
-                    } else {
-                        this.hideSecurityWarning();
-                    }
-                } catch (error) {
-                    console.error('Failed to check security vulnerabilities:', error);
-                    this.hideSecurityWarning();
-                }
-            }
-
-            showSecurityWarning(securityData) {
-                const banner = document.getElementById('security-warning-banner');
-                if (!banner) return;
-
-                const criticalVulns = securityData.vulnerabilities.filter(v => v.severity === 'critical');
-                const hasDefaultCredentials = criticalVulns.length > 0;
-
-                banner.innerHTML = `
-                    <div class="mb-8 p-4 rounded-xl bg-red-500/10 border border-red-500/50 text-red-400">
-                        <div class="flex items-center justify-between">
-                            <div class="flex items-center gap-3">
-                                <span class="material-symbols-rounded text-2xl">security</span>
-                                <p class="font-medium">
-                                    <strong>Security Warning:</strong> Your Icecast server is using default credentials that are publicly known!
-                                </p>
-                            </div>
-                            <button id="security-details-toggle" class="px-3 py-1 bg-red-500/20 hover:bg-red-500/30 border border-red-500/50 rounded-lg text-sm font-medium transition-colors">
-                                Show Details
-                            </button>
-                        </div>
-                        <div id="security-details" class="hidden mt-4 p-4 bg-red-900/20 border border-red-500/30 rounded-lg">
-                            ${this.renderSecurityDetails(securityData)}
-                        </div>
-                    </div>
-                `;
-
-                // Add toggle functionality
-                const toggleBtn = document.getElementById('security-details-toggle');
-                const detailsDiv = document.getElementById('security-details');
-
-                toggleBtn.addEventListener('click', () => {
-                    const isHidden = detailsDiv.classList.contains('hidden');
-                    if (isHidden) {
-                        detailsDiv.classList.remove('hidden');
-                        toggleBtn.textContent = 'Hide Details';
-                    } else {
-                        detailsDiv.classList.add('hidden');
-                        toggleBtn.textContent = 'Show Details';
-                    }
-                });
-            }
-
-            renderSecurityDetails(securityData) {
-                const vulnerabilities = securityData.vulnerabilities;
-                const criticalVulns = vulnerabilities.filter(v => v.severity === 'critical');
-                const highVulns = vulnerabilities.filter(v => v.severity === 'high');
-
-                let html = '<div class="space-y-3">';
-
-                // Critical vulnerabilities
-                criticalVulns.forEach(vuln => {
-                    html += `
-                        <div class="bg-red-800/30 border border-red-500/30 rounded-lg p-3">
-                            <div class="flex items-center gap-2 mb-2">
-                                <span class="material-symbols-rounded text-red-400">warning</span>
-                                <span class="font-semibold text-red-300">${vuln.message}</span>
-                            </div>
-                            <p class="text-red-200 text-sm mb-2">${vuln.description}</p>
-                            <div class="flex items-center gap-2">
-                                <span class="text-red-300 text-sm font-medium">Fix:</span>
-                                <code class="text-red-200 text-sm bg-red-900/50 px-2 py-1 rounded">${vuln.fix}</code>
-                            </div>
-                            ${vuln.adminUrl ? `
-                                <div class="mt-2">
-                                    <a href="${vuln.adminUrl}" target="_blank" class="text-red-300 hover:text-red-200 text-sm underline">
-                                        Test admin access: ${vuln.adminUrl}
-                                    </a>
-                                </div>
-                            ` : ''}
-                        </div>
-                    `;
-                });
-
-                // High severity vulnerabilities
-                highVulns.forEach(vuln => {
-                    html += `
-                        <div class="bg-orange-800/30 border border-orange-500/30 rounded-lg p-3">
-                            <div class="flex items-center gap-2 mb-2">
-                                <span class="material-symbols-rounded text-orange-400">warning</span>
-                                <span class="font-semibold text-orange-300">${vuln.message}</span>
-                            </div>
-                            <p class="text-orange-200 text-sm mb-2">${vuln.description}</p>
-                            <div class="flex items-center gap-2">
-                                <span class="text-orange-300 text-sm font-medium">Fix:</span>
-                                <code class="text-orange-200 text-sm bg-orange-900/50 px-2 py-1 rounded">${vuln.fix}</code>
-                            </div>
-                        </div>
-                    `;
-                });
-
-                // How to fix section
-                html += `
-                    <div class="bg-yellow-800/30 border border-yellow-500/30 rounded-lg p-3">
-                        <h4 class="font-semibold text-yellow-300 mb-2 flex items-center gap-2">
-                            <span class="material-symbols-rounded">build</span>
-                            How to Fix:
-                        </h4>
-                        <ol class="text-yellow-200 text-sm space-y-1 list-decimal list-inside">
-                            <li>Open <code class="bg-yellow-900/50 px-1 rounded">${securityData.configPath}</code></li>
-                            <li>Find the <code class="bg-yellow-900/50 px-1 rounded">&lt;authentication&gt;</code> section</li>
-                            <li>Change <code class="bg-yellow-900/50 px-1 rounded">&lt;admin-user&gt;admin&lt;/admin-user&gt;</code> to a unique username</li>
-                            <li>Change <code class="bg-yellow-900/50 px-1 rounded">&lt;admin-password&gt;hackme&lt;/admin-password&gt;</code> to a strong password</li>
-                            <li>Change <code class="bg-yellow-900/50 px-1 rounded">&lt;source-password&gt;hackme&lt;/source-password&gt;</code> to a unique password</li>
-                            <li>Restart the Icecast server</li>
-                        </ol>
-                    </div>
-                `;
-
-                html += '</div>';
-                return html;
-            }
-
-            hideSecurityWarning() {
-                const banner = document.getElementById('security-warning-banner');
-                if (banner) {
-                    banner.innerHTML = '';
                 }
             }
 
@@ -917,42 +744,6 @@
                     });
                 }
 
-                // Video Sources collapsible toggle
-                const videoToggle = document.getElementById('video-sources-toggle');
-                const videoContent = document.getElementById('video-sources-content');
-                const videoArrow = document.getElementById('video-sources-arrow');
-                
-                if (videoToggle && videoContent && videoArrow) {
-                    videoToggle.addEventListener('click', () => {
-                        const isHidden = videoContent.classList.contains('hidden');
-                        if (isHidden) {
-                            videoContent.classList.remove('hidden');
-                            videoArrow.style.transform = 'rotate(180deg)';
-                        } else {
-                            videoContent.classList.add('hidden');
-                            videoArrow.style.transform = 'rotate(0deg)';
-                        }
-                    });
-                }
-
-                // Lobby Music collapsible toggle
-                const musicToggle = document.getElementById('lobby-music-toggle');
-                const musicContent = document.getElementById('lobby-music-content');
-                const musicArrow = document.getElementById('lobby-music-arrow');
-                
-                if (musicToggle && musicContent && musicArrow) {
-                    musicToggle.addEventListener('click', () => {
-                        const isHidden = musicContent.classList.contains('hidden');
-                        if (isHidden) {
-                            musicContent.classList.remove('hidden');
-                            musicArrow.style.transform = 'rotate(180deg)';
-                        } else {
-                            musicContent.classList.add('hidden');
-                            musicArrow.style.transform = 'rotate(0deg)';
-                        }
-                    });
-                }
-
                 // Add stream button
                 const addStreamBtn = document.querySelector('button[class*="add"]');
                 if (addStreamBtn) {
@@ -970,11 +761,6 @@
                     await this.checkIcecastStatus();
                     await this.checkFFmpegStatus();
                 }, 5000);
-
-                // Check security warnings every 30 seconds
-                setInterval(async () => {
-                    await this.checkSecurityWarning();
-                }, 30000);
             }
 
             showNotification(message, type = 'info') {

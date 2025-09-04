@@ -195,24 +195,31 @@ class IcecastManager {
     }
 
     async checkStatus() {
-        if (!this.status.installed) {
-            console.log('Icecast not installed, skipping status check');
-            return;
-        }
-
         try {
             this.isLoading = true;
-            const response = await fetch('/api/system/icecast-status');
-            const data = await response.json();
-            
-            this.status = {
-                ...this.status,
-                ...data
-            };
-            
+
+            // Always check security vulnerabilities, even if installation status is unclear
+            const securityResponse = await fetch('/api/system/icecast/security-check');
+            const securityData = await securityResponse.json();
+
+            // Only check Icecast status if installed
+            if (this.status.installed) {
+                const statusResponse = await fetch('/api/system/icecast-status');
+                const statusData = await statusResponse.json();
+
+                this.status = {
+                    ...this.status,
+                    ...statusData,
+                    security: securityData
+                };
+            } else {
+                console.log('Icecast not installed, skipping server status check but checking security');
+                this.status.security = securityData;
+            }
+
             // Update status indicators
             this.updateStatusIndicators();
-            
+
         } catch (error) {
             console.error('Failed to check Icecast status:', error);
             this.status.status = 'error';
@@ -386,6 +393,9 @@ class IcecastManager {
                 <!-- Installation Status -->
                 ${this.renderInstallationStatus()}
                 
+                <!-- Security Warning -->
+                ${this.renderSecurityWarning()}
+                
                 <div class="space-y-5 ${!this.status.installed ? 'opacity-50' : ''}">
                     <!-- Server Status -->
                     <div class="flex items-center gap-4 p-3 bg-[#111111] border border-[var(--border-color)] rounded-xl">
@@ -486,6 +496,12 @@ class IcecastManager {
             console.error('Error opening file browser:', error);
             this.showNotification('Error opening file browser: ' + error.message, 'error');
         }
+    }
+
+    renderSecurityWarning() {
+        // Security warning is now handled at the top of the page
+        // No need to show it in the sidebar
+        return '';
     }
 
     setupEventListeners() {
