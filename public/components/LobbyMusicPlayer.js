@@ -89,11 +89,14 @@ class LobbyMusicPlayer {
         if (!this.currentFile) {
             this.currentFile = 'Slack-Huddle-Hold-Music_Daniel-Simmons.mp3';
         }
-        
+
         await this.loadLastPlayedFile();
         this.render();
         this.setupEventListeners();
         this.createAudioElement();
+
+        // Auto-load the default or last played file
+        await this.loadDefaultFile();
     }
 
     // Load music settings from server storage
@@ -128,6 +131,56 @@ class LobbyMusicPlayer {
         }
     }
 
+    // Load the default or last played file into the audio element
+    async loadDefaultFile() {
+        if (this.currentFile && this.audioElement) {
+            try {
+                const src = this.currentFile.startsWith('blob:') ? this.currentFile : `/assets/${this.currentFile}`;
+                console.log('Loading default/last played file:', src);
+
+                this.audioElement.src = src;
+                this.audioElement.load();
+
+                // Wait for the file to load
+                await new Promise((resolve, reject) => {
+                    const onLoad = () => {
+                        this.audioElement.removeEventListener('loadeddata', onLoad);
+                        this.audioElement.removeEventListener('error', onError);
+                        console.log('Default file loaded successfully');
+                        resolve();
+                    };
+
+                    const onError = (e) => {
+                        this.audioElement.removeEventListener('loadeddata', onLoad);
+                        this.audioElement.removeEventListener('error', onError);
+                        console.warn('Failed to load default file:', e);
+                        reject(e);
+                    };
+
+                    this.audioElement.addEventListener('loadeddata', onLoad);
+                    this.audioElement.addEventListener('error', onError);
+
+                    // Timeout after 5 seconds
+                    setTimeout(() => {
+                        this.audioElement.removeEventListener('loadeddata', onLoad);
+                        this.audioElement.removeEventListener('error', onError);
+                        reject(new Error('Timeout loading default file'));
+                    }, 5000);
+                });
+
+                // Update UI to reflect loaded file
+                this.updateUI();
+
+                // Save the current file as the last played file (for persistence)
+                await this.saveLastPlayedFile(this.currentFile);
+
+            } catch (error) {
+                console.warn('Could not load default file, will load on first play:', error);
+                // Don't show error to user - file will load when they click play
+            }
+        }
+    }
+
     render() {
         const container = document.getElementById(this.containerId);
         if (!container) {
@@ -135,8 +188,8 @@ class LobbyMusicPlayer {
             return;
         }
 
-        // Show "No music file loaded" if no file is actually loaded in the audio element
-        const fileNameDisplay = this.audioElement && this.audioElement.src ? this.currentFile : 'No music file loaded';
+        // Show current file name if we have one, otherwise show "No music file loaded"
+        const fileNameDisplay = this.currentFile || 'No music file loaded';
 
         container.innerHTML = `
             <div class="bg-[var(--card-bg)] border border-[var(--border-color)] rounded-2xl p-6 shadow-2xl shadow-black/30">
@@ -158,10 +211,10 @@ class LobbyMusicPlayer {
                             </div>
                         </div>
                         <div class="flex items-center gap-2">
-                            <button id="play-pause-btn" class="flex items-center justify-center h-8 w-8 rounded-full shadow-lg transition-all duration-300 ${this.isPlaying ? 'bg-red-500 hover:bg-red-600' : 'bg-[var(--primary-color)] hover:bg-[var(--primary-color-dark)]'} ${!this.audioElement || !this.audioElement.src ? 'opacity-50 cursor-not-allowed bg-gray-500 hover:bg-gray-500' : ''}" ${!this.audioElement || !this.audioElement.src ? 'disabled' : ''}>
+                            <button id="play-pause-btn" class="flex items-center justify-center h-8 w-8 rounded-full shadow-lg transition-all duration-300 ${this.isPlaying ? 'bg-red-500 hover:bg-red-600' : 'bg-[var(--primary-color)] hover:bg-[var(--primary-color-dark)]'} ${!this.currentFile ? 'opacity-50 cursor-not-allowed bg-gray-500 hover:bg-gray-500' : ''}" ${!this.currentFile ? 'disabled' : ''}>
                                 <span class="material-symbols-rounded text-white">${this.isPlaying ? 'pause' : 'play_arrow'}</span>
                             </button>
-                            <button id="stop-btn" class="flex items-center justify-center h-8 w-8 rounded-full border transition-colors ${!this.audioElement || !this.audioElement.src ? 'opacity-50 cursor-not-allowed text-gray-400 border-gray-400/30 bg-gray-500 hover:bg-gray-500' : 'text-red-400 hover:text-white hover:bg-red-400 border-red-400/30'}" ${!this.audioElement || !this.audioElement.src ? 'disabled' : ''}>
+                            <button id="stop-btn" class="flex items-center justify-center h-8 w-8 rounded-full border transition-colors ${!this.currentFile ? 'opacity-50 cursor-not-allowed text-gray-400 border-gray-400/30 bg-gray-500 hover:bg-gray-500' : 'text-red-400 hover:text-white hover:bg-red-400 border-red-400/30'}" ${!this.currentFile ? 'disabled' : ''}>
                                 <span class="material-symbols-rounded text-base">stop</span>
                             </button>
                         </div>
