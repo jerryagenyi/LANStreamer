@@ -332,16 +332,48 @@ class IcecastService {
    */
   _getStandardInstallationPaths() {
     if (process.platform === 'win32') {
+      const programFiles = process.env.ProgramFiles || 'C:\\Program Files';
+      const programFilesX86 = process.env['ProgramFiles(x86)'] || 'C:\\Program Files (x86)';
+
       return [
+        // Most common: root directory installation
         {
-          exe: path.join(process.env.ProgramFiles || 'C:\\Program Files', 'Icecast', 'bin', 'icecast.exe'),
-          accessLog: path.join(process.env.ProgramFiles || 'C:\\Program Files', 'Icecast', 'logs', 'access.log'),
-          errorLog: path.join(process.env.ProgramFiles || 'C:\\Program Files', 'Icecast', 'logs', 'error.log')
+          exe: path.join(programFilesX86, 'Icecast', 'icecast.exe'),
+          accessLog: path.join(programFilesX86, 'Icecast', 'logs', 'access.log'),
+          errorLog: path.join(programFilesX86, 'Icecast', 'logs', 'error.log')
         },
         {
-          exe: path.join(process.env['ProgramFiles(x86)'] || 'C:\\Program Files (x86)', 'Icecast', 'bin', 'icecast.exe'),
-          accessLog: path.join(process.env['ProgramFiles(x86)'] || 'C:\\Program Files (x86)', 'Icecast', 'logs', 'access.log'),
-          errorLog: path.join(process.env['ProgramFiles(x86)'] || 'C:\\Program Files (x86)', 'Icecast', 'logs', 'error.log')
+          exe: path.join(programFiles, 'Icecast', 'icecast.exe'),
+          accessLog: path.join(programFiles, 'Icecast', 'logs', 'access.log'),
+          errorLog: path.join(programFiles, 'Icecast', 'logs', 'error.log')
+        },
+        // Alternative: bin subdirectory
+        {
+          exe: path.join(programFilesX86, 'Icecast', 'bin', 'icecast.exe'),
+          accessLog: path.join(programFilesX86, 'Icecast', 'logs', 'access.log'),
+          errorLog: path.join(programFilesX86, 'Icecast', 'logs', 'error.log')
+        },
+        {
+          exe: path.join(programFiles, 'Icecast', 'bin', 'icecast.exe'),
+          accessLog: path.join(programFiles, 'Icecast', 'logs', 'access.log'),
+          errorLog: path.join(programFiles, 'Icecast', 'logs', 'error.log')
+        },
+        // Alternative: different version directories
+        {
+          exe: path.join(programFilesX86, 'Icecast2', 'icecast.exe'),
+          accessLog: path.join(programFilesX86, 'Icecast2', 'logs', 'access.log'),
+          errorLog: path.join(programFilesX86, 'Icecast2', 'logs', 'error.log')
+        },
+        {
+          exe: path.join(programFiles, 'Icecast2', 'icecast.exe'),
+          accessLog: path.join(programFiles, 'Icecast2', 'logs', 'access.log'),
+          errorLog: path.join(programFiles, 'Icecast2', 'logs', 'error.log')
+        },
+        // Root C: drive installations
+        {
+          exe: 'C:\\Icecast\\icecast.exe',
+          accessLog: 'C:\\Icecast\\logs\\access.log',
+          errorLog: 'C:\\Icecast\\logs\\error.log'
         }
       ];
     } else if (process.platform === 'darwin') {

@@ -182,7 +182,7 @@
             </div>
         </div>
 
-        <!-- Audio Devices Static Template -->
+        <!-- Audio Devices Static Template (Hidden - Dynamic content will be rendered) -->
         <div id="audio-devices-static" style="display: none;">
             <div class="bg-[var(--card-bg)] border border-[var(--border-color)] rounded-2xl p-6 shadow-2xl shadow-black/30">
                 <div class="flex items-center justify-between mb-4">
@@ -422,6 +422,9 @@
                 this.setupEventListeners();
                 this.startStatusPolling();
                 
+                // Force render audio devices to ensure dynamic content is shown
+                this.renderAudioDevices();
+                
                 // Icecast Manager will be initialized by ComponentManager with proper fallback
             }
 
@@ -471,12 +474,23 @@
                 }
             }
 
-            async loadAudioDevices() {
+            async loadAudioDevices(forceRefresh = false) {
                 try {
-                    const response = await fetch('/api/system/audio-devices');
-                    this.audioDevices = await response.json();
+                    const url = forceRefresh ? '/api/system/audio-devices/refresh' : '/api/system/audio-devices';
+                    const method = forceRefresh ? 'POST' : 'GET';
+                    
+                    const response = await fetch(url, { method });
+                    const data = await response.json();
+                    
+                    // Handle both old format (array) and new format (object with devices array)
+                    this.audioDevices = data.devices || data;
+                    
                     this.renderAudioDevices();
                     this.updateHeaderTooltip('audio-devices-status', `${this.audioDevices.length} Devices Online`);
+                    
+                    if (forceRefresh) {
+                        console.log('Audio devices refreshed:', this.audioDevices);
+                    }
                 } catch (error) {
                     console.error('Failed to load audio devices:', error);
                     this.updateHeaderTooltip('audio-devices-status', 'Failed to load devices');
@@ -485,12 +499,130 @@
             }
 
             renderAudioDevices() {
-                // Audio devices are now statically rendered in the HTML
-                // This method can be used for dynamic updates when needed
-                console.log('Audio devices loaded:', this.audioDevices);
+                const container = document.getElementById('audio-devices');
+                if (!container) {
+                    console.error('Audio devices container not found');
+                    return;
+                }
+
+                if (!this.audioDevices || this.audioDevices.length === 0) {
+                    container.innerHTML = `
+                        <div class="bg-[var(--card-bg)] border border-[var(--border-color)] rounded-2xl p-6 shadow-2xl shadow-black/30">
+                            <div class="flex items-center justify-between mb-4">
+                                <h2 class="text-xl font-bold text-white">Audio Devices captured by FFmpeg</h2>
+                                <button class="flex items-center gap-2 rounded-md px-3 py-1.5 text-sm font-semibold text-white bg-[var(--primary-color)]/10 hover:bg-[var(--primary-color)]/20 border border-[var(--border-color)] transition-all duration-300">
+                                    <span class="material-symbols-rounded text-base">refresh</span>
+                                    Refresh device list
+                                </button>
+                            </div>
+                            <div class="text-center py-8">
+                                <span class="material-symbols-rounded text-4xl text-gray-600 mb-4">mic_off</span>
+                                <p class="text-gray-400">No audio devices detected</p>
+                            </div>
+                        </div>
+                    `;
+                    return;
+                }
+
+                // Separate input and output devices
+                const inputDevices = this.audioDevices.filter(device => 
+                    device.name.toLowerCase().includes('mic') || 
+                    device.name.toLowerCase().includes('input') ||
+                    device.name.toLowerCase().includes('line in') ||
+                    device.name.toLowerCase().includes('scarlett') ||
+                    device.name.toLowerCase().includes('umc') ||
+                    device.fallback // Include fallback devices as input
+                );
+                
+                const outputDevices = this.audioDevices.filter(device => 
+                    device.name.toLowerCase().includes('output') || 
+                    device.name.toLowerCase().includes('speaker') ||
+                    device.name.toLowerCase().includes('headphone') ||
+                    device.name.toLowerCase().includes('monitor')
+                );
+
+                // If no clear separation, put all devices in input
+                const finalInputDevices = inputDevices.length > 0 ? inputDevices : this.audioDevices;
+                const finalOutputDevices = outputDevices;
+
+                container.innerHTML = `
+                    <div class="bg-[var(--card-bg)] border border-[var(--border-color)] rounded-2xl p-6 shadow-2xl shadow-black/30">
+                        <div class="flex items-center justify-between mb-4">
+                            <h2 class="text-xl font-bold text-white">Audio Devices captured by FFmpeg</h2>
+                            <button class="flex items-center gap-2 rounded-md px-3 py-1.5 text-sm font-semibold text-white bg-[var(--primary-color)]/10 hover:bg-[var(--primary-color)]/20 border border-[var(--border-color)] transition-all duration-300">
+                                <span class="material-symbols-rounded text-base">refresh</span>
+                                Refresh device list
+                            </button>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <h3 class="text-lg font-semibold text-white mb-3">Audio Input Devices</h3>
+                                <div class="space-y-3 max-h-64 overflow-y-auto">
+                                    ${finalInputDevices.map(device => `
+                                        <div class="flex items-center justify-between p-3 bg-[#111111] rounded-xl border border-[var(--border-color)]">
+                                            <div class="flex items-center gap-3">
+                                                <span class="material-symbols-rounded text-2xl ${device.fallback ? 'text-gray-600' : 'text-[var(--live-color)]'}">${device.fallback ? 'mic_off' : 'mic'}</span>
+                                                <div>
+                                                    <p class="font-semibold text-white text-sm">${device.name}</p>
+                                                    <p class="text-xs text-gray-400">${device.platform || 'System Device'}</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>
+                            <div>
+                                <h3 class="text-lg font-semibold text-white mb-3">Audio Output Devices</h3>
+                                <div class="space-y-3 max-h-64 overflow-y-auto">
+                                    ${finalOutputDevices.length > 0 ? finalOutputDevices.map(device => `
+                                        <div class="flex items-center justify-between p-3 bg-[#111111] rounded-xl border border-[var(--border-color)]">
+                                            <div class="flex items-center gap-3">
+                                                <span class="material-symbols-rounded text-2xl text-gray-600">headphones</span>
+                                                <div>
+                                                    <p class="font-semibold text-white text-sm">${device.name}</p>
+                                                    <p class="text-xs text-gray-400">${device.platform || 'System Device'}</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    `).join('') : `
+                                        <div class="text-center py-4">
+                                            <span class="material-symbols-rounded text-2xl text-gray-600 mb-2">speaker_off</span>
+                                            <p class="text-xs text-gray-400">No output devices detected</p>
+                                        </div>
+                                    `}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                console.log('Audio devices rendered:', this.audioDevices);
             }
 
             renderAudioDevicesError() {
+                const container = document.getElementById('audio-devices');
+                if (!container) {
+                    console.error('Audio devices container not found');
+                    return;
+                }
+
+                container.innerHTML = `
+                    <div class="bg-[var(--card-bg)] border border-[var(--border-color)] rounded-2xl p-6 shadow-2xl shadow-black/30">
+                        <div class="flex items-center justify-between mb-4">
+                            <h2 class="text-xl font-bold text-white">Audio Devices captured by FFmpeg</h2>
+                            <button class="flex items-center gap-2 rounded-md px-3 py-1.5 text-sm font-semibold text-white bg-[var(--primary-color)]/10 hover:bg-[var(--primary-color)]/20 border border-[var(--border-color)] transition-all duration-300">
+                                <span class="material-symbols-rounded text-base">refresh</span>
+                                Refresh device list
+                            </button>
+                        </div>
+                        <div class="text-center py-8">
+                            <span class="material-symbols-rounded text-4xl text-red-500 mb-4">error</span>
+                            <p class="text-red-400 mb-2">Failed to load audio devices</p>
+                            <p class="text-gray-400 text-sm">Click refresh to try again</p>
+                        </div>
+                    </div>
+                `;
+                
                 console.error('Error rendering audio devices');
             }
 
@@ -595,7 +727,7 @@
                 const refreshBtn = document.querySelector('button[class*="refresh"]');
                 if (refreshBtn) {
                     refreshBtn.addEventListener('click', async () => {
-                        await this.loadAudioDevices();
+                        await this.loadAudioDevices(true); // Force refresh
                         this.showNotification('Audio devices refreshed', 'info');
                     });
                 }

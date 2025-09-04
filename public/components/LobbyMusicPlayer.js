@@ -85,101 +85,56 @@ class LobbyMusicPlayer {
     }
 
     async init() {
-        // Set default file immediately so UI renders properly
-        if (!this.currentFile) {
-            this.currentFile = 'Slack-Huddle-Hold-Music_Daniel-Simmons.mp3';
-        }
-
-        await this.loadLastPlayedFile();
+        // Initialize with backend verification
+        await this.verifyMusicSettings();
         this.render();
         this.setupEventListeners();
         this.createAudioElement();
-
-        // Auto-load the default or last played file
-        await this.loadDefaultFile();
     }
 
-    // Load music settings from server storage
-    async loadLastPlayedFile() {
+    // Verify music settings with backend (like Icecast verification)
+    async verifyMusicSettings() {
         try {
-            const response = await fetch('/api/settings/music');
+            const response = await fetch('/api/settings/music/verify');
             if (response.ok) {
                 const data = await response.json();
-                this.currentFile = data.filename;
-                this.volume = data.volume || 75;
-                this.isMuted = data.muted || false;
-                this.isLooping = data.loop !== undefined ? data.loop : true;
-                
-                // Update audio element if it exists
-                if (this.audioElement) {
-                    this.audioElement.volume = this.volume / 100;
-                    this.audioElement.muted = this.isMuted;
-                    this.audioElement.loop = this.isLooping;
+                if (data.success && data.fileExists) {
+                    // File exists and is verified
+                    this.currentFile = data.settings.originalName || data.settings.filename;
+                    this.volume = data.settings.volume || 75;
+                    this.isMuted = data.settings.muted || false;
+                    this.isLooping = data.settings.loop !== undefined ? data.settings.loop : true;
+                    this.fileUrl = data.fileUrl;
+                    console.log('Music file verified:', this.currentFile);
+                } else {
+                    // File doesn't exist or no saved file - clear everything
+                    console.log('No valid music file found');
+                    this.currentFile = null;
+                    this.fileUrl = null;
+                    this.volume = 75;
+                    this.isMuted = false;
+                    this.isLooping = true;
                 }
             } else {
-                // Fallback to defaults
-                this.currentFile = 'Slack-Huddle-Hold-Music_Daniel-Simmons.mp3';
+                // No saved file - start clean
+                console.log('No saved music file found');
+                this.currentFile = null;
+                this.fileUrl = null;
+                this.volume = 75;
+                this.isMuted = false;
+                this.isLooping = true;
             }
         } catch (error) {
-            console.log('No saved music settings found, using defaults');
-            this.currentFile = 'Slack-Huddle-Hold-Music_Daniel-Simmons.mp3';
-        }
-        
-        // Ensure we always have a default file
-        if (!this.currentFile) {
-            this.currentFile = 'Slack-Huddle-Hold-Music_Daniel-Simmons.mp3';
-        }
-    }
-
-    // Load the default or last played file into the audio element
-    async loadDefaultFile() {
-        if (this.currentFile && this.audioElement) {
-            try {
-                const src = this.currentFile.startsWith('blob:') ? this.currentFile : `/assets/${this.currentFile}`;
-                console.log('Loading default/last played file:', src);
-
-                this.audioElement.src = src;
-                this.audioElement.load();
-
-                // Wait for the file to load
-                await new Promise((resolve, reject) => {
-                    const onLoad = () => {
-                        this.audioElement.removeEventListener('loadeddata', onLoad);
-                        this.audioElement.removeEventListener('error', onError);
-                        console.log('Default file loaded successfully');
-                        resolve();
-                    };
-
-                    const onError = (e) => {
-                        this.audioElement.removeEventListener('loadeddata', onLoad);
-                        this.audioElement.removeEventListener('error', onError);
-                        console.warn('Failed to load default file:', e);
-                        reject(e);
-                    };
-
-                    this.audioElement.addEventListener('loadeddata', onLoad);
-                    this.audioElement.addEventListener('error', onError);
-
-                    // Timeout after 5 seconds
-                    setTimeout(() => {
-                        this.audioElement.removeEventListener('loadeddata', onLoad);
-                        this.audioElement.removeEventListener('error', onError);
-                        reject(new Error('Timeout loading default file'));
-                    }, 5000);
-                });
-
-                // Update UI to reflect loaded file
-                this.updateUI();
-
-                // Save the current file as the last played file (for persistence)
-                await this.saveLastPlayedFile(this.currentFile);
-
-            } catch (error) {
-                console.warn('Could not load default file, will load on first play:', error);
-                // Don't show error to user - file will load when they click play
-            }
+            console.log('Music verification failed, starting clean:', error);
+            this.currentFile = null;
+            this.fileUrl = null;
+            this.volume = 75;
+            this.isMuted = false;
+            this.isLooping = true;
         }
     }
+
+
 
     render() {
         const container = document.getElementById(this.containerId);
@@ -188,8 +143,15 @@ class LobbyMusicPlayer {
             return;
         }
 
-        // Show current file name if we have one, otherwise show "No music file loaded"
-        const fileNameDisplay = this.currentFile || 'No music file loaded';
+        // Show current file name with user-friendly display for default file
+        let fileNameDisplay = 'No music file loaded';
+        if (this.currentFile) {
+            if (this.currentFile === 'default-lobby-music.mp3') {
+                fileNameDisplay = 'Default Lobby Music';
+            } else {
+                fileNameDisplay = this.currentFile;
+            }
+        }
 
         container.innerHTML = `
             <div class="bg-[var(--card-bg)] border border-[var(--border-color)] rounded-2xl p-6 shadow-2xl shadow-black/30">
@@ -214,7 +176,7 @@ class LobbyMusicPlayer {
                             <button id="play-pause-btn" class="flex items-center justify-center h-8 w-8 rounded-full shadow-lg transition-all duration-300 ${this.isPlaying ? 'bg-red-500 hover:bg-red-600' : 'bg-[var(--primary-color)] hover:bg-[var(--primary-color-dark)]'} ${!this.currentFile ? 'opacity-50 cursor-not-allowed bg-gray-500 hover:bg-gray-500' : ''}" ${!this.currentFile ? 'disabled' : ''}>
                                 <span class="material-symbols-rounded text-white">${this.isPlaying ? 'pause' : 'play_arrow'}</span>
                             </button>
-                            <button id="stop-btn" class="flex items-center justify-center h-8 w-8 rounded-full border transition-colors ${!this.currentFile ? 'opacity-50 cursor-not-allowed text-gray-400 border-gray-400/30 bg-gray-500 hover:bg-gray-500' : 'text-red-400 hover:text-white hover:bg-red-400 border-red-400/30'}" ${!this.currentFile ? 'disabled' : ''}>
+                            <button id="stop-btn" class="flex items-center justify-center h-8 w-8 rounded-full border transition-colors ${!(this.isPlaying || this.isPaused) ? 'opacity-50 cursor-not-allowed text-gray-400 border-gray-400/30 bg-gray-500 hover:bg-gray-500' : 'text-red-400 hover:text-white hover:bg-red-400 border-red-400/30'}" ${!(this.isPlaying || this.isPaused) ? 'disabled' : ''}>
                                 <span class="material-symbols-rounded text-base">stop</span>
                             </button>
                         </div>
@@ -374,61 +336,69 @@ class LobbyMusicPlayer {
     }
 
     async play() {
-        if (!this.audioElement) return;
+        // Verify we have everything we need
+        if (!this.audioElement) {
+            this.showNotification('Audio player not initialized', 'error');
+            return;
+        }
 
-        // Check if we have a file loaded
-        if (!this.audioElement.src) {
-            if (this.currentFile) {
-                // Try to load the file first
-                try {
-                    const src = this.currentFile.startsWith('blob:') ? this.currentFile : `/assets/${this.currentFile}`;
-                    this.loadAudioFile(src);
-                    
-                    // Wait a bit for the file to load before playing
-                    await new Promise(resolve => setTimeout(resolve, 1000));
-                    
-                    // Check if the file loaded successfully
-                    if (!this.audioElement.src || this.audioElement.error) {
-                        this.showNotification('Failed to load audio file', 'error');
-                        return;
-                    }
-                } catch (error) {
-                    console.error('Failed to load audio file:', error);
-                    this.showNotification('Failed to load audio file', 'error');
-                    return;
-                }
-            } else {
-                this.showNotification('No audio file selected', 'error');
-                return;
-            }
+        if (!this.currentFile) {
+            this.showNotification('No audio file available', 'error');
+            return;
+        }
+
+        // If already playing, do nothing
+        if (this.isPlaying) {
+            return;
         }
 
         try {
+            // Load the file if not already loaded
+            if (!this.audioElement.src) {
+                const src = this.fileUrl || `/assets/${this.currentFile}`;
+                console.log('Loading audio file:', src);
+                this.audioElement.src = src;
+                this.audioElement.load();
+            }
+
+            // Play the audio
             await this.audioElement.play();
-            this.isPaused = false;
             this.isPlaying = true;
+            this.isPaused = false;
+            this.updateUI();
             this.showNotification('Background music started', 'success');
+
         } catch (error) {
             console.error('Failed to play audio:', error);
-            this.showNotification('Failed to play audio', 'error');
+
+            let errorMessage = 'Failed to play audio';
+            if (error.name === 'NotAllowedError') {
+                errorMessage = 'Click anywhere on the page first, then try playing';
+            } else if (error.name === 'NotSupportedError') {
+                errorMessage = 'Audio format not supported';
+            }
+
+            this.showNotification(errorMessage, 'error');
         }
     }
 
     pause() {
-        if (this.audioElement) {
+        if (this.audioElement && this.isPlaying) {
             this.audioElement.pause();
             this.isPaused = true;
             this.isPlaying = false;
+            this.updateUI();
             this.showNotification('Background music paused', 'info');
         }
     }
 
     stop() {
-        if (this.audioElement) {
+        if (this.audioElement && (this.isPlaying || this.isPaused)) {
             this.audioElement.pause();
             this.audioElement.currentTime = 0;
             this.isPaused = false;
             this.isPlaying = false;
+            this.updateUI();
             this.showNotification('Background music stopped', 'info');
         }
     }
@@ -567,24 +537,54 @@ class LobbyMusicPlayer {
         this.audioElement.currentTime = seekPercent * this.audioElement.duration;
     }
 
-    handleFileSelection(file) {
+    async handleFileSelection(file) {
         if (!this.supportedFormats.some(format => file.name.toLowerCase().endsWith(format))) {
             this.showNotification(`Unsupported file format. Supported: ${this.supportedFormats.join(', ')}`, 'error');
             return;
         }
 
-        this.currentFile = file.name;
-        this.errorCount = 0; // Reset error count on new file selection
-        const fileURL = URL.createObjectURL(file);
-        this.loadAudioFile(fileURL);
-        
-        // Save the file name to server storage
-        this.saveLastPlayedFile(file.name);
+        // Show uploading notification
+        this.showNotification('Uploading music file...', 'info');
 
-        // Update UI
-        this.updateUI();
+        try {
+            // Upload file to server
+            const formData = new FormData();
+            formData.append('musicFile', file);
+            formData.append('volume', this.volume);
+            formData.append('loop', this.isLooping);
+            formData.append('muted', this.isMuted);
 
-        this.showNotification(`Loaded: ${file.name}`, 'success');
+            const response = await fetch('/api/settings/music/upload', {
+                method: 'POST',
+                body: formData
+            });
+
+            if (!response.ok) {
+                throw new Error(`Upload failed: ${response.statusText}`);
+            }
+
+            const data = await response.json();
+
+            if (data.success) {
+                // Update local state with uploaded file info
+                this.currentFile = data.data.originalName;
+                this.fileUrl = data.data.fileUrl;
+                this.errorCount = 0;
+
+                // Load the uploaded file
+                this.loadAudioFile(data.data.fileUrl);
+
+                // Update UI
+                this.updateUI();
+
+                this.showNotification(`Uploaded: ${data.data.originalName}`, 'success');
+            } else {
+                throw new Error(data.error || 'Upload failed');
+            }
+        } catch (error) {
+            console.error('File upload error:', error);
+            this.showNotification(`Upload failed: ${error.message}`, 'error');
+        }
     }
 
     loadAudioFile(src) {
@@ -597,30 +597,12 @@ class LobbyMusicPlayer {
             this.audioElement.src = src;
             this.audioElement.load();
             
-            // If loading the default file, ensure it's properly loaded
-            if (src.includes('Slack-Huddle-Hold-Music_Daniel-Simmons.mp3')) {
-                // Remove any existing error listeners to prevent duplicates
-                this.audioElement.removeEventListener('error', this.handleDefaultFileError);
-                
-                // Create a bound error handler
-                this.handleDefaultFileError = (e) => {
-                    console.error('Failed to load default music file:', e);
-                    // Only try alternative path once to prevent infinite loops
-                    if (this.audioElement && !this.defaultFileErrorHandled) {
-                        this.defaultFileErrorHandled = true;
-                        this.audioElement.src = `./assets/${this.currentFile}`;
-                        this.audioElement.load();
-                    }
-                };
-                
-                this.audioElement.addEventListener('error', this.handleDefaultFileError, { once: true });
-                
-                this.audioElement.addEventListener('canplaythrough', () => {
-                    console.log('Default music file loaded successfully');
-                    this.defaultFileErrorHandled = false; // Reset flag on success
-                    this.errorCount = 0; // Reset error count on successful load
-                }, { once: true });
-            }
+            // Add success listener for any file
+            this.audioElement.addEventListener('canplaythrough', () => {
+                console.log('Music file loaded successfully:', this.currentFile);
+                this.defaultFileErrorHandled = false; // Reset flag on success
+                this.errorCount = 0; // Reset error count on successful load
+            }, { once: true });
         }
     }
 
@@ -666,8 +648,16 @@ class LobbyMusicPlayer {
         const loopBtn = document.getElementById('loop-btn');
 
         if (fileNameDisplay) {
-            // Show "No music file loaded" if no file is actually loaded in the audio element
-            fileNameDisplay.textContent = this.audioElement && this.audioElement.src ? this.currentFile : 'No music file loaded';
+            // Show user-friendly display name
+            let displayText = 'No music file loaded';
+            if (this.audioElement && this.audioElement.src && this.currentFile) {
+                if (this.currentFile === 'default-lobby-music.mp3') {
+                    displayText = 'Default Lobby Music';
+                } else {
+                    displayText = this.currentFile;
+                }
+            }
+            fileNameDisplay.textContent = displayText;
         }
 
         if (playPauseBtnMain) {
@@ -679,10 +669,10 @@ class LobbyMusicPlayer {
         }
         
         if (stopBtnMain) {
-            // Stop button is grayed out when no file is loaded
-            const hasFileLoaded = this.audioElement && this.audioElement.src;
-            stopBtnMain.disabled = !hasFileLoaded;
-            stopBtnMain.className = `flex items-center justify-center h-8 w-8 rounded-full border transition-colors ${!hasFileLoaded ? 'opacity-50 cursor-not-allowed text-gray-400 border-gray-400/30 bg-gray-500 hover:bg-gray-500' : 'text-red-400 hover:text-white hover:bg-red-400 border-red-400/30'}`;
+            // Stop button is enabled only when music is playing or paused
+            const canStop = this.isPlaying || this.isPaused;
+            stopBtnMain.disabled = !canStop;
+            stopBtnMain.className = `flex items-center justify-center h-8 w-8 rounded-full border transition-colors ${!canStop ? 'opacity-50 cursor-not-allowed text-gray-400 border-gray-400/30 bg-gray-500 hover:bg-gray-500' : 'text-red-400 hover:text-white hover:bg-red-400 border-red-400/30'}`;
         }
     
         if (loopBtn) {
@@ -715,16 +705,16 @@ class LobbyMusicPlayer {
         // Limit error notifications to prevent spam
         this.errorCount++;
         if (this.errorCount <= this.maxErrors) {
-            // Only show error notification for user-initiated actions, not background loading
-            if (this.currentFile && this.currentFile !== 'Slack-Huddle-Hold-Music_Daniel-Simmons.mp3') {
+            // Show error notification for any file that fails to load
+            if (this.currentFile) {
                 this.showNotification('Error loading audio file', 'error');
             }
         }
-        
+
         this.isPlaying = false;
-        
-        // Clear the saved file if it fails to load (but only for user files)
-        if (this.currentFile && this.currentFile !== 'Slack-Huddle-Hold-Music_Daniel-Simmons.mp3') {
+
+        // Clear the saved file if it fails to load
+        if (this.currentFile) {
             this.clearLastPlayedFile();
             this.currentFile = null;
         }

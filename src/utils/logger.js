@@ -124,6 +124,10 @@ logger.icecast = (message, meta = {}) => {
   logger.info(message, { ...meta, service: 'icecast' })
 }
 
+logger.audio = (message, meta = {}) => {
+  logger.info(message, { ...meta, service: 'audio' })
+}
+
 logger.system = (message, meta = {}) => {
   logger.info(message, { ...meta, service: 'system' })
 }

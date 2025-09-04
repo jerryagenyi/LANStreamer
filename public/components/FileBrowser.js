@@ -13,7 +13,7 @@ class FileBrowser {
      */
     async open(onSelect) {
         this.onSelectCallback = onSelect;
-        this.showManualPathInput();
+        this.showDirectoryBrowser();
     }
 
     /**
@@ -46,7 +46,226 @@ class FileBrowser {
     }
 
     /**
-     * Show manual path input modal
+     * Show directory browser modal
+     */
+    async showDirectoryBrowser() {
+        const modal = document.createElement('div');
+        modal.id = 'file-browser-modal';
+        modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+
+        modal.innerHTML = `
+            <div class="bg-[var(--card-bg)] border border-[var(--border-color)] rounded-2xl p-6 w-full max-w-2xl shadow-2xl shadow-black/50">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-xl font-bold text-white">Browse for Icecast Directory</h2>
+                    <button id="close-browser-btn" class="text-gray-400 hover:text-white transition-colors">
+                        <span class="material-symbols-rounded">close</span>
+                    </button>
+                </div>
+
+                <div class="mb-4">
+                    <p class="text-gray-300 text-sm mb-4">
+                        Navigate to your Icecast installation directory:
+                    </p>
+
+                    <!-- Current Path Display -->
+                    <div class="mb-3 p-2 bg-[#111111] border border-[var(--border-color)] rounded-lg">
+                        <span class="text-xs text-gray-400">Current Path:</span>
+                        <div id="current-path" class="text-white font-mono text-sm">/</div>
+                    </div>
+
+                    <!-- Directory Listing -->
+                    <div id="directory-listing" class="max-h-64 overflow-y-auto bg-[#111111] border border-[var(--border-color)] rounded-lg">
+                        <div class="p-4 text-center text-gray-400">
+                            <span class="material-symbols-rounded animate-spin">refresh</span>
+                            Loading directories...
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex gap-3">
+                    <button id="manual-input-btn" class="flex-1 px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-colors">
+                        Manual Input
+                    </button>
+                    <button id="select-directory-btn" class="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors" disabled>
+                        Select This Directory
+                    </button>
+                    <button id="cancel-browser-btn" class="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-colors">
+                        Cancel
+                    </button>
+                </div>
+
+                <div id="browser-error" class="mt-3 text-red-400 text-sm hidden"></div>
+            </div>
+        `;
+
+        document.body.appendChild(modal);
+
+        // Initialize directory browser
+        this.currentPath = null;
+        this.selectedPath = null;
+        await this.loadDirectories();
+
+        // Event listeners
+        const closeBtn = modal.querySelector('#close-browser-btn');
+        const cancelBtn = modal.querySelector('#cancel-browser-btn');
+        const selectBtn = modal.querySelector('#select-directory-btn');
+        const manualBtn = modal.querySelector('#manual-input-btn');
+
+        const closeModal = () => {
+            document.body.removeChild(modal);
+        };
+
+        closeBtn.addEventListener('click', closeModal);
+        cancelBtn.addEventListener('click', closeModal);
+
+        selectBtn.addEventListener('click', async () => {
+            if (this.selectedPath) {
+                selectBtn.textContent = 'Validating...';
+                selectBtn.disabled = true;
+
+                try {
+                    await this.validateSelectedDirectory(this.selectedPath);
+                    closeModal();
+                } catch (error) {
+                    this.showBrowserError(error.message);
+                } finally {
+                    selectBtn.textContent = 'Select This Directory';
+                    selectBtn.disabled = false;
+                }
+            }
+        });
+
+        manualBtn.addEventListener('click', () => {
+            closeModal();
+            this.showManualPathInput();
+        });
+    }
+
+    /**
+     * Load directories from server
+     */
+    async loadDirectories(browsePath = null) {
+        try {
+            const response = await fetch('/api/system/icecast/browse-directories', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ path: browsePath })
+            });
+
+            if (!response.ok) {
+                throw new Error(`Failed to load directories: ${response.statusText}`);
+            }
+
+            const data = await response.json();
+            this.renderDirectoryListing(data);
+
+        } catch (error) {
+            this.showBrowserError(`Failed to load directories: ${error.message}`);
+        }
+    }
+
+    /**
+     * Render directory listing
+     */
+    renderDirectoryListing(data) {
+        const listing = document.getElementById('directory-listing');
+        const currentPathEl = document.getElementById('current-path');
+
+        if (data.currentPath) {
+            currentPathEl.textContent = data.currentPath;
+            this.currentPath = data.currentPath;
+        }
+
+        let html = '';
+
+        // Add parent directory option if not at root
+        if (data.parentPath) {
+            html += `
+                <div class="directory-item p-3 hover:bg-gray-700 cursor-pointer border-b border-gray-600" data-path="${data.parentPath}" data-type="parent">
+                    <div class="flex items-center gap-2">
+                        <span class="material-symbols-rounded text-blue-400">arrow_upward</span>
+                        <span class="text-white">.. (Parent Directory)</span>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Add directories
+        if (data.directories && data.directories.length > 0) {
+            data.directories.forEach(dir => {
+                html += `
+                    <div class="directory-item p-3 hover:bg-gray-700 cursor-pointer border-b border-gray-600" data-path="${dir.path}" data-type="directory">
+                        <div class="flex items-center gap-2">
+                            <span class="material-symbols-rounded text-yellow-400">folder</span>
+                            <span class="text-white">${dir.name}</span>
+                        </div>
+                    </div>
+                `;
+            });
+        } else {
+            html += `
+                <div class="p-4 text-center text-gray-400">
+                    No directories found
+                </div>
+            `;
+        }
+
+        listing.innerHTML = html;
+
+        // Add click handlers
+        listing.querySelectorAll('.directory-item').forEach(item => {
+            item.addEventListener('click', async () => {
+                const path = item.dataset.path;
+                const type = item.dataset.type;
+
+                if (type === 'parent' || type === 'directory') {
+                    // Navigate to directory
+                    await this.loadDirectories(path);
+                    this.selectedPath = path;
+                    this.updateSelectButton();
+                }
+            });
+
+            // Double-click to select
+            item.addEventListener('dblclick', () => {
+                const path = item.dataset.path;
+                this.selectedPath = path;
+                document.getElementById('select-directory-btn').click();
+            });
+        });
+    }
+
+    /**
+     * Update select button state
+     */
+    updateSelectButton() {
+        const selectBtn = document.getElementById('select-directory-btn');
+        if (this.selectedPath) {
+            selectBtn.disabled = false;
+            selectBtn.textContent = `Select: ${this.selectedPath}`;
+        } else {
+            selectBtn.disabled = true;
+            selectBtn.textContent = 'Select This Directory';
+        }
+    }
+
+    /**
+     * Show browser error
+     */
+    showBrowserError(message) {
+        const errorEl = document.getElementById('browser-error');
+        errorEl.textContent = message;
+        errorEl.classList.remove('hidden');
+
+        setTimeout(() => {
+            errorEl.classList.add('hidden');
+        }, 5000);
+    }
+
+    /**
+     * Show manual path input modal (fallback)
      */
     showManualPathInput() {
         const modal = document.createElement('div');

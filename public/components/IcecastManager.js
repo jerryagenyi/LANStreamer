@@ -448,10 +448,7 @@ class IcecastManager {
                             <span class="material-symbols-rounded text-sm">folder_open</span>
                             Browse for Icecast
                         </button>
-                        <button id="refresh-search-btn" class="inline-flex items-center justify-center gap-2 rounded-md px-4 py-2 text-sm font-medium text-white bg-gray-600 hover:bg-gray-700 transition-all duration-300">
-                            <span class="material-symbols-rounded text-sm">refresh</span>
-                            Search Again
-                        </button>
+
                     </div>
                     <div class="mt-3 text-sm text-gray-400">
                         Need help installing? <a href="docs/guides/icecast-installation.md" target="_blank" class="text-blue-400 hover:text-blue-300 underline">View installation guide</a>
@@ -499,9 +496,8 @@ class IcecastManager {
         container.querySelector('#start-btn')?.addEventListener('click', () => this.startServer());
         container.querySelector('#icecast-stop-btn')?.addEventListener('click', () => this.stopServer());
         container.querySelector('#restart-btn')?.addEventListener('click', () => this.restartServer());
-        // Browse and refresh buttons for error state
+        // Browse button for error state
         container.querySelector('#browse-icecast-btn')?.addEventListener('click', () => this.browseForIcecast());
-        container.querySelector('#refresh-search-btn')?.addEventListener('click', () => this.detectIcecastInstallation());
     }
 
     updateActionButtons(loadingButton = null) {

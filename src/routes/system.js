@@ -16,12 +16,57 @@ icecastService.initialize().catch(error => {
  * @description Get a list of available audio input devices.
  * @access Public
  */
-router.get('/audio-devices', (req, res) => {
+router.get('/audio-devices', async (req, res) => {
   try {
-    const devices = audioDeviceService.getAudioDevices();
+    const devices = await audioDeviceService.getAudioDevices();
     res.json(devices);
   } catch (error) {
     res.status(500).json({ message: 'Error retrieving audio devices', error: error.message });
+  }
+});
+
+/**
+ * @route POST /api/system/audio-devices/refresh
+ * @description Force refresh of audio device list (clears cache).
+ * @access Public
+ */
+router.post('/audio-devices/refresh', async (req, res) => {
+  try {
+    audioDeviceService.clearCache();
+    const devices = await audioDeviceService.getAudioDevices();
+    res.json({ 
+      success: true, 
+      message: 'Audio devices refreshed', 
+      devices,
+      count: devices.length 
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Error refreshing audio devices', error: error.message });
+  }
+});
+
+/**
+ * @route POST /api/system/audio-devices/test
+ * @description Test if a specific audio device is accessible.
+ * @access Public
+ */
+router.post('/audio-devices/test', async (req, res) => {
+  try {
+    const { deviceId } = req.body;
+    
+    if (!deviceId) {
+      return res.status(400).json({ message: 'Device ID is required' });
+    }
+    
+    const isAccessible = await audioDeviceService.testDevice(deviceId);
+    
+    res.json({ 
+      success: true, 
+      deviceId, 
+      accessible: isAccessible 
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Error testing audio device', error: error.message });
   }
 });
 
@@ -65,6 +110,25 @@ router.get('/icecast/search-installations', async (req, res) => {
 router.get('/icecast/browse-directories', async (req, res) => {
   try {
     const { path: browsePath } = req.query;
+    const directories = await icecastService.browseDirectories(browsePath);
+    res.json(directories);
+  } catch (error) {
+    console.error('Error browsing directories:', error);
+    res.status(500).json({
+      error: 'Failed to browse directories',
+      message: error.message
+    });
+  }
+});
+
+/**
+ * @route POST /api/system/icecast/browse-directories
+ * @description Browse directories for Icecast installation
+ * @access Public
+ */
+router.post('/icecast/browse-directories', async (req, res) => {
+  try {
+    const { path: browsePath } = req.body;
     const directories = await icecastService.browseDirectories(browsePath);
     res.json(directories);
   } catch (error) {

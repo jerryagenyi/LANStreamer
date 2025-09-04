@@ -18,6 +18,12 @@
   - [x] Consolidated path detection logic with shared helpers
   - [x] Simplified getStatus method (113 → 40 lines)
   - [x] Fixed service state management for error recovery
+- [x] **Music Player & Upload System (COMPLETE ✅)**
+  - [x] Fixed music player display to show "No music file loaded" instead of confusing default names
+  - [x] Removed problematic default file logic that caused errors
+  - [x] Fixed server upload functionality with increased file size limit (50MB → 200MB)
+  - [x] Enhanced Icecast auto-detection to find installations with dash suffix (Icecast-)
+  - [x] Server running and handling music file uploads successfully
 - [ ] **Phase 3: UI Cleanup & Optimization**
   - [ ] Remove redundant "Icecast Installation Detected" green section
   - [ ] Remove unnecessary buttons near Icecast status
@@ -27,6 +33,19 @@
   - [ ] Implement real-time detection of Icecast installation changes
   - [ ] Auto-refresh UI when installation status changes
   - [ ] Remove need for manual browser refresh
+- [ ] **Phase 5: Music Player Enhancements (NEEDED)**
+  - [ ] Implement default music file system - provide sample music files or auto-download
+  - [ ] Add music file management (delete, rename, organize)
+  - [ ] Add playlist functionality for multiple music files
+  - [ ] Add fade in/out transitions between tracks
+  - [ ] Add volume controls and audio visualization
+  - [ ] Add music player state persistence across browser refreshes
+- [ ] **Phase 6: Icecast Component & Service Edge Cases (BUG FIX)**
+  - [ ] Fix confusing error message display when Icecast IS detected but validation fails
+  - [ ] Revisit IcecastManager component error state logic - should not show "server not found" when it IS found
+  - [ ] Improve IcecastService validation to distinguish between "not found" vs "found but invalid structure"
+  - [ ] Remove redundant "Search Again" button (COMPLETED ✅)
+  - [ ] Better error messaging for edge cases like missing config files vs missing executables
 
 ### 🔧 Recent Fixes & Improvements (COMPLETED)
 - [x] **Service State Management Fix**
