@@ -471,6 +471,31 @@ When LANStreamer starts (`npm start`) and the web application loads:
 - **"Server stopped but failed to restart"**: Check Icecast installation, verify permissions
 - **"Audio device not found"**: Refresh devices, check Windows audio settings
 - **"Port already in use"**: Check for other Icecast instances, change port in config
+- **"Log directory access errors"**: Use full paths in icecast.xml instead of relative paths
+
+### Icecast Log Path Configuration Fix
+
+**Problem**: Icecast log access errors when using relative paths in `icecast.xml`
+
+**Solution**: Use full absolute paths instead of relative paths in the `<paths>` section:
+
+```xml
+<paths>
+    <!-- ❌ PROBLEMATIC - Relative paths cause access errors:
+    <logdir>./log</logdir>
+    <webroot>./web</webroot>
+    <adminroot>./admin</adminroot>
+    -->
+    
+    <!-- ✅ SOLUTION - Use full absolute paths:
+    <logdir>C:\Program Files (x86)\Icecast\log</logdir>
+    <webroot>C:\Program Files (x86)\Icecast\web</webroot>
+    <adminroot>C:\Program Files (x86)\Icecast\admin</adminroot>
+    -->
+</paths>
+```
+
+**Why this works**: Windows Icecast installations require full paths for proper file access permissions, especially when running as a service or from different working directories.
 
 ---
 

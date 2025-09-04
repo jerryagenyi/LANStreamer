@@ -50,9 +50,47 @@ router.get('/icecast/search-installations', async (req, res) => {
     res.json(searchResults);
   } catch (error) {
     console.error('Error searching for Icecast installations:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       error: 'Failed to search for Icecast installations',
-      message: error.message 
+      message: error.message
+    });
+  }
+});
+
+/**
+ * @route GET /api/system/icecast/browse-directories
+ * @description Browse directories for Icecast installation selection
+ * @access Public
+ */
+router.get('/icecast/browse-directories', async (req, res) => {
+  try {
+    const { path: browsePath } = req.query;
+    const directories = await icecastService.browseDirectories(browsePath);
+    res.json(directories);
+  } catch (error) {
+    console.error('Error browsing directories:', error);
+    res.status(500).json({
+      error: 'Failed to browse directories',
+      message: error.message
+    });
+  }
+});
+
+/**
+ * @route POST /api/system/icecast/validate-custom-path
+ * @description Validate and save custom Icecast installation path
+ * @access Public
+ */
+router.post('/icecast/validate-custom-path', async (req, res) => {
+  try {
+    const { path: customPath } = req.body;
+    const validation = await icecastService.validateCustomPath(customPath);
+    res.json(validation);
+  } catch (error) {
+    console.error('Error validating custom path:', error);
+    res.status(500).json({
+      error: 'Failed to validate custom path',
+      message: error.message
     });
   }
 });

@@ -15,24 +15,6 @@
           --border-color: #2F2F2F;
           --warning-color: #F85149;
         }
-        .status-icon {
-            transition: all 0.3s ease-in-out;
-        }
-        .status-icon-outline {
-            stroke: var(--primary-color);
-            stroke-width: 2px;
-            fill: transparent;
-        }
-        .status-icon-fill {
-            fill: var(--primary-color);
-            stroke: none;
-        }
-        .status-icon-live .status-icon-fill {
-            fill: var(--live-color);
-        }
-        .status-icon-live .status-icon-outline {
-            stroke: var(--live-color);
-        }
         .btn-gradient {
             background-image: linear-gradient(to right, #00AEEF, #0088CC);
             box-shadow: 0 4px 15px 0 rgba(0, 174, 239, 0.3);
@@ -109,41 +91,6 @@
         </a>
     </div>
     <div class="flex items-center gap-3">
-    <button class="flex h-10 w-10 cursor-pointer items-center justify-center rounded-lg border border-[var(--border-color)] bg-[var(--card-bg)] text-gray-400 transition-all hover:bg-[var(--primary-color)]/10 hover:text-[var(--primary-color)]">
-    <span class="material-symbols-rounded"> refresh </span></button>
-    <div class="group relative flex items-center">
-    <button class="flex h-10 w-10 cursor-pointer items-center justify-center rounded-lg border border-[var(--border-color)] bg-[var(--card-bg)] text-gray-400 transition-all hover:bg-[var(--primary-color)]/10 hover:text-[var(--primary-color)]">
-    <span class="material-symbols-rounded status-icon"> volume_up </span></button>
-    <div class="absolute top-full right-0 mt-2 w-72 rounded-lg bg-[var(--card-bg)] border border-[var(--border-color)] p-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none group-hover:pointer-events-auto shadow-2xl shadow-black/50">
-    <h4 class="font-bold text-white mb-2">Audio Devices</h4>
-    <p class="text-sm text-gray-400">2 Devices Online</p>
-    </div>
-    </div>
-    <div class="group relative flex items-center">
-    <button class="flex h-10 w-10 cursor-pointer items-center justify-center rounded-lg border border-[var(--border-color)] bg-[var(--card-bg)] text-gray-400 transition-all hover:bg-[var(--live-color)]/10 hover:text-[var(--live-color)]">
-    <span class="material-symbols-rounded status-icon status-icon-live"> settings_input_component </span></button>
-    <div class="absolute top-full right-0 mt-2 w-72 rounded-lg bg-[var(--card-bg)] border border-[var(--border-color)] p-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none group-hover:pointer-events-auto shadow-2xl shadow-black/50">
-    <h4 class="font-bold text-white mb-2">FFmpeg Streams</h4>
-    <p class="text-sm text-gray-400">1 Stream Live</p>
-    </div>
-    </div>
-    <div class="group relative flex items-center">
-    <button class="flex h-10 w-10 cursor-pointer items-center justify-center rounded-lg border border-[var(--border-color)] bg-[var(--card-bg)] text-gray-400 transition-all hover:bg-[var(--primary-color)]/10 hover:text-[var(--primary-color)]">
-    <span class="material-symbols-rounded status-icon"> router </span></button>
-    <div class="absolute top-full right-0 mt-2 w-72 rounded-lg bg-[var(--card-bg)] border border-[var(--border-color)] p-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none group-hover:pointer-events-auto shadow-2xl shadow-black/50">
-    <h4 class="font-bold text-white mb-2">Icecast Server</h4>
-    <p class="text-sm text-gray-400">Server Online</p>
-    </div>
-    </div>
-    <div class="group relative flex items-center">
-    <button class="flex h-10 w-10 cursor-pointer items-center justify-center rounded-lg border border-[var(--border-color)] bg-[var(--card-bg)] text-gray-400 transition-all hover:bg-yellow-500/10 hover:text-yellow-500">
-    <span class="material-symbols-rounded status-icon"> warning </span></button>
-    <div class="absolute top-full right-0 mt-2 w-72 rounded-lg bg-[var(--card-bg)] border border-[var(--border-color)] p-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none group-hover:pointer-events-auto shadow-2xl shadow-black/50">
-    <h4 class="font-bold text-white mb-2">System Status</h4>
-    <p class="text-sm text-yellow-500">Security Warning Active</p>
-    </div>
-    </div>
-    <div class="ml-4 h-10 w-px bg-[var(--border-color)]"></div>
     <div class="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-10 ml-4" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuDSIzxTEv03JUEwpU1vqD79kbeH63SzCaGfIIFbumOYFeslE7o8s5BELsy84X5hdHbqgGM91dgl8SECCQAuQUyN5TzULy0C6hTXlMd2FdmoEp4c0WAiQhyasooFF0UAFZoOLRnhrfiUJjHhWPasQr2g2MWISZolmDkAER-lahc8ZqnqZSr95hHY9Z-0DIFIJDnrExTC0CHjbWsTgsGY2Pj1xH87e8JybvN0dCpF-U1oWs_K8Q3OXkC3yMhMSgHVXCilnq_8LYez-3g");'></div>
     </div>
     </header>
@@ -451,6 +398,7 @@
     <!-- Include Components -->
     <script src="/components/ComponentManager.js"></script>
     <script src="/components/LobbyMusicPlayer.js"></script>
+    <script src="/components/FileBrowser.js"></script>
     <script src="/components/IcecastManager.js"></script>
     
     <script>
@@ -473,7 +421,6 @@
                 await this.initializeComponents();
                 this.setupEventListeners();
                 this.startStatusPolling();
-                this.updateStatusIndicators();
                 
                 // Icecast Manager will be initialized by ComponentManager with proper fallback
             }
@@ -635,27 +582,6 @@
                 }
             }
 
-            updateStatusIndicators() {
-                // Update header indicator colors based on status
-                const audioIndicator = document.getElementById('audio-devices-indicator');
-                const ffmpegIndicator = document.getElementById('ffmpeg-indicator');
-                const icecastIndicator = document.getElementById('icecast-indicator');
-                
-                // Update audio devices indicator
-                if (this.audioDevices.length > 0 && audioIndicator) {
-                    audioIndicator.querySelector('.status-icon').className = 'material-symbols-rounded status-icon text-[var(--live-color)]';
-                }
-                
-                // Update FFmpeg indicator
-                if (Object.keys(this.activeStreams).length > 0 && ffmpegIndicator) {
-                    ffmpegIndicator.querySelector('.status-icon').className = 'material-symbols-rounded status-icon status-icon-live text-[var(--live-color)]';
-                }
-                
-                // Update Icecast indicator
-                if (this.icecastStatus === 'running' && icecastIndicator) {
-                    icecastIndicator.querySelector('.status-icon').className = 'material-symbols-rounded status-icon text-[var(--live-color)]';
-                }
-            }
 
             formatUptime(seconds) {
                 const hours = Math.floor(seconds / 3600);
@@ -690,7 +616,6 @@
                 setInterval(async () => {
                     await this.checkIcecastStatus();
                     await this.checkFFmpegStatus();
-                    this.updateStatusIndicators();
                 }, 5000);
             }
 

@@ -1,34 +1,38 @@
 # LANStreamer Development TODO List
 
-## 🚨 URGENT TASKS
+## 🚨 CURRENT ACTIVE TASKS
 
-### 🔧 Button Refactoring Issue (HIGH PRIORITY)
-- [x] **Fix Icecast Component Breakdown**
-  - [x] Component shows "Component Not Available" after refactoring attempt
-  - [x] Need to properly revert to working state from main branch
-  - [x] Button refactoring approach needs revision - separate button component caused initialization issues
-  - [x] Consider alternative solutions for button state management that don't break component loading
-  - [x] Test thoroughly before attempting refactoring again
+### 🎯 Phase 1: Smart Device Config System (IN PROGRESS)
+- [x] **Device Config Implementation**
+  - [x] Smart initialization with device-specific config storage
+  - [x] Config location: `LANStreamer/config/device-config.json` (project-based)
+  - [x] Path validation and self-healing system
+  - [x] Fast startup when config is valid, auto-detect when invalid
+- [ ] **Phase 2: Browse for Icecast UI Button**
+  - [ ] Add "Browse for Icecast" button when installation not found
+  - [ ] File browser integration for root folder selection
+  - [ ] Auto-detect all paths from selected root folder
+  - [ ] Update device config with user-selected path
+- [ ] **Phase 3: UI Cleanup & Optimization**
+  - [ ] Remove redundant "Icecast Installation Detected" green section
+  - [ ] Remove unnecessary buttons near Icecast status
+  - [ ] Replace top status with bottom status component
+  - [ ] Improve error messaging and user actions
+- [ ] **Phase 4: Auto-refresh System**
+  - [ ] Implement real-time detection of Icecast installation changes
+  - [ ] Auto-refresh UI when installation status changes
+  - [ ] Remove need for manual browser refresh
 
-### 🚨 Restart Button Fix (COMPLETED)
-- [x] **Fix restart button false success message**
-  - [x] Server stops but doesn't restart properly
-  - [x] Frontend shows "success" before verifying restart worked
-  - [x] Backend restart method now verifies server actually started
-  - [x] Frontend checks actual server status before showing success
-  - [x] Added warning notification type for partial failures
-  - [x] **Increased wait times** - Backend start wait: 3s → 8s, restart shutdown wait: 3s → 5s, force kill wait: 2s → 3s
-  - [x] **Frontend restart wait** - Increased from 6s to 12s to match backend timing
-  - [x] **Enhanced logging** - Added detailed failure logging in restart method
-
-### 🚨 Button State Race Condition Fix (COMPLETED)
-- [x] **Fix button state updates before operations complete**
-  - [x] Buttons updating state immediately without waiting for server operations
-  - [x] Race conditions allowing users to click buttons before operations complete
-  - [x] **Status verification before operations** - All buttons now check current server status before acting
-  - [x] **Wait for completion** - Buttons wait for actual server state changes before updating UI
-  - [x] **Prevent race conditions** - All buttons disabled during any operation to prevent multiple clicks
-  - [x] **Enhanced error handling** - Re-check status on errors to ensure UI accuracy
+### � UI/UX Improvements (HIGH PRIORITY)
+- [ ] **Error State Improvements**
+  - [ ] Primary action: "Browse for Icecast" button
+  - [ ] Secondary action: Link to simplified installation guide
+  - [ ] Better messaging for expected user actions
+  - [ ] Auto-refresh when installation is restored
+- [ ] **Status Component Consolidation**
+  - [ ] Remove duplicate status displays
+  - [ ] Use single, comprehensive status component
+  - [ ] Clean up redundant installation detection messages
 
 
 

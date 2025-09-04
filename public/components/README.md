@@ -198,7 +198,6 @@ document.addEventListener('music-player-state-changed', (event) => {
 - `.btn-gradient` - Primary action buttons
 - `.btn-stop-gradient` - Stop/destructive action buttons
 - `.pulse-live` - Live status animation
-- `.status-icon` - Status indicator icons
 
 ## Future Components
 
