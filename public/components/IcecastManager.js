@@ -257,6 +257,13 @@ class IcecastManager {
             return;
         }
 
+        // Check current status before starting
+        await this.checkStatus();
+        if (this.status.running) {
+            this.showNotification('Server is already running', 'info');
+            return;
+        }
+
         try {
             this.isLoading = true;
             this.updateActionButtons('start');
@@ -275,14 +282,18 @@ class IcecastManager {
             
             // Check both HTTP status and result.success
             if (response.ok && result.success) {
-                this.status.running = true;
-                this.status.processId = result.processId;
-                
-                // Wait a moment for server to start
+                // Wait for server to actually start and verify status
                 await new Promise(resolve => setTimeout(resolve, 3000));
                 await this.checkStatus();
-                this.render(); // Re-render to update button states
-                this.showNotification('Icecast server started successfully', 'success');
+                
+                // Only update UI if server actually started
+                if (this.status.running) {
+                    this.status.processId = result.processId;
+                    this.render(); // Re-render to update button states
+                    this.showNotification('Icecast server started successfully', 'success');
+                } else {
+                    throw new Error('Server reported success but is not running');
+                }
             } else {
                 // Log detailed error information for debugging
                 console.error('Start failed - HTTP Status:', response.status, 'Result:', result);
@@ -291,6 +302,9 @@ class IcecastManager {
         } catch (error) {
             console.error('Failed to start Icecast server:', error);
             this.showNotification(`Failed to start server: ${error.message}`, 'error');
+            // Re-check status to ensure UI is accurate
+            await this.checkStatus();
+            this.render();
         } finally {
             this.isLoading = false;
             this.updateActionButtons(); // No loading button parameter = normal state
@@ -298,6 +312,8 @@ class IcecastManager {
     }
 
     async stopServer() {
+        // Check current status before stopping
+        await this.checkStatus();
         if (!this.status.running && !this.status.processId) {
             this.showNotification('Icecast server is not running', 'info');
             return;
@@ -320,17 +336,27 @@ class IcecastManager {
             const result = await response.json();
             
             if (result.success) {
-                this.status.running = false;
-                this.status.processId = null;
+                // Wait for server to actually stop and verify status
+                await new Promise(resolve => setTimeout(resolve, 3000));
                 await this.checkStatus();
-                this.render(); // Re-render to update button states
-                this.showNotification('Icecast server stopped successfully', 'success');
+                
+                // Only update UI if server actually stopped
+                if (!this.status.running) {
+                    this.status.processId = null;
+                    this.render(); // Re-render to update button states
+                    this.showNotification('Icecast server stopped successfully', 'success');
+                } else {
+                    throw new Error('Server reported stopped but is still running');
+                }
             } else {
                 throw new Error(result.message || 'Failed to stop server');
             }
         } catch (error) {
             console.error('Failed to stop Icecast server:', error);
             this.showNotification(`Failed to stop server: ${error.message}`, 'error');
+            // Re-check status to ensure UI is accurate
+            await this.checkStatus();
+            this.render();
         } finally {
             this.isLoading = false;
             this.updateActionButtons(); // No loading button parameter = normal state
@@ -340,6 +366,13 @@ class IcecastManager {
     async restartServer() {
         if (!this.status.installed) {
             this.showNotification('Icecast is not installed', 'error');
+            return;
+        }
+
+        // Check current status before restarting
+        await this.checkStatus();
+        if (!this.status.running) {
+            this.showNotification('Server is not running. Use Start Server instead.', 'info');
             return;
         }
 
@@ -360,25 +393,41 @@ class IcecastManager {
                 // Don't immediately update status - wait for actual restart to complete
                 // The restart process handles stopping and starting internally
                 
-                // Wait longer for the complete restart cycle
-                await new Promise(resolve => setTimeout(resolve, 6000));
+                // Wait longer for the complete restart cycle (increased to match backend)
+                await new Promise(resolve => setTimeout(resolve, 12000));
                 
                 // Check actual status after restart completes
                 await this.checkStatus();
                 
-                // Only render after we know the actual state
-                this.render(); // Re-render to update button states
-                this.showNotification('Icecast server restarted successfully', 'success');
+                // Verify the server actually started before showing success
+                if (this.status.running) {
+                    // Only render after we know the actual state
+                    this.render(); // Re-render to update button states
+                    this.showNotification('Icecast server restarted successfully', 'success');
+                } else {
+                    // Server didn't start after restart
+                    this.render(); // Re-render to update button states
+                    this.showNotification('Server stopped but failed to restart. Please start manually.', 'error');
+                }
             } else {
                 throw new Error(result.message || 'Failed to restart server');
             }
             
         } catch (error) {
             console.error('Failed to restart Icecast server:', error);
-            this.showNotification(`Failed to restart server: ${error.message}`, 'error');
-            // Check status even on error to sync button states
+            
+            // Check status to see what actually happened
             await this.checkStatus();
             this.render();
+            
+            // Show appropriate error message
+            if (this.status.running) {
+                // Server is running but restart failed - might be a partial restart
+                this.showNotification('Restart completed but with warnings. Server is running.', 'warning');
+            } else {
+                // Server failed to restart completely
+                this.showNotification(`Failed to restart server: ${error.message}`, 'error');
+            }
         } finally {
             this.isLoading = false;
             this.updateActionButtons(); // No loading button parameter = normal state
@@ -503,7 +552,7 @@ class IcecastManager {
                 </div>
                 
                 <!-- Collapsible Content -->
-                <div class="installation-details overflow-hidden transition-all duration-300 ${this.installationDetailsExpanded ? 'max-h-96 px-4 pb-4' : 'max-h-0'}">`
+                <div class="installation-details overflow-hidden transition-all duration-300 ${this.installationDetailsExpanded ? 'max-h-96 px-4 pb-4' : 'max-h-0'}">
                     <div class="grid grid-cols-2 gap-3 text-xs">
                         <div class="space-y-1">
                             <p class="text-gray-400">Files Status:</p>
@@ -565,7 +614,7 @@ class IcecastManager {
         const stopBtn = document.querySelector('#icecast-stop-btn');
         const restartBtn = document.querySelector('#restart-btn');
         
-        // Disable buttons based on loading state and server status
+        // Always disable all buttons during any operation to prevent race conditions
         if (startBtn) startBtn.disabled = (loadingButton !== null) || !this.status.installed || this.status.running;
         if (stopBtn) stopBtn.disabled = (loadingButton !== null) || !this.status.installed || !this.status.running;
         if (restartBtn) restartBtn.disabled = (loadingButton !== null) || !this.status.installed || !this.status.running;
@@ -594,6 +643,17 @@ class IcecastManager {
                 restartBtn.innerHTML = '<span class="material-symbols-rounded text-base">restart_alt</span> Restart Server';
             }
         }
+        
+        // Add visual feedback for disabled state
+        [startBtn, stopBtn, restartBtn].forEach(btn => {
+            if (btn) {
+                if (btn.disabled) {
+                    btn.classList.add('opacity-50', 'cursor-not-allowed');
+                } else {
+                    btn.classList.remove('opacity-50', 'cursor-not-allowed');
+                }
+            }
+        });
     }
 
     updateStatusIndicators() {
@@ -666,12 +726,12 @@ class IcecastManager {
         const notification = document.createElement('div');
         notification.className = `fixed top-4 right-4 p-4 rounded-lg shadow-lg z-50 transition-all duration-300 transform translate-x-full`;
         
-        const bgColor = type === 'success' ? 'bg-green-600' : type === 'error' ? 'bg-red-600' : 'bg-blue-600';
+        const bgColor = type === 'success' ? 'bg-green-600' : type === 'error' ? 'bg-red-600' : type === 'warning' ? 'bg-yellow-600' : 'bg-blue-600';
         notification.className += ` ${bgColor} text-white`;
         
         notification.innerHTML = `
             <div class="flex items-center gap-2">
-                <span class="material-symbols-rounded text-lg">${type === 'success' ? 'check_circle' : type === 'error' ? 'error' : 'info'}</span>
+                <span class="material-symbols-rounded text-lg">${type === 'success' ? 'check_circle' : type === 'error' ? 'error' : type === 'warning' ? 'warning' : 'info'}</span>
                 <span>${message}</span>
             </div>
         `;

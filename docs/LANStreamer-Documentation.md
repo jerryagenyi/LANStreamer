@@ -1,15 +1,18 @@
-# LANStreamer Component Architecture Documentation
+# LANStreamer Documentation
 
-This document provides comprehensive technical documentation for all LANStreamer components, their integration, workflows, and system architecture.
+This document provides comprehensive technical documentation for LANStreamer, including system architecture, component integration, installation guides, and operational procedures.
 
 ## Table of Contents
 - [System Overview](#system-overview)
+- [Codebase Architecture Analysis](#codebase-architecture-analysis)
 - [Icecast Component](#icecast-component)
 - [FFmpeg Component](#ffmpeg-component)
 - [Player Component](#player-component)
 - [Component Manager](#component-manager)
 - [WebSocket Service](#websocket-service)
 - [Audio Device Service](#audio-device-service)
+- [Installation Guides](#installation-guides)
+- [Troubleshooting](#troubleshooting)
 
 ---
 
@@ -27,6 +30,31 @@ LANStreamer follows a modular architecture where frontend components communicate
 ```
 Frontend Component → API Endpoint → Express Route → Service Class → External Process
 ```
+
+---
+
+## Codebase Architecture Analysis
+
+### Overall Codebase Architecture
+LANStreamer is well-structured with a clear separation of concerns:
+
+**Frontend-Backend Architecture:**
+- **Frontend**: Component-based JavaScript modules (`public/components/`)
+- **Backend**: Express.js server with service layer (`src/services/`, `src/routes/`)
+- **API Communication**: RESTful endpoints for system management
+- **Configuration**: Centralized config management with environment variables
+
+### Key Strengths:
+- ✅ **Modular Design**: Clear separation between IcecastService, AudioDeviceService, etc.
+- ✅ **Comprehensive Documentation**: Excellent installation guides and technical specs
+- ✅ **Error Handling**: Robust error handling with proper logging
+- ✅ **Cross-Platform Support**: Windows-focused with Unix compatibility
+
+### Architecture Benefits:
+- **Maintainability**: Each component has a single responsibility
+- **Testability**: Services can be tested independently
+- **Scalability**: Easy to add new components and features
+- **Reliability**: Proper error handling and logging throughout
 
 ---
 
@@ -93,6 +121,20 @@ When LANStreamer starts (`npm start`) and the web application loads:
 2. **Button State Setting**: 
    - If process is running: Start button becomes inactive, Stop/Restart buttons become active
    - If process is not running: Start/Restart buttons become active, Stop button becomes inactive
+
+**New Button Logic Flow:**
+1. **Pre-Operation Status Check**: All buttons verify current server status before performing actions
+2. **Operation Execution**: Button performs its intended operation (start/stop/restart)
+3. **Wait for Completion**: Button waits for actual server state change (3-12 seconds depending on operation)
+4. **Status Verification**: Re-check server status to confirm operation actually succeeded
+5. **UI Update**: Only update button states and show success/error after verification
+6. **Race Condition Prevention**: All buttons disabled during any operation to prevent multiple clicks
+
+**Benefits:**
+- ✅ **No false success messages** - UI only shows success after verifying actual server state
+- ✅ **Prevents race conditions** - Users can't click buttons before operations complete
+- ✅ **Accurate button states** - Buttons reflect actual server status, not just API responses
+- ✅ **Better user experience** - Clear feedback on what's actually happening vs. what was requested
 
 **Process Management Operations:**
 
@@ -259,6 +301,38 @@ When LANStreamer starts (`npm start`) and the web application loads:
 
 ---
 
+## Installation Guides
+
+### Quick Installation Steps
+
+#### Icecast Installation
+1. **Download**: Get Icecast from [icecast.org](https://icecast.org/download/)
+2. **Install**: Run the Windows installer (typically installs to `C:\Program Files (x86)\Icecast\`)
+3. **Verify**: Check that `icecast.bat` and `bin\icecast.exe` exist
+4. **Configure**: Edit `icecast.xml` if needed (default settings usually work)
+5. **Test**: Run `icecast.bat` to verify installation
+
+#### FFmpeg Installation
+1. **Download**: Get FFmpeg from [ffmpeg.org](https://ffmpeg.org/download.html)
+2. **Extract**: Extract to a folder (e.g., `C:\ffmpeg\`)
+3. **PATH**: Add FFmpeg bin directory to Windows PATH environment variable
+4. **Verify**: Open Command Prompt and run `ffmpeg -version`
+
+#### LANStreamer Installation
+1. **Clone**: `git clone <repository-url>`
+2. **Dependencies**: `npm install`
+3. **Environment**: Copy `.env.example` to `.env` and configure
+4. **Start**: `npm start`
+5. **Access**: Open `http://localhost:3001`
+
+### Prerequisites
+- Node.js 16+ installed
+- Windows 10/11 (primary support)
+- Administrator privileges for audio device access
+- Network access for streaming
+
+---
+
 ## File System Access and Integration
 
 ### Configuration Management
@@ -291,13 +365,13 @@ When LANStreamer starts (`npm start`) and the web application loads:
 
 ---
 
-## Troubleshooting and Diagnostics
+## Troubleshooting
 
 ### Common Issues
-- Icecast executable path problems (bin folder structure)
-- Audio device detection failures
-- Stream startup errors
-- Network connectivity issues
+- **Icecast executable path problems** (bin folder structure)
+- **Audio device detection failures**
+- **Stream startup errors**
+- **Network connectivity issues**
 
 ### Diagnostic Tools
 - Component health checks
@@ -310,6 +384,12 @@ When LANStreamer starts (`npm start`) and the web application loads:
 - Configuration validation and repair
 - Manual intervention procedures
 - Fallback operation modes
+
+### Error Messages and Solutions
+- **"Component Not Available"**: Check JavaScript console for errors, verify file paths
+- **"Server stopped but failed to restart"**: Check Icecast installation, verify permissions
+- **"Audio device not found"**: Refresh devices, check Windows audio settings
+- **"Port already in use"**: Check for other Icecast instances, change port in config
 
 ---
 
@@ -329,4 +409,4 @@ When LANStreamer starts (`npm start`) and the web application loads:
 
 ---
 
-This documentation serves as the comprehensive reference for LANStreamer's component architecture, integration patterns, and operational procedures.
+This documentation serves as the comprehensive reference for LANStreamer's architecture, installation, and operational procedures.

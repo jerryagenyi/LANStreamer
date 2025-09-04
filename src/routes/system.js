@@ -1,9 +1,15 @@
 import express from 'express';
 import audioDeviceService from '../services/AudioDeviceService.js';
 import IcecastService from '../services/IcecastService.js';
+import { ErrorHandler, errorMiddleware } from '../utils/errors.js';
 
 const router = express.Router();
 const icecastService = new IcecastService();
+
+// Initialize the service
+icecastService.initialize().catch(error => {
+  console.error('Failed to initialize Icecast service:', error.message);
+});
 
 /**
  * @route GET /api/system/audio-devices
@@ -60,21 +66,36 @@ router.get('/icecast/search-installations', async (req, res) => {
  * @description Start Icecast service
  * @access Public
  */
-router.post('/icecast/start', async (req, res) => {
+router.post('/icecast/start', async (req, res, next) => {
   try {
     const result = await icecastService.start();
-    res.json({ 
-      success: true,
-      message: 'Icecast started successfully',
-      ...result
-    });
+
+    // Backend handles all validation and timing
+    if (result.success) {
+      // Wait and verify the server actually started
+      await new Promise(resolve => setTimeout(resolve, 3000));
+      const status = await icecastService.getStatus();
+
+      if (status.running) {
+        res.json({
+          success: true,
+          message: result.message || 'Icecast server started successfully',
+          status: 'running',
+          pid: result.pid,
+          service: result.service
+        });
+      } else {
+        res.status(500).json({
+          success: false,
+          error: 'Server started but is not responding',
+          code: 'START_VERIFICATION_FAILED'
+        });
+      }
+    } else {
+      res.json(result);
+    }
   } catch (error) {
-    console.error('Error starting Icecast:', error);
-    res.status(500).json({ 
-      success: false,
-      error: 'Failed to start Icecast',
-      message: error.message 
-    });
+    next(error); // Pass to error middleware
   }
 });
 
@@ -266,5 +287,8 @@ router.get('/icecast/validate-config', async (req, res) => {
     });
   }
 });
+
+// Add error handling middleware
+router.use(errorMiddleware);
 
 export default router;

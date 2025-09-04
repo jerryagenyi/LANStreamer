@@ -1,5 +1,39 @@
 # LANStreamer Development TODO List
 
+## 🚨 URGENT TASKS
+
+### 🔧 Button Refactoring Issue (HIGH PRIORITY)
+- [x] **Fix Icecast Component Breakdown**
+  - [x] Component shows "Component Not Available" after refactoring attempt
+  - [x] Need to properly revert to working state from main branch
+  - [x] Button refactoring approach needs revision - separate button component caused initialization issues
+  - [x] Consider alternative solutions for button state management that don't break component loading
+  - [x] Test thoroughly before attempting refactoring again
+
+### 🚨 Restart Button Fix (COMPLETED)
+- [x] **Fix restart button false success message**
+  - [x] Server stops but doesn't restart properly
+  - [x] Frontend shows "success" before verifying restart worked
+  - [x] Backend restart method now verifies server actually started
+  - [x] Frontend checks actual server status before showing success
+  - [x] Added warning notification type for partial failures
+  - [x] **Increased wait times** - Backend start wait: 3s → 8s, restart shutdown wait: 3s → 5s, force kill wait: 2s → 3s
+  - [x] **Frontend restart wait** - Increased from 6s to 12s to match backend timing
+  - [x] **Enhanced logging** - Added detailed failure logging in restart method
+
+### 🚨 Button State Race Condition Fix (COMPLETED)
+- [x] **Fix button state updates before operations complete**
+  - [x] Buttons updating state immediately without waiting for server operations
+  - [x] Race conditions allowing users to click buttons before operations complete
+  - [x] **Status verification before operations** - All buttons now check current server status before acting
+  - [x] **Wait for completion** - Buttons wait for actual server state changes before updating UI
+  - [x] **Prevent race conditions** - All buttons disabled during any operation to prevent multiple clicks
+  - [x] **Enhanced error handling** - Re-check status on errors to ensure UI accuracy
+
+
+
+---
+
 ## 🎯 Current Status: TDD Step 7 Complete - Enhancement Phase
 
 ### ✅ Completed Tasks

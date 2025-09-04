@@ -177,7 +177,7 @@ Comprehensive documentation is available in the [`docs/`](docs/) directory:
 
 ### 📋 **Core Documentation**
 - **[Documentation Index](docs/README.md)** - Overview and current implementation status
-- **[Component Architecture](docs/LANStreamer-Component-Architecture.md)** - Complete component documentation (Icecast, FFmpeg, Player, etc.)
+- **[LANStreamer Documentation](docs/LANStreamer-Documentation.md)** - Comprehensive technical documentation, installation guides, and component architecture
 - **[Product Requirements](docs/LANStreamer-PRD.md)** - Features, user stories, and project scope
 - **[Technical Specifications](docs/LANStreamer-Technical-Specification.md)** - API documentation and system architecture
 - **[Test-Driven Development Plan](docs/LANStreamer-TDD.md)** - Development methodology and testing strategy
