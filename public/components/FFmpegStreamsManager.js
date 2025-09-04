@@ -8,8 +8,12 @@ class FFmpegStreamsManager {
         this.audioDevices = [];
         this.isInitialized = false;
         this.statusCheckInterval = null;
+        this.uptimeUpdateInterval = null;
         this.containerId = containerId;
         this.container = null;
+
+        // Client-side timer tracking
+        this.clientTimers = new Map(); // streamId -> { startTime, isRunning }
 
         // Auto-initialize immediately to ensure component loads
         this.init().catch(error => {
@@ -37,7 +41,10 @@ class FFmpegStreamsManager {
             
             // Start status polling
             this.startStatusPolling();
-            
+
+            // Start real-time uptime updates
+            this.startUptimeUpdates();
+
             this.isInitialized = true;
             
         } catch (error) {
@@ -56,6 +63,8 @@ class FFmpegStreamsManager {
 
             // The API returns { total, running, errors, streams } format
             if (data.streams) {
+                // Update client timers based on stream status changes
+                this.updateClientTimers(data.streams);
                 this.activeStreams = data.streams;
             } else {
                 this.activeStreams = [];
@@ -418,6 +427,78 @@ class FFmpegStreamsManager {
     }
 
     /**
+     * Start real-time uptime updates (every second)
+     */
+    startUptimeUpdates() {
+        this.uptimeUpdateInterval = setInterval(() => {
+            if (this.isInitialized) {
+                this.updateUptimeDisplays();
+            }
+        }, 1000);
+    }
+
+    /**
+     * Stop uptime updates
+     */
+    stopUptimeUpdates() {
+        if (this.uptimeUpdateInterval) {
+            clearInterval(this.uptimeUpdateInterval);
+            this.uptimeUpdateInterval = null;
+        }
+    }
+
+    /**
+     * Update client-side timers based on server stream status
+     */
+    updateClientTimers(serverStreams) {
+        serverStreams.forEach(stream => {
+            const clientTimer = this.clientTimers.get(stream.id);
+
+            if (stream.status === 'running') {
+                if (!clientTimer || !clientTimer.isRunning) {
+                    // Stream just started or resumed - start client timer
+                    this.clientTimers.set(stream.id, {
+                        startTime: Date.now(),
+                        isRunning: true
+                    });
+                    console.log(`Started client timer for stream ${stream.id}`);
+                }
+            } else {
+                if (clientTimer && clientTimer.isRunning) {
+                    // Stream stopped - stop client timer
+                    this.clientTimers.set(stream.id, {
+                        ...clientTimer,
+                        isRunning: false
+                    });
+                    console.log(`Stopped client timer for stream ${stream.id}`);
+                }
+            }
+        });
+
+        // Clean up timers for streams that no longer exist
+        const serverStreamIds = new Set(serverStreams.map(s => s.id));
+        for (const [streamId] of this.clientTimers) {
+            if (!serverStreamIds.has(streamId)) {
+                this.clientTimers.delete(streamId);
+                console.log(`Cleaned up timer for removed stream ${streamId}`);
+            }
+        }
+    }
+
+    /**
+     * Update uptime displays using client-side timers
+     */
+    updateUptimeDisplays() {
+        this.clientTimers.forEach((timer, streamId) => {
+            const uptimeElement = document.querySelector(`[data-stream-uptime="${streamId}"]`);
+            if (uptimeElement && timer.isRunning) {
+                const currentUptime = Date.now() - timer.startTime;
+                uptimeElement.textContent = `Uptime: ${this.formatUptime(currentUptime)}`;
+            }
+        });
+    }
+
+    /**
      * Render the component
      */
     render() {
@@ -440,7 +521,7 @@ class FFmpegStreamsManager {
                     <div class="flex items-center gap-3">
                         <div class="flex items-center gap-2 px-3 py-1.5 bg-green-500/10 border border-green-500/20 rounded-full">
                             <div class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
-                            <span class="text-xs font-medium text-green-400">FFmpeg Ready</span>
+                            <span class="text-xs font-medium text-green-400">${this.getStreamCountStatus()}</span>
                         </div>
                         <button id="add-stream-btn" class="inline-flex items-center justify-center gap-2 rounded-md px-4 py-2.5 text-sm font-semibold text-white bg-[var(--live-color)] hover:bg-[var(--live-color)]/80 transition-all duration-300 shadow-lg">
                             <span class="material-symbols-rounded">add</span>
@@ -503,8 +584,18 @@ class FFmpegStreamsManager {
         }
 
         return this.activeStreams.map(stream => {
-            const startTime = stream.startedAt ? new Date(stream.startedAt) : new Date();
-            const uptime = this.formatUptime(stream.uptime || (Date.now() - startTime.getTime()));
+            // Use client-side timer for uptime calculation
+            const clientTimer = this.clientTimers.get(stream.id);
+            let uptime = '0s';
+
+            if (clientTimer && clientTimer.isRunning) {
+                const currentUptime = Date.now() - clientTimer.startTime;
+                uptime = this.formatUptime(currentUptime);
+            } else if (stream.status !== 'running') {
+                // For stopped streams, show last known uptime or 0
+                uptime = '0s';
+            }
+
             const streamUrl = `http://localhost:8000/${stream.id}`;
 
             // Determine status styling and icon
@@ -548,10 +639,6 @@ class FFmpegStreamsManager {
                         <div class="flex-1 min-w-0">
                             <div class="flex items-start justify-between gap-2 mb-1">
                                 <h3 class="font-semibold text-white text-lg truncate flex-1">${stream.name || stream.id}</h3>
-                                <span class="px-2 py-1 text-xs font-medium ${statusBg} ${statusColor} border rounded-full flex items-center gap-1 flex-shrink-0">
-                                    <span class="material-symbols-rounded text-xs">${statusIcon}</span>
-                                    ${statusText}
-                                </span>
                             </div>
                             <div class="flex flex-wrap items-center gap-3 text-sm text-gray-400">
                                 <span class="flex items-center gap-1">
@@ -564,7 +651,11 @@ class FFmpegStreamsManager {
                                 </span>
                                 <span class="flex items-center gap-1">
                                     <span class="material-symbols-rounded text-sm">schedule</span>
-                                    ${uptime}
+                                    <span data-stream-uptime="${stream.id}">Uptime: ${uptime}</span>
+                                </span>
+                                <span class="px-2 py-1 text-xs font-medium ${statusBg} ${statusColor} border rounded-full flex items-center gap-1 flex-shrink-0">
+                                    <span class="material-symbols-rounded text-xs">${statusIcon}</span>
+                                    ${statusText}
                                 </span>
                             </div>
                         </div>
@@ -937,10 +1028,26 @@ class FFmpegStreamsManager {
     }
 
     /**
+     * Get stream count status for display
+     */
+    getStreamCountStatus() {
+        if (!this.activeStreams || this.activeStreams.length === 0) {
+            return 'FFmpeg Ready';
+        }
+
+        const totalStreams = this.activeStreams.length;
+        const liveStreams = this.activeStreams.filter(stream => stream.status === 'running').length;
+
+        return `${liveStreams}/${totalStreams} Live`;
+    }
+
+    /**
      * Cleanup
      */
     destroy() {
         this.stopStatusPolling();
+        this.stopUptimeUpdates();
+        this.clientTimers.clear();
         this.isInitialized = false;
     }
 }

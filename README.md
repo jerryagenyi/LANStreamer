@@ -1,8 +1,8 @@
 # LANStreamer
 
-A comprehensive solution that turns a standard PC into a multi-channel audio streaming server for local area networks (LAN). This project provides a **web-based application** for local, live, low-latency audio broadcasts for events like language interpretation, meetings, or conferences.
+A comprehensive solution that turns a standard PC into a multi-channel audio streaming server for local area networks (LAN). This project provides a **web-based application** that orchestrates **FFmpeg** and **Icecast** to deliver local, live, low-latency audio broadcasts for events like language interpretation, meetings, or conferences.
 
-For advanced users or for troubleshooting, **manual setup guides** are also available.
+For advanced users or for troubleshooting, **manual setup guides** are also available. If you have ideas and use-cases for improving this system, contact jerryagenyi@gmail.com.
 
 ## Project Structure
 
@@ -43,11 +43,48 @@ LANStreamer/
 
 ## How It Works
 
-LANStreamer simplifies the workflow by acting as a central control panel for three core components:
+LANStreamer creates a complete audio streaming ecosystem with two main interfaces and three core components:
 
+### 🎛️ **Admin Dashboard** (`http://localhost:3001/`)
+The control center where administrators:
+- **Manage Streams:** Start, stop, and configure audio streams
+- **Monitor System:** Check FFmpeg and Icecast status in real-time
+- **Configure Settings:** Set up event details and contact information
+- **View Analytics:** Monitor active streams and system performance
+
+### 🎧 **Listener Interface** (`http://localhost:3001/streams`)
+The user-friendly page where listeners:
+- **Browse Streams:** See all available audio streams
+- **Listen Live:** Click to play any stream instantly
+- **Mobile Friendly:** Works on phones, tablets, and computers
+- **No Apps Required:** Just open in any web browser
+
+### ⚙️ **Core Components**
 1.  **Audio Input:** Any detected audio device (microphone, audio interface, virtual audio cable) provides audio to the host PC.
 2.  **FFmpeg:** This powerful tool reads the audio channels, encodes them, and pushes them to the streaming server.
 3.  **Icecast:** The open-source streaming server that broadcasts the streams to any connected client on the network.
+
+### 🔄 **Complete Workflow**
+1. **Admin** uses the dashboard to create streams from available audio devices
+2. **FFmpeg** captures audio and streams it to **Icecast** server
+3. **Listeners** visit the streams page to browse and play available audio
+4. **Real-time updates** keep everyone informed of stream status
+
+## Screenshots
+
+### Dashboard Interface
+<div align="center">
+  <img src="images/screenshots/dashboard.png" width="90%" alt="LANStreamer Dashboard" style="border: 1px solid #ccc; border-radius: 8px;" />
+</div>
+
+*The main dashboard provides system status, stream management, and real-time monitoring*
+
+### Streams Interface
+<div align="center">
+  <img src="images/screenshots/streams.png" width="90%" alt="LANStreamer Streams Page" style="border: 1px solid #ccc; border-radius: 8px;" />
+</div>
+
+*The streams page allows users to browse and listen to available audio streams*
 
 ## Visual Concept Overview
 
@@ -74,11 +111,61 @@ LANStreamer simplifies the workflow by acting as a central control panel for thr
 - **Git**: For cloning the repository ([Download here](https://git-scm.com/))
 - **Audio Input**: Any audio device (built-in microphone, USB microphone, audio interface, etc.)
 
+**Required Components (Manual Installation Required):**
+- **FFmpeg**: Audio/video processing toolkit ([Official site](https://ffmpeg.org/))
+- **Icecast**: Open-source streaming media server ([Official site](https://icecast.org/))
+
+> ⚠️ **Important**: You must install FFmpeg and Icecast manually before running LANStreamer. See installation guides below or in the [`manual-setup/`](manual-setup/) directory.
+
+### Quick Installation Guide
+
+#### Windows (Recommended - Using Winget)
+```bash
+# Install FFmpeg
+winget install FFmpeg
+
+# Install Icecast (download from official site)
+# Visit: https://icecast.org/download/
+# Download Windows installer and run it
+```
+
+#### macOS (Using Homebrew)
+```bash
+# Install FFmpeg
+brew install ffmpeg
+
+# Install Icecast
+brew install icecast
+```
+
+#### Linux (Ubuntu/Debian)
+```bash
+# Install FFmpeg
+sudo apt update
+sudo apt install ffmpeg
+
+# Install Icecast
+sudo apt install icecast2
+```
+
+**Verify Installation:**
+```bash
+# Check FFmpeg
+ffmpeg -version
+
+# Check Icecast (Windows)
+icecast.exe -v
+
+# Check Icecast (macOS/Linux)
+icecast -v
+```
+
 **First-Time Setup Checklist:**
 - [ ] Node.js installed and `node --version` shows v18+
 - [ ] Git installed and `git --version` works
 - [ ] Audio device connected and working
 - [ ] Internet connection (for initial setup only)
+- [ ] FFmpeg and Icecast installed and accessible in system PATH
 
 ### Audio Device Configuration
 
@@ -270,3 +357,136 @@ The application uses environment variables. Create a `.env` file in the root dir
 - **Vue.js 3**: Progressive JavaScript framework
 - **Vue Router**: Client-side routing
 - **Vuex/Pinia**: State management
+
+## Contributing
+
+We welcome contributions to LANStreamer! Whether you're fixing bugs, adding features, improving documentation, or helping with testing, your contributions are valuable.
+
+### 🚀 Quick Start for Contributors
+
+1. **Fork the repository** on GitHub
+2. **Clone your fork** locally:
+   ```bash
+   git clone https://github.com/YOUR-USERNAME/LANStreamer.git
+   cd LANStreamer
+   ```
+3. **Install dependencies**:
+   ```bash
+   npm install
+   ```
+4. **Create a feature branch**:
+   ```bash
+   git checkout -b feature/your-feature-name
+   ```
+5. **Make your changes** and test them
+6. **Commit your changes**:
+   ```bash
+   git commit -m "Add: your feature description"
+   ```
+7. **Push to your fork**:
+   ```bash
+   git push origin feature/your-feature-name
+   ```
+8. **Create a Pull Request** on GitHub
+
+### 🛠️ Development Setup
+
+**Start the development server:**
+```bash
+npm run dev
+```
+
+**Generate screenshots for documentation:**
+```bash
+npm run screenshots
+```
+
+**Run tests:**
+```bash
+npm test
+npm run test:e2e
+```
+
+### 📝 Contribution Guidelines
+
+**Code Style:**
+- Use consistent indentation (2 spaces)
+- Follow existing naming conventions
+- Add comments for complex logic
+- Keep functions small and focused
+
+**Commit Messages:**
+- Use clear, descriptive commit messages
+- Start with a verb: `Add`, `Fix`, `Update`, `Remove`
+- Reference issues when applicable: `Fix: audio device detection (#123)`
+
+**Pull Requests:**
+- Provide a clear description of changes
+- Include screenshots for UI changes
+- Test your changes thoroughly
+- Update documentation if needed
+
+### 🐛 Bug Reports
+
+When reporting bugs, please include:
+- **Operating System** and version
+- **Node.js version** (`node --version`)
+- **Steps to reproduce** the issue
+- **Expected vs actual behavior**
+- **Console logs** or error messages
+- **Screenshots** if applicable
+
+### 💡 Feature Requests
+
+For new features, please:
+- Check existing issues first
+- Describe the use case clearly
+- Explain why it would be valuable
+- Consider implementation complexity
+
+### 🧪 Testing
+
+**Manual Testing:**
+- Test on different operating systems
+- Verify audio device detection
+- Test stream creation and playback
+- Check responsive design on mobile
+
+**Automated Testing:**
+- Unit tests with Vitest
+- End-to-end tests with Playwright
+- Screenshot regression testing
+
+### 📚 Documentation
+
+Help improve documentation by:
+- Fixing typos and grammar
+- Adding missing information
+- Creating tutorials or guides
+- Updating screenshots
+- Translating content
+
+### 🎯 Areas We Need Help With
+
+- **Cross-platform testing** (Windows, macOS, Linux)
+- **Audio device compatibility** testing
+- **Performance optimization**
+- **UI/UX improvements**
+- **Documentation and tutorials**
+- **Internationalization (i18n)**
+- **Accessibility improvements**
+
+### 📞 Getting Help
+
+- **GitHub Issues**: For bugs and feature requests
+- **GitHub Discussions**: For questions and community support
+- **Documentation**: Check the [`docs/`](docs/) directory
+
+### 🙏 Recognition
+
+Contributors are recognized in:
+- GitHub contributors list
+- Release notes for significant contributions
+- Documentation credits
+
+Thank you for helping make LANStreamer better! 🎉

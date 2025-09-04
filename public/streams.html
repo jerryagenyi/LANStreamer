@@ -56,6 +56,38 @@
             background-image: linear-gradient(to right, #D43F3A, #F85149);
             box-shadow: 0 6px 20px 0 rgba(248, 81, 73, 0.4);
         }
+
+        /* Volume Slider Styling */
+        .volume-slider {
+            background: #374151;
+            outline: none;
+        }
+
+        .volume-slider::-webkit-slider-thumb {
+            appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: var(--primary-color);
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+            transition: all 0.2s ease;
+        }
+
+        .volume-slider::-webkit-slider-thumb:hover {
+            background: #0088CC;
+            transform: scale(1.1);
+        }
+
+        .volume-slider::-moz-range-thumb {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: var(--primary-color);
+            cursor: pointer;
+            border: none;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
     </style>
 </head>
 <body class="text-white">
@@ -92,7 +124,7 @@
                     <div class="xl:col-span-2">
 
                         <!-- Streams Container -->
-                        <div id="streams-container" class="space-y-4">
+                        <div id="streams-container">
                 <!-- Loading State -->
                 <div id="loading-state" class="text-center pb-6">
                     <div class="bg-[var(--card-bg)] border border-[var(--border-color)] rounded-2xl p-8 shadow-2xl shadow-black/30">
@@ -154,6 +186,9 @@
                 this.audioPlayer = document.getElementById('audio-player');
                 this.currentStream = null;
                 this.streams = [];
+                this.volume = this.loadVolume(); // Load saved volume or default to 75
+                this.isMuted = false;
+                this.volumeBeforeMute = this.volume;
                 this.init();
             }
 
@@ -202,7 +237,14 @@
                 noStreamsState.classList.add('hidden');
                 streamsList.classList.remove('hidden');
 
-                streamsList.innerHTML = this.streams.map(stream => this.renderStream(stream)).join('');
+                const streamsHtml = this.streams.map(stream => this.renderStream(stream)).join('');
+                streamsList.innerHTML = streamsHtml;
+
+                // Remove bottom margin from the last stream card for cleaner spacing
+                const streamCards = streamsList.querySelectorAll('.bg-\\[var\\(--card-bg\\)\\]');
+                if (streamCards.length > 0) {
+                    streamCards[streamCards.length - 1].classList.remove('mb-4');
+                }
                 this.updateLiveIndicator();
             }
 
@@ -214,7 +256,7 @@
                 const uptime = this.formatUptime(stream.uptime || 0);
 
                 return `
-                    <div class="bg-[var(--card-bg)] border border-[var(--border-color)] rounded-2xl p-4 sm:p-6 shadow-2xl shadow-black/30 hover:border-[var(--primary-color)]/30 transition-all duration-300">
+                    <div class="bg-[var(--card-bg)] border border-[var(--border-color)] rounded-2xl p-4 sm:p-6 shadow-2xl shadow-black/30 hover:border-[var(--primary-color)]/30 transition-all duration-300 mb-4">
                         <!-- Mobile-first layout: Stack on small screens, side-by-side on larger screens -->
                         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                             <!-- Stream Info -->
@@ -276,9 +318,27 @@
                         
                         ${isPlaying ? `
                             <div class="mt-4 p-3 bg-green-500/10 border border-green-500/20 rounded-lg">
-                                <div class="flex items-center gap-2">
+                                <div class="flex items-center gap-2 mb-3">
                                     <span class="material-symbols-rounded text-green-400">volume_up</span>
                                     <span class="text-green-300 text-sm">Now playing: ${stream.name || stream.id}</span>
+                                </div>
+                                <!-- Volume Control -->
+                                <div class="flex items-center gap-3">
+                                    <button onclick="streamListener.toggleMute()"
+                                            class="flex items-center justify-center w-6 h-6 rounded hover:bg-green-500/20 transition-colors"
+                                            title="${this.isMuted ? 'Unmute' : 'Mute'}">
+                                        <span class="material-symbols-rounded text-green-400 text-sm">
+                                            ${this.isMuted ? 'volume_off' : (this.volume === 0 ? 'volume_mute' : this.volume < 50 ? 'volume_down' : 'volume_up')}
+                                        </span>
+                                    </button>
+                                    <input type="range"
+                                           min="0"
+                                           max="100"
+                                           value="${this.isMuted ? 0 : this.volume}"
+                                           class="flex-1 h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer volume-slider"
+                                           onchange="streamListener.setVolume(this.value)"
+                                           oninput="streamListener.updateVolumeDisplay(this.value)">
+                                    <span class="text-xs text-gray-400 font-mono min-w-[3rem]" id="volume-display">${this.isMuted ? 'Muted' : this.volume + '%'}</span>
                                 </div>
                             </div>
                         ` : ''}
@@ -300,6 +360,7 @@
 
                     // Set up audio player with error handling
                     this.audioPlayer.src = streamUrl;
+                    this.audioPlayer.volume = this.volume / 100; // Set initial volume (0-1 range)
                     this.audioPlayer.load();
 
                     // Add error event listener
@@ -549,6 +610,83 @@
                 setInterval(() => {
                     this.loadStreams();
                 }, 10000);
+            }
+
+            setVolume(value) {
+                const newVolume = parseInt(value);
+
+                // If user moves slider from 0, unmute
+                if (newVolume > 0 && this.isMuted) {
+                    this.isMuted = false;
+                }
+
+                this.volume = newVolume;
+                if (this.audioPlayer) {
+                    this.audioPlayer.volume = this.isMuted ? 0 : this.volume / 100;
+                }
+                this.updateVolumeDisplay();
+                this.saveVolume(); // Save volume preference
+                console.log(`🔊 Volume set to ${this.volume}%${this.isMuted ? ' (Muted)' : ''}`);
+
+                // Re-render to update mute button icon
+                if (this.currentStream) {
+                    this.renderStreams();
+                }
+            }
+
+            toggleMute() {
+                if (this.isMuted) {
+                    // Unmute: restore previous volume
+                    this.isMuted = false;
+                    if (this.audioPlayer) {
+                        this.audioPlayer.volume = this.volume / 100;
+                    }
+                    console.log(`🔊 Unmuted - Volume restored to ${this.volume}%`);
+                } else {
+                    // Mute: save current volume and set to 0
+                    this.isMuted = true;
+                    if (this.audioPlayer) {
+                        this.audioPlayer.volume = 0;
+                    }
+                    console.log(`🔇 Muted`);
+                }
+
+                this.updateVolumeDisplay();
+                // Re-render to update mute button and slider
+                if (this.currentStream) {
+                    this.renderStreams();
+                }
+            }
+
+            updateVolumeDisplay() {
+                const display = document.getElementById('volume-display');
+                if (display) {
+                    display.textContent = this.isMuted ? 'Muted' : `${this.volume}%`;
+                }
+
+                // Update slider value
+                const slider = document.querySelector('.volume-slider');
+                if (slider) {
+                    slider.value = this.isMuted ? 0 : this.volume;
+                }
+            }
+
+            loadVolume() {
+                try {
+                    const savedVolume = localStorage.getItem('lanstreamer-volume');
+                    return savedVolume ? parseInt(savedVolume) : 75; // Default to 75%
+                } catch (error) {
+                    console.warn('Failed to load volume preference:', error);
+                    return 75;
+                }
+            }
+
+            saveVolume() {
+                try {
+                    localStorage.setItem('lanstreamer-volume', this.volume.toString());
+                } catch (error) {
+                    console.warn('Failed to save volume preference:', error);
+                }
             }
         }
 

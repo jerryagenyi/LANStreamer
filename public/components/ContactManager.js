@@ -6,15 +6,7 @@ class ContactManager {
             whatsapp: '',
             showEmail: false,
             showPhone: false,
-            showWhatsapp: false,
-            // Event configuration
-            eventTitle: '',
-            eventSubtitle: '',
-            // About section configuration
-            showAbout: true,
-            aboutSubtitle: '',
-            aboutDescription: '',
-            showAboutSubtitle: true
+            showWhatsapp: false
         };
         this.isLoading = false;
         this.init();
@@ -39,15 +31,7 @@ class ContactManager {
                 whatsapp: data.whatsapp || '',
                 showEmail: Boolean(data.showEmail),
                 showPhone: Boolean(data.showPhone),
-                showWhatsapp: Boolean(data.showWhatsapp),
-                // Event configuration
-                eventTitle: data.eventTitle || '',
-                eventSubtitle: data.eventSubtitle || '',
-                // About section configuration
-                showAbout: Boolean(data.showAbout !== false), // Default to true
-                aboutSubtitle: data.aboutSubtitle || '',
-                aboutDescription: data.aboutDescription || '',
-                showAboutSubtitle: Boolean(data.showAboutSubtitle !== false) // Default to true
+                showWhatsapp: Boolean(data.showWhatsapp)
             };
             
             console.log('📞 Contact details loaded:', {
@@ -77,7 +61,16 @@ class ContactManager {
             const phoneRegex = /^\+?[1-9]\d{6,14}$/;
             const cleanedPhone = this.contactDetails.phone.replace(/[^\d+]/g, '');
             if (!phoneRegex.test(cleanedPhone)) {
-                errors.push('Please enter a valid phone number');
+                errors.push('Please enter a valid phone number (e.g., +1234567890 or 1234567890)');
+            }
+        }
+
+        // Validate WhatsApp if showWhatsapp is enabled
+        if (this.contactDetails.showWhatsapp && this.contactDetails.whatsapp) {
+            const whatsappRegex = /^\+?[1-9]\d{6,14}$/;
+            const cleanedWhatsapp = this.contactDetails.whatsapp.replace(/[^\d+]/g, '');
+            if (!whatsappRegex.test(cleanedWhatsapp)) {
+                errors.push('Please enter a valid WhatsApp number (e.g., +1234567890 or 1234567890)');
             }
         }
         
@@ -93,40 +86,57 @@ class ContactManager {
         return errors;
     }
 
+
+
     async saveContactDetails() {
-        if (this.isLoading) return;
+        console.log('📞 saveContactDetails called');
+        if (this.isLoading) {
+            console.log('📞 Already loading, returning');
+            return;
+        }
         
-        // Basic form validation
+        // Basic form validation for contact fields only
         const validationErrors = this.validateForm();
         if (validationErrors.length > 0) {
+            console.log('📞 Validation errors:', validationErrors);
             this.showNotification(`Validation errors: ${validationErrors.join(', ')}`, 'error');
             return;
         }
         
+        console.log('📞 Starting contact details save process...');
         this.isLoading = true;
         this.updateSaveButton(true);
 
         try {
             console.log('📞 Saving contact details...');
+            const contactData = {
+                email: this.contactDetails.email,
+                phone: this.contactDetails.phone,
+                whatsapp: this.contactDetails.whatsapp,
+                showEmail: this.contactDetails.showEmail,
+                showPhone: this.contactDetails.showPhone,
+                showWhatsapp: this.contactDetails.showWhatsapp
+            };
+
             const response = await fetch('/api/contact-details', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify(this.contactDetails)
+                body: JSON.stringify(contactData)
             });
 
             const data = await response.json();
 
             if (response.ok) {
                 console.log('✅ Contact details saved successfully');
-                this.showNotification('All settings saved successfully', 'success');
+                this.showNotification('Contact details saved successfully', 'success');
             } else {
                 throw new Error(data.error || 'Failed to save contact details');
             }
         } catch (error) {
             console.error('❌ Failed to save contact details:', error);
-            this.showNotification(`Failed to save: ${error.message}`, 'error');
+            this.showNotification(`Failed to save contact details: ${error.message}`, 'error');
         } finally {
             this.isLoading = false;
             this.updateSaveButton(false);
@@ -217,82 +227,11 @@ class ContactManager {
                                value="${this.contactDetails.whatsapp}">
                     </div>
 
-                    <!-- Event Configuration -->
-                    <div class="border-t border-[var(--border-color)] pt-4 mt-4">
-                        <h3 class="text-lg font-semibold text-white mb-4">🎯 Event Configuration</h3>
-                        
-                        <div class="space-y-4">
-                            <!-- Event Title -->
-                            <div class="space-y-2">
-                                <label class="text-sm font-medium text-gray-300">Event Title</label>
-                                <input type="text" 
-                                       id="event-title" 
-                                       class="w-full px-3 py-2 bg-[#111111] border border-[var(--border-color)] rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)]/50 focus:border-[var(--primary-color)]" 
-                                       placeholder="Live Audio Streams" 
-                                       value="${this.contactDetails.eventTitle}">
-                            </div>
-
-                            <!-- Event Subtitle -->
-                            <div class="space-y-2">
-                                <label class="text-sm font-medium text-gray-300">Event Subtitle</label>
-                                <input type="text" 
-                                       id="event-subtitle" 
-                                       class="w-full px-3 py-2 bg-[#111111] border border-[var(--border-color)] rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)]/50 focus:border-[var(--primary-color)]" 
-                                       placeholder="Click play to listen to any available stream" 
-                                       value="${this.contactDetails.eventSubtitle}">
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- About Section Configuration -->
-                    <div class="border-t border-[var(--border-color)] pt-4 mt-4">
-                        <div class="flex items-center justify-between mb-4">
-                            <h3 class="text-lg font-semibold text-white">ℹ️ About Section</h3>
-                            <label class="relative inline-flex items-center cursor-pointer">
-                                <input type="checkbox" 
-                                       id="show-about" 
-                                       class="sr-only peer" 
-                                       ${this.contactDetails.showAbout ? 'checked' : ''}>
-                                <div class="w-11 h-6 bg-gray-600 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-[var(--primary-color)]/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[var(--primary-color)]"></div>
-                            </label>
-                        </div>
-                        
-                        <div class="space-y-4">
-                            <!-- About Subtitle -->
-                            <div class="space-y-2">
-                                <div class="flex items-center justify-between">
-                                    <label class="text-sm font-medium text-gray-300">About Subtitle</label>
-                                    <label class="relative inline-flex items-center cursor-pointer">
-                                        <input type="checkbox" 
-                                               id="show-about-subtitle" 
-                                               class="sr-only peer" 
-                                               ${this.contactDetails.showAboutSubtitle ? 'checked' : ''}>
-                                        <div class="w-11 h-6 bg-gray-600 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-[var(--primary-color)]/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[var(--primary-color)]"></div>
-                                    </label>
-                                </div>
-                                <input type="text" 
-                                       id="about-subtitle" 
-                                       class="w-full px-3 py-2 bg-[#111111] border border-[var(--border-color)] rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)]/50 focus:border-[var(--primary-color)]" 
-                                       placeholder="About this event" 
-                                       value="${this.contactDetails.aboutSubtitle}">
-                            </div>
-
-                            <!-- About Description -->
-                            <div class="space-y-2">
-                                <label class="text-sm font-medium text-gray-300">About Description</label>
-                                <textarea id="about-description" 
-                                          rows="3"
-                                          class="w-full px-3 py-2 bg-[#111111] border border-[var(--border-color)] rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)]/50 focus:border-[var(--primary-color)] resize-none" 
-                                          placeholder="Welcome to LANStreamer - your local audio streaming platform. Listen to live audio streams from your network.">${this.contactDetails.aboutDescription}</textarea>
-                            </div>
-                        </div>
-                    </div>
-
                     <!-- Save Button -->
                     <button id="save-contact-details" 
                             class="w-full inline-flex items-center justify-center gap-2 rounded-md px-4 py-3 text-sm font-semibold text-white shadow-lg transition-all duration-300 btn-gradient">
-                        <span class="material-symbols-rounded text-base">save</span>
-                        <span id="save-button-text">Save All Settings</span>
+                        <span class="material-symbols-rounded text-base">contact_phone</span>
+                        <span id="save-contact-button-text">Save Contact Details</span>
                     </button>
 
                     <!-- Preview -->
@@ -305,6 +244,13 @@ class ContactManager {
                 </div>
             </div>
         `;
+    }
+
+    updatePreview() {
+        const previewContainer = document.querySelector('#contact-manager .space-y-2');
+        if (previewContainer) {
+            previewContainer.innerHTML = this.renderPreview();
+        }
     }
 
     renderPreview() {
@@ -374,7 +320,7 @@ class ContactManager {
         if (showEmailToggle) {
             showEmailToggle.addEventListener('change', () => {
                 this.toggleContactVisibility('showEmail');
-                this.render(); // Re-render to update preview
+                this.updatePreview(); // Update preview without full re-render
             });
         }
 
@@ -382,7 +328,7 @@ class ContactManager {
         if (showPhoneToggle) {
             showPhoneToggle.addEventListener('change', () => {
                 this.toggleContactVisibility('showPhone');
-                this.render(); // Re-render to update preview
+                this.updatePreview(); // Update preview without full re-render
             });
         }
 
@@ -390,69 +336,27 @@ class ContactManager {
         if (showWhatsappToggle) {
             showWhatsappToggle.addEventListener('change', () => {
                 this.toggleContactVisibility('showWhatsapp');
-                this.render(); // Re-render to update preview
+                this.updatePreview(); // Update preview without full re-render
             });
         }
 
-        // Event configuration fields
-        const eventTitleInput = document.getElementById('event-title');
-        if (eventTitleInput) {
-            eventTitleInput.addEventListener('input', (e) => {
-                this.updateContactField('eventTitle', e.target.value);
-            });
-        }
-
-        const eventSubtitleInput = document.getElementById('event-subtitle');
-        if (eventSubtitleInput) {
-            eventSubtitleInput.addEventListener('input', (e) => {
-                this.updateContactField('eventSubtitle', e.target.value);
-            });
-        }
-
-        // About section fields
-        const aboutSubtitleInput = document.getElementById('about-subtitle');
-        if (aboutSubtitleInput) {
-            aboutSubtitleInput.addEventListener('input', (e) => {
-                this.updateContactField('aboutSubtitle', e.target.value);
-            });
-        }
-
-        const aboutDescriptionInput = document.getElementById('about-description');
-        if (aboutDescriptionInput) {
-            aboutDescriptionInput.addEventListener('input', (e) => {
-                this.updateContactField('aboutDescription', e.target.value);
-            });
-        }
-
-        // About section toggles
-        const showAboutToggle = document.getElementById('show-about');
-        if (showAboutToggle) {
-            showAboutToggle.addEventListener('change', () => {
-                this.toggleContactVisibility('showAbout');
-                this.render(); // Re-render to update preview
-            });
-        }
-
-        const showAboutSubtitleToggle = document.getElementById('show-about-subtitle');
-        if (showAboutSubtitleToggle) {
-            showAboutSubtitleToggle.addEventListener('change', () => {
-                this.toggleContactVisibility('showAboutSubtitle');
-                this.render(); // Re-render to update preview
-            });
-        }
-
-        // Save button
-        const saveButton = document.getElementById('save-contact-details');
-        if (saveButton) {
-            saveButton.addEventListener('click', () => {
+        // Contact Details Save button
+        const saveContactButton = document.getElementById('save-contact-details');
+        if (saveContactButton) {
+            console.log('📞 Contact save button found, adding event listener');
+            saveContactButton.addEventListener('click', (e) => {
+                console.log('📞 Contact save button clicked!');
+                e.preventDefault();
                 this.saveContactDetails();
             });
+        } else {
+            console.error('❌ Contact save button not found!');
         }
     }
 
     updateSaveButton(isLoading) {
         const saveButton = document.getElementById('save-contact-details');
-        const saveButtonText = document.getElementById('save-button-text');
+        const saveButtonText = document.getElementById('save-contact-button-text');
         
         if (saveButton && saveButtonText) {
             if (isLoading) {

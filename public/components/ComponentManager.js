@@ -2,7 +2,7 @@
  * Component Manager
  * Handles conditional rendering between components and static content
  * Shows development status and graceful fallbacks
- * At poduction, to replace static elements with error messages and what to do to fix it
+ * At production, to replace static elements with error messages and what to do to fix it
  * 
  * DEPENDENCIES & INTEGRATION:
  * ===========================
@@ -116,6 +116,16 @@ class ComponentManager {
                 component: 'VideoSourcesPanel',
                 static: 'video-sources-static',
                 name: 'Video Sources'
+            },
+            'event-manager': {
+                component: 'EventManager',
+                static: 'event-manager-static',
+                name: 'Event Configuration'
+            },
+            'contact-manager': {
+                component: 'ContactManager',
+                static: 'contact-manager-static',
+                name: 'Contact Information'
             }
         };
     }
@@ -198,8 +208,7 @@ class ComponentManager {
 
             this.components.set(sectionId, componentInstance);
 
-            // Add development status indicator
-            this.addComponentStatus(sectionId, 'component', config.name);
+            // Component successfully initialized - no status indicator needed in production
 
             console.log(`✅ ${config.name} - Using Component`);
         } catch (error) {
@@ -219,23 +228,27 @@ class ComponentManager {
             // Move static content to main container
             container.innerHTML = staticContainer.innerHTML;
             
-            // Add notice about static content
-            this.addComponentStatus(sectionId, 'static', config.name);
+            // Static content loaded - no status indicator needed in production
             
             console.log(`⚠️ ${config.name} - Using Static Content`);
         } else {
             // No static content found
             container.innerHTML = this.createEmptyState(config.name);
-            this.addComponentStatus(sectionId, 'missing', config.name);
+            // Missing component - no status indicator needed in production
             
             console.log(`❌ ${config.name} - No Component or Static Content`);
         }
     }
 
     /**
-     * Add development status indicator to section
+     * Add development status indicator to section (DISABLED FOR PRODUCTION)
+     * This method is disabled to provide a cleaner production UI without development notices
      */
     addComponentStatus(sectionId, status, sectionName) {
+        // Development status indicators disabled for cleaner production UI
+        // To re-enable for debugging, comment out the return statement below
+        return;
+
         const container = document.getElementById(sectionId);
         if (!container) return;
 
