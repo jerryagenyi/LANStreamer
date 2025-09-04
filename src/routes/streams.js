@@ -76,6 +76,38 @@ router.get('/status', (req, res) => {
 });
 
 /**
+ * @route POST /api/streams/update
+ * @description Update a stream's configuration.
+ * @access Public
+ */
+router.post('/update', async (req, res) => {
+  try {
+    const { streamId, name, deviceId } = req.body;
+    await streamingService.updateStream(streamId, { name, deviceId });
+    res.status(200).json({ message: 'Stream updated successfully', streamId });
+  } catch (error) {
+    logger.error('Error updating stream:', error);
+    res.status(500).json({ message: 'Error updating stream', error: error.message });
+  }
+});
+
+/**
+ * @route POST /api/streams/delete
+ * @description Delete a stream (remove from persistent storage).
+ * @access Public
+ */
+router.post('/delete', async (req, res) => {
+  try {
+    const { id } = req.body;
+    await streamingService.deleteStream(id);
+    res.status(200).json({ message: 'Stream deleted successfully', streamId: id });
+  } catch (error) {
+    logger.error('Error deleting stream:', error);
+    res.status(500).json({ message: 'Error deleting stream', error: error.message });
+  }
+});
+
+/**
  * @route POST /api/streams/stop-all
  * @description Stop all active streams.
  * @access Public

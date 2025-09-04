@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Stream API</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; background: #1a1a1a; color: white; }
+        button { padding: 10px 20px; margin: 10px; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; }
+        button:hover { background: #0056b3; }
+        .result { margin: 10px 0; padding: 10px; background: #333; border-radius: 5px; }
+        .error { background: #d32f2f; }
+        .success { background: #388e3c; }
+    </style>
+</head>
+<body>
+    <h1>Stream API Test</h1>
+    
+    <button onclick="testStartStream()">Start Test Stream</button>
+    <button onclick="testGetStreams()">Get Stream Status</button>
+    <button onclick="testGetDevices()">Get Audio Devices</button>
+    
+    <div id="results"></div>
+
+    <script>
+        function addResult(message, isError = false) {
+            const results = document.getElementById('results');
+            const div = document.createElement('div');
+            div.className = `result ${isError ? 'error' : 'success'}`;
+            div.innerHTML = `<strong>${new Date().toLocaleTimeString()}:</strong> ${message}`;
+            results.insertBefore(div, results.firstChild);
+        }
+
+        async function testStartStream() {
+            try {
+                const response = await fetch('/api/streams/start', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        name: 'Test Stream',
+                        deviceId: 'microphone-hd-pro-webcam-c910',
+                        bitrate: 128
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    addResult(`Stream started successfully: ${JSON.stringify(data, null, 2)}`);
+                } else {
+                    addResult(`Failed to start stream: ${data.error || data.message}`, true);
+                }
+            } catch (error) {
+                addResult(`Error starting stream: ${error.message}`, true);
+            }
+        }
+
+        async function testGetStreams() {
+            try {
+                const response = await fetch('/api/streams/status');
+                const data = await response.json();
+                addResult(`Stream status: ${JSON.stringify(data, null, 2)}`);
+            } catch (error) {
+                addResult(`Error getting streams: ${error.message}`, true);
+            }
+        }
+
+        async function testGetDevices() {
+            try {
+                const response = await fetch('/api/audio/devices');
+                const data = await response.json();
+                addResult(`Audio devices: ${JSON.stringify(data, null, 2)}`);
+            } catch (error) {
+                addResult(`Error getting devices: ${error.message}`, true);
+            }
+        }
+
+        // Auto-load devices on page load
+        window.onload = () => {
+            testGetDevices();
+        };
+    </script>
+</body>
+</html>

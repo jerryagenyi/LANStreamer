@@ -109,7 +109,8 @@ class StreamingService {
         startedAt: new Date(),
         createdAt: new Date(),
         config: streamConfig,
-        needsRestart: false
+        needsRestart: false,
+        intentionallyStopped: false  // Clear any previous intentional stop flag
       }
 
       // Save to persistent storage
@@ -133,13 +134,25 @@ class StreamingService {
   async startFFmpegProcess(streamId, streamConfig) {
     const ffmpegPath = this.findFFmpegPath()
     const args = this.buildFFmpegArgs(streamId, streamConfig)
-    
+
     logger.info(`Starting FFmpeg process for stream ${streamId} with args:`, args)
-    
+    logger.info(`FFmpeg executable path: ${ffmpegPath}`)
+    logger.info(`Full command: ${ffmpegPath} ${args.join(' ')}`)
+
     const process = spawn(ffmpegPath, args, {
       stdio: ['ignore', 'pipe', 'pipe'],
       detached: false
     })
+
+    // Capture stderr for debugging
+    let stderrData = '';
+    process.stderr.on('data', (data) => {
+      stderrData += data.toString();
+      // Log FFmpeg output for debugging (but limit to avoid spam)
+      if (stderrData.length < 2000) {
+        logger.info(`FFmpeg stderr for stream ${streamId}:`, data.toString().trim());
+      }
+    });
 
     // Handle process events
     process.on('error', (error) => {
@@ -149,13 +162,19 @@ class StreamingService {
 
     process.on('exit', (code, signal) => {
       logger.info(`FFmpeg process exited for stream ${streamId}: code=${code}, signal=${signal}`)
-      this.handleProcessExit(streamId, code, signal)
+
+      // Log stderr output if process failed
+      if (code !== 0 && stderrData) {
+        logger.error(`FFmpeg stderr output for failed stream ${streamId}:`, stderrData.slice(0, 1000));
+      }
+
+      this.handleProcessExit(streamId, code, signal, stderrData)
     })
 
     // Wait a moment to ensure process starts successfully
     await new Promise((resolve, reject) => {
       const timeout = setTimeout(() => {
-        reject(new Error(`FFmpeg process failed to start within 5 seconds`))
+        reject(new Error(`FFmpeg process failed to start within 5 seconds. Stderr: ${stderrData.slice(0, 500)}`))
       }, 5000)
 
       process.once('spawn', () => {
@@ -165,7 +184,7 @@ class StreamingService {
 
       process.once('error', (error) => {
         clearTimeout(timeout)
-        reject(error)
+        reject(new Error(`FFmpeg spawn error: ${error.message}. Stderr: ${stderrData.slice(0, 500)}`))
       })
     })
 
@@ -199,10 +218,15 @@ class StreamingService {
         '-loglevel', 'info'             // Show info level logs
       ]
     } else {
-      // Device input mode
+      // Device input mode - validate and use real device name
+      const deviceName = this.validateAndGetDeviceName(streamConfig.deviceId);
+      if (!deviceName) {
+        throw new Error(`Invalid or unavailable audio device: ${streamConfig.deviceId}`);
+      }
+
       args = [
         '-f', 'dshow',                    // DirectShow input format
-        '-i', `audio="${streamConfig.deviceId}"`, // Audio input device
+        '-i', `audio=${deviceName}`,      // Audio input device (real DirectShow name)
         '-acodec', 'mp3',                 // Audio codec
         '-ab', `${bitrate}k`,             // Audio bitrate from config
         '-ar', '44100',                   // Sample rate
@@ -218,10 +242,50 @@ class StreamingService {
       bitrate: `${bitrate}k`,
       icecastUrl,
       inputType: streamConfig.inputFile ? 'file' : 'device',
-      inputSource: streamConfig.inputFile || streamConfig.deviceId
+      inputSource: streamConfig.inputFile || streamConfig.deviceId,
+      actualDeviceName: streamConfig.inputFile ? null : this.validateAndGetDeviceName(streamConfig.deviceId),
+      fullArgs: args
     });
 
+    // Also log the exact command that would be executed
+    logger.info(`Full FFmpeg command for stream ${streamId}: ffmpeg ${args.join(' ')}`);
+
     return args
+  }
+
+  /**
+   * Validate device ID and return the actual DirectShow device name
+   * @param {string} deviceId - Device ID from the frontend
+   * @returns {string|null} Real DirectShow device name or null if not found
+   */
+  validateAndGetDeviceName(deviceId) {
+    // Map of common device IDs to actual DirectShow names
+    const deviceMap = {
+      'microphone-hd-pro-webcam-c910': 'Microphone (HD Pro Webcam C910)',
+      'logitech-hd-pro-webcam-c910': 'Microphone (HD Pro Webcam C910)',
+      'headset-microphone-oculus': 'Headset Microphone (Oculus Virtual Audio Device)',
+      'oculus-virtual-audio-device': 'Headset Microphone (Oculus Virtual Audio Device)',
+      'microphone-virtual-desktop-audio': 'Microphone (Virtual Desktop Audio)',
+      'virtual-desktop-audio': 'Microphone (Virtual Desktop Audio)',
+      'default-microphone': 'Microphone (HD Pro Webcam C910)', // Default to first available
+      'ps-output-hd-pro-webcam-c910': 'Microphone (HD Pro Webcam C910)' // Fix for previous naming
+    };
+
+    // First try direct mapping
+    if (deviceMap[deviceId]) {
+      logger.info(`Mapped device ID "${deviceId}" to DirectShow name "${deviceMap[deviceId]}"`);
+      return deviceMap[deviceId];
+    }
+
+    // If no mapping found, try to use the deviceId as-is if it looks like a real device name
+    if (deviceId.includes('(') && deviceId.includes(')')) {
+      logger.info(`Using device ID "${deviceId}" as DirectShow name (appears to be real device name)`);
+      return deviceId;
+    }
+
+    // Log warning for unmapped device
+    logger.warn(`No mapping found for device ID: ${deviceId}. Available mappings:`, Object.keys(deviceMap));
+    return null;
   }
 
   /**
@@ -249,6 +313,9 @@ class StreamingService {
           }
         }, 5000)
       }
+
+      // Mark as intentionally stopped to prevent handleProcessExit from marking it as error
+      stream.intentionallyStopped = true
 
       // Update stream status instead of deleting
       stream.status = 'stopped'
@@ -303,6 +370,62 @@ class StreamingService {
   }
 
   /**
+   * Update a stream's configuration
+   * @param {string} streamId - Stream ID to update
+   * @param {object} updates - Updates to apply (name, deviceId, etc.)
+   */
+  async updateStream(streamId, updates) {
+    logger.info(`Updating stream: ${streamId}`)
+
+    const stream = this.activeStreams[streamId]
+    if (!stream) {
+      throw new Error(`Stream ${streamId} not found`)
+    }
+
+    // Update stream properties
+    if (updates.name !== undefined) {
+      stream.name = updates.name
+      stream.config.name = updates.name
+    }
+
+    if (updates.deviceId !== undefined) {
+      stream.deviceId = updates.deviceId
+      stream.config.deviceId = updates.deviceId
+    }
+
+    // Save to persistent storage
+    this.savePersistentStreams()
+
+    logger.info(`Stream ${streamId} updated successfully`)
+  }
+
+  /**
+   * Delete a stream (remove from persistent storage)
+   * @param {string} streamId - Stream ID to delete
+   */
+  async deleteStream(streamId) {
+    logger.info(`Deleting stream: ${streamId}`)
+
+    const stream = this.activeStreams[streamId]
+    if (!stream) {
+      throw new Error(`Stream ${streamId} not found`)
+    }
+
+    // Stop the stream first if it's running
+    if (stream.status === 'running') {
+      await this.stopStream(streamId)
+    }
+
+    // Remove from active streams
+    delete this.activeStreams[streamId]
+
+    // Save to persistent storage (without the deleted stream)
+    this.savePersistentStreams()
+
+    logger.info(`Stream ${streamId} deleted successfully`)
+  }
+
+  /**
    * Stop all active streams
    */
   async stopAllStreams() {
@@ -351,16 +474,74 @@ class StreamingService {
    * @param {string} streamId - Stream ID
    * @param {number} code - Exit code
    * @param {string} signal - Exit signal
+   * @param {string} stderrData - FFmpeg stderr output
    */
-  handleProcessExit(streamId, code, signal) {
+  handleProcessExit(streamId, code, signal, stderrData = '') {
     logger.info(`FFmpeg process exited for stream ${streamId}: code=${code}, signal=${signal}`)
-    
+
     if (this.activeStreams[streamId]) {
-      this.activeStreams[streamId].status = 'stopped'
-      this.activeStreams[streamId].exitedAt = new Date()
-      this.activeStreams[streamId].exitCode = code
-      this.activeStreams[streamId].exitSignal = signal
+      const stream = this.activeStreams[streamId]
+
+      // If stream was intentionally stopped, keep the 'stopped' status
+      // Otherwise, determine status based on exit code
+      if (!stream.intentionallyStopped) {
+        stream.status = code === 0 ? 'stopped' : 'error'
+      }
+
+      stream.exitedAt = new Date()
+      stream.exitCode = code
+      stream.exitSignal = signal
+
+      // Store error information if process failed
+      if (code !== 0) {
+        this.activeStreams[streamId].error = this.parseFFmpegError(code, stderrData)
+        logger.error(`Stream ${streamId} failed with exit code ${code}:`, this.activeStreams[streamId].error)
+      }
     }
+  }
+
+  /**
+   * Parse FFmpeg error from exit code and stderr
+   * @param {number} exitCode - FFmpeg exit code
+   * @param {string} stderrData - FFmpeg stderr output
+   * @returns {string} Human-readable error message
+   */
+  parseFFmpegError(exitCode, stderrData) {
+    // Convert unsigned 32-bit to signed for Windows
+    const signedCode = exitCode > 2147483647 ? exitCode - 4294967296 : exitCode;
+
+    // Common FFmpeg error codes
+    const errorMessages = {
+      '-5': 'Permission denied - Cannot access audio device. Check device permissions and ensure no other application is using it.',
+      '-22': 'Invalid argument - Audio device name or parameters are incorrect.',
+      '-2': 'No such file or directory - Audio device not found.',
+      '1': 'General error - Check FFmpeg command and device availability.'
+    };
+
+    let errorMsg = errorMessages[signedCode.toString()] || `FFmpeg exited with code ${exitCode} (${signedCode})`;
+
+    // Add specific error details from stderr
+    if (stderrData) {
+      if (stderrData.includes('No such audio device') || stderrData.includes('Could not find audio only device')) {
+        errorMsg = 'Audio device not found. The selected microphone may be disconnected or in use by another application.';
+      } else if (stderrData.includes('Permission denied')) {
+        errorMsg = 'Permission denied accessing audio device. Close other applications using the microphone.';
+      } else if (stderrData.includes('Device or resource busy')) {
+        errorMsg = 'Audio device is busy. Another application may be using it.';
+      } else if (stderrData.includes('among source devices of type audio')) {
+        errorMsg = 'Audio device not recognized by DirectShow. Please check device name and ensure it\'s properly connected.';
+      }
+
+      // If we have stderr data but no specific match, include a snippet for debugging
+      if (errorMsg === (errorMessages[signedCode.toString()] || `FFmpeg exited with code ${exitCode} (${signedCode})`)) {
+        const stderrSnippet = stderrData.slice(0, 200).replace(/\n/g, ' ').trim();
+        if (stderrSnippet) {
+          errorMsg += ` Details: ${stderrSnippet}`;
+        }
+      }
+    }
+
+    return errorMsg;
   }
 
   /**

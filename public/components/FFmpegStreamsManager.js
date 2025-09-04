@@ -11,8 +11,6 @@ class FFmpegStreamsManager {
         this.containerId = containerId;
         this.container = null;
 
-        console.log('🎤 FFmpegStreamsManager constructor called with containerId:', containerId);
-
         // Auto-initialize immediately to ensure component loads
         this.init().catch(error => {
             console.error('Failed to auto-initialize FFmpegStreamsManager:', error);
@@ -24,17 +22,11 @@ class FFmpegStreamsManager {
      */
     async init() {
         try {
-            console.log('Initializing FFmpeg Streams Manager...');
-            console.log('Container ID:', this.containerId);
-            
             this.container = document.getElementById(this.containerId);
             if (!this.container) {
                 console.error('FFmpeg streams container not found for ID:', this.containerId);
-                console.log('Available containers:', Array.from(document.querySelectorAll('[id*="ffmpeg"]')).map(el => el.id));
                 return;
             }
-            
-            console.log('Container found:', this.container);
 
             // Load initial data
             await this.loadStreams();
@@ -47,7 +39,6 @@ class FFmpegStreamsManager {
             this.startStatusPolling();
             
             this.isInitialized = true;
-            console.log('FFmpeg Streams Manager initialized successfully');
             
         } catch (error) {
             console.error('Failed to initialize FFmpeg Streams Manager:', error);
@@ -60,22 +51,17 @@ class FFmpegStreamsManager {
      */
     async loadStreams() {
         try {
-            console.log('📡 Loading streams from API...');
             const response = await fetch('/api/streams/status');
             const data = await response.json();
-
-            console.log('📊 API Response:', data);
 
             // The API returns { total, running, errors, streams } format
             if (data.streams) {
                 this.activeStreams = data.streams;
-                console.log(`✅ Loaded ${this.activeStreams.length} streams (${data.running} running)`);
             } else {
                 this.activeStreams = [];
-                console.log('⚠️ No streams found in API response');
             }
         } catch (error) {
-            console.error('❌ Failed to load streams:', error);
+            console.error('Failed to load streams:', error);
             this.activeStreams = [];
         }
     }
@@ -205,24 +191,206 @@ class FFmpegStreamsManager {
     }
 
     /**
-     * Delete a stream (remove from list)
+     * Delete a stream (remove from persistent storage)
      */
     async deleteStream(streamId) {
         try {
-            // First stop the stream if it's running
-            const stream = this.activeStreams.find(s => s.id === streamId);
-            if (stream && stream.status === 'running') {
-                await this.stopStream(streamId);
-            }
+            const response = await fetch('/api/streams/delete', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ id: streamId })
+            });
 
-            // For now, we'll just refresh the list to remove stopped streams
-            // In a full implementation, you might want a dedicated delete endpoint
-            await this.loadStreams();
-            this.render();
-            this.showNotification('Stream removed from list', 'success');
+            const result = await response.json();
+
+            if (response.ok) {
+                // Remove from local array
+                this.activeStreams = this.activeStreams.filter(s => s.id !== streamId);
+                this.renderStreams();
+                this.showNotification('Stream deleted successfully', 'success');
+            } else {
+                throw new Error(result.error || 'Failed to delete stream');
+            }
         } catch (error) {
             console.error('Failed to delete stream:', error);
             this.showNotification(`Failed to delete stream: ${error.message}`, 'error');
+        }
+    }
+
+    /**
+     * Edit a stream (show edit modal)
+     */
+    async editStream(streamId) {
+        try {
+            const stream = this.activeStreams.find(s => s.id === streamId);
+            if (!stream) {
+                this.showNotification('Stream not found', 'error');
+                return;
+            }
+
+            // Load audio devices for the dropdown
+            await this.loadAudioDevices();
+
+            // Create edit modal
+            this.showEditModal(stream);
+        } catch (error) {
+            console.error('Failed to edit stream:', error);
+            this.showNotification(`Failed to edit stream: ${error.message}`, 'error');
+        }
+    }
+
+    /**
+     * Show edit modal for stream
+     */
+    showEditModal(stream) {
+        // Create modal backdrop
+        const modal = document.createElement('div');
+        modal.className = 'fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4';
+        modal.innerHTML = `
+            <div class="bg-[var(--card-bg)] border border-[var(--border-color)] rounded-2xl p-6 w-full max-w-md shadow-2xl shadow-black/30">
+                <div class="flex items-center justify-between mb-6">
+                    <h3 class="text-xl font-bold text-white">Edit Stream</h3>
+                    <button onclick="this.closest('.fixed').remove()" class="text-gray-400 hover:text-white transition-colors">
+                        <span class="material-symbols-rounded">close</span>
+                    </button>
+                </div>
+
+                <form id="editStreamForm" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-2">Stream Name</label>
+                        <input
+                            type="text"
+                            id="editStreamName"
+                            value="${stream.name || ''}"
+                            class="w-full px-3 py-2 bg-[#1a1a1a] border border-[var(--border-color)] rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-[var(--primary-color)] transition-colors"
+                            placeholder="Enter stream name"
+                            required
+                        >
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-2">Audio Source</label>
+                        <select
+                            id="editStreamDevice"
+                            class="w-full px-3 py-2 bg-[#1a1a1a] border border-[var(--border-color)] rounded-lg text-white focus:outline-none focus:border-[var(--primary-color)] transition-colors"
+                            required
+                        >
+                            <option value="">Select audio device...</option>
+                            ${this.audioDevices.map(device => `
+                                <option value="${device.id}" ${device.id === stream.deviceId ? 'selected' : ''}>
+                                    ${device.name}
+                                </option>
+                            `).join('')}
+                        </select>
+                    </div>
+
+                    <div class="flex gap-3 pt-4">
+                        <button
+                            type="button"
+                            onclick="this.closest('.fixed').remove()"
+                            class="flex-1 px-4 py-2 bg-gray-600/20 hover:bg-gray-600/30 border border-gray-600/30 text-gray-300 rounded-lg transition-all duration-300"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            type="submit"
+                            class="flex-1 px-4 py-2 bg-[var(--primary-color)]/20 hover:bg-[var(--primary-color)]/30 border border-[var(--primary-color)]/30 text-[var(--primary-color)] rounded-lg transition-all duration-300"
+                        >
+                            Update Stream
+                        </button>
+                    </div>
+                </form>
+            </div>
+        `;
+
+        document.body.appendChild(modal);
+
+        // Handle form submission
+        const form = modal.querySelector('#editStreamForm');
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const submitBtn = form.querySelector('button[type="submit"]');
+            const originalText = submitBtn.innerHTML;
+
+            try {
+                // Show loading state
+                submitBtn.innerHTML = '<span class="material-symbols-rounded animate-spin">refresh</span> Updating...';
+                submitBtn.disabled = true;
+
+                const name = document.getElementById('editStreamName').value.trim();
+                const deviceId = document.getElementById('editStreamDevice').value;
+
+                if (!name || !deviceId) {
+                    throw new Error('Please fill in all fields');
+                }
+
+                // Update stream via API
+                const response = await fetch('/api/streams/update', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        streamId: stream.id,
+                        name: name,
+                        deviceId: deviceId
+                    })
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    modal.remove();
+                    await this.loadStreams();
+                    this.render();
+                    this.showNotification('Stream updated successfully', 'success');
+                } else {
+                    throw new Error(result.error || 'Failed to update stream');
+                }
+            } catch (error) {
+                // Restore button state on error
+                submitBtn.innerHTML = originalText;
+                submitBtn.disabled = false;
+                this.showNotification(`Failed to update stream: ${error.message}`, 'error');
+            }
+        });
+
+        // Close modal on escape key
+        modal.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                modal.remove();
+            }
+        });
+
+        // Focus on name input
+        setTimeout(() => {
+            const nameInput = modal.querySelector('#editStreamName');
+            if (nameInput) {
+                nameInput.focus();
+                nameInput.select();
+            }
+        }, 100);
+    }
+
+    /**
+     * Copy stream URL to clipboard
+     */
+    async copyStreamUrl(url, button) {
+        try {
+            await navigator.clipboard.writeText(url);
+            const originalText = button.innerHTML;
+            button.innerHTML = '<span class="material-symbols-rounded text-sm">check</span>';
+            button.classList.add('text-green-400');
+            setTimeout(() => {
+                button.innerHTML = originalText;
+                button.classList.remove('text-green-400');
+            }, 2000);
+        } catch (error) {
+            console.error('Failed to copy URL:', error);
+            this.showNotification('Failed to copy URL to clipboard', 'error');
         }
     }
 
@@ -254,13 +422,9 @@ class FFmpegStreamsManager {
      */
     render() {
         if (!this.container) {
-            console.error('❌ Cannot render: container not found');
+            console.error('Cannot render: container not found');
             return;
         }
-
-        console.log('🎨 Rendering FFmpeg Streams Manager...');
-        console.log('📊 Active streams:', this.activeStreams.length);
-        console.log('🎵 Stream details:', this.activeStreams);
 
         this.container.innerHTML = `
             <div class="bg-[var(--card-bg)] border border-[var(--border-color)] rounded-2xl p-6 shadow-2xl shadow-black/30">
@@ -299,7 +463,6 @@ class FFmpegStreamsManager {
      * Render active streams (including stopped ones)
      */
     renderStreams() {
-        console.log('🎨 Rendering streams:', this.activeStreams.length);
 
         if (this.activeStreams.length === 0) {
             return `
@@ -344,10 +507,8 @@ class FFmpegStreamsManager {
             const uptime = this.formatUptime(stream.uptime || (Date.now() - startTime.getTime()));
             const streamUrl = `http://localhost:8000/${stream.id}`;
 
-            console.log(`🎵 Rendering stream: ${stream.id} (${stream.status}) with URL: ${streamUrl}`);
-
             // Determine status styling and icon
-            let statusColor, statusIcon, statusText, statusBg;
+            let statusColor, statusIcon, statusText, statusBg, errorMessage = '';
             switch (stream.status) {
                 case 'running':
                     statusColor = 'text-green-400';
@@ -366,6 +527,7 @@ class FFmpegStreamsManager {
                     statusIcon = 'error';
                     statusText = 'ERROR';
                     statusBg = 'bg-red-500/10 border-red-500/20';
+                    errorMessage = stream.error || 'Stream failed to start';
                     break;
                 default:
                     statusColor = 'text-yellow-400';
@@ -408,6 +570,19 @@ class FFmpegStreamsManager {
                         </div>
                     </div>
 
+                    ${errorMessage ? `
+                    <!-- Error Message -->
+                    <div class="w-full mt-3 p-3 bg-red-900/20 border border-red-500/30 rounded-lg">
+                        <div class="flex items-start gap-2">
+                            <span class="material-symbols-rounded text-red-400 text-sm mt-0.5">error</span>
+                            <div>
+                                <p class="text-red-300 text-sm font-medium">Stream Error</p>
+                                <p class="text-red-200 text-xs mt-1">${errorMessage}</p>
+                            </div>
+                        </div>
+                    </div>
+                    ` : ''}
+
                     <!-- Stream Actions -->
                     <div class="flex items-center gap-3 w-full sm:w-auto">
                         <div class="flex items-center gap-2 flex-1 sm:flex-initial">
@@ -419,6 +594,14 @@ class FFmpegStreamsManager {
                                 >
                                     <span class="material-symbols-rounded text-sm">link</span>
                                     Copy URL
+                                </button>
+                                <button
+                                    onclick="ffmpegStreamsManager.editStream('${stream.id}')"
+                                    class="inline-flex items-center justify-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-blue-300 bg-blue-600/20 hover:bg-blue-600/30 border border-blue-600/30 transition-all duration-300"
+                                    title="Edit stream settings"
+                                >
+                                    <span class="material-symbols-rounded text-sm">edit</span>
+                                    Edit
                                 </button>
                                 <button
                                     onclick="ffmpegStreamsManager.stopStream('${stream.id}')"
@@ -435,6 +618,14 @@ class FFmpegStreamsManager {
                                 >
                                     <span class="material-symbols-rounded text-sm">play_arrow</span>
                                     Restart
+                                </button>
+                                <button
+                                    onclick="ffmpegStreamsManager.editStream('${stream.id}')"
+                                    class="inline-flex items-center justify-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-blue-300 bg-blue-600/20 hover:bg-blue-600/30 border border-blue-600/30 transition-all duration-300"
+                                    title="Edit stream settings"
+                                >
+                                    <span class="material-symbols-rounded text-sm">edit</span>
+                                    Edit
                                 </button>
                                 <button
                                     onclick="ffmpegStreamsManager.deleteStream('${stream.id}')"
@@ -459,29 +650,20 @@ class FFmpegStreamsManager {
                                 <code class="text-xs text-[var(--primary-color)] font-mono bg-[var(--primary-color)]/10 px-2 py-1 rounded flex-1 truncate">${streamUrl}</code>
                             </div>
                             <div class="flex items-center gap-1">
-                                                             <button
-                                 onclick="navigator.clipboard.writeText('${streamUrl}').then(() => {
-                                     const btn = this;
-                                     const originalText = btn.innerHTML;
-                                     btn.innerHTML = '<span class=\\"material-symbols-rounded text-sm\\">check</span>';
-                                     btn.classList.add('text-green-400');
-                                     setTimeout(() => {
-                                         btn.innerHTML = originalText;
-                                         btn.classList.remove('text-green-400');
-                                     }, 2000);
-                                 })"
-                                 class="text-xs text-gray-400 hover:text-white transition-colors px-1"
-                                 title="Copy stream URL to clipboard"
-                             >
-                                 <span class="material-symbols-rounded text-sm">content_copy</span>
-                             </button>
-                             <button
-                                 onclick="window.open('${streamUrl}', '_blank')"
-                                 class="text-xs text-gray-400 hover:text-white transition-colors px-1"
-                                 title="Test stream in browser"
-                             >
-                                 <span class="material-symbols-rounded text-sm">open_in_new</span>
-                             </button>
+                                <button
+                                    onclick="ffmpegStreamsManager.copyStreamUrl('${streamUrl}', this)"
+                                    class="text-xs text-gray-400 hover:text-white transition-colors px-1"
+                                    title="Copy stream URL to clipboard"
+                                >
+                                    <span class="material-symbols-rounded text-sm">content_copy</span>
+                                </button>
+                                <button
+                                    onclick="window.open('${streamUrl}', '_blank')"
+                                    class="text-xs text-gray-400 hover:text-white transition-colors px-1"
+                                    title="Test stream in browser"
+                                >
+                                    <span class="material-symbols-rounded text-sm">open_in_new</span>
+                                </button>
                              ${stream.status === 'stopped' ? `
                              <button
                                  onclick="ffmpegStreamsManager.restartStream('${stream.id}')"
@@ -763,14 +945,8 @@ class FFmpegStreamsManager {
     }
 }
 
-// Debug logging
-console.log('FFmpegStreamsManager script loaded');
-console.log('FFmpegStreamsManager class:', typeof FFmpegStreamsManager);
-
 // Create global instance
 window.ffmpegStreamsManager = new FFmpegStreamsManager();
 
 // Also make the class available globally
 window.FFmpegStreamsManager = FFmpegStreamsManager;
-
-console.log('FFmpegStreamsManager added to window:', typeof window.FFmpegStreamsManager);

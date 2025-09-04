@@ -1,14 +1,38 @@
 {
-  "stream_1757014823159": {
-    "id": "stream_1757014823159",
+  "test_stream_1757016602428": {
+    "id": "test_stream_1757016602428",
     "deviceId": "logitech-hd-pro-webcam-c910",
-    "name": "tes",
+    "name": "Updated Test Stream - 1757017943506",
     "config": {
-      "name": "tes",
+      "id": "test_stream_1757016602428",
+      "name": "Updated Test Stream - 1757017943506",
       "deviceId": "logitech-hd-pro-webcam-c910",
-      "bitrate": 192,
-      "id": "stream_1757014823159"
+      "bitrate": 192
     },
-    "createdAt": "2025-09-04T19:40:23.624Z"
+    "createdAt": "2025-09-04T20:10:02.525Z"
+  },
+  "directshow_error_test_1757017048373": {
+    "id": "directshow_error_test_1757017048373",
+    "deviceId": "logitech-hd-pro-webcam-c910",
+    "name": "DirectShow Error Test",
+    "config": {
+      "id": "directshow_error_test_1757017048373",
+      "name": "DirectShow Error Test",
+      "deviceId": "logitech-hd-pro-webcam-c910",
+      "bitrate": 192
+    },
+    "createdAt": "2025-09-04T20:17:28.463Z"
+  },
+  "stop_test_stream_1757017547271": {
+    "id": "stop_test_stream_1757017547271",
+    "deviceId": "logitech-hd-pro-webcam-c910",
+    "name": "Stop Status Test",
+    "config": {
+      "id": "stop_test_stream_1757017547271",
+      "name": "Stop Status Test",
+      "deviceId": "logitech-hd-pro-webcam-c910",
+      "bitrate": 192
+    },
+    "createdAt": "2025-09-04T20:25:47.351Z"
   }
 }
