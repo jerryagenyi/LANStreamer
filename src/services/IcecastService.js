@@ -1152,128 +1152,422 @@ class IcecastService {
     });
   }
 
+  /**
+   * Stop the Icecast server
+   */
   async stop() {
-    try {
-      // Check if any icecast process is actually running (even if not started by us)
-      const processRunning = await this.isIcecastRunning()
-      
+    return ErrorHandler.handle(async () => {
+      // Check if any icecast process is actually running
+      const processRunning = await this.isIcecastRunning();
+
       if (!processRunning) {
-        this.isRunning = false // Sync our state
+        this.isRunning = false; // Sync our state
         return {
           success: true,
           message: 'Icecast is not running',
           status: 'stopped'
-        }
+        };
       }
 
-      logger.icecast('Stopping Icecast server')
-      
+      logger.icecast('Stopping Icecast server');
+
       if (this.process) {
-        // Direct process - kill it
-        this.process.kill('SIGTERM')
-        
-        // Force kill after 10 seconds if not terminated
-        setTimeout(() => {
-          if (this.process && !this.process.killed) {
-            this.process.kill('SIGKILL')
-          }
-        }, 10000)
-
-        // Wait for process to exit
-        await new Promise((resolve) => {
-          if (this.process) {
-            this.process.on('exit', resolve)
-          } else {
-            resolve()
-          }
-        })
-      } else if (process.platform === 'win32') {
-        // Windows - try multiple methods to stop icecast
-        try {
-          // Try Windows service first
-          try {
-            await execAsync('net stop Icecast')
-            logger.icecast('Icecast Windows service stopped')
-          } catch (serviceError) {
-            logger.warn('Windows service stop failed, trying process kill:', serviceError.message)
-          }
-          
-          // Force kill any remaining icecast.exe processes
-          try {
-            await execAsync('taskkill /IM icecast.exe /F')
-            logger.icecast('Force killed icecast.exe processes')
-          } catch (killError) {
-            logger.warn('Process kill failed (may not be running):', killError.message)
-          }
-        } catch (error) {
-          logger.warn('Stop methods failed:', error.message)
-        }
+        await this._stopDirectProcess();
+      } else {
+        await this._stopExternalProcess();
       }
 
-      this.isRunning = false
-      this.process = null
-      this.stats.startTime = null
+      // Update state
+      this.isRunning = false;
+      this.process = null;
+      this.stats.startTime = null;
 
-      logger.icecast('Icecast server stopped')
+      logger.icecast('Icecast server stopped successfully');
       return {
         success: true,
         message: 'Icecast server stopped successfully',
         status: 'stopped'
+      };
+
+    }, { operation: 'stop', service: 'icecast' });
+  }
+
+  /**
+   * Stop direct process managed by this service
+   */
+  async _stopDirectProcess() {
+    return new Promise((resolve, reject) => {
+      if (!this.process) {
+        resolve();
+        return;
       }
 
-    } catch (error) {
-      logger.error('Failed to stop Icecast:', error)
-      throw new AppError(`Failed to stop Icecast: ${error.message}`, 500)
+      const timeout = setTimeout(() => {
+        if (this.process && !this.process.killed) {
+          logger.warn('Process did not terminate gracefully, force killing');
+          this.process.kill('SIGKILL');
+        }
+      }, 10000);
+
+      this.process.on('exit', () => {
+        clearTimeout(timeout);
+        resolve();
+      });
+
+      this.process.on('error', (error) => {
+        clearTimeout(timeout);
+        reject(ErrorFactory.process(
+          `Failed to stop process: ${error.message}`,
+          ErrorCodes.PROCESS_KILL_FAILED
+        ));
+      });
+
+      // Send termination signal
+      this.process.kill('SIGTERM');
+    });
+  }
+
+  /**
+   * Stop external Icecast process (service or system process)
+   */
+  async _stopExternalProcess() {
+    if (process.platform === 'win32') {
+      await this._stopWindowsProcess();
+    } else {
+      await this._stopUnixProcess();
     }
   }
 
-  async restart() {
-    logger.icecast('Restarting Icecast server')
-    
+  /**
+   * Stop Icecast on Windows (service or process)
+   */
+  async _stopWindowsProcess() {
+    const errors = [];
+
+    // Try Windows service first
     try {
-      // Stop the server first
-      logger.icecast('Restart: Stopping server...')
-      await this.stop()
-      
-      // Wait for clean shutdown and verify port is free
-      logger.icecast('Restart: Waiting for clean shutdown...')
-      await new Promise(resolve => setTimeout(resolve, 5000)) // Increased wait time for clean shutdown
-      
-      // Verify no icecast processes are still running
-      const stillRunning = await this.isIcecastRunning()
-      if (stillRunning) {
-        logger.warn('Restart: Icecast process still detected after stop, forcing kill...')
-        if (process.platform === 'win32') {
-          try {
-            await execAsync('taskkill /IM icecast.exe /F')
-            await new Promise(resolve => setTimeout(resolve, 3000)) // Wait longer after force kill
-          } catch (error) {
-            logger.warn('Force kill failed:', error.message)
-          }
+      await execAsync('net stop Icecast');
+      logger.icecast('Icecast Windows service stopped');
+      return;
+    } catch (serviceError) {
+      errors.push(`Service stop failed: ${serviceError.message}`);
+      logger.debug('Windows service stop failed, trying process kill');
+    }
+
+    // Force kill any remaining icecast.exe processes
+    try {
+      await execAsync('taskkill /IM icecast.exe /F');
+      logger.icecast('Force killed icecast.exe processes');
+      return;
+    } catch (killError) {
+      errors.push(`Process kill failed: ${killError.message}`);
+    }
+
+    // If both methods failed, throw error
+    throw ErrorFactory.process(
+      'Failed to stop Icecast on Windows',
+      ErrorCodes.ICECAST_STOP_FAILED,
+      { attempts: errors }
+    );
+  }
+
+  /**
+   * Stop Icecast on Unix-like systems
+   */
+  async _stopUnixProcess() {
+    try {
+      // Try to find and kill icecast processes
+      const { stdout } = await execAsync('pgrep icecast');
+      const pids = stdout.trim().split('\n').filter(pid => pid);
+
+      if (pids.length === 0) {
+        logger.icecast('No Icecast processes found');
+        return;
+      }
+
+      // Kill processes gracefully first
+      for (const pid of pids) {
+        try {
+          await execAsync(`kill -TERM ${pid}`);
+        } catch (error) {
+          logger.debug(`Failed to send TERM signal to PID ${pid}`);
         }
       }
-      
+
+      // Wait a moment for graceful shutdown
+      await new Promise(resolve => setTimeout(resolve, 3000));
+
+      // Force kill if still running
+      for (const pid of pids) {
+        try {
+          await execAsync(`kill -KILL ${pid}`);
+        } catch (error) {
+          // Process may have already exited
+        }
+      }
+
+      logger.icecast('Icecast processes stopped');
+    } catch (error) {
+      throw ErrorFactory.process(
+        `Failed to stop Icecast on ${process.platform}: ${error.message}`,
+        ErrorCodes.ICECAST_STOP_FAILED
+      );
+    }
+  }
+
+  /**
+   * Restart the Icecast server
+   */
+  async restart() {
+    return ErrorHandler.handle(async () => {
+      logger.icecast('Restarting Icecast server');
+
+      // Stop the server first
+      logger.icecast('Restart: Stopping server...');
+      await this.stop();
+
+      // Wait for clean shutdown
+      logger.icecast('Restart: Waiting for clean shutdown...');
+      await new Promise(resolve => setTimeout(resolve, 5000));
+
+      // Verify no processes are still running
+      await this._ensureCleanShutdown();
+
       // Start the server
-      logger.icecast('Restart: Starting server...')
-      const result = await this.start()
-      
+      logger.icecast('Restart: Starting server...');
+      const result = await this.start();
+
       // Verify the server actually started
       if (result.success && (result.status === 'running' || result.status === 'starting')) {
-        logger.icecast('Restart: Completed successfully')
+        logger.icecast('Restart: Completed successfully');
         return {
           success: true,
           message: 'Icecast restarted successfully',
           ...result
-        }
+        };
       } else {
-        // Log detailed failure information
-        logger.error('Restart: Start failed with result:', result)
-        throw new Error(`Server failed to start after restart: ${result.message || 'Unknown error'}`)
+        throw ErrorFactory.icecast(
+          `Server failed to start after restart: ${result.message || 'Unknown error'}`,
+          ErrorCodes.ICECAST_START_FAILED,
+          { restartAttempt: true, startResult: result }
+        );
       }
-    } catch (error) {
-      logger.error('Restart failed:', error)
-      throw new AppError(`Failed to restart Icecast: ${error.message}`, 500)
+    }, { operation: 'restart', service: 'icecast' });
+  }
+
+  /**
+   * Ensure clean shutdown before restart
+   */
+  async _ensureCleanShutdown() {
+    const stillRunning = await this.isIcecastRunning();
+    if (!stillRunning) {
+      return;
     }
+
+    logger.warn('Restart: Icecast process still detected after stop, forcing cleanup...');
+
+    if (process.platform === 'win32') {
+      try {
+        await execAsync('taskkill /IM icecast.exe /F');
+        await new Promise(resolve => setTimeout(resolve, 3000));
+      } catch (error) {
+        logger.warn('Force kill failed during restart cleanup:', error.message);
+      }
+    } else {
+      try {
+        await execAsync('pkill -KILL icecast');
+        await new Promise(resolve => setTimeout(resolve, 3000));
+      } catch (error) {
+        logger.warn('Force kill failed during restart cleanup:', error.message);
+      }
+    }
+
+    // Final check
+    const finalCheck = await this.isIcecastRunning();
+    if (finalCheck) {
+      throw ErrorFactory.process(
+        'Unable to completely stop Icecast processes before restart',
+        ErrorCodes.PROCESS_KILL_FAILED
+      );
+    }
+  }
+
+  /**
+   * Get comprehensive health status for monitoring
+   */
+  async getHealthStatus() {
+    return ErrorHandler.handle(async () => {
+      const health = {
+        overall: 'healthy',
+        checks: {
+          installation: { status: 'unknown', message: '', details: {} },
+          process: { status: 'unknown', message: '', details: {} },
+          network: { status: 'unknown', message: '', details: {} },
+          configuration: { status: 'unknown', message: '', details: {} }
+        },
+        details: {
+          platform: process.platform,
+          serviceState: this.state,
+          timestamp: new Date().toISOString()
+        }
+      };
+
+      try {
+        // Check installation
+        if (this.state === 'initialized' && this.paths.exe) {
+          health.checks.installation = {
+            status: 'healthy',
+            message: 'Icecast installation detected',
+            details: {
+              exePath: this.paths.exe,
+              configPath: this.paths.config,
+              source: 'initialized'
+            }
+          };
+        } else {
+          try {
+            const installation = await this.detectInstallation();
+            health.checks.installation = {
+              status: 'healthy',
+              message: 'Icecast installation detected',
+              details: {
+                exePath: installation.paths.exe,
+                version: installation.version,
+                source: installation.source
+              }
+            };
+          } catch (error) {
+            health.checks.installation = {
+              status: 'unhealthy',
+              message: 'Icecast installation not found',
+              details: { error: error.message }
+            };
+          }
+        }
+
+        // Check process status
+        try {
+          const processRunning = await this.isIcecastRunning();
+          if (processRunning) {
+            health.checks.process = {
+              status: 'healthy',
+              message: 'Icecast process is running',
+              details: {
+                managedProcess: !!this.process,
+                pid: this.process?.pid,
+                startTime: this.stats.startTime
+              }
+            };
+          } else {
+            health.checks.process = {
+              status: 'unhealthy',
+              message: 'Icecast process is not running',
+              details: { managedProcess: false }
+            };
+          }
+        } catch (error) {
+          health.checks.process = {
+            status: 'unhealthy',
+            message: 'Failed to check process status',
+            details: { error: error.message }
+          };
+        }
+
+        // Check network accessibility (if process is running)
+        if (health.checks.process.status === 'healthy') {
+          try {
+            const response = await fetch(
+              `http://${config.icecast.host}:${config.icecast.port}/admin/stats.xml`,
+              { timeout: 3000 }
+            );
+
+            if (response.ok) {
+              health.checks.network = {
+                status: 'healthy',
+                message: 'Admin interface accessible',
+                details: {
+                  host: config.icecast.host,
+                  port: config.icecast.port,
+                  responseStatus: response.status
+                }
+              };
+            } else {
+              health.checks.network = {
+                status: 'degraded',
+                message: `Admin interface returned ${response.status}`,
+                details: {
+                  host: config.icecast.host,
+                  port: config.icecast.port,
+                  responseStatus: response.status
+                }
+              };
+            }
+          } catch (error) {
+            health.checks.network = {
+              status: 'unhealthy',
+              message: 'Admin interface not accessible',
+              details: {
+                host: config.icecast.host,
+                port: config.icecast.port,
+                error: error.message
+              }
+            };
+          }
+        } else {
+          health.checks.network = {
+            status: 'unhealthy',
+            message: 'Cannot check network - process not running',
+            details: {}
+          };
+        }
+
+        // Check configuration
+        if (this.paths?.config) {
+          try {
+            await fs.access(this.paths.config, fs.constants.R_OK);
+            health.checks.configuration = {
+              status: 'healthy',
+              message: 'Configuration file accessible',
+              details: { configPath: this.paths.config }
+            };
+          } catch (error) {
+            health.checks.configuration = {
+              status: 'unhealthy',
+              message: 'Configuration file not accessible',
+              details: {
+                configPath: this.paths.config,
+                error: error.message
+              }
+            };
+          }
+        } else {
+          health.checks.configuration = {
+            status: 'degraded',
+            message: 'No configuration file path available',
+            details: {}
+          };
+        }
+
+        // Determine overall health
+        const statuses = Object.values(health.checks).map(check => check.status);
+        const hasUnhealthy = statuses.includes('unhealthy');
+        const hasDegraded = statuses.includes('degraded');
+
+        if (hasUnhealthy) {
+          health.overall = 'unhealthy';
+        } else if (hasDegraded) {
+          health.overall = 'degraded';
+        } else {
+          health.overall = 'healthy';
+        }
+
+      } catch (error) {
+        health.overall = 'unhealthy';
+        health.details.error = error.message;
+      }
+
+      return health;
+    }, { operation: 'getHealthStatus' });
   }
 
   async getIcecastCommand() {

@@ -252,62 +252,33 @@ class IcecastManager {
     }
 
     async startServer() {
-        if (!this.status.installed) {
-            this.showNotification('Icecast is not installed', 'error');
-            return;
-        }
-
-        // Check current status before starting
-        await this.checkStatus();
-        if (this.status.running) {
-            this.showNotification('Server is already running', 'info');
-            return;
-        }
-
+        // SIMPLIFIED VERSION - Backend now handles all validation and timing
         try {
             this.isLoading = true;
             this.updateActionButtons('start');
-            
+
             const response = await fetch('/api/system/icecast/start', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    installationPath: this.status.installationPath
-                })
-            });
-            
-            const result = await response.json();
-            
-            // Check both HTTP status and result.success
-            if (response.ok && result.success) {
-                // Wait for server to actually start and verify status
-                await new Promise(resolve => setTimeout(resolve, 3000));
-                await this.checkStatus();
-                
-                // Only update UI if server actually started
-                if (this.status.running) {
-                    this.status.processId = result.processId;
-                    this.render(); // Re-render to update button states
-                    this.showNotification('Icecast server started successfully', 'success');
-                } else {
-                    throw new Error('Server reported success but is not running');
                 }
+            });
+
+            const result = await response.json();
+
+            if (response.ok && result.success) {
+                this.showNotification(result.message, 'success');
+                await this.checkStatus(); // Simple status refresh
+                this.render();
             } else {
-                // Log detailed error information for debugging
-                console.error('Start failed - HTTP Status:', response.status, 'Result:', result);
-                throw new Error(result.message || result.error || `HTTP ${response.status}: Failed to start server`);
+                this.showNotification(result.error || 'Failed to start server', 'error');
             }
         } catch (error) {
-            console.error('Failed to start Icecast server:', error);
-            this.showNotification(`Failed to start server: ${error.message}`, 'error');
-            // Re-check status to ensure UI is accurate
-            await this.checkStatus();
-            this.render();
+            console.error('Network error starting Icecast:', error);
+            this.showNotification('Network error occurred', 'error');
         } finally {
             this.isLoading = false;
-            this.updateActionButtons(); // No loading button parameter = normal state
+            this.updateActionButtons();
         }
     }
 

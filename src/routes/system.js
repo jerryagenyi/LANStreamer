@@ -30,16 +30,12 @@ router.get('/audio-devices', (req, res) => {
  * @description Check Icecast server status
  * @access Public
  */
-router.get('/icecast-status', async (req, res) => {
+router.get('/icecast-status', async (req, res, next) => {
   try {
     const status = await icecastService.getStatus();
     res.json(status);
   } catch (error) {
-    console.error('Error checking Icecast status:', error);
-    res.status(500).json({ 
-      error: 'Failed to check Icecast status',
-      message: error.message 
-    });
+    next(error); // Pass to error middleware
   }
 });
 
@@ -104,21 +100,12 @@ router.post('/icecast/start', async (req, res, next) => {
  * @description Stop Icecast service
  * @access Public
  */
-router.post('/icecast/stop', async (req, res) => {
+router.post('/icecast/stop', async (req, res, next) => {
   try {
     const result = await icecastService.stop();
-    res.json({ 
-      success: true,
-      message: 'Icecast stopped successfully',
-      ...result
-    });
+    res.json(result);
   } catch (error) {
-    console.error('Error stopping Icecast:', error);
-    res.status(500).json({ 
-      success: false,
-      error: 'Failed to stop Icecast',
-      message: error.message 
-    });
+    next(error); // Pass to error middleware
   }
 });
 
@@ -127,21 +114,12 @@ router.post('/icecast/stop', async (req, res) => {
  * @description Restart Icecast service
  * @access Public
  */
-router.post('/icecast/restart', async (req, res) => {
+router.post('/icecast/restart', async (req, res, next) => {
   try {
     const result = await icecastService.restart();
-    res.json({ 
-      success: true,
-      message: 'Icecast restarted successfully',
-      ...result
-    });
+    res.json(result);
   } catch (error) {
-    console.error('Error restarting Icecast:', error);
-    res.status(500).json({ 
-      success: false,
-      error: 'Failed to restart Icecast',
-      message: error.message 
-    });
+    next(error); // Pass to error middleware
   }
 });
 
@@ -285,6 +263,28 @@ router.get('/icecast/validate-config', async (req, res) => {
       error: 'Failed to validate Icecast configuration',
       message: error.message 
     });
+  }
+});
+
+/**
+ * @route GET /api/system/icecast/health
+ * @description Get comprehensive Icecast health status
+ * @access Public
+ */
+router.get('/icecast/health', async (req, res, next) => {
+  try {
+    const health = await icecastService.getHealthStatus();
+    const statusCode = health.overall === 'healthy' ? 200 :
+                      health.overall === 'degraded' ? 200 : 503;
+
+    res.status(statusCode).json({
+      status: health.overall,
+      timestamp: new Date().toISOString(),
+      checks: health.checks,
+      details: health.details
+    });
+  } catch (error) {
+    next(error);
   }
 });
 
