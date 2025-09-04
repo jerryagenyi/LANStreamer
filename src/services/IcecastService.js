@@ -78,9 +78,28 @@ class IcecastService {
     return ErrorHandler.handle(async () => {
       logger.icecast('Initializing Icecast Service');
 
-      // Step 1: Detect and validate installation
-      const installation = await this.detectInstallation();
-      this.paths = installation.paths;
+      // Step 1: Try device config first (fastest path)
+      let installation = await this.loadDeviceConfig();
+
+      // Step 2: Validate saved path still works
+      if (installation && await this.validateSavedPath(installation.paths.exe)) {
+        logger.icecast('Using validated device config', {
+          path: installation.paths.exe,
+          source: installation.source
+        });
+        this.paths = installation.paths;
+      } else {
+        // Step 3: Saved path invalid or doesn't exist, detect fresh
+        if (installation) {
+          logger.icecast('Saved path invalid, detecting fresh installation...');
+        }
+
+        installation = await this.detectInstallation();
+        this.paths = installation.paths;
+
+        // Step 4: Save new path for next time
+        await this.saveDeviceConfig(installation);
+      }
 
       // Step 2: Ensure config directory exists
       if (this.paths.config) {
@@ -171,7 +190,7 @@ class IcecastService {
           accessLog: config.icecast.paths.accessLogPath,
           errorLog: config.icecast.paths.errorLogPath
         },
-        version,
+            version, 
         source: 'environment'
       };
     } catch (error) {
@@ -197,8 +216,8 @@ class IcecastService {
         const configPath = await this._findConfigFile(path.dirname(pathSet.exe));
 
         const version = await this._getIcecastVersion(pathSet.exe);
-
-        return {
+          
+          return {
           isValid: true,
           paths: {
             exe: pathSet.exe,
@@ -206,7 +225,7 @@ class IcecastService {
             accessLog: pathSet.accessLog,
             errorLog: pathSet.errorLog
           },
-          version,
+            version,
           source: 'standard'
         };
       } catch (error) {
@@ -360,9 +379,9 @@ class IcecastService {
         configPath: installation.paths.config,
         accessLogPath: installation.paths.accessLog,
         errorLogPath: installation.paths.errorLog,
-        platform: process.platform
-      };
-    } catch (error) {
+            platform: process.platform
+          };
+        } catch (error) {
       logger.warn('Installation check failed:', error.message);
       return {
         installed: false,
@@ -374,8 +393,8 @@ class IcecastService {
         platform: process.platform,
         error: error.message
       };
-    }
-  }
+        }
+      }
 
       // Step 2: Check for legacy customPath (deprecated but still supported)
       if (config.icecast.customPath) {
@@ -640,13 +659,13 @@ class IcecastService {
       let response;
       try {
         response = await fetch(`http://${config.icecast.host}:${config.icecast.port}/admin/stats.xml`, {
-          timeout: 5000,
-          headers: {
-            'Authorization': `Basic ${Buffer.from(`admin:${config.icecast.adminPassword}`).toString('base64')}`
-          }
-        })
+        timeout: 5000,
+        headers: {
+          'Authorization': `Basic ${Buffer.from(`admin:${config.icecast.adminPassword}`).toString('base64')}`
+        }
+      })
 
-        if (!response.ok) {
+      if (!response.ok) {
           // If HTTP request fails but process is running, server might still be starting up
           logger.warn(`HTTP request failed with status ${response.status}, but process is running - server may still be starting up`)
           return {
@@ -769,10 +788,10 @@ class IcecastService {
         if (await this.directoryExists(searchPath)) {
           logger.icecast(`Directory exists: ${searchPath}`);
           
-                      // For Windows, validate the complete installation structure
-            if (process.platform === 'win32') {
-              const files = await this.validateIcecastFiles(searchPath);
-              logger.icecast(`File validation results for ${searchPath}:`, files);
+          // For Windows, validate the complete installation structure
+          if (process.platform === 'win32') {
+            const files = await this.validateIcecastFiles(searchPath);
+            logger.icecast(`File validation results for ${searchPath}:`, files);
               logger.icecast(`Log directory check for ${path.join(searchPath, 'logs')}:`, files.logDir);
             
             // Check if we have at least the essential files
@@ -999,7 +1018,7 @@ class IcecastService {
     try {
       await fs.access(this.paths.config, fs.constants.R_OK);
       logger.icecast('Using existing config file', { path: this.paths.config });
-    } catch (error) {
+      } catch (error) {
       logger.icecast('Config file not found, generating new one', { path: this.paths.config });
       await this.generateConfigFile();
     }
@@ -1019,23 +1038,23 @@ class IcecastService {
     try {
       await execAsync('net start Icecast');
       logger.icecast('Icecast Windows service started');
-
-      // Wait for service to be ready
+            
+            // Wait for service to be ready
       await new Promise(resolve => setTimeout(resolve, 5000));
-
+            
       // Verify service started
       const status = await this.getStatus();
-      if (status.running) {
+            if (status.running) {
         this.isRunning = true;
         this.stats.startTime = Date.now();
-
-        return {
-          success: true,
-          message: 'Icecast Windows service started successfully',
-          status: 'running',
-          service: true
+              
+              return {
+                success: true,
+                message: 'Icecast Windows service started successfully',
+                status: 'running',
+                service: true
         };
-      } else {
+            } else {
         throw ErrorFactory.icecast(
           'Icecast service started but is not responding',
           ErrorCodes.ICECAST_START_FAILED
@@ -1073,8 +1092,8 @@ class IcecastService {
       }
 
       this.process = spawn(command, args, {
-        stdio: ['ignore', 'pipe', 'pipe'],
-        detached: false
+          stdio: ['ignore', 'pipe', 'pipe'],
+          detached: false
       });
 
       // Set up process event handlers
@@ -1089,13 +1108,13 @@ class IcecastService {
         this.stats.startTime = Date.now();
 
         logger.icecast('Icecast server started successfully');
-        return {
-          success: true,
-          message: 'Icecast server started successfully',
-          status: 'running',
-          pid: this.process.pid
+          return {
+            success: true,
+            message: 'Icecast server started successfully',
+            status: 'running',
+            pid: this.process.pid
         };
-      } else {
+        } else {
         // Process failed to start properly
         const exitCode = this.process?.exitCode;
         if (exitCode !== null) {
@@ -1104,7 +1123,7 @@ class IcecastService {
             ErrorCodes.ICECAST_START_FAILED,
             { exitCode, command, args }
           );
-        } else {
+          } else {
           throw ErrorFactory.icecast(
             'Icecast failed to start - process may have crashed',
             ErrorCodes.ICECAST_START_FAILED,
@@ -1170,7 +1189,7 @@ class IcecastService {
       }
 
       logger.icecast('Stopping Icecast server');
-
+      
       if (this.process) {
         await this._stopDirectProcess();
       } else {
@@ -1203,7 +1222,7 @@ class IcecastService {
       }
 
       const timeout = setTimeout(() => {
-        if (this.process && !this.process.killed) {
+          if (this.process && !this.process.killed) {
           logger.warn('Process did not terminate gracefully, force killing');
           this.process.kill('SIGKILL');
         }
@@ -1233,7 +1252,7 @@ class IcecastService {
   async _stopExternalProcess() {
     if (process.platform === 'win32') {
       await this._stopWindowsProcess();
-    } else {
+          } else {
       await this._stopUnixProcess();
     }
   }
@@ -1249,7 +1268,7 @@ class IcecastService {
       await execAsync('net stop Icecast');
       logger.icecast('Icecast Windows service stopped');
       return;
-    } catch (serviceError) {
+        } catch (serviceError) {
       errors.push(`Service stop failed: ${serviceError.message}`);
       logger.debug('Windows service stop failed, trying process kill');
     }
@@ -1326,9 +1345,23 @@ class IcecastService {
       logger.icecast('Restart: Stopping server...');
       await this.stop();
 
-      // Wait for clean shutdown
+      // Smart cleanup - wait for ACTUAL shutdown instead of guessing timing
       logger.icecast('Restart: Waiting for clean shutdown...');
-      await new Promise(resolve => setTimeout(resolve, 2000)); // Reduced from 5s to 2s
+      // Smart timing - wait for actual shutdown, not arbitrary time
+      const maxWait = 10000; // 10 second safety net
+      const startTime = Date.now();
+
+      while (Date.now() - startTime < maxWait) {
+        const stillRunning = await this.isIcecastRunning();
+        if (!stillRunning) {
+          logger.icecast('Shutdown confirmed', { 
+            waitTime: `${Date.now() - startTime}ms`,
+            message: 'Proceeding immediately - no guessing!'
+          });
+          break; // Proceed immediately when process stops!
+        }
+        await new Promise(resolve => setTimeout(resolve, 500)); // Check every 500ms
+      }
 
       // Verify no processes are still running
       await this._ensureCleanShutdown();
@@ -1343,8 +1376,8 @@ class IcecastService {
           status: result.status,
           pid: result.pid
         });
-        return {
-          success: true,
+      return {
+        success: true,
           message: 'Icecast server restarted successfully',
           status: result.status,
           pid: result.pid
@@ -1382,7 +1415,7 @@ class IcecastService {
       try {
         await execAsync('taskkill /IM icecast.exe /F');
         await new Promise(resolve => setTimeout(resolve, 3000));
-      } catch (error) {
+    } catch (error) {
         logger.warn('Force kill failed during restart cleanup:', error.message);
       }
     } else {
