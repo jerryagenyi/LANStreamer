@@ -1328,7 +1328,7 @@ class IcecastService {
 
       // Wait for clean shutdown
       logger.icecast('Restart: Waiting for clean shutdown...');
-      await new Promise(resolve => setTimeout(resolve, 5000));
+      await new Promise(resolve => setTimeout(resolve, 2000)); // Reduced from 5s to 2s
 
       // Verify no processes are still running
       await this._ensureCleanShutdown();
