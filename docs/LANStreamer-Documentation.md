@@ -60,18 +60,70 @@ LANStreamer is well-structured with a clear separation of concerns:
 
 ## Icecast Component
 
-### System Flow
-**Frontend**: Buttons call API endpoints like `/api/system/icecast/start`  
-**Backend**: Routes in `src/routes/system.js` handle these calls  
-**Service**: `IcecastService.js` contains the actual start/stop logic
+### Current Architecture (Phase 1 - Improved)
 
-### Backend API Endpoints
+**System Flow**: Clean separation of concerns with backend validation
+- **Frontend**: Simple UI components that call API endpoints and display results
+- **Backend**: Comprehensive validation, error handling, and process management
+- **Service**: Robust lifecycle management with proper error handling and health monitoring
+
+**Key Improvements**:
+- ✅ **Backend Validation**: All validation moved from frontend to backend
+- ✅ **Simplified Frontend**: 49% code reduction in frontend complexity
+- ✅ **Consistent Error Handling**: Standardized error responses across all endpoints
+- ✅ **Health Monitoring**: Comprehensive health checks with actionable error messages
+- ✅ **Proper Lifecycle Management**: Async initialization and clean shutdown procedures
+
+### Previous Architecture (Historical Context)
+
+**What we had before**: Mixed responsibilities causing complexity
+- ❌ Frontend doing backend validation (installation checks, timing, verification)
+- ❌ Inconsistent error handling across different endpoints
+- ❌ Complex frontend logic that was hard to maintain and debug
+- ❌ Manual timing and verification in frontend causing UI issues
+
+**Why it didn't work well**:
+- Frontend was responsible for business logic that belonged in backend
+- 5-second refresh was fighting with complex frontend validation logic
+- Error handling was inconsistent, making debugging difficult
+- Component was too complex and needed constant maintenance
+
+**How we improved it**:
+- Moved all validation and timing to backend where it belongs
+- Standardized error handling with proper error codes and messages
+- Simplified frontend to focus only on presentation and user interaction
+- Added comprehensive health monitoring for better operational visibility
+
+### Backend API Endpoints (Enhanced)
+
+**Core Operations** (with comprehensive backend validation):
+- `POST /api/system/icecast/start` - Start Icecast server with full validation and verification
+- `POST /api/system/icecast/stop` - Stop Icecast server gracefully with cleanup
+- `POST /api/system/icecast/restart` - Restart server with complete stop/start cycle
+- `GET /api/system/icecast/status` - Get current server status and statistics
+
+**Health & Monitoring** (new in Phase 1):
+- `GET /api/system/icecast/health` - Comprehensive health check with actionable error messages
 - `GET /api/system/icecast/search-installations` - Search for Icecast installations
-- `GET /api/system/icecast-status` - Get current server status and statistics
-- `POST /api/system/icecast/start` - Start Icecast server process
-- `POST /api/system/icecast/stop` - Stop Icecast server gracefully
-- `POST /api/system/icecast/restart` - Restart server with full cycle
 - `GET /api/system/icecast/validate-config` - Validate configuration files
+
+**API Response Format** (standardized):
+```javascript
+// Success Response
+{
+  "success": true,
+  "message": "Operation completed successfully",
+  "data": { /* operation-specific data */ }
+}
+
+// Error Response
+{
+  "success": false,
+  "error": "User-friendly error message",
+  "code": "ERROR_CODE",
+  "suggestion": "Actionable guidance for fixing the issue"
+}
+```
 
 ### Windows System Commands
 - `tasklist | findstr /I icecast.exe` - Check if process is running
@@ -176,13 +228,42 @@ When LANStreamer starts (`npm start`) and the web application loads:
 - Detect configuration conflicts and issues
 - Provide detailed error reporting
 
-#### 5. Health Monitoring
-- Determine overall system health status
-- Monitor process, port, and admin interface
-- Track error rates and recovery attempts
-- **Automatic health checks every 5 seconds** (monitors external process changes)
-- Graceful degradation on failures
-- **Real-time button state updates** based on actual process status
+#### 5. Health Monitoring (Enhanced in Phase 1)
+
+**Comprehensive Health Checks** via `/api/system/icecast/health`:
+- **Installation Check**: Verify Icecast executable exists and is accessible
+- **Process Check**: Detect if Icecast is running and responsive
+- **Network Check**: Test admin interface connectivity (non-critical)
+- **Configuration Check**: Validate config file accessibility and basic syntax
+
+**Health Response Format**:
+```javascript
+{
+  "status": "healthy" | "degraded" | "unhealthy",
+  "checks": {
+    "installation": { "status": "healthy", "details": {...} },
+    "process": { "status": "healthy", "details": {...} },
+    "network": { "status": "degraded", "message": "Admin interface unreachable" },
+    "configuration": { "status": "healthy", "details": {...} }
+  },
+  "overall": {
+    "message": "System operational with minor issues",
+    "suggestion": "Admin interface may be blocked by firewall"
+  }
+}
+```
+
+**Frontend Auto-Refresh** (Still valuable with new architecture):
+- **5-second status checks** to detect external changes
+- **Non-intrusive**: Only updates UI, doesn't interfere with operations
+- **Detects external changes**: User starting/stopping Icecast manually
+- **Maintains UI accuracy**: Keeps button states synchronized with reality
+
+**Why 5-second refresh is still needed**:
+- ✅ Detects if Icecast crashes unexpectedly
+- ✅ Updates UI when user starts/stops Icecast externally
+- ✅ No longer conflicts with operations (backend handles timing)
+- ✅ Simple status display updates only
 
 #### 6. Error Recovery
 - Automatic restart on process crashes

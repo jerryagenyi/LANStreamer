@@ -335,73 +335,33 @@ class IcecastManager {
     }
 
     async restartServer() {
-        if (!this.status.installed) {
-            this.showNotification('Icecast is not installed', 'error');
-            return;
-        }
-
-        // Check current status before restarting
-        await this.checkStatus();
-        if (!this.status.running) {
-            this.showNotification('Server is not running. Use Start Server instead.', 'info');
-            return;
-        }
-
+        // SIMPLIFIED VERSION - Backend now handles all validation and timing
         try {
             this.isLoading = true;
             this.updateActionButtons('restart');
-            
+
             const response = await fetch('/api/system/icecast/restart', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 }
             });
-            
+
             const result = await response.json();
-            
-            if (result.success) {
-                // Don't immediately update status - wait for actual restart to complete
-                // The restart process handles stopping and starting internally
-                
-                // Wait longer for the complete restart cycle (increased to match backend)
-                await new Promise(resolve => setTimeout(resolve, 12000));
-                
-                // Check actual status after restart completes
-                await this.checkStatus();
-                
-                // Verify the server actually started before showing success
-                if (this.status.running) {
-                    // Only render after we know the actual state
-                    this.render(); // Re-render to update button states
-                    this.showNotification('Icecast server restarted successfully', 'success');
-                } else {
-                    // Server didn't start after restart
-                    this.render(); // Re-render to update button states
-                    this.showNotification('Server stopped but failed to restart. Please start manually.', 'error');
-                }
+
+            if (response.ok && result.success) {
+                this.showNotification(result.message, 'success');
+                await this.checkStatus(); // Simple status refresh
+                this.render();
             } else {
-                throw new Error(result.message || 'Failed to restart server');
+                this.showNotification(result.error || 'Failed to restart server', 'error');
             }
-            
         } catch (error) {
-            console.error('Failed to restart Icecast server:', error);
-            
-            // Check status to see what actually happened
-            await this.checkStatus();
-            this.render();
-            
-            // Show appropriate error message
-            if (this.status.running) {
-                // Server is running but restart failed - might be a partial restart
-                this.showNotification('Restart completed but with warnings. Server is running.', 'warning');
-            } else {
-                // Server failed to restart completely
-                this.showNotification(`Failed to restart server: ${error.message}`, 'error');
-            }
+            console.error('Network error restarting Icecast:', error);
+            this.showNotification('Network error occurred', 'error');
         } finally {
             this.isLoading = false;
-            this.updateActionButtons(); // No loading button parameter = normal state
+            this.updateActionButtons();
         }
     }
 

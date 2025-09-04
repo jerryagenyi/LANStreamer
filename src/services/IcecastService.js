@@ -1337,17 +1337,29 @@ class IcecastService {
       logger.icecast('Restart: Starting server...');
       const result = await this.start();
 
-      // Verify the server actually started
-      if (result.success && (result.status === 'running' || result.status === 'starting')) {
-        logger.icecast('Restart: Completed successfully');
+      // Verify the server actually started - simplified check
+      if (result.success) {
+        logger.icecast('Restart: Completed successfully', {
+          status: result.status,
+          pid: result.pid
+        });
         return {
           success: true,
-          message: 'Icecast restarted successfully',
-          ...result
+          message: 'Icecast server restarted successfully',
+          status: result.status,
+          pid: result.pid
         };
       } else {
+        // Log detailed information for debugging
+        logger.error('Restart failed - start method returned failure', {
+          result,
+          startSuccess: result.success,
+          startStatus: result.status,
+          startMessage: result.message
+        });
+
         throw ErrorFactory.icecast(
-          `Server failed to start after restart: ${result.message || 'Unknown error'}`,
+          `Server failed to start after restart: ${result.message || 'Start method returned failure'}`,
           ErrorCodes.ICECAST_START_FAILED,
           { restartAttempt: true, startResult: result }
         );
