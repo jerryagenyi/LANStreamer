@@ -241,13 +241,22 @@ class IcecastManager {
             const data = await response.json();
             
             if (data.valid) {
-                this.showNotification('Configuration is valid', 'success');
-                this.status.configValid = true;
+                // Check for hostname warnings
+                if (data.warnings && data.warnings.length > 0) {
+                    this.showNotification(`Configuration valid but has warnings: ${data.warnings.join(', ')}`, 'warning');
+                    this.status.configValid = true;
+                    this.status.hostnameWarning = data.warnings[0]; // Store first warning
+                } else {
+                    this.showNotification('Configuration is valid', 'success');
+                    this.status.configValid = true;
+                    this.status.hostnameWarning = null;
+                }
             } else {
                 this.showNotification(`Configuration issues found: ${data.errors.join(', ')}`, 'error');
                 this.status.configValid = false;
+                this.status.hostnameWarning = null;
             }
-            
+
             this.render();
             
         } catch (error) {
@@ -395,7 +404,10 @@ class IcecastManager {
                 
                 <!-- Security Warning -->
                 ${this.renderSecurityWarning()}
-                
+
+                <!-- Hostname Warning -->
+                ${this.renderHostnameWarning()}
+
                 <div class="space-y-5 ${!this.status.installed ? 'opacity-50' : ''}">
                     <!-- Server Status -->
                     <div class="flex items-center gap-4 p-3 bg-[#111111] border border-[var(--border-color)] rounded-xl">
@@ -502,6 +514,33 @@ class IcecastManager {
         // Security warning is now handled at the top of the page
         // No need to show it in the sidebar
         return '';
+    }
+
+    renderHostnameWarning() {
+        if (!this.status.hostnameWarning) {
+            return '';
+        }
+
+        return `
+            <div class="mb-4 p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-xl">
+                <div class="flex items-start gap-3">
+                    <span class="material-symbols-rounded text-yellow-400 mt-0.5">warning</span>
+                    <div class="flex-1">
+                        <h4 class="font-semibold text-yellow-300 mb-2">Network Access Warning</h4>
+                        <p class="text-sm text-yellow-200 mb-3">${this.status.hostnameWarning}</p>
+                        <div class="flex gap-2">
+                            <button
+                                onclick="icecastManager.validateConfiguration()"
+                                class="inline-flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-yellow-300 bg-yellow-600/20 hover:bg-yellow-600/30 border border-yellow-600/30 rounded-lg transition-all duration-300"
+                            >
+                                <span class="material-symbols-rounded text-sm">refresh</span>
+                                Recheck Config
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
     }
 
     setupEventListeners() {

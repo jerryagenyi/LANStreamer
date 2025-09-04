@@ -23,17 +23,17 @@ For the best development experience, use `npm run dev:live`:
 
 ### Core Documents
 
-- **[LANStreamer-PRD.md](./LANStreamer-PRD.md)** - Product Requirements Document
+- **[LANStreamer-PRD.md](./specifications/LANStreamer-PRD.md)** - Product Requirements Document
   - Defines the vision, scope, and requirements for LANStreamer v1.0
   - Outlines user stories, features, and technical requirements
   - **Updated:** Includes audio monitoring user story for professional quality control
 
-- **[LANStreamer-TDD.md](./LANStreamer-TDD.md)** - Test-Driven Development Plan
+- **[LANStreamer-TDD.md](./specifications/LANStreamer-TDD.md)** - Test-Driven Development Plan
   - Step-by-step TDD implementation guide (Steps 1-7 complete)
   - Red-Green-Refactor workflow documentation
   - **New:** Step 8 - Audio Monitoring Feature specification and testing strategy
 
-- **[LANStreamer-Technical-Specification.md](./LANStreamer-Technical-Specification.md)** - Technical Specifications
+- **[LANStreamer-Technical-Specification.md](./specifications/LANStreamer-Technical-Specification.md)** - Technical Specifications
   - Detailed technical architecture and implementation details
   - API specifications and data models
   - System requirements and dependencies
@@ -43,41 +43,28 @@ For the best development experience, use `npm run dev:live`:
   - Version history with detailed implementation status
   - Known issues and technical debt documentation
 
-### Design & Feature Documentation
+### 📁 Organized Documentation Structure
 
-- **[Admin-Dashboard-UI-Design.md](./Admin-Dashboard-UI-Design.md)** - UI Design Specifications
-  - Comprehensive visual design guidelines with exact measurements
-  - Interactive element specifications and responsive design requirements
-  - **Enhanced:** Monitoring controls, clickable header indicators, professional layout
+#### 📖 User Guides & Tutorials
+- **[guides/](./guides/)** - Simple installation and troubleshooting guides
+- **[tutorials/](./tutorials/)** - In-depth learning materials and concepts
 
-- **[Audio-Monitoring-Feature-Specification.md](./Audio-Monitoring-Feature-Specification.md)** - Audio Monitoring Feature
-  - **New:** Complete specification for professional audio monitoring capability
-  - Device type differentiation (input vs output) for DVS/Dante setups
-  - Quality control workflow for live event management
+#### 📋 Specifications
+- **[specifications/](./specifications/)** - Technical specs, PRD, TDD, and security docs
 
-- **[LANStreamer-Audio-Pipeline-Concepts.md](./LANStreamer-Audio-Pipeline-Concepts.md)** - Audio Pipeline Educational Guide
-  - **Moved:** Comprehensive guide to understanding audio routing concepts
-  - Hardware integration approaches (XR18, DVS, Virtual Cables)
-  - Troubleshooting methodology and best practices
+#### 🎨 Design & UI
+- **[design/](./design/)** - UI/UX specifications and visual design guides
 
-- **[Authentication-Security-Specification.md](./Authentication-Security-Specification.md)** - Security & Authentication
-  - **New:** Complete authentication system specification
-  - Default credential management and security warnings
-  - Browser permission handling and session management
+#### 💡 Examples & Configuration
+- **[examples/](./examples/)** - Configuration examples and environment templates
 
-### Installation & Setup Guides
 
-- **[Installation Guides](./guides/)** - Complete setup instructions for dependencies
-  - **[FFmpeg Installation Guide](./guides/ffmpeg-installation.md)** - Cross-platform FFmpeg setup
-  - **[Icecast Installation Guide](./guides/icecast-installation.md)** - Icecast server installation
-  - Platform coverage: Windows, macOS, Linux with troubleshooting
 
-### Configuration Documentation
+### 🚀 Quick Access Links
 
-- **[env-example.md](./env-example.md)** - Environment Configuration Guide
-  - Detailed explanation of all environment variables
-  - Security considerations and production deployment settings
-  - Platform-specific configuration notes
+- **[Installation Guides](./guides/README.md)** - Get LANStreamer running in minutes
+- **[Technical Specification](./specifications/LANStreamer-Technical-Specification.md)** - Complete technical reference
+- **[Troubleshooting](./guides/troubleshooting-simple.md)** - Quick fixes for common issues
 
 ### Maintenance Documentation
 

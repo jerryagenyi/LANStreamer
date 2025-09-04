@@ -140,6 +140,15 @@ logger.performance = (message, meta = {}) => {
   logger.info(message, { ...meta, category: 'performance' })
 }
 
+logger.contact = (message, meta = {}) => {
+  logger.info(message, { ...meta, service: 'contact' })
+}
+
+// Add error method to contact logger
+logger.contact.error = (message, error, meta = {}) => {
+  logger.error(message, { ...meta, service: 'contact', error: error?.message || error })
+}
+
 // Log uncaught exceptions and unhandled rejections
 process.on('uncaughtException', (error) => {
   logger.error('Uncaught Exception:', error)

@@ -107,19 +107,6 @@ router.post('/delete', async (req, res) => {
   }
 });
 
-/**
- * @route POST /api/streams/stop-all
- * @description Stop all active streams.
- * @access Public
- */
-router.post('/stop-all', async (req, res) => {
-  try {
-    await streamingService.stopAllStreams();
-    res.status(200).json({ message: 'All streams stopped successfully' });
-  } catch (error) {
-    logger.error('Error stopping all streams:', error);
-    res.status(500).json({ message: 'Error stopping all streams', error: error.message });
-  }
-});
+
 
 export default router;

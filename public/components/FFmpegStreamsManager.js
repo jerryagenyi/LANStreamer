@@ -545,10 +545,10 @@ class FFmpegStreamsManager {
                             <div class="w-3 h-3 rounded-full ${stream.status === 'running' ? 'bg-[var(--live-color)] pulse-live' : stream.status === 'error' ? 'bg-red-500' : 'bg-gray-500'}"></div>
                             ${stream.status === 'running' ? '<div class="absolute inset-0 w-3 h-3 rounded-full bg-[var(--live-color)] animate-ping opacity-75"></div>' : ''}
                         </div>
-                        <div class="flex-1">
-                            <div class="flex items-center gap-2 mb-1">
-                                <h3 class="font-semibold text-white text-lg">${stream.name || stream.id}</h3>
-                                <span class="px-2 py-1 text-xs font-medium ${statusBg} ${statusColor} border rounded-full flex items-center gap-1">
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-start justify-between gap-2 mb-1">
+                                <h3 class="font-semibold text-white text-lg truncate flex-1">${stream.name || stream.id}</h3>
+                                <span class="px-2 py-1 text-xs font-medium ${statusBg} ${statusColor} border rounded-full flex items-center gap-1 flex-shrink-0">
                                     <span class="material-symbols-rounded text-xs">${statusIcon}</span>
                                     ${statusText}
                                 </span>

@@ -425,18 +425,7 @@ class StreamingService {
     logger.info(`Stream ${streamId} deleted successfully`)
   }
 
-  /**
-   * Stop all active streams
-   */
-  async stopAllStreams() {
-    const streamIds = Object.keys(this.activeStreams)
-    logger.info(`Stopping all ${streamIds.length} active streams`)
-    
-    const stopPromises = streamIds.map(streamId => this.stopStream(streamId))
-    await Promise.allSettled(stopPromises)
-    
-    logger.info('All streams stopped')
-  }
+
 
   /**
    * Get stream status

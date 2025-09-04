@@ -4,12 +4,14 @@ import { fileURLToPath } from 'url';
 import systemRouter from './routes/system.js';
 import streamsRouter from './routes/streams.js';
 import settingsRouter from './routes/settings.js';
+import contactRouter from './routes/contact.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
-const PORT = 3001; // Fixed port to avoid conflicts
+const PORT = process.env.PORT || 3001;
+const HOST = process.env.HOST || 'localhost';
 
 // Middleware
 app.use(express.json());
@@ -29,6 +31,7 @@ app.get('/api/health', (req, res) => {
 app.use('/api/system', systemRouter);
 app.use('/api/streams', streamsRouter);
 app.use('/api/settings', settingsRouter);
+app.use('/api', contactRouter);
 
 // Serve dashboard page
 app.get('/dashboard', (req, res) => {
@@ -50,8 +53,12 @@ app.get('*', (req, res) => {
 });
 
 // Always start the server when this file is run
-app.listen(PORT, () => {
-  console.log(`Server is listening on port ${PORT}`);
+app.listen(PORT, HOST, () => {
+  console.log(`Server is listening on http://${HOST}:${PORT}`);
+  if (HOST === '0.0.0.0') {
+    console.log(`Network access: Server is accessible from other devices on your network`);
+    console.log(`Local access: http://localhost:${PORT}`);
+  }
 });
 
 // console.log('[SERVER] Script finished. Exporting app.');

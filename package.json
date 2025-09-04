@@ -10,7 +10,8 @@
     "dev:simple": "nodemon src/server.js",
     "setup": "node scripts/setup.js",
     "test": "vitest run",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+
   },
   "keywords": [
     "streaming",

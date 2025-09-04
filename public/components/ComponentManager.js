@@ -97,11 +97,6 @@ class ComponentManager {
                 name: 'Lobby Background Music'
             },
             // Future components will be registered here
-            'stream-controls': {
-                component: 'StreamControlPanel',
-                static: 'stream-controls-static',
-                name: 'Stream Controls'
-            },
             'audio-devices': {
                 component: 'AudioDeviceSelector',
                 static: 'audio-devices-static',

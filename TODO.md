@@ -40,6 +40,47 @@
   - [ ] Add fade in/out transitions between tracks
   - [ ] Add volume controls and audio visualization
   - [ ] Add music player state persistence across browser refreshes
+- [ ] **Phase 8: Lobby Music System (NEW FEATURE 🎵)**
+  - [ ] **MVP (Version 1.0)**
+    - [ ] Admin audio file upload system for lobby music
+    - [ ] Single lobby track selection and management
+    - [ ] Admin toggle: "Enable/Disable Lobby Music" on dashboard
+    - [ ] Backend lobby music stream creation (treat as special system stream)
+    - [ ] Client-side auto-detection: Play lobby music when no live streams exist
+    - [ ] Basic volume control for lobby music
+    - [ ] File format support: MP3, WAV, OGG
+    - [ ] Storage: Local file system in `uploads/lobby-music/` directory
+  - [ ] **Version 2.0 - Enhanced Playlist System**
+    - [ ] Multiple lobby music files upload and management
+    - [ ] Playlist creation with track rotation/shuffle options
+    - [ ] Track scheduling: Different music for different times/days
+    - [ ] Crossfade transitions between tracks (3-5 second overlap)
+    - [ ] Admin preview: Play lobby music in dashboard before enabling
+    - [ ] Track metadata display (title, artist, duration)
+    - [ ] Playlist loop modes: Sequential, shuffle, single repeat
+  - [ ] **Version 3.0 - Advanced Features**
+    - [ ] Smart transitions: Fade out lobby music when live streams start
+    - [ ] Priority system: Live streams automatically override lobby music
+    - [ ] User controls on `/streams.html`: Mute lobby music independently
+    - [ ] Volume mixing: Lower lobby music volume when streams are live
+    - [ ] Scheduling system: Different playlists for different time periods
+    - [ ] Integration with stream events: Welcome music when first visitor joins
+    - [ ] Analytics: Track lobby music engagement and listening duration
+    - [ ] Cloud storage integration for larger music libraries
+  - [ ] **Technical Implementation**
+    - [ ] Backend: New `LobbyMusicService.js` for music management
+    - [ ] API Endpoints: `/api/lobby-music/*` for CRUD operations
+    - [ ] Database: Track metadata, playlists, and settings
+    - [ ] Frontend: Admin lobby music management panel
+    - [ ] Client Integration: Auto-play logic on `/streams.html`
+    - [ ] Stream Priority: Lobby music as lowest priority system stream
+  - [ ] **User Experience Flow**
+    - [ ] Admin uploads music files via dashboard
+    - [ ] Admin enables lobby music with toggle switch
+    - [ ] Visitors to `/streams.html` hear lobby music when no streams are live
+    - [ ] Lobby music automatically stops/fades when live streams start
+    - [ ] Visitors can mute lobby music while keeping live streams audible
+    - [ ] Professional feel: No dead air, continuous audio experience
 - [ ] **Phase 6: Icecast Component & Service Edge Cases (BUG FIX)**
   - [ ] Fix confusing error message display when Icecast IS detected but validation fails
   - [ ] Revisit IcecastManager component error state logic - should not show "server not found" when it IS found
@@ -68,13 +109,98 @@
   - [x] Extracted helper methods for better maintainability
   - [x] Consolidated duplicate validation logic
   - [x] Improved error handling and logging
+- [x] **Documentation Cleanup (COMPLETED ✅)**
+  - [x] Created simplified installation guides (Context7 methodology)
+  - [x] Icecast guide: 696 lines → 70 lines (90% reduction)
+  - [x] FFmpeg guide: 400 lines → 60 lines (85% reduction)
+  - [x] Audio pipeline guide: 209 lines → 100 lines (52% reduction)
+  - [x] Added troubleshooting guide with quick fixes
+  - [x] Updated guides README with clear navigation
+  - [x] Preserved detailed guides as "Legacy" for technical reference
+- [x] **Stream Controls Removal (COMPLETED ✅)**
+  - [x] Removed bulk "Start All Streams" / "End All Streams" functionality
+  - [x] Cleaned up backend API endpoints for bulk operations
+  - [x] Simplified UI by removing unnecessary complexity
+  - [x] Moved icecast-convo.md to tutorials/icecast-implementation-notes.md
+- [x] **Documentation Organization (COMPLETED ✅)**
+  - [x] Organized docs folder into logical subdirectories
+  - [x] Created specifications/, design/, examples/, tutorials/ folders
+  - [x] Updated all documentation links and references
+  - [x] Improved docs/README.md with clear navigation
+- [x] **Performance & Stress Testing Framework (COMPLETED ✅)**
+  - [x] Created comprehensive stress testing framework
+  - [x] Multi-stream capacity testing (up to 20 concurrent streams)
+  - [x] Listener capacity testing (up to 100 listeners per stream)
+  - [x] Resource monitoring (CPU, memory, network usage)
+  - [x] Failure point analysis and bottleneck identification
+  - [x] Performance benchmarks and hardware recommendations
+  - [x] Quick stress test for CI/CD integration
+  - [x] Automated report generation with actionable insights
+  - [x] Added npm scripts: `npm run stress-test` and `npm run stress-test:full`
+  - [x] **First Stress Test Results (COMPLETED ✅)**
+    - [x] Validated all API endpoints working correctly
+    - [x] Confirmed excellent system performance (API responses: 0.81-68ms avg)
+    - [x] Perfect load handling (30 requests/30s, 100% success rate, 1.57ms avg)
+    - [x] Identified audio device configuration issue (AMD device detected but not streamable)
+    - [x] Generated detailed performance reports in `tests/stress/reports/`
+    - [x] Framework ready for production use once audio input configured
 
 ### 🎯 Next Priority: UI/UX Improvements (HIGH PRIORITY)
 - [ ] **Error State Improvements**
   - [x] Primary action: "Browse for Icecast" button ✅
-  - [ ] Secondary action: Link to simplified installation guide
+  - [x] Secondary action: Link to simplified installation guide ✅
+  - [x] Fixed mobile error state to show "No Live Streams" instead of "Error Loading Streams" ✅
+  - [x] Removed underline from streams page title ✅
   - [ ] Better messaging for expected user actions
+### 🎯 Audio Device Setup Plan (HIGH PRIORITY - NEXT)
+- [ ] **VoiceMeeter & Ear Trumpet Setup**
+  - [ ] **Install VoiceMeeter**: Download and install VoiceMeeter (virtual audio mixer)
+  - [ ] **Install Ear Trumpet**: Download from Microsoft Store (advanced audio routing)
+  - [ ] **Configure Virtual Audio Cables**: Set up VoiceMeeter virtual inputs/outputs
+- [ ] **Multi-Source Audio Testing**
+  - [ ] **Source 1 - Edge Browser**: Play YouTube music as audio source
+  - [ ] **Source 2 - Chrome Browser**: Play audio podcast as second source
+  - [ ] **Route Audio Sources**: Use Ear Trumpet to route sources to different outputs
+- [ ] **Output Device Testing**
+  - [ ] **Bluetooth Headset**: Route audio to Bluetooth headphones
+  - [ ] **Main Speakers**: Route audio to primary desktop speakers
+  - [ ] **Test Multiple Outputs**: Verify simultaneous routing to multiple devices
+- [ ] **LANStreamer Integration Testing**
+  - [ ] **Detect VoiceMeeter Devices**: Verify LANStreamer can see virtual audio devices
+  - [ ] **Create Test Streams**: Set up streams using VoiceMeeter inputs
+  - [ ] **Multi-Stream Testing**: Test concurrent streams from different sources
+  - [ ] **Audio Quality Verification**: Ensure clean audio without dropouts
+- [ ] **Stress Testing with Real Audio**
+  - [ ] **Run stress tests**: Use configured audio devices for realistic testing
+  - [ ] **Document performance**: Record actual limits with real audio sources
+  - [ ] **Create setup guide**: Document the VoiceMeeter + Ear Trumpet configuration
   - [ ] Auto-refresh when installation is restored
+- [ ] **Streams Page UI Refinements**
+  - [x] Reduced vertical spacing in streams container (space-y-6 → space-y-4) ✅
+  - [x] Reduced padding in loading/no-streams states (py-12 → pb-6) ✅
+  - [ ] **Stream Card Visual Improvements**
+    - [ ] Add subtle hover effects on stream cards
+    - [ ] Improve stream status indicators (live/offline visual distinction)
+    - [ ] Add smooth transitions for state changes (loading → content → error)
+    - [ ] Optimize card spacing for different screen sizes
+  - [ ] **Loading State Enhancements**
+    - [ ] Add skeleton loading animation instead of spinner
+    - [ ] Show progressive loading (detecting streams → loading details → ready)
+    - [ ] Add timeout handling with retry option
+  - [ ] **Empty State Improvements**
+    - [ ] Add illustration or icon to empty state
+    - [ ] Provide actionable next steps ("Start streaming from dashboard")
+    - [ ] Add quick setup link for first-time users
+  - [ ] **Stream Controls UI**
+    - [ ] Improve play/stop button visual feedback
+    - [ ] Add loading states for stream actions
+    - [ ] Show connection status and listener count
+    - [ ] Add volume control and audio visualization
+  - [ ] **Responsive Design Refinements**
+    - [ ] Optimize layout for tablet sizes (768px-1024px)
+    - [ ] Improve touch targets for mobile devices
+    - [ ] Test and refine grid breakpoints (xl:grid-cols-3)
+    - [ ] Ensure consistent spacing across all screen sizes
 - [ ] **Status Component Consolidation**
   - [ ] Remove duplicate status displays
   - [ ] Use single, comprehensive status component

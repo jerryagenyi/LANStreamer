@@ -4,7 +4,7 @@
     <link as="style" href="https://fonts.googleapis.com/css2?display=swap&amp;family=Inter%3Awght%40400%3B500%3B700%3B900&amp;family=Noto+Sans%3Awght%40400%3B500%3B700%3B900" onload="this.rel='stylesheet'" rel="stylesheet"/>
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:FILL@1" rel="stylesheet"/>
     <title>LANStreamer</title>
-    <link href="/assets/placeholder-logo.svg" rel="icon" type="image/svg+xml"/>
+    <link rel="icon" type="image/png" href="/assets/favicon.png">
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
     <style type="text/tailwindcss">
         :root {
@@ -91,6 +91,21 @@
         </a>
     </div>
     <div class="flex items-center gap-3">
+        <!-- Admin Navigation Links -->
+        <div class="flex items-center gap-2">
+            <a href="/streams.html" target="_blank"
+               class="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-300 hover:text-white bg-gray-800/50 hover:bg-gray-700/50 border border-gray-600/30 hover:border-gray-500/50 rounded-lg transition-all duration-300"
+               title="Open Streams Page (for listeners)">
+                <span class="material-symbols-rounded text-sm">radio</span>
+                <span class="hidden sm:inline">Streams</span>
+            </a>
+            <a href="/api/health" target="_blank"
+               class="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-300 hover:text-white bg-gray-800/50 hover:bg-gray-700/50 border border-gray-600/30 hover:border-gray-500/50 rounded-lg transition-all duration-300"
+               title="API Health Check">
+                <span class="material-symbols-rounded text-sm">health_and_safety</span>
+                <span class="hidden sm:inline">Health</span>
+            </a>
+    </div>
     <div class="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-10 ml-4" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuDSIzxTEv03JUEwpU1vqD79kbeH63SzCaGfIIFbumOYFeslE7o8s5BELsy84X5hdHbqgGM91dgl8SECCQAuQUyN5TzULy0C6hTXlMd2FdmoEp4c0WAiQhyasooFF0UAFZoOLRnhrfiUJjHhWPasQr2g2MWISZolmDkAER-lahc8ZqnqZSr95hHY9Z-0DIFIJDnrExTC0CHjbWsTgsGY2Pj1xH87e8JybvN0dCpF-U1oWs_K8Q3OXkC3yMhMSgHVXCilnq_8LYez-3g");'></div>
     </div>
     </header>
@@ -119,7 +134,7 @@
                     <span class="material-symbols-rounded text-gray-400 transition-transform duration-300" id="video-sources-arrow">expand_more</span>
                 </button>
                 <div id="video-sources-content" class="hidden mt-2">
-                    <div id="video-sources"></div>
+            <div id="video-sources"></div>
                 </div>
             </div>
         </div>
@@ -127,14 +142,16 @@
         <!-- Right Column (Sidebar) -->
         <div class="space-y-8">
             
-            <!-- Stream Controls - Component or Static -->
-            <div id="stream-controls"></div>
-            
                     <!-- Icecast Server - Component or Static -->
         <div id="icecast-server">
             <!-- IcecastManager component will be initialized here -->
         </div>
             
+            <!-- Contact Manager - Component -->
+            <div id="contact-manager">
+                <!-- ContactManager component will be initialized here -->
+    </div>
+
             <!-- Lobby Background Music - Collapsible Panel (Hidden by default) -->
             <div class="collapsible-section">
                 <button id="lobby-music-toggle" class="w-full flex items-center justify-between p-3 bg-[var(--card-bg)] border border-[var(--border-color)] rounded-xl hover:bg-[var(--card-bg)]/80 transition-all duration-300">
@@ -142,15 +159,15 @@
                         <span class="material-symbols-rounded text-gray-400">music_note</span>
                         <span class="text-gray-300 font-medium">Lobby Background Music</span>
                         <span class="text-xs text-gray-500">(Listening Only - Not for Streaming)</span>
-                    </div>
+                        </div>
                     <span class="material-symbols-rounded text-gray-400 transition-transform duration-300" id="lobby-music-arrow">expand_more</span>
-                </button>
+                            </button>
                 <div id="lobby-music-content" class="hidden mt-2">
                     <div id="lobby-music-player"></div>
+                        </div>
+                    </div>
+                    </div>
                 </div>
-            </div>
-        </div>
-    </div>
 
         <!-- Static Content Templates (Hidden) -->
 
@@ -244,27 +261,7 @@
             </div>
         </div>
 
-        <!-- Stream Controls Static Template -->
-        <div id="stream-controls-static" style="display: none;">
-            <div class="bg-[var(--card-bg)] border border-[var(--border-color)] rounded-2xl p-6 shadow-2xl shadow-black/30">
-                <div class="flex items-center justify-between mb-4">
-                    <h2 class="text-xl font-bold text-white">Stream Controls</h2>
-                    <div class="flex items-center gap-2">
-                        <span class="text-sm font-mono text-gray-400 bg-[#111111] border border-[var(--border-color)] px-2 py-0.5 rounded-md">2/3 running</span>
-                    </div>
-                </div>
-                <div class="flex flex-col sm:flex-row gap-4">
-                    <button class="w-full inline-flex items-center justify-center gap-2 rounded-md px-4 py-3 text-sm font-semibold text-white shadow-lg transition-all duration-300 btn-gradient">
-                        <span class="material-symbols-rounded">play_arrow</span>
-                        Start All Streams
-                    </button>
-                    <button class="w-full inline-flex items-center justify-center gap-2 rounded-md px-4 py-3 text-sm font-semibold text-white shadow-lg transition-all duration-300 btn-stop-gradient">
-                        <span class="material-symbols-rounded">stop</span>
-                        End All Streams
-                    </button>
-                </div>
-            </div>
-        </div>
+
 
         <!-- Icecast Server Static Template -->
         <div id="icecast-server-static" style="display: none;">
@@ -378,6 +375,7 @@
     <script src="/components/FileBrowser.js"></script>
     <script src="/components/IcecastManager.js"></script>
     <script src="/components/FFmpegStreamsManager.js"></script>
+    <script src="/components/ContactManager.js"></script>
 
     <!-- Debug script loading -->
     <script>
@@ -428,9 +426,12 @@
                 // Check for security vulnerabilities
                 await this.checkSecurityWarning();
 
+                // Initialize Contact Manager
+                await this.initializeContactManager();
+
                 // Force render audio devices to ensure dynamic content is shown
                 this.renderAudioDevices();
-
+                
                 // Icecast Manager will be initialized by ComponentManager with proper fallback
             }
 
@@ -440,7 +441,7 @@
                     console.error('ComponentManager not loaded');
                     return;
                 }
-
+                
                 this.componentManager = new ComponentManager();
                 console.log('ComponentManager initialized');
 
@@ -487,6 +488,38 @@
                 }
                 
                 // FFmpeg Streams Manager will be initialized by ComponentManager
+            }
+
+            async initializeContactManager() {
+                try {
+                    if (typeof ContactManager !== 'undefined') {
+                        this.contactManager = new ContactManager();
+                        console.log('✅ Contact Manager initialized successfully');
+                    } else {
+                        console.log('⚠️ Contact Manager not available - using static fallback');
+                        this.renderContactManagerFallback();
+                    }
+                } catch (error) {
+                    console.error('❌ Failed to initialize Contact Manager:', error);
+                    this.renderContactManagerFallback();
+                }
+            }
+
+            renderContactManagerFallback() {
+                const container = document.getElementById('contact-manager');
+                if (!container) return;
+
+                container.innerHTML = `
+                    <div class="bg-[var(--card-bg)] border border-[var(--border-color)] rounded-2xl p-6 shadow-2xl shadow-black/30">
+                        <div class="flex items-center justify-between mb-4">
+                            <h2 class="text-xl font-bold text-white">📞 Contact Information</h2>
+                        </div>
+                        <div class="text-center py-8">
+                            <span class="material-symbols-rounded text-4xl text-gray-600 mb-4">contact_support</span>
+                            <p class="text-gray-400">Contact Manager component not available</p>
+                        </div>
+                    </div>
+                `;
             }
 
             async loadAudioDevices(forceRefresh = false) {
@@ -682,12 +715,12 @@
                     const data = await response.json();
                     this.icecastStatus = data.running ? 'running' : 'stopped';
                     this.updateIcecastUI(data);
-
+                    
                     if (data.running) {
                         this.updateHeaderTooltip('icecast-status-text', 'Server Online');
                     } else if (data.installed === false) {
-                        this.updateHeaderTooltip('icecast-status-text',
-                            `Icecast not found. <a href="https://github.com/jerryagenyi/LANStreamer/blob/main/docs/guides/icecast-installation.md" target="_blank" class="text-blue-400 hover:text-blue-300 underline">Installation Guide</a>`,
+                        this.updateHeaderTooltip('icecast-status-text', 
+                            `Icecast not found. <a href="https://github.com/jerryagenyi/LANStreamer/blob/main/docs/guides/icecast-installation.md" target="_blank" class="text-blue-400 hover:text-blue-300 underline">Installation Guide</a>`, 
                             true
                         );
                     } else {
@@ -1055,7 +1088,7 @@
             // Add a small delay to ensure all scripts are loaded
             setTimeout(() => {
                 console.log('Initializing LANStreamer Dashboard...');
-                dashboard = new LANStreamerDashboard();
+            dashboard = new LANStreamerDashboard();
             }, 100);
         });
     </script>

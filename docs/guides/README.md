@@ -1,11 +1,38 @@
-# LANStreamer Installation Guides
+# LANStreamer User Guides
 
-This directory contains comprehensive installation and setup guides for LANStreamer dependencies.
+> **Simple, actionable guides to get you streaming quickly**
 
-## Available Guides
+## Quick Start Guides
 
-- **[FFmpeg Installation Guide](./ffmpeg-installation.md)** - Complete guide for installing and updating FFmpeg on all platforms
-- **[Icecast Installation Guide](./icecast-installation.md)** - Complete guide for installing and updating Icecast server on all platforms
+### 📦 Installation
+- **[Icecast Installation](./icecast-installation.md)** - Install the streaming server (3 minutes)
+- **[FFmpeg Installation](./ffmpeg-installation.md)** - Install the audio processor (2 minutes)
+
+### 🎧 Understanding LANStreamer
+- **[Audio Pipeline Concepts](./audio-pipeline-simple.md)** - How audio flows from source to listeners
+
+### 🔧 Troubleshooting
+- **[Common Issues & Solutions](./troubleshooting-simple.md)** - Quick fixes for typical problems
+
+## Need More Detail?
+
+For comprehensive technical information, see:
+- **[LANStreamer Technical Specification](../LANStreamer-Technical-Specification.md)** - Complete technical reference
+- **[Official Icecast Documentation](https://icecast.org/docs/)** - Icecast server documentation
+- **[Official FFmpeg Documentation](https://ffmpeg.org/documentation.html)** - FFmpeg processing documentation
+
+## Getting Help
+
+- **Issues & Questions**: https://github.com/jerryagenyi/LANStreamer/issues
+- **Feature Requests**: https://github.com/jerryagenyi/LANStreamer/discussions
+
+---
+
+## Legacy Guides (Detailed)
+
+These comprehensive guides contain extensive technical details:
+- [LANStreamer-Audio-Pipeline-Concepts.md](./LANStreamer-Audio-Pipeline-Concepts.md) - Detailed audio concepts
+- [icecast-implementation-notes.md](../tutorials/icecast-implementation-notes.md) - Technical implementation notes (moved to tutorials)
 
 ## Quick Links
 

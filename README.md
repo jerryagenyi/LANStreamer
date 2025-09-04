@@ -68,8 +68,17 @@ LANStreamer simplifies the workflow by acting as a central control panel for thr
 
 ### Prerequisites
 
-- A PC running Windows, macOS, or Linux.
-- Audio input devices (built-in microphone, USB audio interface, virtual audio cables, etc.).
+**System Requirements:**
+- **Operating System**: Windows 10/11, macOS 10.15+, or Linux (Ubuntu 18.04+)
+- **Node.js**: Version 18 or higher ([Download here](https://nodejs.org/))
+- **Git**: For cloning the repository ([Download here](https://git-scm.com/))
+- **Audio Input**: Any audio device (built-in microphone, USB microphone, audio interface, etc.)
+
+**First-Time Setup Checklist:**
+- [ ] Node.js installed and `node --version` shows v18+
+- [ ] Git installed and `git --version` works
+- [ ] Audio device connected and working
+- [ ] Internet connection (for initial setup only)
 
 ### Audio Device Configuration
 
@@ -96,52 +105,102 @@ If using **Dante Virtual Soundcard** for interpretation:
 
 > **📝 Note:** Detailed setup guides for specific hardware configurations are available in the [`manual-setup/`](manual-setup/) folder.
 
-### Running the Web Application (Recommended)
+### 🚀 Quick Start (5 Minutes)
 
-1.  **Clone this repository:**
-    ```bash
-    git clone https://github.com/your-username/LANStreamer.git
-    cd LANStreamer
-    ```
-    
-    **Run the setup script (recommended for first-time installation):**
-    ```bash
-    npm run setup
-    ```
-    This creates the necessary data directories and initializes default settings.
+**Step 1: Download LANStreamer**
+```bash
+# Open Command Prompt (Windows) or Terminal (Mac/Linux)
+git clone https://github.com/jerryagenyi/LANStreamer.git
+cd LANStreamer
+```
 
-2.  **Configure environment variables:**
-    ```bash
-    # Copy the example environment file
-    cp .env.example .env
-    
-    # Edit .env and update the CHANGE_THIS_VALUE entries
-    # At minimum, change all passwords for production use!
-    ```
+**Step 2: Initial Setup**
+```bash
+# Install dependencies and create necessary folders
+npm install
+npm run setup
+```
 
-3.  **Install dependencies:**
-    ```bash
-    npm install
-    ```
+**Step 3: Configure Settings**
+```bash
+# Windows
+copy .env.example .env
 
-4.  **Start the development server:**
-    
-    **For development with live reload (recommended):**
-    ```bash
-    npm run dev:live
-    ```
-    Then access the web interface at `http://localhost:3002` (BrowserSync automatically refreshes when you edit files)
-    
-    **For production or simple development:**
-    ```bash
-    npm run dev
-    ```
-    Then access the web interface at `http://localhost:3001`
+# Mac/Linux
+cp .env.example .env
+```
+> **📝 Note**: Edit the `.env` file to change default passwords before using in production!
 
-5.  **Access the web interface:**
-    - **Development with live reload:** `http://localhost:3002` 
-    - **Regular development:** `http://localhost:3001`
-    - **Dashboard path:** Add `/dashboard` to either URL
+**Step 4: Start LANStreamer**
+```bash
+# Start the server (recommended for beginners)
+npm run dev
+```
+
+**Step 5: Open in Browser**
+- Open your web browser
+- Go to: `http://localhost:3001`
+- For the admin dashboard: `http://localhost:3001/dashboard`
+
+**🎉 That's it!** LANStreamer should now be running and ready to detect your audio devices.
+
+---
+
+### 🔧 Advanced Development Mode
+
+**For developers or advanced users who want auto-refresh:**
+```bash
+# Start with live reload (auto-refreshes when you edit files)
+npm run dev:live
+```
+Then access: `http://localhost:3002` (BrowserSync with auto-refresh)
+
+### ❓ Troubleshooting Quick Start
+
+**Problem: "npm not found"**
+- Solution: Install Node.js from [nodejs.org](https://nodejs.org/)
+
+**Problem: "git not found"**
+- Solution: Install Git from [git-scm.com](https://git-scm.com/)
+
+**Problem: "Port 3001 already in use"**
+- Solution: Close other applications using port 3001, or edit `.env` to change `PORT=3001` to another port
+
+**Problem: "No audio devices detected"**
+- Solution: Ensure your microphone/audio device is connected and working in your system settings
+
+**Need more help?** Check the [Installation Guides](docs/guides/README.md) for detailed troubleshooting.
+
+---
+
+### 🎯 What to Expect After Installation
+
+**First Time Opening LANStreamer:**
+
+1. **Dashboard Overview**: You'll see the main control panel with system status
+2. **Audio Device Detection**: LANStreamer automatically scans for available audio devices
+3. **Icecast & FFmpeg Check**: The system verifies required components are installed
+4. **Stream Management**: Create and manage audio streams from detected devices
+
+**Typical First-Use Workflow:**
+
+1. **Check System Status**: Ensure all components show "✅ Ready"
+2. **Browse Audio Devices**: See what microphones/inputs are detected
+3. **Create Your First Stream**:
+   - Click "Start New Stream"
+   - Select an audio device (e.g., your microphone)
+   - Give it a name (e.g., "Main Audio")
+   - Click "Start Stream"
+4. **Test the Stream**:
+   - Go to `http://localhost:3001/streams`
+   - You should see your stream listed
+   - Click "Play" to test audio playback
+5. **Share with Others**: Other devices on your network can access the same URL to listen
+
+**For Network Access:**
+- Find your computer's IP address (e.g., `192.168.1.100`)
+- Others can access: `http://192.168.1.100:3001/streams`
+- Perfect for meetings, events, or presentations!
 
 ### 🔄 Live Reload Development
 

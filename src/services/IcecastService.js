@@ -2049,15 +2049,10 @@ class IcecastService {
     if (!this.configPath) {
       // Try to find config path if not set
       const searchResults = await this.searchForIcecastInstallations();
-      if (searchResults.found && searchResults.installations.length > 0) {
-        // Look for a Windows installation with config file
-        const windowsInstall = searchResults.installations.find(install => 
-          install.platform === 'win32' && install.path.includes('Program Files')
-        );
-        if (windowsInstall) {
-          const basePath = path.dirname(windowsInstall.path);
-          this.configPath = path.join(basePath, 'icecast.xml');
-        }
+      if (searchResults.installed && searchResults.installationPath) {
+        // Use the found installation path to locate config file
+        const basePath = searchResults.installationPath;
+        this.configPath = path.join(basePath, 'icecast.xml');
       }
       
       if (!this.configPath) {
@@ -2075,7 +2070,7 @@ class IcecastService {
       // Basic validation - check for required elements
       const required = ['<hostname>', '<port>', '<source-password>', '<admin-password>'];
       const missing = required.filter(element => !configContent.includes(element));
-      
+
       if (missing.length > 0) {
         return {
           valid: false,
@@ -2083,12 +2078,47 @@ class IcecastService {
         };
       }
 
+      // Extract and validate hostname
+      const hostnameMatch = configContent.match(/<hostname>(.*?)<\/hostname>/);
+      const hostname = hostnameMatch ? hostnameMatch[1].trim() : null;
+
+      // Check if hostname is localhost (problematic for network access)
+      const isLocalhostHostname = hostname && (
+        hostname === 'localhost' ||
+        hostname === '127.0.0.1' ||
+        hostname === '::1'
+      );
+
+      // Get current machine's IP for comparison
+      const os = await import('os');
+      const networkInterfaces = os.networkInterfaces();
+      const localIPs = [];
+      for (const interfaceName in networkInterfaces) {
+        const interfaces = networkInterfaces[interfaceName];
+        if (interfaces) {
+          for (const iface of interfaces) {
+            if (iface.family === 'IPv4' && !iface.internal) {
+              localIPs.push(iface.address);
+            }
+          }
+        }
+      }
+
       // Check for the log directory fix (paths starting with ./)
       const hasFixedPaths = configContent.includes('./logs/') || configContent.includes('.\\logs\\');
-      
+
+      const warnings = [];
+      if (isLocalhostHostname && localIPs.length > 0) {
+        warnings.push(`Hostname is set to '${hostname}' which prevents network access. Consider using your IP address: ${localIPs[0]} for network streaming.`);
+      }
+
       return {
         valid: true,
         hasFixedPaths,
+        hostname: hostname,
+        isLocalhostHostname: isLocalhostHostname,
+        suggestedIP: localIPs[0] || null,
+        warnings: warnings,
         message: hasFixedPaths ? 'Configuration includes log path fix' : 'Configuration valid'
       };
 
