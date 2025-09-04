@@ -97,8 +97,8 @@ class IcecastService {
     try {
       const configPath = this.getDeviceConfigPath()
       const configDir = path.dirname(configPath)
-      
-      // Ensure config directory exists
+    
+    // Ensure config directory exists
       await fs.ensureDir(configDir)
       
       const configData = {
@@ -141,7 +141,7 @@ class IcecastService {
       
       logger.icecast('Saved path validation successful', { path: exePath, version })
       return true
-    } catch (error) {
+        } catch (error) {
       logger.warn('Saved path validation failed', { path: exePath, error: error.message })
       return false
     }
@@ -169,7 +169,7 @@ class IcecastService {
       await this.initPromise;
       this.state = 'initialized';
       logger.icecast('Icecast Service initialized successfully');
-    } catch (error) {
+        } catch (error) {
       this.state = 'error';
       this.initPromise = null; // Allow retry
       throw error;
@@ -250,10 +250,10 @@ class IcecastService {
           }
         } catch (error) {
           logger.debug(`Detection strategy failed: ${error.message}`);
-          continue;
-        }
-      }
-
+                  continue;
+                }
+              }
+              
       throw ErrorFactory.icecast(
         'Icecast installation not found. Please install Icecast or set ICECAST_EXE_PATH environment variable.',
         ErrorCodes.ICECAST_NOT_INSTALLED,
@@ -276,10 +276,10 @@ class IcecastService {
       }
 
       const version = await this._getIcecastVersion(paths.exe);
-      return {
+            return {
         isValid: true,
         paths,
-        version,
+              version,
         source
       };
     } catch (error) {
@@ -430,7 +430,7 @@ class IcecastService {
   async _getIcecastVersion(exePath) {
     try {
       const { stdout } = await execAsync(`"${exePath}" -v`);
-      const versionMatch = stdout.match(/Icecast ([^\s]+)/);
+        const versionMatch = stdout.match(/Icecast ([^\s]+)/);
       return versionMatch ? versionMatch[1] : 'unknown';
     } catch (error) {
       throw ErrorFactory.process(
@@ -472,15 +472,15 @@ class IcecastService {
     try {
       const installation = await this.detectInstallation();
 
-      return {
+        return {
         installed: installation.isValid,
         version: installation.version,
         path: installation.paths.exe,
         configPath: installation.paths.config,
         accessLogPath: installation.paths.accessLog,
         errorLogPath: installation.paths.errorLog,
-        platform: process.platform
-      };
+          platform: process.platform
+        };
     } catch (error) {
       logger.warn('Installation check failed:', error.message);
       return {
@@ -567,20 +567,20 @@ class IcecastService {
         version: null,
         port: config.icecast.port
       };
-    } catch (installError) {
+      } catch (installError) {
       logger.warn('Icecast installation check failed:', installError.message);
-      return {
-        installed: false,
-        running: false,
-        status: 'not-installed',
-        uptime: 0,
-        version: null,
-        port: config.icecast.port,
-        error: installError.message
+        return {
+          installed: false,
+          running: false,
+          status: 'not-installed',
+          uptime: 0,
+          version: null,
+          port: config.icecast.port,
+          error: installError.message
       };
-    }
-  }
-
+        }
+      }
+      
   async getStatus() {
     try {
       // Check installation first
@@ -600,14 +600,14 @@ class IcecastService {
 
       // Try to get stats from admin interface
       try {
-        const response = await fetch(`http://${config.icecast.host}:${config.icecast.port}/admin/stats.xml`, {
-          timeout: 5000,
-          headers: {
-            'Authorization': `Basic ${Buffer.from(`admin:${config.icecast.adminPassword}`).toString('base64')}`
-          }
+      const response = await fetch(`http://${config.icecast.host}:${config.icecast.port}/admin/stats.xml`, {
+        timeout: 5000,
+        headers: {
+          'Authorization': `Basic ${Buffer.from(`admin:${config.icecast.adminPassword}`).toString('base64')}`
+        }
         });
 
-        if (!response.ok) {
+      if (!response.ok) {
           logger.warn(`HTTP request failed with status ${response.status}, server may still be starting up`);
           return this._createStatusResponse(installationCheck, true, 'starting');
         }
@@ -697,7 +697,7 @@ class IcecastService {
         'C:\\icecast',
         'C:\\icecast2'
       ];
-
+      
       // Add environment-based paths
       if (process.env.ProgramFiles) {
         paths.push(path.join(process.env.ProgramFiles, 'Icecast'));
@@ -742,7 +742,7 @@ class IcecastService {
       const installation = await this._checkInstallationPath(searchPath);
       if (installation.found) {
         Object.assign(results, installation);
-        break;
+              break;
       }
     }
     

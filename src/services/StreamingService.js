@@ -20,8 +20,8 @@ class StreamingService {
    * @returns {object} Stream information
    */
   async startStream(streamConfig) {
-    if (!streamConfig || !streamConfig.deviceId) {
-      throw new Error('Invalid stream configuration: deviceId is required')
+    if (!streamConfig || (!streamConfig.deviceId && !streamConfig.inputFile)) {
+      throw new Error('Invalid stream configuration: deviceId or inputFile is required')
     }
 
     const streamId = streamConfig.id || `stream_${Date.now()}`
@@ -31,15 +31,17 @@ class StreamingService {
     }
 
     try {
-      logger.info(`Starting complete stream: ${streamId} for device: ${streamConfig.deviceId}`)
-      
+      const inputSource = streamConfig.inputFile ? `file: ${streamConfig.inputFile}` : `device: ${streamConfig.deviceId}`
+      logger.info(`Starting complete stream: ${streamId} for ${inputSource}`)
+
       // Start FFmpeg process
       const ffmpegProcess = await this.startFFmpegProcess(streamId, streamConfig)
-      
+
       // Store stream information
       this.activeStreams[streamId] = {
         id: streamId,
         deviceId: streamConfig.deviceId,
+        inputFile: streamConfig.inputFile,
         name: streamConfig.name || `Stream ${streamId}`,
         status: 'running',
         ffmpegProcess: ffmpegProcess,
@@ -111,17 +113,36 @@ class StreamingService {
    * @returns {Array} Command line arguments
    */
   buildFFmpegArgs(streamId, streamConfig) {
-    const args = [
-      '-f', 'dshow',                    // DirectShow input format
-      '-i', `audio="${streamConfig.deviceId}"`, // Audio input device
-      '-acodec', 'mp3',                 // Audio codec
-      '-ab', '128k',                    // Audio bitrate
-      '-ar', '44100',                   // Sample rate
-      '-ac', '2',                       // Audio channels
-      '-f', 'mp3',                      // Output format
-      '-',                              // Output to stdout
-      '-loglevel', 'error'              // Only show errors
-    ]
+    let args = []
+
+    // Check if we're streaming from a file or device
+    if (streamConfig.inputFile) {
+      // File input mode
+      args = [
+        '-re',                          // Read input at native frame rate
+        '-i', streamConfig.inputFile,   // Input file
+        '-acodec', 'mp3',               // Audio codec
+        '-ab', '128k',                  // Audio bitrate
+        '-ar', '44100',                 // Sample rate
+        '-ac', '2',                     // Audio channels
+        '-f', 'mp3',                    // Output format
+        `icecast://source:hackme@localhost:8000/stream`, // Icecast URL
+        '-loglevel', 'info'             // Show info level logs
+      ]
+    } else {
+      // Device input mode (original)
+      args = [
+        '-f', 'dshow',                    // DirectShow input format
+        '-i', `audio="${streamConfig.deviceId}"`, // Audio input device
+        '-acodec', 'mp3',                 // Audio codec
+        '-ab', '128k',                    // Audio bitrate
+        '-ar', '44100',                   // Sample rate
+        '-ac', '2',                       // Audio channels
+        '-f', 'mp3',                      // Output format
+        `icecast://source:hackme@localhost:8000/stream`, // Icecast URL
+        '-loglevel', 'info'               // Show info level logs
+      ]
+    }
 
     return args
   }
