@@ -2,17 +2,22 @@
 
 ## 🚨 CURRENT ACTIVE TASKS
 
-### 🎯 Phase 1: Smart Device Config System (IN PROGRESS)
+### 🎯 Phase 1: Smart Device Config System (COMPLETE ✅)
 - [x] **Device Config Implementation**
   - [x] Smart initialization with device-specific config storage
   - [x] Config location: `LANStreamer/config/device-config.json` (project-based)
   - [x] Path validation and self-healing system
   - [x] Fast startup when config is valid, auto-detect when invalid
-- [ ] **Phase 2: Browse for Icecast UI Button**
-  - [ ] Add "Browse for Icecast" button when installation not found
-  - [ ] File browser integration for root folder selection
-  - [ ] Auto-detect all paths from selected root folder
-  - [ ] Update device config with user-selected path
+- [x] **Phase 2: Browse for Icecast UI Button**
+  - [x] Add "Browse for Icecast" button when installation not found
+  - [x] File browser integration for root folder selection
+  - [x] Auto-detect all paths from selected root folder
+  - [x] Update device config with user-selected path
+- [x] **Code Cleanup & Optimization**
+  - [x] Major IcecastService.js cleanup (2266 → 2024 lines, 10.7% reduction)
+  - [x] Consolidated path detection logic with shared helpers
+  - [x] Simplified getStatus method (113 → 40 lines)
+  - [x] Fixed service state management for error recovery
 - [ ] **Phase 3: UI Cleanup & Optimization**
   - [ ] Remove redundant "Icecast Installation Detected" green section
   - [ ] Remove unnecessary buttons near Icecast status
@@ -23,9 +28,20 @@
   - [ ] Auto-refresh UI when installation status changes
   - [ ] Remove need for manual browser refresh
 
-### � UI/UX Improvements (HIGH PRIORITY)
+### 🔧 Recent Fixes & Improvements (COMPLETED)
+- [x] **Service State Management Fix**
+  - [x] Fixed error state recovery - service can now re-initialize after errors
+  - [x] Eliminated "Service is in error state" blocking issue
+  - [x] Improved ensureInitialized() to allow recovery from error state
+- [x] **Code Quality Improvements**
+  - [x] Reduced IcecastService.js by 242 lines (10.7% reduction)
+  - [x] Extracted helper methods for better maintainability
+  - [x] Consolidated duplicate validation logic
+  - [x] Improved error handling and logging
+
+### 🎯 Next Priority: UI/UX Improvements (HIGH PRIORITY)
 - [ ] **Error State Improvements**
-  - [ ] Primary action: "Browse for Icecast" button
+  - [x] Primary action: "Browse for Icecast" button ✅
   - [ ] Secondary action: Link to simplified installation guide
   - [ ] Better messaging for expected user actions
   - [ ] Auto-refresh when installation is restored

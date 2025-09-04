@@ -221,13 +221,8 @@ class IcecastService {
    * Ensure service is initialized before operations
    */
   async ensureInitialized() {
-    if (this.state === 'uninitialized') {
+    if (this.state === 'uninitialized' || this.state === 'error') {
       await this.initialize();
-    } else if (this.state === 'error') {
-      throw ErrorFactory.icecast(
-        'Service is in error state. Please check logs and restart.',
-        ErrorCodes.ICECAST_NOT_INSTALLED
-      );
     }
   }
 
