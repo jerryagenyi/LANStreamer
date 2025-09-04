@@ -3,9 +3,13 @@
  * Automatically captures screenshots of the dashboard and streams pages
  */
 
-const puppeteer = require('puppeteer');
-const fs = require('fs');
-const path = require('path');
+import puppeteer from 'puppeteer';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 class ScreenshotGenerator {
     constructor() {
@@ -184,21 +188,19 @@ class ScreenshotGenerator {
     }
 }
 
-// CLI usage
-if (require.main === module) {
-    const generator = new ScreenshotGenerator();
-    
-    generator.generateAll()
-        .then((screenshots) => {
-            console.log('\n🎉 Screenshot generation complete!');
-            console.log('Generated files:');
-            screenshots.forEach(file => console.log(`  - ${file}`));
-            process.exit(0);
-        })
-        .catch((error) => {
-            console.error('\n❌ Screenshot generation failed:', error.message);
-            process.exit(1);
-        });
-}
+// CLI usage - Always run when script is executed directly
+const generator = new ScreenshotGenerator();
 
-module.exports = ScreenshotGenerator;
+generator.generateAll()
+    .then((screenshots) => {
+        console.log('\n🎉 Screenshot generation complete!');
+        console.log('Generated files:');
+        screenshots.forEach(file => console.log(`  - ${file}`));
+        process.exit(0);
+    })
+    .catch((error) => {
+        console.error('\n❌ Screenshot generation failed:', error.message);
+        process.exit(1);
+    });
+
+export default ScreenshotGenerator;
