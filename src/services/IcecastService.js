@@ -485,9 +485,9 @@ class IcecastService {
         configPath: installation.paths.config,
         accessLogPath: installation.paths.accessLog,
         errorLogPath: installation.paths.errorLog,
-            platform: process.platform
-          };
-        } catch (error) {
+        platform: process.platform
+      };
+    } catch (error) {
       logger.warn('Installation check failed:', error.message);
       return {
         installed: false,
@@ -499,194 +499,12 @@ class IcecastService {
         platform: process.platform,
         error: error.message
       };
-        }
-      }
-
-      // Step 2: Check for legacy customPath (deprecated but still supported)
-      if (config.icecast.customPath) {
-        const icecastPath = config.icecast.customPath;
-        const exeName = process.platform === 'win32' ? 'icecast.exe' : 'icecast';
-        const fullPath = path.join(icecastPath, exeName);
-
-        try {
-          await fs.access(fullPath, fs.constants.X_OK);
-          const { stdout } = await execAsync(`"${fullPath}" -v`);
-          const versionMatch = stdout.match(/Icecast ([^\s]+)/);
-          const version = versionMatch ? versionMatch[1] : 'unknown';
-
-          logger.icecast('Icecast installation verified via legacy custom path', { version, path: fullPath });
-          return {
-            installed: true,
-            version,
-            path: fullPath,
-            platform: process.platform
-          };
-        } catch (error) {
-          logger.icecast(`Legacy custom path check failed: ${fullPath}. Attempting default search.`, { error: error.message });
-        }
-      }
-
-      // Step 2: Search for the executable in common system-wide locations based on the platform
-      let commonPaths;
-      let exeName = 'icecast';
-
-      if (process.platform === 'win32') {
-        exeName = 'icecast.exe';
-        commonPaths = [
-          path.join(process.env.ProgramFiles, 'Icecast', exeName),
-          path.join(process.env['ProgramFiles(x86)'], 'Icecast', exeName),
-          path.join(process.env.ProgramFiles, 'Icecast2', exeName),
-          path.join(process.env['ProgramFiles(x86)'], 'Icecast2', exeName),
-          'C:\\icecast\\icecast.exe',
-          'C:\\icecast2\\icecast.exe',
-          // Add bin subdirectories where executables are typically stored
-          'C:\\Program Files\\Icecast\\bin\\icecast.exe',
-          'C:\\Program Files (x86)\\Icecast\\bin\\icecast.exe',
-          'C:\\Program Files\\Icecast2\\bin\\icecast.exe',
-          'C:\\Program Files (x86)\\Icecast2\\bin\\icecast.exe'
-        ];
-      } else if (process.platform === 'darwin') { // macOS
-        commonPaths = [
-          '/Applications/Icecast/icecast',
-          '/usr/local/bin/icecast',
-          '/opt/local/bin/icecast',
-          '/usr/bin/icecast'
-        ];
-      } else if (['linux', 'freebsd', 'openbsd'].includes(process.platform)) { // Unix-like
-        commonPaths = [
-          '/usr/local/bin/icecast',
-          '/usr/bin/icecast',
-          '/opt/icecast/icecast',
-          '/bin/icecast'
-        ];
-      } else {
-        // Platform not supported or no common paths to check
-        logger.icecast('Platform not supported for automatic installation check', { platform: process.platform });
-        return {
-          installed: false,
-          version: null,
-          path: null,
-          platform: process.platform
-        };
-      }
-
-      // Check if executable exists in common paths
-      for (const icecastPath of commonPaths) {
-        try {
-          await fs.access(icecastPath);
-          
-          // Try to get version
-          try {
-            const { stdout } = await execAsync(`"${icecastPath}" -v`);
-            const versionMatch = stdout.match(/Icecast ([^\s]+)/);
-            const version = versionMatch ? versionMatch[1] : 'unknown';
-
-            // Set paths for this installation
-            this.exePath = icecastPath;
-            
-            // Try to find config and log files in common locations
-            if (process.platform === 'win32') {
-              const baseDir = path.dirname(icecastPath);
-              const parentDir = path.dirname(baseDir); // Go up from 'bin' to main directory
-              
-              // Check for config file
-              const possibleConfigPaths = [
-                path.join(parentDir, 'icecast.xml'),
-                path.join(parentDir, 'etc', 'icecast.xml'),
-                path.join(parentDir, 'conf', 'icecast.xml')
-              ];
-              
-              for (const configPath of possibleConfigPaths) {
-                try {
-                  await fs.access(configPath);
-                  this.configPath = configPath;
-                  break;
-                } catch (e) {
-                  continue;
-                }
-              }
-              
-              // Set log paths
-              if (this.configPath) {
-                const logDir = path.join(path.dirname(this.configPath), 'log');
-                this.accessLogPath = path.join(logDir, 'access.log');
-                this.errorLogPath = path.join(logDir, 'error.log');
-              }
-            }
-
-            logger.icecast(`Icecast installation verified on ${process.platform}`, { 
-              version, 
-              path: icecastPath,
-              configPath: this.configPath,
-              accessLogPath: this.accessLogPath,
-              errorLogPath: this.errorLogPath
-            });
-            
-            return {
-              installed: true,
-              version,
-              path: icecastPath,
-              configPath: this.configPath,
-              accessLogPath: this.accessLogPath,
-              errorLogPath: this.errorLogPath,
-              platform: process.platform
-            };
-          } catch (versionError) {
-            // Executable exists but version check failed
-            logger.icecast('Icecast executable found but version check failed', { path: icecastPath, error: versionError.message });
-            return {
-              installed: true,
-              version: 'unknown',
-              path: icecastPath,
-              platform: process.platform
-            };
-          }
-        } catch (accessError) {
-          continue; // Path not found, continue to the next one
-        }
-      }
-
-      // Step 3: Check if the executable is in the system's PATH
-      try {
-        const { stdout } = await execAsync(`${exeName} -v`);
-        const versionMatch = stdout.match(/Icecast ([^\s]+)/);
-        const version = versionMatch ? versionMatch[1] : 'unknown';
-        
-        // Set executable path
-        this.exePath = exeName;
-        
-        logger.icecast(`Icecast installation verified in PATH`, { version });
-        return {
-          installed: true,
-          version,
-          path: exeName,
-          platform: process.platform
-        };
-      } catch (pathError) {
-        // Installation not found
-        logger.icecast('Icecast executable not found in common paths or system PATH.');
-        return {
-          installed: false,
-          version: null,
-          path: null,
-          platform: process.platform
-        };
-      }
-    } catch (error) {
-      logger.error('Failed to perform Icecast installation check:', error);
-      return {
-        installed: false,
-        version: null,
-        path: null,
-        platform: process.platform,
-        error: error.message
-      };
     }
   }
 
   async ensureConfigDirectory() {
     try {
-      const configDir = path.dirname(this.configPath)
+      const configDir = path.dirname(this.paths.config)
       logger.icecast('Ensuring config directory exists', { configDir })
       await fs.ensureDir(configDir)
       logger.icecast('Config directory ready', { configDir })
