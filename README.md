@@ -4,6 +4,25 @@ A comprehensive solution that turns a standard PC into a multi-channel audio str
 
 For advanced users or for troubleshooting, **manual setup guides** are also available. If you have ideas and use-cases for improving this system, contact jerryagenyi@gmail.com.
 
+## Table of Contents
+
+- [Project Structure](#project-structure)
+- [Features](#features)
+- [How It Works](#how-it-works)
+- [Screenshots](#screenshots)
+- [Visual Concept Overview](#visual-concept-overview)
+- [Getting Started](#getting-started)
+  - [Prerequisites](#prerequisites)
+  - [Quick Installation Guide](#quick-installation-guide)
+  - [Audio Device Configuration](#audio-device-configuration)
+  - [🚀 Quick Start (5 Minutes)](#-quick-start-5-minutes)
+  - [🖥️ Desktop Shortcut Setup (Windows)](#️-desktop-shortcut-setup-windows)
+  - [❓ Troubleshooting Quick Start](#-troubleshooting-quick-start)
+- [Documentation](#documentation)
+- [Configuration](#configuration)
+- [Technology Stack](#technology-stack)
+- [Contributing](#contributing)
+
 ## Project Structure
 
 ```
@@ -372,7 +391,7 @@ The application uses environment variables. Create a `.env` file in the root dir
 ## Technology Stack
 
 - **Backend**: Node.js + Express.js
-- **Frontend**: Vanilla JavaScript + HTML/CSS
+- **Frontend**: Vanilla JavaScript classes + HTML/CSS
 - **Real-time Communication**: WebSockets
 - **Audio Processing**: FFmpeg
 - **Streaming Server**: Icecast
