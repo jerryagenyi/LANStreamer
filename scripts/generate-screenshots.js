@@ -62,17 +62,17 @@ class ScreenshotGenerator {
      */
     async waitForServer() {
         console.log('⏳ Waiting for LANStreamer server to be ready...');
-        
+
         let attempts = 0;
-        const maxAttempts = 30; // 30 seconds
-        
+        const maxAttempts = 10; // 10 seconds should be enough
+
         while (attempts < maxAttempts) {
             try {
-                const response = await this.page.goto(this.baseUrl, { 
-                    waitUntil: 'networkidle0',
-                    timeout: 5000 
+                const response = await this.page.goto(`${this.baseUrl}/api/health`, {
+                    waitUntil: 'domcontentloaded',
+                    timeout: 3000
                 });
-                
+
                 if (response && response.ok()) {
                     console.log('✅ Server is ready!');
                     return true;
@@ -80,13 +80,13 @@ class ScreenshotGenerator {
             } catch (error) {
                 // Server not ready yet
             }
-            
+
             attempts++;
             await new Promise(resolve => setTimeout(resolve, 1000));
             console.log(`⏳ Attempt ${attempts}/${maxAttempts}...`);
         }
-        
-        throw new Error('❌ Server did not become ready within 30 seconds');
+
+        throw new Error('❌ Server did not become ready within 10 seconds');
     }
 
     /**
@@ -96,14 +96,16 @@ class ScreenshotGenerator {
         console.log('📸 Taking dashboard screenshot...');
         
         try {
-            await this.page.goto(`${this.baseUrl}/`, { 
-                waitUntil: 'networkidle0',
-                timeout: 10000 
+            console.log(`Navigating to dashboard: ${this.baseUrl}/`);
+            await this.page.goto(`${this.baseUrl}/`, {
+                waitUntil: 'domcontentloaded',
+                timeout: 30000
             });
-            
-            // Wait for components to load
-            await this.page.waitForSelector('.bg-\\[var\\(--card-bg\\)\\]', { timeout: 5000 });
-            await new Promise(resolve => setTimeout(resolve, 2000)); // Extra wait for animations
+
+            console.log('Waiting for dashboard components to load...');
+            // Wait for components to load - use a more generic selector
+            await this.page.waitForSelector('body', { timeout: 10000 });
+            await new Promise(resolve => setTimeout(resolve, 3000)); // Extra wait for animations
             
             const screenshotPath = path.join(this.outputDir, 'dashboard.png');
             await this.page.screenshot({
@@ -125,16 +127,20 @@ class ScreenshotGenerator {
      */
     async screenshotStreams() {
         console.log('📸 Taking streams page screenshot...');
-        
+
         try {
-            await this.page.goto(`${this.baseUrl}/streams`, { 
-                waitUntil: 'networkidle0',
-                timeout: 10000 
+            console.log(`Navigating to streams page: ${this.baseUrl}/streams.html`);
+            await this.page.goto(`${this.baseUrl}/streams.html`, {
+                waitUntil: 'domcontentloaded',
+                timeout: 30000
             });
-            
-            // Wait for page to load
-            await this.page.waitForSelector('body', { timeout: 5000 });
-            await new Promise(resolve => setTimeout(resolve, 2000)); // Extra wait for animations
+
+            console.log('Waiting for streams page to load...');
+            // Wait for page to load and streams to populate
+            await this.page.waitForSelector('body', { timeout: 10000 });
+            console.log('Waiting for streams container...');
+            await this.page.waitForSelector('#streams-container', { timeout: 10000 });
+            await new Promise(resolve => setTimeout(resolve, 4000)); // Extra wait for streams to load
             
             const screenshotPath = path.join(this.outputDir, 'streams.png');
             await this.page.screenshot({

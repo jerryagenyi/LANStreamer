@@ -25,12 +25,12 @@
   },
   "stop_test_stream_1757017547271": {
     "id": "stop_test_stream_1757017547271",
-    "deviceId": "logitech-hd-pro-webcam-c910",
+    "deviceId": "ps-input-hd-pro-webcam-c910",
     "name": "Stop Status Test",
     "config": {
       "id": "stop_test_stream_1757017547271",
       "name": "Stop Status Test",
-      "deviceId": "logitech-hd-pro-webcam-c910",
+      "deviceId": "ps-input-hd-pro-webcam-c910",
       "bitrate": 192
     },
     "createdAt": "2025-09-04T20:25:47.351Z"
