@@ -35,11 +35,11 @@ icecast.exe -v
 
 # Start Icecast
 cd "C:\Program Files (x86)\Icecast"
-icecast.exe -c icecast.xml
+icecast.bat
 
 # Test web interface
-# Open: http://localhost:8000/admin/
-# Login: admin / hackme (change this!)
+Open: http://localhost:8000/admin/
+Login: admin / hackme (change this!)
 ```
 
 ## 🔧 Configuration & Network Setup
@@ -88,16 +88,6 @@ icecast.exe -c icecast.xml
 The most common issue is Windows permission errors with relative paths. **Try these solutions in order:**
 
 #### **Step 1: Try Relative Paths First**
-**If this is what you have in `icecast.xml` (notice not preceding dot before the forward slash) :**
-```xml
-<paths>
-    <logdir>/log</logdir>
-    <webroot>/web</webroot>
-    <adminroot>/admin</adminroot>
-</paths>
-```
-
-**...then replace it with this (should be the default relative paths but...🤷🏼‍♂️):**
 ```xml
 <paths>
     <logdir>./log</logdir>
@@ -106,8 +96,7 @@ The most common issue is Windows permission errors with relative paths. **Try th
 </paths>
 ```
 
-#### **Step 2: If Relative Paths Don't Work, Use Absolute Paths**
-**If you still get errors, use full absolute paths:**
+**If you keep getting Log errors, replace the relative paths with full absolute paths:**
 ```xml
 <paths>
     <!-- Use full absolute paths to avoid Windows permission errors -->
@@ -117,44 +106,6 @@ The most common issue is Windows permission errors with relative paths. **Try th
 </paths>
 ```
 
-**Note about `mimetypes`:**
-- This file is optional and not present in all Icecast installations
-- Only include it if your installation actually has `mime.types` file
-- If you get errors about missing `mime.types`, comment out or remove that line
-
-**Common Error Example:**
-```
-Error: FATAL: could not open error logging (C:\Program Files (x86)\Icecast\log): No such file or directory
-```
-
-**This happens because:**
-- Windows permission restrictions on relative paths
-- Icecast can't create/access log files in relative directories
-- Solution: Always use full absolute paths in Windows installations
-
-## Common Issues & Solutions
-
-**"Address already in use" error**
-```bash
-# Something else is using port 8000
-netstat -ano | findstr :8000
-# Kill the process or change Icecast port in config
-```
-
-**Can't access admin interface**
-- Check if Icecast is running: `tasklist | findstr icecast` (Windows)
-- Try: http://localhost:8000/admin/ (login: admin/your-password)
-- Try: http://YOUR-IP:8000/admin/ for network access
-- Check firewall settings - allow port 8000
-
-**LANStreamer can't connect**
-- Verify source password in icecast.xml matches LANStreamer config
-- Check if Icecast is running and accessible
-- Make sure passwords were changed from default "hackme"
-
-**Windows Firewall Issues**
-- Allow Icecast through Windows Firewall on port 8000
-- Or temporarily disable firewall for testing
 
 ## 🌐 Accessing Icecast Admin Interface
 
@@ -187,7 +138,23 @@ netstat -ano | findstr :8000
 
 Edit `icecast.xml` and restart Icecast after changes.
 
-## Network Discovery
+## Common Icecast Issues & Solutions
+
+**"Address already in use" error**
+```bash
+# Something else is using port 8000
+netstat -ano | findstr :8000
+# Kill the process or change Icecast port in config
+```
+
+**Can't access Icecast admin interface**
+- Check if Icecast is running and accessible: `tasklist | findstr icecast` (Windows)
+- Try: http://localhost:8000/admin/ (login: admin/your-password)
+- Try: http://YOUR-IP:8000/admin/ for network access
+- Check firewall settings - allow Icecast through Windows Firewall on port 8000, or temporarily disable firewall for testing
+
+
+## LANStreamer Network Discovery
 **Good News:** LANStreamer automatically handles network discovery! When you configure Icecast with your IP address, LANStreamer will:
 - Automatically detect available streams
 - Display them in the web interface

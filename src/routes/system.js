@@ -474,8 +474,8 @@ router.get('/icecast/health', async (req, res, next) => {
  */
 router.get('/update-check', async (req, res, next) => {
   try {
-    // const updateInfo = await updateService.getUpdateInfo();
-    const updateInfo = { hasUpdate: false, currentVersion: '1.0.0', latestVersion: '1.0.0' };
+    const { updateService } = await import('../services/UpdateService.js');
+    const updateInfo = await updateService.getUpdateInfo();
     res.json({
       success: true,
       ...updateInfo
@@ -492,8 +492,8 @@ router.get('/update-check', async (req, res, next) => {
  */
 router.post('/update-check/force', async (req, res, next) => {
   try {
-    // const updateInfo = await updateService.checkForUpdates();
-    const updateInfo = { hasUpdate: false, currentVersion: '1.0.0', latestVersion: '1.0.0' };
+    const { updateService } = await import('../services/UpdateService.js');
+    const updateInfo = await updateService.checkForUpdates();
     res.json({
       success: true,
       ...updateInfo,
