@@ -58,38 +58,11 @@ echo  ✅ Streams Page: http://localhost:3001/streams
 echo.
 echo  💡 TIP: Start Icecast server before creating streams!
 echo.
+echo  ⚠️  IMPORTANT: DO NOT CLOSE THIS WINDOW - IT WILL STOP THE SERVER!
+echo  💡 YOU CAN MINIMISE THIS WINDOW TO KEEP THE SERVER RUNNING
+echo.
 echo  Press Ctrl+C to stop the server
 echo.
-
-:: Ask user if they want to start Icecast too
-echo  ❓ Do you want to start Icecast server as well? (y/n)
-set /p start_icecast="   Enter choice: "
-
-if /i "%start_icecast%"=="y" (
-    echo.
-    echo  🔍 Looking for Icecast installation...
-
-    :: Check common Icecast installation paths
-    set "icecast_path="
-    if exist "C:\Program Files (x86)\Icecast\icecast.exe" (
-        set "icecast_path=C:\Program Files (x86)\Icecast"
-    ) else if exist "C:\Program Files\Icecast\icecast.exe" (
-        set "icecast_path=C:\Program Files\Icecast"
-    )
-
-    if defined icecast_path (
-        echo  ✅ Found Icecast at: %icecast_path%
-        echo  🚀 Starting Icecast server...
-        echo.
-        start "Icecast Server" /D "%icecast_path%" icecast.exe -c icecast.xml
-        timeout /t 2 /nobreak >nul
-    ) else (
-        echo  ⚠️  Icecast not found in standard locations
-        echo  💡 You can start it manually later from its installation folder
-        echo.
-    )
-)
-
 echo  ═══════════════════════════════════════════════════════════════
 echo.
 

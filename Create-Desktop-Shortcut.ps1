@@ -1,4 +1,4 @@
-# LANStreamer Desktop Shortcut Creator
+﻿# LANStreamer Desktop Shortcut Creator
 # This script creates a desktop shortcut for the LANStreamer batch file
 
 param(
@@ -48,7 +48,7 @@ try {
     # Create shortcut
     $Shortcut = $WshShell.CreateShortcut($shortcutPath)
     $Shortcut.TargetPath = $batchFile
-    $Shortcut.WorkingDirectory = $currentDir
+    $Shortcut.WorkingDirectory = $currentDir.ToString()
     $Shortcut.Description = "Start LANStreamer Audio Streaming Server"
     
     # Try to set icon if PNG exists
