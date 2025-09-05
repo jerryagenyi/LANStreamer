@@ -49,7 +49,6 @@ echo 📋 FILES THAT WILL BE PRESERVED:
 echo    • .env file (your environment settings)
 echo    • data/ folder (stream configurations, event settings)
 echo    • logs/ folder (application logs and history)
-echo    • config/icecast.xml (Icecast server configuration)
 echo    • device-config.json (audio device preferences)
 echo.
 echo ⚠️  IMPORTANT: The update process will temporarily stop any running streams.
@@ -75,7 +74,6 @@ mkdir "%BACKUP_DIR%" 2>nul
 if exist "data" xcopy "data" "%BACKUP_DIR%\data\" /e /i /h /y >nul 2>&1
 if exist "logs" xcopy "logs" "%BACKUP_DIR%\logs\" /e /i /h /y >nul 2>&1
 if exist ".env" copy ".env" "%BACKUP_DIR%\" >nul 2>&1
-if exist "config\icecast.xml" copy "config\icecast.xml" "%BACKUP_DIR%\" >nul 2>&1
 if exist "device-config.json" copy "device-config.json" "%BACKUP_DIR%\" >nul 2>&1
 
 echo ✅ Backup created at: %BACKUP_DIR%
@@ -208,7 +206,7 @@ for /d %%i in (*) do (
 )
 
 for %%i in (*) do (
-    if /i not "%%i"=="Update LANStreamer.bat" if /i not "%%i"==".env" if /i not "%%i"=="icecast.xml" if /i not "%%i"=="device-config.json" (
+    if /i not "%%i"=="Update LANStreamer.bat" if /i not "%%i"==".env" if /i not "%%i"=="device-config.json" (
         echo    🗑️  Removing old %%i...
         del "%%i" 2>nul
     )
@@ -223,7 +221,6 @@ echo 🔄 Step 7/7: Restoring your data...
 if exist "%BACKUP_DIR%\data" xcopy "%BACKUP_DIR%\data" "data\" /e /i /h /y >nul 2>&1
 if exist "%BACKUP_DIR%\logs" xcopy "%BACKUP_DIR%\logs" "logs\" /e /i /h /y >nul 2>&1
 if exist "%BACKUP_DIR%\.env" copy "%BACKUP_DIR%\.env" "." >nul 2>&1
-if exist "%BACKUP_DIR%\icecast.xml" copy "%BACKUP_DIR%\icecast.xml" "config\" >nul 2>&1
 if exist "%BACKUP_DIR%\device-config.json" copy "%BACKUP_DIR%\device-config.json" "." >nul 2>&1
 
 echo ✅ Data restored
