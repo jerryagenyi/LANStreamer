@@ -15,8 +15,7 @@ For advanced users or for troubleshooting, **manual setup guides** are also avai
   - [Prerequisites](#prerequisites)
   - [Quick Installation Guide](#quick-installation-guide)
   - [Audio Device Configuration](#audio-device-configuration)
-  - [🚀 Quick Start (5 Minutes)](#-quick-start-5-minutes)
-  - [🖥️ Desktop Shortcut Setup (Windows)](#️-desktop-shortcut-setup-windows)
+  - [🚀 Quick Start](#-quick-start)
   - [❓ Troubleshooting Quick Start](#-troubleshooting-quick-start)
 - [Documentation](#documentation)
 - [Configuration](#configuration)
@@ -174,12 +173,7 @@ icecast.exe -v
 icecast -v
 ```
 
-**First-Time Setup Checklist:**
-- [ ] Node.js installed and `node --version` shows v18+
-- [ ] Git installed and `git --version` works
-- [ ] Audio device connected and working
-- [ ] Internet connection (for initial setup only)
-- [ ] FFmpeg and Icecast installed and accessible in system PATH
+
 
 ### Audio Device Configuration
 
@@ -188,9 +182,8 @@ LANStreamer automatically detects and works with **any audio devices** available
 #### For Simple Use Cases
 - **Single Audio Source**: Use your computer's built-in microphone or a USB microphone
 - **Basic Streaming**: Perfect for presentations, meetings, or simple audio broadcasting
-- **Demo Mode**: Optional test audio file for demonstrations (see [`assets/README.md`](assets/README.md))
 
-#### For Professional/Multi-Channel Applications
+#### USE CASE:For Professional/Multi-Channel Applications
 For advanced scenarios like **language interpretation** where you need multiple audio sources:
 
 1. **Audio Routing**: You're responsible for routing your audio sources to devices that LANStreamer can detect
@@ -206,85 +199,35 @@ If using **Dante Virtual Soundcard** for interpretation:
 
 > **📝 Note:** Detailed setup guides for specific hardware configurations are available in the [`manual-setup/`](manual-setup/) folder.
 
-### 🚀 Quick Start (5 Minutes)
+### 🚀 Quick Start
 
 **Step 1: Download LANStreamer**
 ```bash
-# Open Command Prompt (Windows) or Terminal (Mac/Linux)
 git clone https://github.com/jerryagenyi/LANStreamer.git
 cd LANStreamer
-```
-
-**Step 2: Initial Setup**
-```bash
-# Install dependencies and create necessary folders
 npm install
-npm run setup
 ```
 
-**Step 3: Configure Settings**
+**Step 2: Start LANStreamer**
 ```bash
-# Windows
-copy .env.example .env
-
-# Mac/Linux
-cp .env.example .env
-```
-> **📝 Note**: Edit the `.env` file to change default passwords before using in production!
-
-**Step 4: Start LANStreamer**
-```bash
-# Start the server (recommended for beginners)
-npm run dev
+npm start
 ```
 
-**Step 5: Easy Startup (Windows Users)**
+**Step 3: Open Browser**
+- Go to: `http://localhost:3001`
+
+**Step 5a: Easy Startup (Windows Users)**
 ```bash
 # Use the convenient batch file (recommended)
 double-click Start-LANStreamer.bat
 
-# Or create a desktop shortcut
+# Or create a desktop shortcut for one-click access
 powershell -ExecutionPolicy Bypass -File Create-Desktop-Shortcut.ps1
 ```
 
 > **📍 Important**: The batch file expects Icecast to be installed at `C:\Program Files (x86)\Icecast`. If your Icecast is installed elsewhere, you'll need to start it manually or modify the batch file path.
 
-**Step 5: Manual Startup (All Platforms)**
-```bash
-# Start LANStreamer Server first
-npm start
-
-# Then start Icecast Server (in a separate terminal)
-# Windows
-cd "C:\Program Files (x86)\Icecast"
-icecast.exe -c icecast.xml
-
-# macOS/Linux
-icecast -c /usr/local/etc/icecast.xml
-```
-
-**Step 6: Open in Browser**
-- Open your web browser
-- Go to: `http://localhost:3001`
-- For the admin dashboard: `http://localhost:3001/dashboard`
-
-**🎉 That's it!** LANStreamer should now be running and ready to detect your audio devices.
-
-> **💡 Pro Tip**: The `Start-LANStreamer.bat` file handles dependency installation, server startup, and can optionally start Icecast for you!
-
----
-
-
-
-### 🖥️ Desktop Shortcut Setup (Windows)
-
-**Create a Desktop Shortcut:**
-```powershell
-# Run this in PowerShell (as Administrator if needed)
-powershell -ExecutionPolicy Bypass -File Create-Desktop-Shortcut.ps1
-```
-
-**What the shortcut does:**
+**Desktop Shortcut Benefits:**
 - ✅ **One-click startup**: Double-click to start LANStreamer
 - ✅ **Dependency check**: Automatically installs npm packages if needed
 - ✅ **Icecast integration**: Option to start Icecast server automatically
@@ -294,7 +237,34 @@ powershell -ExecutionPolicy Bypass -File Create-Desktop-Shortcut.ps1
 **Additional Options:**
 - **Pin to Taskbar**: Right-click shortcut → "Pin to taskbar"
 - **Pin to Start Menu**: Right-click shortcut → "Pin to Start"
-- **Startup Folder**: Copy shortcut to startup folder for auto-start (optional)
+
+**Step 5b: Manual Startup (All Platforms)**
+```bash
+# Start LANStreamer Server first
+npm start
+
+# Then start Icecast Server (in a separate terminal)
+# Windows - navigate to bin folder
+cd "C:\Program Files (x86)\Icecast\bin"
+icecast.exe -c ..\icecast.xml
+
+# macOS/Linux
+icecast -c /usr/local/etc/icecast.xml
+```
+
+**Step 6: Open in Browser**
+- Open your web browser
+- Go to: `http://localhost:3001`
+
+**🎉 That's it!** LANStreamer should now be running and ready to detect your audio devices.
+
+> **💡 Pro Tip**: The `Start-LANStreamer.bat` file handles dependency installation, server startup, and can optionally start Icecast for you!
+
+---
+
+
+
+
 
 ### ❓ Troubleshooting Quick Start
 
@@ -343,8 +313,9 @@ powershell -ExecutionPolicy Bypass -File Create-Desktop-Shortcut.ps1
    - **Wait for**: "Server is listening on http://0.0.0.0:3001"
 
 2. **Start Icecast Server**:
-   - **Windows**: Navigate to `C:\Program Files (x86)\Icecast` and run `icecast.exe -c icecast.xml`
-   - **macOS/Linux**: Run `icecast -c /usr/local/etc/icecast.xml` (or your config path)
+   - **Windows**: Navigate to `C:\Program Files (x86)\Icecast\bin` and run `icecast.exe -c ..\icecast.xml`
+   - **Alternative**: From root folder: `"C:\Program Files (x86)\Icecast\bin\icecast.exe" -c "C:\Program Files (x86)\Icecast\icecast.xml"`
+   - **macOS/Linux**: Run `icecast -c /usr/local/etc/icecast.xml` (or your config path) [not confirmed yet]
    - **Batch File**: The `Start-LANStreamer.bat` can do this for you automatically
 
 3. **Check System Status**: Open `http://localhost:3001` and ensure all components show "✅ Ready"
@@ -367,7 +338,6 @@ powershell -ExecutionPolicy Bypass -File Create-Desktop-Shortcut.ps1
 **For Network Access:**
 - Find your computer's IP address (e.g., `192.168.1.100`)
 - Others can access: `http://192.168.1.100:3001/streams`
-- Perfect for meetings, events, or presentations!
 
 
 
@@ -376,6 +346,8 @@ powershell -ExecutionPolicy Bypass -File Create-Desktop-Shortcut.ps1
 If you wish to understand the core components or run the system without the web interface, see the guides in the [manual-setup](manual-setup/README.md) folder. The primary hardware guides are:
 - **XR18/Scarlett Users:** [LANStreamer-basic-xr18.md](manual-setup/LANStreamer-basic-xr18.md)
 - **DVS/Dante Users:** [LANStreamer-basic-dvs.md](manual-setup/LANStreamer-basic-dvs.md)
+
+> **📝Note:** the manual setup guide have not been updated. Instead I stopped working on the manual setup to focus on developing the app.
 
 ---
 
@@ -399,13 +371,5 @@ The application uses environment variables. Create a `.env` file in the root dir
 ## Contributing
 
 We welcome contributions! Fork the repository, make your changes, and create a pull request.
-
-**Development Setup:**
-```bash
-git clone https://github.com/YOUR-USERNAME/LANStreamer.git
-cd LANStreamer
-npm install
-npm run dev
-```
 
 For bug reports, include your OS, Node.js version, and steps to reproduce the issue.
