@@ -26,7 +26,11 @@ sudo apt install icecast2 -y
 
 ## Quick Test
 ```bash
-# Check if installed
+# Check if installed (Windows)
+cd "C:\Program Files (x86)\Icecast\bin"
+icecast.exe -v
+
+# Check if installed (macOS/Linux)
 icecast -v
 
 # Start Icecast (Windows)

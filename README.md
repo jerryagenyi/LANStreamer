@@ -132,7 +132,7 @@ The user-friendly page where listeners:
 **System Requirements:**
 - **Operating System**: Windows 10/11, macOS 10.15+, or Linux (Ubuntu 18.04+)
 - **Node.js**: Version 18 or higher ([Download here](https://nodejs.org/))
-- **Git**: For cloning the repository ([Download here](https://git-scm.com/))
+- **Git**: Only needed if using git clone method ([Download here](https://git-scm.com/)) - or download ZIP file instead
 - **Audio Input**: Any audio device (built-in microphone, USB microphone, audio interface, etc.)
 
 **Required Components (Manual Installation Required):**
@@ -178,6 +178,7 @@ sudo apt install icecast2
 ffmpeg -version
 
 # Check Icecast (Windows)
+cd "C:\Program Files (x86)\Icecast\bin"
 icecast.exe -v
 
 # Check Icecast (macOS/Linux)
@@ -213,11 +214,23 @@ If using **Dante Virtual Soundcard** for interpretation:
 ### 🚀 Quick Start
 
 **Step 1: Download LANStreamer**
+
+**Option A: Using Git (for developers)**
 ```bash
 git clone https://github.com/jerryagenyi/LANStreamer.git
 cd LANStreamer
 npm install
 ```
+
+**Option B: Download ZIP File (for everyone)**
+1. Go to: https://github.com/jerryagenyi/LANStreamer
+2. Click the green **"Code"** button
+3. Click **"Download ZIP"**
+4. Save the ZIP file to your computer (e.g., Downloads folder)
+5. Right-click the ZIP file and select **"Extract All"** or **"Extract Here"**
+6. Open the extracted `LANStreamer` folder
+7. Open Command Prompt or PowerShell in that folder
+8. Run: `npm install`
 
 **Step 2: Start LANStreamer**
 ```bash
