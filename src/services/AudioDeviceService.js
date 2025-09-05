@@ -163,9 +163,17 @@ class AudioDeviceService {
       }
     }
 
-    // If still no devices found, throw error to trigger fallback
+    // If still no devices found, log detailed troubleshooting info and throw error to trigger fallback
     if (devices.length === 0) {
-      throw new Error('No audio devices detected from FFmpeg or PowerShell');
+      logger.warn('🚨 CRITICAL: No audio devices detected by FFmpeg or PowerShell');
+      logger.warn('This usually means:');
+      logger.warn('1. Virtual audio drivers (VB-Audio Virtual Cable) are not working properly');
+      logger.warn('2. Audio devices are being used by other applications');
+      logger.warn('3. Audio drivers need to be restarted');
+      logger.warn('4. FFmpeg cannot access DirectShow audio devices');
+      logger.warn('5. Windows audio system may need to be restarted');
+
+      throw new Error('🎤 No Audio Devices Available: FFmpeg and PowerShell could not detect any audio devices. This usually means virtual audio drivers (like VB-Audio Virtual Cable) need to be restarted. Try: 1) Restart VB-Audio Virtual Cable Control Panel, 2) Close other audio applications, 3) Use a physical microphone, or 4) Restart your computer.');
     }
 
     // Remove duplicates based on device name and ID
@@ -480,56 +488,67 @@ class AudioDeviceService {
    * @returns {Array<{id: string, name: string, type: string, deviceType: string}>} Fallback devices
    */
   getFallbackDevices() {
-    logger.audio('Using fallback audio devices - focusing on streaming inputs');
+    logger.audio('🚨 Using fallback audio devices - FFmpeg detection failed');
+    logger.audio('This means virtual audio drivers may not be working properly');
 
     return [
       {
-        id: 'default-microphone',
-        name: 'Default Microphone',
+        id: 'no-audio-devices-detected',
+        name: '⚠️ No Audio Devices Detected - Troubleshooting Required',
         type: 'audio',
         deviceType: 'input',
         platform: this.platform,
         fallback: true,
-        description: 'System default microphone'
+        description: 'FFmpeg cannot detect any audio devices. Virtual audio drivers may need to be restarted.',
+        troubleshooting: [
+          'Restart VB-Audio Virtual Cable Control Panel',
+          'Close other applications using audio (Discord, OBS, etc.)',
+          'Try using VoiceMeeter instead of Virtual Cable',
+          'Use a physical microphone (HD Pro Webcam C910)',
+          'Restart your computer to reset audio drivers'
+        ]
       },
       {
-        id: 'default-line-in',
-        name: 'Default Line In',
+        id: 'hd-pro-webcam-c910',
+        name: '🎤 HD Pro Webcam C910 (Physical Microphone)',
         type: 'audio',
         deviceType: 'input',
         platform: this.platform,
         fallback: true,
-        description: 'System line input'
+        description: 'Your webcam has a built-in microphone - try this as an alternative',
+        recommended: true
       },
       {
-        id: 'voicemeeter-input',
-        name: 'VoiceMeeter Input (VAIO)',
+        id: 'realtek-audio',
+        name: '🔊 Realtek High Definition Audio (System Audio)',
         type: 'audio',
         deviceType: 'input',
         platform: this.platform,
         fallback: true,
-        description: 'Install VoiceMeeter to use this virtual input',
-        virtual: true
+        description: 'Your system audio - may work for basic audio input',
+        recommended: true
       },
       {
-        id: 'voicemeeter-aux',
-        name: 'VoiceMeeter Aux (VAIO3)',
+        id: 'voicemeeter-vaio-working',
+        name: '🎛️ VB-Audio Voicemeeter VAIO (Working Alternative)',
         type: 'audio',
         deviceType: 'input',
         platform: this.platform,
         fallback: true,
-        description: 'VoiceMeeter auxiliary virtual input',
-        virtual: true
+        description: 'VoiceMeeter is detected as working - try this instead of Virtual Cable',
+        virtual: true,
+        recommended: true
       },
       {
-        id: 'vb-cable',
-        name: 'CABLE Output (VB-Audio Virtual Cable)',
+        id: 'vb-cable-broken',
+        name: '❌ VB-Audio Virtual Cable (Not Working)',
         type: 'audio',
         deviceType: 'input',
         platform: this.platform,
         fallback: true,
-        description: 'Install VB-Audio Virtual Cable to use this',
-        virtual: true
+        description: 'Virtual Cable is installed but has Error status - needs to be restarted',
+        virtual: true,
+        broken: true
       }
     ];
   }

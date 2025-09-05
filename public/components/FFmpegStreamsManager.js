@@ -84,7 +84,19 @@ class FFmpegStreamsManager {
             const data = await response.json();
 
             // Handle both old format (array) and new format (object with devices array)
-            this.audioDevices = data.devices || data || [];
+            const devices = data.devices || data || [];
+
+            // Filter out duplicate devices by name and type
+            const uniqueDevices = devices.filter((device, index, self) => {
+                return index === self.findIndex(d =>
+                    d.name === device.name &&
+                    d.deviceType === device.deviceType
+                );
+            });
+
+            this.audioDevices = uniqueDevices;
+
+            console.log(`Loaded ${this.audioDevices.length} unique audio devices`);
         } catch (error) {
             console.error('Failed to load audio devices:', error);
             this.audioDevices = [];
@@ -147,7 +159,8 @@ class FFmpegStreamsManager {
                 this.render();
                 
                 // Generate stream URL and show success message
-                const streamUrl = `http://localhost:8000/${streamConfig.id || 'stream'}`;
+                const currentHost = window.location.hostname;
+                const streamUrl = `http://${currentHost}:8000/${streamConfig.id || 'stream'}`;
                 this.showNotification(`Stream started successfully! Stream is now available in the list below.`, 'success');
             } else {
                 throw new Error(data.error || 'Failed to start stream');
@@ -201,7 +214,7 @@ class FFmpegStreamsManager {
     }
 
     /**
-     * Restart a stopped stream
+     * Start a stopped stream (backend uses existing config)
      */
     async restartStream(streamId) {
         try {
@@ -218,13 +231,13 @@ class FFmpegStreamsManager {
             if (data.message === 'Stream restarted successfully') {
                 await this.loadStreams();
                 this.render();
-                this.showNotification('Stream restarted successfully', 'success');
+                this.showNotification('Stream started successfully', 'success');
             } else {
                 throw new Error(data.error || 'Failed to restart stream');
             }
         } catch (error) {
-            console.error('Failed to restart stream:', error);
-            this.showNotification(`Failed to restart stream: ${error.message}`, 'error');
+            console.error('Failed to start stream:', error);
+            this.showNotification(`Failed to start stream: ${error.message}`, 'error');
         }
     }
 
@@ -233,7 +246,10 @@ class FFmpegStreamsManager {
      */
     async stopAllStreams() {
         try {
-            const runningStreams = this.streams.filter(stream => stream.status === 'running');
+            // Safely filter running streams with null checks
+            const runningStreams = (this.activeStreams || []).filter(stream =>
+                stream && stream.status === 'running'
+            );
 
             if (runningStreams.length === 0) {
                 this.showNotification('No running streams to stop', 'info');
@@ -254,14 +270,18 @@ class FFmpegStreamsManager {
                 }
             });
 
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+
             const data = await response.json();
 
-            if (data.success) {
+            if (data && data.success) {
                 await this.loadStreams();
                 this.render();
-                this.showNotification(data.message, 'success');
+                this.showNotification(data.message || 'All streams stopped successfully', 'success');
             } else {
-                throw new Error(data.message || 'Failed to stop all streams');
+                throw new Error(data?.message || data?.error || 'Failed to stop all streams');
             }
         } catch (error) {
             console.error('Failed to stop all streams:', error);
@@ -425,7 +445,7 @@ class FFmpegStreamsManager {
                     modal.remove();
                     await this.loadStreams();
                     this.render();
-                    this.showNotification('Stream updated successfully', 'success');
+                    this.showNotification('Stream updated. Device reset — click Start to begin streaming.', 'success');
                 } else {
                     throw new Error(result.error || 'Failed to update stream');
                 }
@@ -678,7 +698,8 @@ class FFmpegStreamsManager {
                 uptime = '0s';
             }
 
-            const streamUrl = `http://localhost:8000/${stream.id}`;
+            const currentHost = window.location.hostname;
+            const streamUrl = `http://${currentHost}:8000/${stream.id}`;
 
             // Determine status styling and icon
             let statusColor, statusIcon, statusText, statusBg, errorMessage = '';
@@ -787,10 +808,10 @@ class FFmpegStreamsManager {
                                 <button
                                     onclick="ffmpegStreamsManager.restartStream('${stream.id}')"
                                     class="inline-flex items-center justify-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-green-300 bg-green-600/20 hover:bg-green-600/30 border border-green-600/30 transition-all duration-300"
-                                    title="Restart stream"
+                                    title="Start stream"
                                 >
                                     <span class="material-symbols-rounded text-sm">play_arrow</span>
-                                    Restart
+                                    Start
                                 </button>
                                 <button
                                     onclick="ffmpegStreamsManager.editStream('${stream.id}')"
@@ -841,7 +862,7 @@ class FFmpegStreamsManager {
                              <button
                                  onclick="ffmpegStreamsManager.restartStream('${stream.id}')"
                                  class="text-xs text-blue-400 hover:text-blue-300 transition-colors px-1"
-                                 title="Restart this stream"
+                                 title="Start this stream"
                              >
                                  <span class="material-symbols-rounded text-sm">restart_alt</span>
                              </button>
@@ -857,7 +878,7 @@ class FFmpegStreamsManager {
                     <div class="mt-4 p-3 bg-gray-500/10 border border-gray-500/20 rounded-lg">
                         <div class="flex items-center gap-2">
                             <span class="material-symbols-rounded text-sm text-gray-400">info</span>
-                            <span class="text-xs text-gray-400">Stream stopped. Use restart button to start streaming again.</span>
+                            <span class="text-xs text-gray-400">Stream stopped. Use Start to begin streaming.</span>
                         </div>
                     </div>
                 ` : `
@@ -865,7 +886,7 @@ class FFmpegStreamsManager {
                     <div class="mt-4 p-3 bg-red-500/10 border border-red-500/20 rounded-lg">
                         <div class="flex items-center gap-2">
                             <span class="material-symbols-rounded text-sm text-red-400">error</span>
-                            <span class="text-xs text-red-400">Stream encountered an error. Check logs or restart the stream.</span>
+                            <span class="text-xs text-red-400">Stream encountered an error. Check logs or click Edit to change device, then Start.</span>
                         </div>
                     </div>
                 `}
@@ -1027,11 +1048,19 @@ class FFmpegStreamsManager {
             submitBtn.disabled = true;
 
             try {
+                const streamName = document.getElementById('stream-name').value;
+                // Generate clean stream ID from name
+                const cleanId = streamName
+                    .toLowerCase()
+                    .replace(/[^a-z0-9\s]/g, '') // Remove special characters
+                    .replace(/\s+/g, '_') // Replace spaces with underscores
+                    .substring(0, 20); // Limit length
+
                 const streamConfig = {
-                    name: document.getElementById('stream-name').value,
+                    name: streamName,
                     deviceId: document.getElementById('stream-device').value,
                     bitrate: parseInt(document.getElementById('stream-bitrate').value),
-                    id: `stream_${Date.now()}`
+                    id: `${cleanId}_${Date.now()}`
                 };
 
                 modal.remove();

@@ -11,6 +11,7 @@ class EventManager {
             showAboutSubtitle: true
         };
         this.isLoading = false;
+        this.isCollapsed = true; // Collapsed by default
         this.init();
     }
 
@@ -163,25 +164,25 @@ class EventManager {
         container.innerHTML = `
             <div class="bg-[var(--card-bg)] border border-[var(--border-color)] rounded-2xl p-6 shadow-2xl shadow-black/30">
                 <div class="flex items-center justify-between mb-4">
-                    <h2 class="text-xl font-bold text-white">🎯 Event Configuration</h2>
-                    <div class="flex items-center gap-2">
-                        <span class="text-xs text-gray-400">Public Display</span>
-                    </div>
+                    <h2 class="text-lg font-bold text-white">🎯 Edit Event Details</h2>
+                    <button id="toggle-event-section" class="text-gray-400 hover:text-white transition-colors">
+                        <span class="material-symbols-rounded text-xl">${this.isCollapsed ? 'expand_more' : 'expand_less'}</span>
+                    </button>
                 </div>
 
-                <div class="space-y-4">
+                <div class="space-y-3 ${this.isCollapsed ? 'hidden' : ''}">
                     <!-- Event Configuration -->
-                    <div class="border-b border-[var(--border-color)] pb-4 mb-4">
-                        <h3 class="text-lg font-semibold text-white mb-4">📅 Event Details</h3>
+                    <div class="border-b border-[var(--border-color)] pb-3 mb-3">
+                        <h3 class="text-base font-semibold text-white mb-3">📅 Event Details</h3>
                         
-                        <div class="space-y-4">
+                        <div class="space-y-3">
                             <!-- Event Title -->
-                            <div class="space-y-2">
-                                <label class="text-sm font-medium text-gray-300">Event Title</label>
+                            <div class="space-y-1">
+                                <label class="text-xs font-medium text-gray-300">Event Title</label>
                                 <input type="text"
                                        id="event-title"
                                        maxlength="100"
-                                       class="w-full px-3 py-2 bg-[#111111] border border-[var(--border-color)] rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)]/50 focus:border-[var(--primary-color)]"
+                                       class="w-full px-3 py-2 bg-[#111111] border border-[var(--border-color)] rounded-lg text-sm text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)]/50 focus:border-[var(--primary-color)]"
                                        placeholder="Live Audio Streams"
                                        value="${this.eventDetails.eventTitle}">
                                 <div class="text-xs text-gray-500 mt-1">
@@ -190,11 +191,11 @@ class EventManager {
                             </div>
 
                             <!-- Event Subtitle -->
-                            <div class="space-y-2">
-                                <label class="text-sm font-medium text-gray-300">Event Subtitle</label>
+                            <div class="space-y-1">
+                                <label class="text-xs font-medium text-gray-300">Event Subtitle</label>
                                 <input type="text" 
                                        id="event-subtitle" 
-                                       class="w-full px-3 py-2 bg-[#111111] border border-[var(--border-color)] rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)]/50 focus:border-[var(--primary-color)]" 
+                                       class="w-full px-3 py-2 bg-[#111111] border border-[var(--border-color)] rounded-lg text-sm text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)]/50 focus:border-[var(--primary-color)]" 
                                        placeholder="Click play to listen to any available stream" 
                                        value="${this.eventDetails.eventSubtitle}">
                             </div>
@@ -202,9 +203,9 @@ class EventManager {
                     </div>
 
                     <!-- About Section Configuration -->
-                    <div class="border-t border-[var(--border-color)] pt-4 mt-4">
-                        <div class="flex items-center justify-between mb-4">
-                            <h3 class="text-lg font-semibold text-white">ℹ️ About Section</h3>
+                    <div class="border-t border-[var(--border-color)] pt-3 mt-3">
+                        <div class="flex items-center justify-between mb-3">
+                            <h3 class="text-base font-semibold text-white">ℹ️ About Section</h3>
                             <label class="relative inline-flex items-center cursor-pointer">
                                 <input type="checkbox" 
                                        id="show-about" 
@@ -214,11 +215,11 @@ class EventManager {
                             </label>
                         </div>
                         
-                        <div class="space-y-4">
+                        <div class="space-y-3">
                             <!-- About Subtitle -->
-                            <div class="space-y-2">
+                            <div class="space-y-1">
                                 <div class="flex items-center justify-between">
-                                    <label class="text-sm font-medium text-gray-300">About Subtitle</label>
+                                    <label class="text-xs font-medium text-gray-300">About Subtitle</label>
                                     <label class="relative inline-flex items-center cursor-pointer">
                                         <input type="checkbox" 
                                                id="show-about-subtitle" 
@@ -229,17 +230,17 @@ class EventManager {
                                 </div>
                                 <input type="text" 
                                        id="about-subtitle" 
-                                       class="w-full px-3 py-2 bg-[#111111] border border-[var(--border-color)] rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)]/50 focus:border-[var(--primary-color)]" 
+                                       class="w-full px-3 py-2 bg-[#111111] border border-[var(--border-color)] rounded-lg text-sm text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)]/50 focus:border-[var(--primary-color)]" 
                                        placeholder="About this event" 
                                        value="${this.eventDetails.aboutSubtitle}">
                             </div>
 
                             <!-- About Description -->
-                            <div class="space-y-2">
-                                <label class="text-sm font-medium text-gray-300">About Description</label>
+                            <div class="space-y-1">
+                                <label class="text-xs font-medium text-gray-300">About Description</label>
                                 <textarea id="about-description" 
                                           rows="3"
-                                          class="w-full px-3 py-2 bg-[#111111] border border-[var(--border-color)] rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)]/50 focus:border-[var(--primary-color)] resize-none" 
+                                          class="w-full px-3 py-2 bg-[#111111] border border-[var(--border-color)] rounded-lg text-sm text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)]/50 focus:border-[var(--primary-color)] resize-none" 
                                           placeholder="Welcome to LANStreamer - your local audio streaming platform. Listen to live audio streams from your network.">${this.eventDetails.aboutDescription}</textarea>
                             </div>
                         </div>
@@ -251,14 +252,6 @@ class EventManager {
                         <span class="material-symbols-rounded text-base">event</span>
                         <span id="save-event-button-text">Save Event Settings</span>
                     </button>
-
-                    <!-- Preview -->
-                    <div class="mt-6 p-4 bg-[#111111] border border-[var(--border-color)] rounded-lg">
-                        <h4 class="text-sm font-medium text-gray-300 mb-3">👁️ Public Preview</h4>
-                        <div class="space-y-2 text-sm">
-                            ${this.renderPreview()}
-                        </div>
-                    </div>
                 </div>
             </div>
         `;
@@ -302,14 +295,23 @@ class EventManager {
         return previews.join('');
     }
 
+    toggleCollapse() {
+        this.isCollapsed = !this.isCollapsed;
+        this.render();
+    }
+
     setupEventListeners() {
+        // Toggle collapse button
+        document.getElementById('toggle-event-section')?.addEventListener('click', () => {
+            this.toggleCollapse();
+        });
+
         // Event configuration fields
         const eventTitleInput = document.getElementById('event-title');
         if (eventTitleInput) {
             eventTitleInput.addEventListener('input', (e) => {
                 this.updateEventField('eventTitle', e.target.value);
                 this.updateCharacterCount('event-title-count', e.target.value.length, 100);
-                this.updatePreview();
             });
         }
 
@@ -340,7 +342,6 @@ class EventManager {
         if (showAboutToggle) {
             showAboutToggle.addEventListener('change', () => {
                 this.toggleEventVisibility('showAbout');
-                this.updatePreview();
             });
         }
 
@@ -348,7 +349,6 @@ class EventManager {
         if (showAboutSubtitleToggle) {
             showAboutSubtitleToggle.addEventListener('change', () => {
                 this.toggleEventVisibility('showAboutSubtitle');
-                this.updatePreview();
             });
         }
 

@@ -9,6 +9,7 @@ class ContactManager {
             showWhatsapp: false
         };
         this.isLoading = false;
+        this.isCollapsed = true; // Collapsed by default
         this.init();
     }
 
@@ -163,17 +164,17 @@ class ContactManager {
         container.innerHTML = `
             <div class="bg-[var(--card-bg)] border border-[var(--border-color)] rounded-2xl p-6 shadow-2xl shadow-black/30">
                 <div class="flex items-center justify-between mb-4">
-                    <h2 class="text-xl font-bold text-white">📞 Contact Information</h2>
-                    <div class="flex items-center gap-2">
-                        <span class="text-xs text-gray-400">Public Display</span>
-                    </div>
+                    <h2 class="text-lg font-bold text-white">📞 Your Feedback Contact</h2>
+                    <button id="toggle-contact-section" class="text-gray-400 hover:text-white transition-colors">
+                        <span class="material-symbols-rounded text-xl">${this.isCollapsed ? 'expand_more' : 'expand_less'}</span>
+                    </button>
                 </div>
 
-                <div class="space-y-4">
+                <div class="space-y-3 ${this.isCollapsed ? 'hidden' : ''}">
                     <!-- Email -->
-                    <div class="space-y-2">
+                    <div class="space-y-1">
                         <div class="flex items-center justify-between">
-                            <label class="text-sm font-medium text-gray-300">📧 Email Address</label>
+                            <label class="text-xs font-medium text-gray-300">📧 Email Address</label>
                             <label class="relative inline-flex items-center cursor-pointer">
                                 <input type="checkbox" 
                                        id="show-email" 
@@ -184,15 +185,15 @@ class ContactManager {
                         </div>
                         <input type="email" 
                                id="contact-email" 
-                               class="w-full px-3 py-2 bg-[#111111] border border-[var(--border-color)] rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)]/50 focus:border-[var(--primary-color)]" 
+                               class="w-full px-3 py-2 bg-[#111111] border border-[var(--border-color)] rounded-lg text-sm text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)]/50 focus:border-[var(--primary-color)]" 
                                placeholder="admin@example.com" 
                                value="${this.contactDetails.email}">
                     </div>
 
                     <!-- Phone -->
-                    <div class="space-y-2">
+                    <div class="space-y-1">
                         <div class="flex items-center justify-between">
-                            <label class="text-sm font-medium text-gray-300">📱 Phone Number</label>
+                            <label class="text-xs font-medium text-gray-300">📱 Phone Number</label>
                             <label class="relative inline-flex items-center cursor-pointer">
                                 <input type="checkbox" 
                                        id="show-phone" 
@@ -203,15 +204,15 @@ class ContactManager {
                         </div>
                         <input type="tel" 
                                id="contact-phone" 
-                               class="w-full px-3 py-2 bg-[#111111] border border-[var(--border-color)] rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)]/50 focus:border-[var(--primary-color)]" 
+                               class="w-full px-3 py-2 bg-[#111111] border border-[var(--border-color)] rounded-lg text-sm text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)]/50 focus:border-[var(--primary-color)]" 
                                placeholder="+1 (234) 567-8900" 
                                value="${this.contactDetails.phone}">
                     </div>
 
                     <!-- WhatsApp -->
-                    <div class="space-y-2">
+                    <div class="space-y-1">
                         <div class="flex items-center justify-between">
-                            <label class="text-sm font-medium text-gray-300">💬 WhatsApp</label>
+                            <label class="text-xs font-medium text-gray-300">💬 WhatsApp</label>
                             <label class="relative inline-flex items-center cursor-pointer">
                                 <input type="checkbox" 
                                        id="show-whatsapp" 
@@ -222,7 +223,7 @@ class ContactManager {
                         </div>
                         <input type="tel" 
                                id="contact-whatsapp" 
-                               class="w-full px-3 py-2 bg-[#111111] border border-[var(--border-color)] rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)]/50 focus:border-[var(--primary-color)]" 
+                               class="w-full px-3 py-2 bg-[#111111] border border-[var(--border-color)] rounded-lg text-sm text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)]/50 focus:border-[var(--primary-color)]" 
                                placeholder="+1 (234) 567-8900" 
                                value="${this.contactDetails.whatsapp}">
                     </div>
@@ -233,14 +234,6 @@ class ContactManager {
                         <span class="material-symbols-rounded text-base">contact_phone</span>
                         <span id="save-contact-button-text">Save Contact Details</span>
                     </button>
-
-                    <!-- Preview -->
-                    <div class="mt-6 p-4 bg-[#111111] border border-[var(--border-color)] rounded-lg">
-                        <h4 class="text-sm font-medium text-gray-300 mb-3">👁️ Public Preview</h4>
-                        <div class="space-y-2 text-sm">
-                            ${this.renderPreview()}
-                        </div>
-                    </div>
                 </div>
             </div>
         `;
@@ -290,7 +283,17 @@ class ContactManager {
         return previews.join('');
     }
 
+    toggleCollapse() {
+        this.isCollapsed = !this.isCollapsed;
+        this.render();
+    }
+
     setupEventListeners() {
+        // Toggle collapse button
+        document.getElementById('toggle-contact-section')?.addEventListener('click', () => {
+            this.toggleCollapse();
+        });
+
         // Email field
         const emailInput = document.getElementById('contact-email');
         if (emailInput) {

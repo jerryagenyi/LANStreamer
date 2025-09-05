@@ -1,6 +1,7 @@
 import express from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import os from 'os';
 import systemRouter from './routes/system.js';
 import streamsRouter from './routes/streams.js';
 import settingsRouter from './routes/settings.js';
@@ -55,10 +56,36 @@ app.get('*', (req, res) => {
 // Always start the server when this file is run
 app.listen(PORT, HOST, () => {
   console.log(`Server is listening on http://${HOST}:${PORT}`);
+  
+  // Get local IPv4 address for network access
+  const networkInterfaces = os.networkInterfaces();
+  let localIPv4 = null;
+  
+  for (const interfaceName in networkInterfaces) {
+    const interfaces = networkInterfaces[interfaceName];
+    if (interfaces) {
+      for (const iface of interfaces) {
+        if (iface.family === 'IPv4' && !iface.internal) {
+          localIPv4 = iface.address;
+          break;
+        }
+      }
+    }
+    if (localIPv4) break;
+  }
+  
   if (HOST === '0.0.0.0') {
     console.log(`Network access: Server is accessible from other devices on your network`);
-    console.log(`Local access: http://localhost:${PORT}`);
+    if (localIPv4) {
+      console.log(`Local access: http://${localIPv4}:${PORT}/streams.html`);
+    } else {
+      console.log(`Local access: http://localhost:${PORT}/streams.html`);
+    }
   }
+  
+  console.log('');
+  console.log('⚠️  DO NOT CLOSE THIS TERMINAL TO KEEP LANStreamer SERVER RUNNING!');
+  console.log('');
 });
 
 // console.log('[SERVER] Script finished. Exporting app.');

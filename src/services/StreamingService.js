@@ -160,10 +160,12 @@ class StreamingService {
     // Capture stderr for debugging
     let stderrData = '';
     process.stderr.on('data', (data) => {
-      stderrData += data.toString();
-      // Log FFmpeg output for debugging (but limit to avoid spam)
-      if (stderrData.length < 2000) {
-        logger.info(`FFmpeg stderr for stream ${streamId}:`, data.toString().trim());
+      if (data) {
+        stderrData += data.toString();
+        // Log FFmpeg output for debugging (but limit to avoid spam)
+        if (stderrData.length < 2000) {
+          logger.info(`FFmpeg stderr for stream ${streamId}:`, data.toString().trim());
+        }
       }
     });
 
@@ -187,7 +189,8 @@ class StreamingService {
     // Wait a moment to ensure process starts successfully
     await new Promise((resolve, reject) => {
       const timeout = setTimeout(() => {
-        reject(new Error(`FFmpeg process failed to start within 5 seconds. Stderr: ${stderrData.slice(0, 500)}`))
+        const errorMsg = `FFmpeg Startup Error: Process failed to start within 5 seconds.\n\nThis usually means:\n• The audio device is not available\n• Another application is using the device\n• The device name is incorrect\n\nFFmpeg Error Output:\n${stderrData.slice(0, 500)}\n\nTroubleshooting:\n• Try refreshing the device list\n• Close other applications using audio\n• Check if VB-Audio Virtual Cable is running`;
+        reject(new Error(errorMsg))
       }, 5000)
 
       process.once('spawn', () => {
@@ -197,7 +200,8 @@ class StreamingService {
 
       process.once('error', (error) => {
         clearTimeout(timeout)
-        reject(new Error(`FFmpeg spawn error: ${error.message}. Stderr: ${stderrData.slice(0, 500)}`))
+        const errorMsg = `FFmpeg Process Error: ${error.message}\n\nFFmpeg Output:\n${stderrData.slice(0, 500)}\n\nThis error suggests:\n• FFmpeg executable not found\n• Permission issues\n• System configuration problem`;
+        reject(new Error(errorMsg))
       })
     })
 
@@ -222,11 +226,12 @@ class StreamingService {
       args = [
         '-re',                          // Read input at native frame rate
         '-i', streamConfig.inputFile,   // Input file
-        '-acodec', 'mp3',               // Audio codec
+        '-acodec', 'libmp3lame',        // Use libmp3lame for better compatibility
         '-ab', `${bitrate}k`,           // Audio bitrate from config
         '-ar', '44100',                 // Sample rate
         '-ac', '2',                     // Audio channels
         '-f', 'mp3',                    // Output format
+        '-content_type', 'audio/mpeg',  // Set proper content type for browsers
         icecastUrl,                     // Unique Icecast URL per stream
         '-loglevel', 'info'             // Show info level logs
       ]
@@ -234,17 +239,23 @@ class StreamingService {
       // Device input mode - validate and use real device name
       const deviceName = this.validateAndGetDeviceName(streamConfig.deviceId);
       if (!deviceName) {
-        throw new Error(`Invalid or unavailable audio device: ${streamConfig.deviceId}`);
+        // Check if this is a VB-Audio Virtual Cable issue
+        if (streamConfig.deviceId.toLowerCase().includes('virtual-cable') || streamConfig.deviceId.toLowerCase().includes('cable')) {
+          throw new Error(`VB-Audio Virtual Cable Error: The device "${streamConfig.deviceId}" is not working properly.\n\n🔧 QUICK FIXES:\n\n1. RESTART VB-AUDIO VIRTUAL CABLE:\n   • Open "VB-Audio Virtual Cable Control Panel"\n   • Or restart your computer\n\n2. CHECK DEVICE STATUS:\n   • Windows detected VB-Audio Virtual Cable but it has "Error" status\n   • This means the virtual audio driver needs to be restarted\n\n3. ALTERNATIVE SOLUTIONS:\n   • Use VoiceMeeter instead (VB-Audio Voicemeeter VAIO is working)\n   • Try a physical microphone like "HD Pro Webcam C910"\n   • Use "Realtek High Definition Audio" for system audio\n\n4. VERIFY INSTALLATION:\n   • Reinstall VB-Audio Virtual Cable from vb-audio.com\n   • Make sure you're running as Administrator\n\nTechnical: FFmpeg cannot detect any audio devices through DirectShow interface.`);
+        } else {
+          throw new Error(`Audio Device Error: The device "${streamConfig.deviceId}" is not available.\n\n🔧 TROUBLESHOOTING:\n\n1. DEVICE NOT FOUND:\n   • The selected audio device is not detected by FFmpeg\n   • This usually means the device is disconnected or not working\n\n2. SOLUTIONS:\n   • Click "Refresh Devices" to update the device list\n   • Try selecting a different audio device\n   • Check if the device is being used by another application\n   • Restart the audio device or your computer\n\n3. AVAILABLE ALTERNATIVES:\n   • HD Pro Webcam C910 (has built-in microphone)\n   • Realtek High Definition Audio (system audio)\n   • VB-Audio Voicemeeter VAIO (virtual audio mixer)\n\nTechnical: Device ID "${streamConfig.deviceId}" could not be mapped to a DirectShow device name.`);
+        }
       }
 
       args = [
         '-f', 'dshow',                    // DirectShow input format
         '-i', `audio=${deviceName}`,      // Audio input device (real DirectShow name)
-        '-acodec', 'mp3',                 // Audio codec
+        '-acodec', 'libmp3lame',          // Use libmp3lame for better compatibility
         '-ab', `${bitrate}k`,             // Audio bitrate from config
         '-ar', '44100',                   // Sample rate
         '-ac', '2',                       // Audio channels
         '-f', 'mp3',                      // Output format
+        '-content_type', 'audio/mpeg',    // Set proper content type for browsers
         icecastUrl,                       // Unique Icecast URL per stream
         '-loglevel', 'info'               // Show info level logs
       ]
@@ -289,6 +300,23 @@ class StreamingService {
       'usb-microphone': 'Microphone (USB Audio Device)', // Generic USB microphone
       'realtek-audio': 'Microphone (Realtek Audio)', // Realtek audio devices
       'bluetooth-microphone': 'Microphone (Bluetooth Audio)', // Bluetooth devices
+      'amd-streaming-audio-device': 'AMD Streaming Audio Device', // AMD audio devices
+      'ps-input-amd-streaming-audio-device': 'AMD Streaming Audio Device', // AMD audio devices (alternative naming)
+      'amd-audio': 'AMD Streaming Audio Device', // AMD audio devices (short name)
+      'amd-microphone': 'AMD Streaming Audio Device', // AMD audio devices (microphone variant)
+      'vb-audio-voicemeeter-vaio': 'VB-Audio Voicemeeter VAIO', // Voicemeeter VAIO
+      'ps-input-vb-audio-voicemeeter-vaio': 'VB-Audio Voicemeeter VAIO', // Voicemeeter VAIO (alternative naming)
+      'voicemeeter-vaio': 'VB-Audio Voicemeeter VAIO', // Voicemeeter VAIO (short name)
+      'vb-audio-voicemeeter-aux': 'VB-Audio Voicemeeter AUX', // Voicemeeter AUX
+      'ps-input-vb-audio-voicemeeter-aux': 'VB-Audio Voicemeeter AUX', // Voicemeeter AUX (alternative naming)
+      'voicemeeter-aux': 'VB-Audio Voicemeeter AUX', // Voicemeeter AUX (short name)
+      'vb-audio-voicemeeter-vb': 'VB-Audio Voicemeeter VB', // Voicemeeter VB
+      'ps-input-vb-audio-voicemeeter-vb': 'VB-Audio Voicemeeter VB', // Voicemeeter VB (alternative naming)
+      'voicemeeter-vb': 'VB-Audio Voicemeeter VB', // Voicemeeter VB (short name)
+      'vb-audio-virtual-cable': 'CABLE Output (VB-Audio Virtual Cable)', // VB-Audio Virtual Cable
+      'ps-input-vb-audio-virtual-cable': 'CABLE Output (VB-Audio Virtual Cable)', // VB-Audio Virtual Cable (alternative naming)
+      'cable-output': 'CABLE Output (VB-Audio Virtual Cable)', // VB-Audio Virtual Cable (short name)
+      'virtual-cable': 'CABLE Output (VB-Audio Virtual Cable)', // VB-Audio Virtual Cable (generic name)
     };
 
     // First try direct mapping
@@ -301,6 +329,52 @@ class StreamingService {
     if (deviceId.includes('(') && deviceId.includes(')')) {
       logger.info(`Using device ID "${deviceId}" as DirectShow name (appears to be real device name)`);
       return deviceId;
+    }
+
+    // Special handling for AMD devices - try common variations
+    if (deviceId.toLowerCase().includes('amd')) {
+      const amdVariations = [
+        'AMD Streaming Audio Device',
+        'Microphone (AMD Streaming Audio Device)',
+        'AMD Audio Device',
+        'Microphone (AMD Audio Device)',
+        'AMD High Definition Audio Device',
+        'Microphone (AMD High Definition Audio Device)'
+      ];
+
+      logger.info(`AMD device detected, trying variations: ${amdVariations.join(', ')}`);
+
+      // For now, return the most common AMD device name
+      // TODO: Implement dynamic device detection in future version
+      return 'AMD Streaming Audio Device';
+    }
+
+    // Special handling for VB-Audio devices (Voicemeeter and Virtual Cable)
+    if (deviceId.toLowerCase().includes('voicemeeter') || deviceId.toLowerCase().includes('vb-audio')) {
+      if (deviceId.toLowerCase().includes('virtual-cable') || deviceId.toLowerCase().includes('cable')) {
+        // VB-Audio Virtual Cable
+        const cableVariations = [
+          'CABLE Output (VB-Audio Virtual Cable)',
+          'CABLE Input (VB-Audio Virtual Cable)',
+          'VB-Audio Virtual Cable'
+        ];
+
+        logger.info(`VB-Audio Virtual Cable detected, will try variations: ${cableVariations.join(', ')}`);
+        return cableVariations[0];
+      } else {
+        // VoiceMeeter devices
+        const voicemeeterVariations = [
+          'VB-Audio Voicemeeter VAIO',
+          'VB-Audio Voicemeeter AUX',
+          'VB-Audio Voicemeeter VB',
+          'Microphone (VB-Audio Voicemeeter VAIO)',
+          'Microphone (VB-Audio Voicemeeter AUX)',
+          'Microphone (VB-Audio Voicemeeter VB)'
+        ];
+
+        logger.info(`Voicemeeter device detected, will try variations: ${voicemeeterVariations.join(', ')}`);
+        return voicemeeterVariations[0];
+      }
     }
 
     // Try to create a reasonable DirectShow name from the device ID
@@ -316,8 +390,10 @@ class StreamingService {
       return directShowName;
     }
 
-    // Log warning for unmapped device
-    logger.warn(`No mapping found for device ID: ${deviceId}. Available mappings:`, Object.keys(deviceMap));
+    // Log detailed warning for unmapped device
+    logger.warn(`DEVICE MAPPING MISSING: No mapping found for device ID: "${deviceId}"`);
+    logger.warn(`Available device mappings:`, Object.keys(deviceMap));
+    logger.warn(`Device ID "${deviceId}" needs to be added to the device mapping table in StreamingService.js`);
     return null;
   }
 
@@ -397,15 +473,15 @@ class StreamingService {
         // Validate device is still available
         const deviceName = this.validateAndGetDeviceName(stream.config.deviceId);
         if (!deviceName) {
-          // Try to refresh device list and check again
-          logger.warn(`Device validation failed for ${stream.config.deviceId}, attempting device refresh...`);
+          logger.warn(`Device validation failed for ${stream.config.deviceId}, trying fallback approaches...`);
 
-          // Give it one more try with the generated name
-          const fallbackName = this.validateAndGetDeviceName(stream.config.deviceId);
-          if (!fallbackName) {
-            throw new Error(`Invalid or unavailable audio device: ${stream.config.deviceId}. Please refresh devices and try again.`);
+          // For AMD devices, provide specific guidance
+          if (stream.config.deviceId.toLowerCase().includes('amd')) {
+            throw new Error(`AMD Streaming Audio Device not found. This device may be in use by another application or disconnected. Please:\n1. Close other applications using the microphone\n2. Refresh the device list\n3. Try selecting a different audio device`);
           }
-          logger.info(`Using fallback device name: ${fallbackName}`);
+
+          // For other devices, provide general guidance
+          throw new Error(`Audio device "${stream.config.deviceId}" not found or unavailable. Please:\n1. Check if the device is connected\n2. Refresh the device list\n3. Ensure no other applications are using the device`);
         }
       }
 
@@ -443,6 +519,8 @@ class StreamingService {
       throw new Error(`Stream ${streamId} not found`)
     }
 
+    const prevDeviceId = stream.deviceId
+
     // Update stream properties
     if (updates.name !== undefined) {
       stream.name = updates.name
@@ -452,6 +530,25 @@ class StreamingService {
     if (updates.deviceId !== undefined) {
       stream.deviceId = updates.deviceId
       stream.config.deviceId = updates.deviceId
+    }
+
+    // UX: If device changed OR stream was in error, reset to a clean stopped state
+    const deviceChanged = updates.deviceId !== undefined && updates.deviceId !== prevDeviceId
+    if (deviceChanged || stream.status === 'error') {
+      logger.info(`Resetting stream state after update (deviceChanged=${deviceChanged}, previousStatus=${stream.status})`)
+      // Ensure any running process is cleared
+      if (stream.ffmpegProcess && typeof stream.ffmpegProcess.kill === 'function') {
+        try { stream.ffmpegProcess.kill('SIGTERM') } catch (e) { /* ignore */ }
+      }
+      stream.ffmpegProcess = null
+      stream.status = 'stopped'
+      stream.error = undefined
+      stream.exitCode = undefined
+      stream.exitSignal = undefined
+      stream.exitedAt = undefined
+      stream.startedAt = undefined
+      stream.needsRestart = true
+      stream.intentionallyStopped = true
     }
 
     // Save to persistent storage

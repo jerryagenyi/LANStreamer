@@ -1,4 +1,5 @@
 @echo off
+setlocal enabledelayedexpansion
 title LANStreamer Server
 color 0B
 
@@ -49,12 +50,30 @@ if not exist "node_modules" (
     echo.
 )
 
+:: Get local IPv4 address (prefer 192.168.x.x range for main network)
+set LOCAL_IP=
+for /f "tokens=2 delims=:" %%a in ('ipconfig ^| findstr /c:"IPv4 Address"') do (
+    for /f "tokens=1" %%b in ("%%a") do (
+        set CURRENT_IP=%%b
+        :: Remove any leading spaces
+        for /f "tokens=* delims= " %%c in ("!CURRENT_IP!") do set CURRENT_IP=%%c
+        :: Check if it's a 192.168.x.x address (preferred for local networks)
+        echo !CURRENT_IP! | findstr /r "^192\.168\." >nul
+        if not errorlevel 1 (
+            set LOCAL_IP=!CURRENT_IP!
+            goto :ip_found
+        )
+        :: If no 192.168.x.x found yet, keep the first one as fallback
+        if "!LOCAL_IP!"=="" set LOCAL_IP=!CURRENT_IP!
+    )
+)
+:ip_found
+
 :: Start the server
 echo  🚀 Starting LANStreamer Server...
 echo.
-echo  ✅ Server will be available at: http://localhost:3001
-echo  ✅ Admin Dashboard: http://localhost:3001
-echo  ✅ Streams Page: http://localhost:3001/streams
+echo  ✅ Admin Dashboard: http://%LOCAL_IP%:3001
+echo  ✅ Streams Page for Listeners: http://%LOCAL_IP%:3001/streams
 echo.
 echo  💡 TIP: Start Icecast server before creating streams!
 echo.

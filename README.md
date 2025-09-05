@@ -4,6 +4,17 @@ A comprehensive solution that turns a standard PC into a multi-channel audio str
 
 For advanced users or for troubleshooting, **manual setup guides** are also available. If you have ideas and use-cases for improving this system, contact jerryagenyi@gmail.com.
 
+## Why I Built This
+
+I built the app for audio streaming (simultaneous multiple sources) on Local Area Network. The easiest example (actually why I built it) is for translation services during conferences.
+
+For example:
+- Event organisers share access to a particular Wi-Fi with you the attendee
+- Next they share a URL with you to listen
+- You visit the URL (no internet needed, just access that Wi-Fi)
+- You see multiple streams on the page in different languages
+- You click to play the one you want
+
 ## Table of Contents
 
 - [Project Structure](#project-structure)

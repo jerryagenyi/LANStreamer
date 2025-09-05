@@ -53,20 +53,77 @@ router.post('/audio-devices/refresh', async (req, res) => {
 router.post('/audio-devices/test', async (req, res) => {
   try {
     const { deviceId } = req.body;
-    
+
     if (!deviceId) {
       return res.status(400).json({ message: 'Device ID is required' });
     }
-    
+
     const isAccessible = await audioDeviceService.testDevice(deviceId);
-    
-    res.json({ 
-      success: true, 
-      deviceId, 
-      accessible: isAccessible 
+
+    res.json({
+      success: true,
+      deviceId,
+      accessible: isAccessible
     });
   } catch (error) {
     res.status(500).json({ message: 'Error testing audio device', error: error.message });
+  }
+});
+
+/**
+ * @route GET /api/system/audio-devices/diagnose
+ * @description Diagnose audio device issues and provide detailed information.
+ * @access Public
+ */
+router.get('/audio-devices/diagnose', async (req, res) => {
+  const { exec } = require('child_process');
+  const { promisify } = require('util');
+  const execAsync = promisify(exec);
+
+  try {
+
+    // Get raw FFmpeg device list
+    const { stdout, stderr } = await execAsync('ffmpeg -list_devices true -f dshow -i dummy 2>&1');
+    const ffmpegOutput = stderr || stdout;
+
+    // Check for VB-Audio Virtual Cable specifically
+    const hasVBCable = ffmpegOutput.includes('CABLE Output') || ffmpegOutput.includes('VB-Audio Virtual Cable');
+    const hasVoiceMeeter = ffmpegOutput.includes('VB-Audio Voicemeeter');
+
+    // Parse all audio devices
+    const audioDevices = [];
+    const lines = ffmpegOutput.split('\n');
+    for (const line of lines) {
+      const audioMatch = line.match(/\[dshow @ .*\] "([^"]+)" \(audio\)/);
+      if (audioMatch) {
+        audioDevices.push(audioMatch[1]);
+      }
+    }
+
+    res.json({
+      success: true,
+      diagnosis: {
+        vbAudioCableDetected: hasVBCable,
+        voiceMeeterDetected: hasVoiceMeeter,
+        totalAudioDevices: audioDevices.length,
+        audioDevices: audioDevices,
+        recommendations: hasVBCable ?
+          ['VB-Audio Virtual Cable is detected and should work'] :
+          [
+            'VB-Audio Virtual Cable not detected',
+            'Install VB-Audio Virtual Cable from vb-audio.com',
+            'Make sure VB-Audio Virtual Cable is running',
+            'Try using a physical microphone instead'
+          ]
+      },
+      rawOutput: ffmpegOutput.slice(0, 2000) // First 2000 chars for debugging
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: 'Error diagnosing audio devices',
+      error: error.message,
+      suggestion: 'This might indicate FFmpeg is not installed or accessible'
+    });
   }
 });
 
