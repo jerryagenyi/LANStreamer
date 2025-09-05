@@ -13,12 +13,12 @@
   },
   "directshow_error_test_1757017048373": {
     "id": "directshow_error_test_1757017048373",
-    "deviceId": "immersed-webcam",
+    "deviceId": "logitech-hd-pro-webcam-c910",
     "name": "DirectShow Error Test",
     "config": {
       "id": "directshow_error_test_1757017048373",
       "name": "DirectShow Error Test",
-      "deviceId": "immersed-webcam",
+      "deviceId": "logitech-hd-pro-webcam-c910",
       "bitrate": 192
     },
     "createdAt": "2025-09-04T20:17:28.463Z"

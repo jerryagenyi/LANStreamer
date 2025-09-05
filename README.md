@@ -224,16 +224,28 @@ cp .env.example .env
 npm run dev
 ```
 
-**Step 5: Start Icecast Server**
+**Step 5: Easy Startup (Windows Users)**
 ```bash
-# Windows (navigate to Icecast installation directory)
+# Use the convenient batch file (recommended)
+double-click Start-LANStreamer.bat
+
+# Or create a desktop shortcut
+powershell -ExecutionPolicy Bypass -File Create-Desktop-Shortcut.ps1
+```
+
+**Step 5: Manual Startup (All Platforms)**
+```bash
+# Start LANStreamer Server first
+npm start
+
+# Then start Icecast Server (in a separate terminal)
+# Windows
 cd "C:\Program Files (x86)\Icecast"
 icecast.exe -c icecast.xml
 
 # macOS/Linux
 icecast -c /usr/local/etc/icecast.xml
 ```
-> **⚠️ Important**: Always start Icecast before creating streams to avoid connection errors.
 
 **Step 6: Open in Browser**
 - Open your web browser
@@ -241,6 +253,8 @@ icecast -c /usr/local/etc/icecast.xml
 - For the admin dashboard: `http://localhost:3001/dashboard`
 
 **🎉 That's it!** LANStreamer should now be running and ready to detect your audio devices.
+
+> **💡 Pro Tip**: The `Start-LANStreamer.bat` file handles dependency installation, server startup, and can optionally start Icecast for you!
 
 ---
 
@@ -252,6 +266,26 @@ icecast -c /usr/local/etc/icecast.xml
 npm run dev:live
 ```
 Then access: `http://localhost:3002` (BrowserSync with auto-refresh)
+
+### 🖥️ Desktop Shortcut Setup (Windows)
+
+**Create a Desktop Shortcut:**
+```powershell
+# Run this in PowerShell (as Administrator if needed)
+powershell -ExecutionPolicy Bypass -File Create-Desktop-Shortcut.ps1
+```
+
+**What the shortcut does:**
+- ✅ **One-click startup**: Double-click to start LANStreamer
+- ✅ **Dependency check**: Automatically installs npm packages if needed
+- ✅ **Icecast integration**: Option to start Icecast server automatically
+- ✅ **Error handling**: Clear error messages if something goes wrong
+- ✅ **Professional look**: Custom icon and proper Windows integration
+
+**Additional Options:**
+- **Pin to Taskbar**: Right-click shortcut → "Pin to taskbar"
+- **Pin to Start Menu**: Right-click shortcut → "Pin to Start"
+- **Startup Folder**: Copy shortcut to startup folder for auto-start (optional)
 
 ### ❓ Troubleshooting Quick Start
 
@@ -266,6 +300,11 @@ Then access: `http://localhost:3002` (BrowserSync with auto-refresh)
 
 **Problem: "No audio devices detected"**
 - Solution: Ensure your microphone/audio device is connected and working in your system settings
+
+**Problem: Batch file doesn't work**
+- Check: Are you running it from the LANStreamer folder?
+- Check: Is Node.js installed and in your system PATH?
+- Try: Right-click batch file → "Run as administrator"
 
 **Need more help?** Check the [Installation Guides](docs/guides/README.md) for detailed troubleshooting.
 
@@ -282,22 +321,39 @@ Then access: `http://localhost:3002` (BrowserSync with auto-refresh)
 
 **Typical First-Use Workflow:**
 
-1. **Start Icecast Server First**:
+> **📋 Correct Startup Order:**
+> 1. **Start LANStreamer Server** (`npm start` or use `Start-LANStreamer.bat`)
+> 2. **Start Icecast Server**
+> 3. **Create/Start FFmpeg Streams**
+
+**Detailed Steps:**
+
+1. **Start LANStreamer Server**:
+   - **Easy Way**: Double-click `Start-LANStreamer.bat` (Windows)
+   - **Manual Way**: Run `npm start` in terminal
+   - **Wait for**: "Server is listening on http://0.0.0.0:3001"
+
+2. **Start Icecast Server**:
    - **Windows**: Navigate to `C:\Program Files (x86)\Icecast` and run `icecast.exe -c icecast.xml`
    - **macOS/Linux**: Run `icecast -c /usr/local/etc/icecast.xml` (or your config path)
-   - **Important**: Always start Icecast before creating streams to avoid connection errors
-2. **Check System Status**: Ensure all components show "✅ Ready" in LANStreamer dashboard
-3. **Browse Audio Devices**: See what microphones/inputs are detected
-4. **Create Your First Stream**:
+   - **Batch File**: The `Start-LANStreamer.bat` can do this for you automatically
+
+3. **Check System Status**: Open `http://localhost:3001` and ensure all components show "✅ Ready"
+
+4. **Browse Audio Devices**: See what microphones/inputs are detected
+
+5. **Create Your First Stream**:
    - Click "Start New Stream"
    - Select an audio device (e.g., your microphone)
    - Give it a name (e.g., "Main Audio")
    - Click "Start Stream"
-5. **Test the Stream**:
+
+6. **Test the Stream**:
    - Go to `http://localhost:3001/streams`
    - You should see your stream listed
    - Click "Play" to test audio playback
-6. **Share with Others**: Other devices on your network can access the same URL to listen
+
+7. **Share with Others**: Other devices on your network can access the same URL to listen
 
 **For Network Access:**
 - Find your computer's IP address (e.g., `192.168.1.100`)
