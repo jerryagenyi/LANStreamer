@@ -27,12 +27,21 @@ class AudioDeviceService {
 
     // Detect fresh devices
     const devices = await this.detectDevices();
-    
+
     // Cache the results
     this.cachedDevices = devices;
     this.cacheExpiry = Date.now() + this.cacheTimeout;
-    
+
     return devices;
+  }
+
+  /**
+   * Clear the device cache to force fresh detection
+   */
+  clearCache() {
+    this.cachedDevices = null;
+    this.cacheExpiry = null;
+    logger.audio('Audio device cache cleared');
   }
 
   /**
@@ -159,19 +168,34 @@ class AudioDeviceService {
       throw new Error('No audio devices detected from FFmpeg or PowerShell');
     }
 
-    // Remove duplicates based on device name
-    const uniqueDevices = devices.filter((device, index, self) =>
-      index === self.findIndex(d => d.name === device.name && d.deviceType === device.deviceType)
-    );
+    // Remove duplicates based on device name and ID
+    const uniqueDevices = devices.filter((device, index, self) => {
+      return index === self.findIndex(d =>
+        d.name === device.name &&
+        d.deviceType === device.deviceType &&
+        d.id === device.id
+      );
+    });
+
+    // Additional deduplication by name only (in case same device has different IDs)
+    const finalDevices = uniqueDevices.filter((device, index, self) => {
+      const duplicatesByName = self.filter(d => d.name === device.name && d.deviceType === device.deviceType);
+      if (duplicatesByName.length > 1) {
+        // Keep the first occurrence of devices with same name
+        return index === self.findIndex(d => d.name === device.name && d.deviceType === device.deviceType);
+      }
+      return true;
+    });
 
     logger.audio('Windows device detection completed', {
       totalFound: devices.length,
       uniqueDevices: uniqueDevices.length,
-      inputCount: uniqueDevices.filter(d => d.deviceType === 'input').length,
-      outputCount: uniqueDevices.filter(d => d.deviceType === 'output').length
+      finalDevices: finalDevices.length,
+      inputCount: finalDevices.filter(d => d.deviceType === 'input').length,
+      outputCount: finalDevices.filter(d => d.deviceType === 'output').length
     });
 
-    return uniqueDevices;
+    return finalDevices;
   }
 
   /**

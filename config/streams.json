@@ -13,26 +13,14 @@
   },
   "directshow_error_test_1757017048373": {
     "id": "directshow_error_test_1757017048373",
-    "deviceId": "logitech-hd-pro-webcam-c910",
+    "deviceId": "immersed-webcam",
     "name": "DirectShow Error Test",
     "config": {
       "id": "directshow_error_test_1757017048373",
       "name": "DirectShow Error Test",
-      "deviceId": "logitech-hd-pro-webcam-c910",
+      "deviceId": "immersed-webcam",
       "bitrate": 192
     },
     "createdAt": "2025-09-04T20:17:28.463Z"
-  },
-  "stop_test_stream_1757017547271": {
-    "id": "stop_test_stream_1757017547271",
-    "deviceId": "ps-input-hd-pro-webcam-c910",
-    "name": "Stop Status Test",
-    "config": {
-      "id": "stop_test_stream_1757017547271",
-      "name": "Stop Status Test",
-      "deviceId": "ps-input-hd-pro-webcam-c910",
-      "bitrate": 192
-    },
-    "createdAt": "2025-09-04T20:25:47.351Z"
   }
 }

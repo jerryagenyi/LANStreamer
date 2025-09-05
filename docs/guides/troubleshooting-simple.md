@@ -44,6 +44,18 @@
 3. **Close other apps**: Free up CPU and memory resources
 4. **Check network**: Ensure stable internet connection
 
+### Stream Crashes Immediately
+**Problem**: Stream starts then immediately stops with error
+**Common Causes & Solutions**:
+1. **Device mapping error**: Check logs for "Invalid or unavailable audio device"
+   - Solution: Refresh device list and re-select your audio device
+2. **FFmpeg parameter error**: Look for "Invalid argument" in error logs
+   - Solution: Try a different audio device or restart LANStreamer
+3. **Permission issues**: "Permission denied" errors
+   - Solution: Close other applications using the microphone
+4. **Device busy**: "Device or resource busy" errors
+   - Solution: Ensure no other applications are using the selected audio device
+
 ## Connection Issues
 
 ### Can't Access from Other Devices
@@ -79,6 +91,30 @@
 2. **Check USB ports**: Try different USB port
 3. **Update drivers**: Reinstall audio device drivers
 
+### "Invalid or unavailable audio device" Error
+**Problem**: Stream fails with device mapping error
+**Solutions**:
+1. **Refresh device list**: Click the refresh button to update available devices
+2. **Check device connection**: Ensure the device is properly connected and recognized by Windows
+3. **Try different device**: Select a different audio device to test if the issue is device-specific
+4. **Restart LANStreamer**: Close and restart the application to refresh device mappings
+5. **Check device name**: Some devices may appear with different names (e.g., "Immersed Webcam" vs "immersed-webcam")
+
+### Device Conflict Issues
+**Problem**: Multiple streams trying to use the same device
+**Important Notes**:
+- **One device per stream**: LANStreamer prevents multiple streams from using the same audio device simultaneously
+- **This is intentional**: Device conflicts can cause audio issues and system instability
+- **Solution**: Use different audio devices for multiple streams, or stop one stream before starting another
+
+### Too Many Audio Devices
+**Problem**: System becomes unstable with many virtual audio devices
+**Recommendations**:
+1. **Limit virtual devices**: Avoid running too many virtual audio applications (VoiceMeeter, Virtual Desktop Audio, etc.) simultaneously
+2. **Close unused apps**: Shut down audio applications you're not actively using
+3. **Restart audio services**: If experiencing issues, restart Windows Audio service
+4. **System resources**: More audio devices = more CPU/memory usage
+
 ## Performance Issues
 
 ### High CPU Usage
@@ -97,6 +133,28 @@
 3. **Close other apps**: Free up RAM
 4. **Check for leaks**: Report persistent memory issues
 
+## Log Analysis
+
+### Understanding LANStreamer Logs
+LANStreamer creates separate log files for different components:
+
+**Log Locations** (in your LANStreamer folder):
+- `logs/lanstreamer-YYYY-MM-DD.log` - Main application logs
+- `logs/streams-YYYY-MM-DD.log` - Streaming and device detection logs
+- `logs/error-YYYY-MM-DD.log` - Error logs and crash reports
+
+**Common Log Patterns**:
+- **Device detection**: Look for "Audio device detection completed" and device counts
+- **Stream errors**: Search for "Invalid or unavailable audio device" or "Stream failed"
+- **FFmpeg issues**: Check for "FFmpeg stderr output" entries
+- **Icecast problems**: Look for "Icecast server is not running" messages
+
+**Analyzing Errors**:
+1. **Check the error log first**: `logs/error-YYYY-MM-DD.log` contains the most critical issues
+2. **Look for patterns**: Repeated errors often indicate configuration issues
+3. **Check timestamps**: Correlate errors with when you experienced problems
+4. **Device mapping issues**: Search for device names that don't match your actual devices
+
 ## Quick Diagnostic Commands
 
 ### Windows
@@ -112,6 +170,9 @@ ffmpeg -version
 
 # List audio devices
 ffmpeg -list_devices true -f dshow -i dummy
+
+# View recent LANStreamer errors (PowerShell)
+Get-Content "logs\error-$(Get-Date -Format 'yyyy-MM-dd').log" -Tail 20
 ```
 
 ### macOS/Linux

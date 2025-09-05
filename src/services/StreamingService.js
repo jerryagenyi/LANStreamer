@@ -86,9 +86,22 @@ class StreamingService {
     }
 
     const streamId = streamConfig.id || `stream_${Date.now()}`
-    
+
     if (this.activeStreams[streamId]) {
       throw new Error(`Stream ${streamId} is already running`)
+    }
+
+    // Check for device conflicts (multiple streams on same device)
+    if (streamConfig.deviceId) {
+      const conflictingStreams = Object.values(this.activeStreams).filter(stream =>
+        stream.deviceId === streamConfig.deviceId &&
+        stream.status === 'running'
+      );
+
+      if (conflictingStreams.length > 0) {
+        const conflictNames = conflictingStreams.map(s => s.name).join(', ');
+        throw new Error(`Device "${streamConfig.deviceId}" is already in use by: ${conflictNames}. Stop other streams first.`);
+      }
     }
 
     try {
@@ -268,7 +281,14 @@ class StreamingService {
       'microphone-virtual-desktop-audio': 'Microphone (Virtual Desktop Audio)',
       'virtual-desktop-audio': 'Microphone (Virtual Desktop Audio)',
       'default-microphone': 'Microphone (HD Pro Webcam C910)', // Default to first available
-      'ps-output-hd-pro-webcam-c910': 'Microphone (HD Pro Webcam C910)' // Fix for previous naming
+      'ps-output-hd-pro-webcam-c910': 'Microphone (HD Pro Webcam C910)', // Fix for previous naming
+      'immersed-webcam': 'Microphone (Immersed Webcam)', // Add missing device
+      'microphone-immersed-webcam': 'Microphone (Immersed Webcam)', // Alternative naming
+      'immersed-virtual-audio': 'Microphone (Immersed Virtual Audio)', // Immersed audio device
+      'webcam-microphone': 'Microphone (Webcam)', // Generic webcam microphone
+      'usb-microphone': 'Microphone (USB Audio Device)', // Generic USB microphone
+      'realtek-audio': 'Microphone (Realtek Audio)', // Realtek audio devices
+      'bluetooth-microphone': 'Microphone (Bluetooth Audio)', // Bluetooth devices
     };
 
     // First try direct mapping
@@ -281,6 +301,19 @@ class StreamingService {
     if (deviceId.includes('(') && deviceId.includes(')')) {
       logger.info(`Using device ID "${deviceId}" as DirectShow name (appears to be real device name)`);
       return deviceId;
+    }
+
+    // Try to create a reasonable DirectShow name from the device ID
+    if (deviceId && typeof deviceId === 'string' && deviceId.length > 0) {
+      // Convert kebab-case to title case and wrap in Microphone()
+      const titleCase = deviceId
+        .split('-')
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(' ');
+
+      const directShowName = `Microphone (${titleCase})`;
+      logger.info(`Generated DirectShow name "${directShowName}" from device ID "${deviceId}"`);
+      return directShowName;
     }
 
     // Log warning for unmapped device
@@ -347,7 +380,35 @@ class StreamingService {
 
     try {
       logger.info(`Restarting stream: ${streamId}`)
-      
+
+      // Check for device conflicts before restarting
+      if (stream.config.deviceId) {
+        const conflictingStreams = Object.values(this.activeStreams).filter(s =>
+          s.deviceId === stream.config.deviceId &&
+          s.status === 'running' &&
+          s.id !== streamId
+        );
+
+        if (conflictingStreams.length > 0) {
+          const conflictNames = conflictingStreams.map(s => s.name).join(', ');
+          throw new Error(`Device "${stream.config.deviceId}" is already in use by: ${conflictNames}. Stop other streams first.`);
+        }
+
+        // Validate device is still available
+        const deviceName = this.validateAndGetDeviceName(stream.config.deviceId);
+        if (!deviceName) {
+          // Try to refresh device list and check again
+          logger.warn(`Device validation failed for ${stream.config.deviceId}, attempting device refresh...`);
+
+          // Give it one more try with the generated name
+          const fallbackName = this.validateAndGetDeviceName(stream.config.deviceId);
+          if (!fallbackName) {
+            throw new Error(`Invalid or unavailable audio device: ${stream.config.deviceId}. Please refresh devices and try again.`);
+          }
+          logger.info(`Using fallback device name: ${fallbackName}`);
+        }
+      }
+
       // Start FFmpeg process
       const ffmpegProcess = await this.startFFmpegProcess(streamId, stream.config)
 
@@ -445,6 +506,43 @@ class StreamingService {
   }
 
   /**
+   * Stop all running streams
+   * @returns {object} Result of the operation
+   */
+  async stopAllStreams() {
+    const runningStreams = Object.values(this.activeStreams).filter(stream =>
+      stream.status === 'running'
+    );
+
+    if (runningStreams.length === 0) {
+      return { success: true, message: 'No running streams to stop', stopped: 0 };
+    }
+
+    const results = [];
+    for (const stream of runningStreams) {
+      try {
+        await this.stopStream(stream.id);
+        results.push({ id: stream.id, name: stream.name, success: true });
+      } catch (error) {
+        results.push({ id: stream.id, name: stream.name, success: false, error: error.message });
+      }
+    }
+
+    const successCount = results.filter(r => r.success).length;
+    const failureCount = results.filter(r => !r.success).length;
+
+    logger.info(`Stopped ${successCount} streams, ${failureCount} failed`);
+
+    return {
+      success: failureCount === 0,
+      message: `Stopped ${successCount} streams${failureCount > 0 ? `, ${failureCount} failed` : ''}`,
+      stopped: successCount,
+      failed: failureCount,
+      results
+    };
+  }
+
+  /**
    * Handle FFmpeg process errors
    * @param {string} streamId - Stream ID
    * @param {Error} error - Error object
@@ -483,7 +581,9 @@ class StreamingService {
 
       // Store error information if process failed
       if (code !== 0) {
-        this.activeStreams[streamId].error = this.parseFFmpegError(code, stderrData)
+        // Ensure stderrData is a string to prevent null/undefined errors
+        const safeStderrData = stderrData || ''
+        this.activeStreams[streamId].error = this.parseFFmpegError(code, safeStderrData)
         logger.error(`Stream ${streamId} failed with exit code ${code}:`, this.activeStreams[streamId].error)
       }
     }
@@ -509,21 +609,23 @@ class StreamingService {
 
     let errorMsg = errorMessages[signedCode.toString()] || `FFmpeg exited with code ${exitCode} (${signedCode})`;
 
-    // Add specific error details from stderr
-    if (stderrData) {
-      if (stderrData.includes('No such audio device') || stderrData.includes('Could not find audio only device')) {
+    // Ensure stderrData is a string and add specific error details from stderr
+    const safeStderrData = stderrData && typeof stderrData === 'string' ? stderrData : '';
+
+    if (safeStderrData) {
+      if (safeStderrData.includes('No such audio device') || safeStderrData.includes('Could not find audio only device')) {
         errorMsg = 'Audio device not found. The selected microphone may be disconnected or in use by another application.';
-      } else if (stderrData.includes('Permission denied')) {
+      } else if (safeStderrData.includes('Permission denied')) {
         errorMsg = 'Permission denied accessing audio device. Close other applications using the microphone.';
-      } else if (stderrData.includes('Device or resource busy')) {
+      } else if (safeStderrData.includes('Device or resource busy')) {
         errorMsg = 'Audio device is busy. Another application may be using it.';
-      } else if (stderrData.includes('among source devices of type audio')) {
+      } else if (safeStderrData.includes('among source devices of type audio')) {
         errorMsg = 'Audio device not recognized by DirectShow. Please check device name and ensure it\'s properly connected.';
       }
 
       // If we have stderr data but no specific match, include a snippet for debugging
       if (errorMsg === (errorMessages[signedCode.toString()] || `FFmpeg exited with code ${exitCode} (${signedCode})`)) {
-        const stderrSnippet = stderrData.slice(0, 200).replace(/\n/g, ' ').trim();
+        const stderrSnippet = safeStderrData.slice(0, 200).replace(/\n/g, ' ').trim();
         if (stderrSnippet) {
           errorMsg += ` Details: ${stderrSnippet}`;
         }

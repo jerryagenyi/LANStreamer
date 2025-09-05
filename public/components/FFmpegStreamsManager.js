@@ -82,12 +82,41 @@ class FFmpegStreamsManager {
         try {
             const response = await fetch('/api/system/audio-devices');
             const data = await response.json();
-            
+
             // Handle both old format (array) and new format (object with devices array)
             this.audioDevices = data.devices || data || [];
         } catch (error) {
             console.error('Failed to load audio devices:', error);
             this.audioDevices = [];
+        }
+    }
+
+    /**
+     * Refresh audio devices (clear cache and reload)
+     */
+    async refreshAudioDevices() {
+        try {
+            this.showNotification('Refreshing audio devices...', 'info');
+
+            const response = await fetch('/api/system/audio-devices/refresh', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                this.audioDevices = data.devices || [];
+                this.render(); // Re-render to update device lists
+                this.showNotification(`Audio devices refreshed - ${data.count} devices found`, 'success');
+            } else {
+                throw new Error(data.message || 'Failed to refresh devices');
+            }
+        } catch (error) {
+            console.error('Failed to refresh audio devices:', error);
+            this.showNotification(`Failed to refresh audio devices: ${error.message}`, 'error');
         }
     }
 
@@ -185,7 +214,7 @@ class FFmpegStreamsManager {
             });
 
             const data = await response.json();
-            
+
             if (data.message === 'Stream restarted successfully') {
                 await this.loadStreams();
                 this.render();
@@ -196,6 +225,47 @@ class FFmpegStreamsManager {
         } catch (error) {
             console.error('Failed to restart stream:', error);
             this.showNotification(`Failed to restart stream: ${error.message}`, 'error');
+        }
+    }
+
+    /**
+     * Stop all running streams
+     */
+    async stopAllStreams() {
+        try {
+            const runningStreams = this.streams.filter(stream => stream.status === 'running');
+
+            if (runningStreams.length === 0) {
+                this.showNotification('No running streams to stop', 'info');
+                return;
+            }
+
+            const confirmMessage = `Stop all ${runningStreams.length} running streams?`;
+            if (!confirm(confirmMessage)) {
+                return;
+            }
+
+            this.showNotification('Stopping all streams...', 'info');
+
+            const response = await fetch('/api/streams/stop-all', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                await this.loadStreams();
+                this.render();
+                this.showNotification(data.message, 'success');
+            } else {
+                throw new Error(data.message || 'Failed to stop all streams');
+            }
+        } catch (error) {
+            console.error('Failed to stop all streams:', error);
+            this.showNotification(`Failed to stop all streams: ${error.message}`, 'error');
         }
     }
 
@@ -523,10 +593,22 @@ class FFmpegStreamsManager {
                             <div class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
                             <span class="text-xs font-medium text-green-400">${this.getStreamCountStatus()}</span>
                         </div>
-                        <button id="add-stream-btn" class="inline-flex items-center justify-center gap-2 rounded-md px-4 py-2.5 text-sm font-semibold text-white bg-[var(--live-color)] hover:bg-[var(--live-color)]/80 transition-all duration-300 shadow-lg">
-                            <span class="material-symbols-rounded">add</span>
-                            🔴 Start New Stream
-                        </button>
+                        <div class="flex items-center gap-2">
+                            <button id="refresh-devices-btn" class="inline-flex items-center justify-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-gray-300 bg-gray-700/50 hover:bg-gray-600/50 transition-all duration-300 border border-gray-600/50" title="Refresh Audio Devices">
+                                <span class="material-symbols-rounded text-sm">refresh</span>
+                                Refresh Devices
+                            </button>
+                            ${this.getRunningStreamsCount() > 0 ? `
+                                <button id="stop-all-streams-btn" class="inline-flex items-center justify-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-red-300 bg-red-900/30 hover:bg-red-800/40 transition-all duration-300 border border-red-700/50" title="Stop All Running Streams">
+                                    <span class="material-symbols-rounded text-sm">stop</span>
+                                    Stop All
+                                </button>
+                            ` : ''}
+                            <button id="add-stream-btn" class="inline-flex items-center justify-center gap-2 rounded-md px-4 py-2.5 text-sm font-semibold text-white bg-[var(--live-color)] hover:bg-[var(--live-color)]/80 transition-all duration-300 shadow-lg">
+                                <span class="material-symbols-rounded">add</span>
+                                🔴 Start New Stream
+                            </button>
+                        </div>
                     </div>
                 </div>
 
@@ -831,6 +913,20 @@ class FFmpegStreamsManager {
                 this.showAddStreamModal();
             });
         }
+
+        const refreshDevicesBtn = document.getElementById('refresh-devices-btn');
+        if (refreshDevicesBtn) {
+            refreshDevicesBtn.addEventListener('click', () => {
+                this.refreshAudioDevices();
+            });
+        }
+
+        const stopAllStreamsBtn = document.getElementById('stop-all-streams-btn');
+        if (stopAllStreamsBtn) {
+            stopAllStreamsBtn.addEventListener('click', () => {
+                this.stopAllStreams();
+            });
+        }
     }
 
     /**
@@ -1039,6 +1135,14 @@ class FFmpegStreamsManager {
         const liveStreams = this.activeStreams.filter(stream => stream.status === 'running').length;
 
         return `${liveStreams}/${totalStreams} Live`;
+    }
+
+    /**
+     * Get count of running streams
+     */
+    getRunningStreamsCount() {
+        if (!this.activeStreams) return 0;
+        return this.activeStreams.filter(stream => stream.status === 'running').length;
     }
 
     /**
