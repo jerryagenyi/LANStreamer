@@ -224,7 +224,18 @@ cp .env.example .env
 npm run dev
 ```
 
-**Step 5: Open in Browser**
+**Step 5: Start Icecast Server**
+```bash
+# Windows (navigate to Icecast installation directory)
+cd "C:\Program Files (x86)\Icecast"
+icecast.exe -c icecast.xml
+
+# macOS/Linux
+icecast -c /usr/local/etc/icecast.xml
+```
+> **⚠️ Important**: Always start Icecast before creating streams to avoid connection errors.
+
+**Step 6: Open in Browser**
 - Open your web browser
 - Go to: `http://localhost:3001`
 - For the admin dashboard: `http://localhost:3001/dashboard`
@@ -271,18 +282,22 @@ Then access: `http://localhost:3002` (BrowserSync with auto-refresh)
 
 **Typical First-Use Workflow:**
 
-1. **Check System Status**: Ensure all components show "✅ Ready"
-2. **Browse Audio Devices**: See what microphones/inputs are detected
-3. **Create Your First Stream**:
+1. **Start Icecast Server First**:
+   - **Windows**: Navigate to `C:\Program Files (x86)\Icecast` and run `icecast.exe -c icecast.xml`
+   - **macOS/Linux**: Run `icecast -c /usr/local/etc/icecast.xml` (or your config path)
+   - **Important**: Always start Icecast before creating streams to avoid connection errors
+2. **Check System Status**: Ensure all components show "✅ Ready" in LANStreamer dashboard
+3. **Browse Audio Devices**: See what microphones/inputs are detected
+4. **Create Your First Stream**:
    - Click "Start New Stream"
    - Select an audio device (e.g., your microphone)
    - Give it a name (e.g., "Main Audio")
    - Click "Start Stream"
-4. **Test the Stream**:
+5. **Test the Stream**:
    - Go to `http://localhost:3001/streams`
    - You should see your stream listed
    - Click "Play" to test audio playback
-5. **Share with Others**: Other devices on your network can access the same URL to listen
+6. **Share with Others**: Other devices on your network can access the same URL to listen
 
 **For Network Access:**
 - Find your computer's IP address (e.g., `192.168.1.100`)
