@@ -441,7 +441,7 @@ class IcecastManager {
                         <p><strong>Host:</strong> ${this.status.host || 'localhost'}</p>
                         <p><strong>Port:</strong> ${this.status.port || '8000'}</p>
                         <p><strong>Uptime:</strong> ${this.formatUptime(this.status.uptime)}</p>
-                        <p><strong>Listeners:</strong> ${this.status.listeners || 0}/100</p>
+                        <p><strong>Listeners:</strong> ${this.status.listeners || 0}/${this.status.maxListeners || 100}</p>
                         ${this.status.version ? `<p><strong>Version:</strong> ${this.status.version}</p>` : ''}
                         ${this.status.platform ? `<p><strong>Platform:</strong> ${this.status.platform}</p>` : ''}
                     </div>

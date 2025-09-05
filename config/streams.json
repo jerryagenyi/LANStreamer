@@ -10,5 +10,17 @@
       "id": "playing_music_1757073242595"
     },
     "createdAt": "2025-09-05T11:54:02.891Z"
+  },
+  "this_is_a_very_long__1757084530308": {
+    "id": "this_is_a_very_long__1757084530308",
+    "deviceId": "ps-input-boom-audio",
+    "name": "this is a very long event title being h",
+    "config": {
+      "name": "this is a very long event title being h",
+      "deviceId": "ps-input-boom-audio",
+      "bitrate": 192,
+      "id": "this_is_a_very_long__1757084530308"
+    },
+    "createdAt": "2025-09-05T15:02:10.545Z"
   }
 }

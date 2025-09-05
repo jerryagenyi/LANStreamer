@@ -1,0 +1,217 @@
+@echo off
+setlocal enabledelayedexpansion
+
+:: LANStreamer Auto-Updater
+:: This script downloads the latest version and updates your installation
+:: while preserving your configuration and data
+
+title LANStreamer Auto-Updater
+color 0A
+
+echo.
+echo ========================================
+echo    LANStreamer Auto-Updater v1.0
+echo ========================================
+echo.
+
+:: Check if we're in the right directory
+if not exist "package.json" (
+    echo ❌ Error: This script must be run from the LANStreamer root directory
+    echo    Make sure you're running it from the folder containing package.json
+    pause
+    exit /b 1
+)
+
+:: Check for internet connection
+echo 🌐 Checking internet connection...
+ping -n 1 github.com >nul 2>&1
+if errorlevel 1 (
+    echo ❌ Error: No internet connection detected
+    echo    Please check your internet connection and try again
+    pause
+    exit /b 1
+)
+
+:: Get current directory
+set "INSTALL_DIR=%CD%"
+set "BACKUP_DIR=%INSTALL_DIR%\update_backup_%date:~-4,4%%date:~-10,2%%date:~-7,2%_%time:~0,2%%time:~3,2%%time:~6,2%"
+set "BACKUP_DIR=%BACKUP_DIR: =0%"
+set "TEMP_DIR=%TEMP%\lanstreamer_update"
+
+echo ✅ Internet connection OK
+echo 📁 Installation directory: %INSTALL_DIR%
+echo.
+
+:: Ask for confirmation
+echo ⚠️  WARNING: This will update LANStreamer to the latest version
+echo    Your configuration and data will be preserved, but the update process
+echo    will temporarily stop any running streams.
+echo.
+set /p "confirm=Do you want to continue? (y/N): "
+if /i not "%confirm%"=="y" (
+    echo Update cancelled by user
+    pause
+    exit /b 0
+)
+
+echo.
+echo 🚀 Starting update process...
+echo.
+
+:: Step 1: Create backup directory
+echo 📦 Step 1/7: Creating backup...
+if exist "%BACKUP_DIR%" rmdir /s /q "%BACKUP_DIR%"
+mkdir "%BACKUP_DIR%" 2>nul
+
+:: Backup important user data
+if exist "data" xcopy "data" "%BACKUP_DIR%\data\" /e /i /h /y >nul 2>&1
+if exist "logs" xcopy "logs" "%BACKUP_DIR%\logs\" /e /i /h /y >nul 2>&1
+if exist ".env" copy ".env" "%BACKUP_DIR%\" >nul 2>&1
+if exist "config\icecast.xml" copy "config\icecast.xml" "%BACKUP_DIR%\" >nul 2>&1
+if exist "device-config.json" copy "device-config.json" "%BACKUP_DIR%\" >nul 2>&1
+
+echo ✅ Backup created at: %BACKUP_DIR%
+
+:: Step 2: Stop any running processes
+echo 🛑 Step 2/7: Stopping LANStreamer processes...
+taskkill /f /im node.exe >nul 2>&1
+taskkill /f /im icecast.exe >nul 2>&1
+timeout /t 2 >nul
+echo ✅ Processes stopped
+
+:: Step 3: Clean temp directory
+echo 🧹 Step 3/7: Preparing download area...
+if exist "%TEMP_DIR%" rmdir /s /q "%TEMP_DIR%"
+mkdir "%TEMP_DIR%"
+echo ✅ Download area ready
+
+:: Step 4: Download latest release
+echo 📥 Step 4/7: Downloading latest version...
+echo    This may take a few minutes depending on your connection...
+
+:: Use PowerShell to download the latest release
+powershell -Command "& {
+    try {
+        $ProgressPreference = 'SilentlyContinue'
+        Write-Host '   🔍 Fetching latest release info...'
+        $release = Invoke-RestMethod -Uri 'https://api.github.com/repos/jerryagenyi/LANStreamer/releases/latest'
+        $downloadUrl = $release.assets | Where-Object { $_.name -like '*LANStreamer*.zip' } | Select-Object -First 1 -ExpandProperty browser_download_url
+        
+        if (-not $downloadUrl) {
+            $downloadUrl = $release.zipball_url
+        }
+        
+        Write-Host ('   📦 Downloading: ' + $release.tag_name)
+        Write-Host ('   🔗 URL: ' + $downloadUrl)
+        
+        $zipPath = '%TEMP_DIR%\lanstreamer-latest.zip'
+        Invoke-WebRequest -Uri $downloadUrl -OutFile $zipPath -UseBasicParsing
+        
+        Write-Host '   ✅ Download completed'
+        exit 0
+    } catch {
+        Write-Host ('   ❌ Download failed: ' + $_.Exception.Message)
+        exit 1
+    }
+}"
+
+if errorlevel 1 (
+    echo ❌ Download failed. Please check your internet connection and try again.
+    echo    You can also manually download from: https://github.com/jerryagenyi/LANStreamer/releases/latest
+    pause
+    exit /b 1
+)
+
+echo ✅ Download completed
+
+:: Step 5: Extract the update
+echo 📂 Step 5/7: Extracting update...
+powershell -Command "& {
+    try {
+        $zipPath = '%TEMP_DIR%\lanstreamer-latest.zip'
+        $extractPath = '%TEMP_DIR%\extracted'
+        
+        Write-Host '   📦 Extracting archive...'
+        Expand-Archive -Path $zipPath -DestinationPath $extractPath -Force
+        
+        # Find the actual content directory (might be nested)
+        $contentDir = Get-ChildItem -Path $extractPath -Directory | Select-Object -First 1
+        if ($contentDir) {
+            $actualPath = $contentDir.FullName
+        } else {
+            $actualPath = $extractPath
+        }
+        
+        Write-Host ('   📁 Content found at: ' + $actualPath)
+        Write-Host '   ✅ Extraction completed'
+        
+        # Write the path to a temp file for batch to read
+        $actualPath | Out-File -FilePath '%TEMP_DIR%\content_path.txt' -Encoding ASCII
+        exit 0
+    } catch {
+        Write-Host ('   ❌ Extraction failed: ' + $_.Exception.Message)
+        exit 1
+    }
+}"
+
+if errorlevel 1 (
+    echo ❌ Extraction failed
+    pause
+    exit /b 1
+)
+
+:: Read the content path
+set /p CONTENT_PATH=<"%TEMP_DIR%\content_path.txt"
+echo ✅ Extraction completed
+
+:: Step 6: Replace files
+echo 🔄 Step 6/7: Installing update...
+echo    Preserving user data and configuration...
+
+:: Remove old files (except user data and this updater)
+for /d %%i in (*) do (
+    if /i not "%%i"=="data" if /i not "%%i"=="logs" if /i not "%%i"=="%BACKUP_DIR:~-20%" (
+        echo    🗑️  Removing old %%i...
+        rmdir /s /q "%%i" 2>nul
+    )
+)
+
+for %%i in (*) do (
+    if /i not "%%i"=="Update LANStreamer.bat" if /i not "%%i"==".env" if /i not "%%i"=="icecast.xml" if /i not "%%i"=="device-config.json" (
+        echo    🗑️  Removing old %%i...
+        del "%%i" 2>nul
+    )
+)
+
+:: Copy new files
+echo    📋 Installing new files...
+xcopy "%CONTENT_PATH%\*" "%INSTALL_DIR%\" /e /i /h /y /exclude:update_exclude.txt >nul 2>&1
+
+:: Step 7: Restore user data
+echo 🔄 Step 7/7: Restoring your data...
+if exist "%BACKUP_DIR%\data" xcopy "%BACKUP_DIR%\data" "data\" /e /i /h /y >nul 2>&1
+if exist "%BACKUP_DIR%\logs" xcopy "%BACKUP_DIR%\logs" "logs\" /e /i /h /y >nul 2>&1
+if exist "%BACKUP_DIR%\.env" copy "%BACKUP_DIR%\.env" "." >nul 2>&1
+if exist "%BACKUP_DIR%\icecast.xml" copy "%BACKUP_DIR%\icecast.xml" "config\" >nul 2>&1
+if exist "%BACKUP_DIR%\device-config.json" copy "%BACKUP_DIR%\device-config.json" "." >nul 2>&1
+
+echo ✅ Data restored
+
+:: Cleanup
+echo 🧹 Cleaning up temporary files...
+if exist "%TEMP_DIR%" rmdir /s /q "%TEMP_DIR%" 2>nul
+
+echo.
+echo ========================================
+echo ✅ UPDATE COMPLETED SUCCESSFULLY!
+echo ========================================
+echo.
+echo 🎉 LANStreamer has been updated to the latest version
+echo 📁 Your backup is saved at: %BACKUP_DIR%
+echo 🔧 Your configuration and data have been preserved
+echo.
+echo 🚀 You can now run "Start LANStreamer Server.bat" to start the updated version
+echo.
+echo ⚠️  Note: You can safely delete the backup folder after confirming everything works
+echo.
+pause

@@ -1,6 +1,7 @@
 import express from 'express';
 import audioDeviceService from '../services/AudioDeviceService.js';
 import IcecastService from '../services/IcecastService.js';
+// import { updateService } from '../services/UpdateService.js';
 import { ErrorHandler, errorMiddleware } from '../utils/errors.js';
 
 const router = express.Router();
@@ -460,6 +461,43 @@ router.get('/icecast/health', async (req, res, next) => {
       timestamp: new Date().toISOString(),
       checks: health.checks,
       details: health.details
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * @route GET /api/system/update-check
+ * @description Check for LANStreamer updates
+ * @access Public
+ */
+router.get('/update-check', async (req, res, next) => {
+  try {
+    // const updateInfo = await updateService.getUpdateInfo();
+    const updateInfo = { hasUpdate: false, currentVersion: '1.0.0', latestVersion: '1.0.0' };
+    res.json({
+      success: true,
+      ...updateInfo
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * @route POST /api/system/update-check/force
+ * @description Force check for updates (bypass cache)
+ * @access Public
+ */
+router.post('/update-check/force', async (req, res, next) => {
+  try {
+    // const updateInfo = await updateService.checkForUpdates();
+    const updateInfo = { hasUpdate: false, currentVersion: '1.0.0', latestVersion: '1.0.0' };
+    res.json({
+      success: true,
+      ...updateInfo,
+      forced: true
     });
   } catch (error) {
     next(error);

@@ -93,18 +93,18 @@
     <div class="flex items-center gap-3">
         <!-- Admin Navigation Links -->
         <div class="flex items-center gap-2">
-            <a href="/streams.html" target="_blank"
+            <a href="/streams" target="_blank"
                class="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-300 hover:text-white bg-gray-800/50 hover:bg-gray-700/50 border border-gray-600/30 hover:border-gray-500/50 rounded-lg transition-all duration-300"
                title="Open Streams Page (for listeners)">
                 <span class="material-symbols-rounded text-sm">radio</span>
                 <span class="hidden sm:inline">Streams</span>
             </a>
-            <a href="/api/health" target="_blank"
+            <button id="logout-btn"
                class="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-300 hover:text-white bg-gray-800/50 hover:bg-gray-700/50 border border-gray-600/30 hover:border-gray-500/50 rounded-lg transition-all duration-300"
-               title="API Health Check">
-                <span class="material-symbols-rounded text-sm">health_and_safety</span>
-                <span class="hidden sm:inline">Health</span>
-            </a>
+               title="Logout from Admin Dashboard">
+                <span class="material-symbols-rounded text-sm">logout</span>
+                <span class="hidden sm:inline">Logout</span>
+            </button>
     </div>
     <div class="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-10 ml-4" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuDSIzxTEv03JUEwpU1vqD79kbeH63SzCaGfIIFbumOYFeslE7o8s5BELsy84X5hdHbqgGM91dgl8SECCQAuQUyN5TzULy0C6hTXlMd2FdmoEp4c0WAiQhyasooFF0UAFZoOLRnhrfiUJjHhWPasQr2g2MWISZolmDkAER-lahc8ZqnqZSr95hHY9Z-0DIFIJDnrExTC0CHjbWsTgsGY2Pj1xH87e8JybvN0dCpF-U1oWs_K8Q3OXkC3yMhMSgHVXCilnq_8LYez-3g");'></div>
     </div>
@@ -371,6 +371,27 @@
     </div>
     </div>
     </div>
+
+    <!-- Footer -->
+    <footer class="mt-8 border-t border-[var(--border-color)] pt-4 pb-6">
+        <div class="flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-gray-500">
+            <div class="flex items-center gap-4">
+                <span id="version-info">LANStreamer v1.0.0</span>
+                <a href="https://github.com/jerryagenyi/LANStreamer" target="_blank" class="text-blue-400 hover:text-blue-300 transition-colors flex items-center gap-1">
+                    <span class="material-symbols-rounded text-sm">open_in_new</span>
+                    GitHub Repository
+                </a>
+            </div>
+            <div class="flex items-center gap-4">
+                <button id="check-updates-btn" class="text-blue-400 hover:text-blue-300 transition-colors flex items-center gap-1">
+                    <span class="material-symbols-rounded text-sm">system_update</span>
+                    Check for Updates
+                </button>
+                <span class="text-gray-600">|</span>
+                <span>© 2024 LANStreamer</span>
+            </div>
+        </div>
+    </footer>
     </main>
     </div>
 
@@ -382,9 +403,12 @@
     <script src="/components/FFmpegStreamsManager.js"></script>
     <script src="/components/EventManager.js"></script>
     <script src="/components/ContactManager.js"></script>
+    <script src="/components/UpdateNotification.js"></script>
 
     <!-- Debug script loading -->
     <script>
+        // Authentication disabled - direct access to dashboard
+
         console.log('🔍 Script loading check:');
         console.log('- ComponentManager:', typeof ComponentManager);
         console.log('- FFmpegStreamsManager:', typeof FFmpegStreamsManager);
@@ -428,6 +452,7 @@
                 await this.initializeComponents();
                 this.setupEventListeners();
                 this.startStatusPolling();
+                this.loadVersionInfo();
 
                 // Check for security vulnerabilities
                 await this.checkSecurityWarning();
@@ -721,21 +746,64 @@
                     const data = await response.json();
                     this.icecastStatus = data.running ? 'running' : 'stopped';
                     this.updateIcecastUI(data);
-                    
+
                     if (data.running) {
                         this.updateHeaderTooltip('icecast-status-text', 'Server Online');
                     } else if (data.installed === false) {
-                        this.updateHeaderTooltip('icecast-status-text', 
-                            `Icecast not found. <a href="https://github.com/jerryagenyi/LANStreamer/blob/main/docs/guides/icecast-installation.md" target="_blank" class="text-blue-400 hover:text-blue-300 underline">Installation Guide</a>`, 
+                        this.updateHeaderTooltip('icecast-status-text',
+                            `Icecast not found. <a href="https://github.com/jerryagenyi/LANStreamer/blob/main/docs/guides/icecast-installation.md" target="_blank" class="text-blue-400 hover:text-blue-300 underline">Installation Guide</a>`,
                             true
                         );
                     } else {
                         this.updateHeaderTooltip('icecast-status-text', 'Server Offline');
+
+                        // Auto-start Icecast if it's installed but not running
+                        if (data.installed && !data.running) {
+                            console.log('🚀 Auto-starting Icecast server...');
+                            this.autoStartIcecast();
+                        }
                     }
                 } catch (error) {
                     console.error('Failed to check Icecast status:', error);
                     this.icecastStatus = 'unknown';
                     this.updateHeaderTooltip('icecast-status-text', 'Status Unknown');
+                }
+            }
+
+            async autoStartIcecast() {
+                try {
+                    console.log('🔄 Attempting to auto-start Icecast...');
+
+                    // Show starting status in UI
+                    this.updateIcecastUI({
+                        running: false,
+                        status: 'starting',
+                        installed: true
+                    });
+                    this.updateHeaderTooltip('icecast-status-text', 'Auto-starting Server...');
+
+                    const response = await fetch('/api/system/icecast/start', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        }
+                    });
+
+                    const result = await response.json();
+
+                    if (result.success) {
+                        console.log('✅ Icecast auto-started successfully');
+                        // Refresh status after a short delay
+                        setTimeout(() => {
+                            this.checkIcecastStatus();
+                        }, 2000);
+                    } else {
+                        console.warn('⚠️ Icecast auto-start failed:', result.error);
+                        this.updateHeaderTooltip('icecast-status-text', 'Auto-start Failed - Click to start manually');
+                    }
+                } catch (error) {
+                    console.error('❌ Error auto-starting Icecast:', error);
+                    this.updateHeaderTooltip('icecast-status-text', 'Auto-start Failed - Click to start manually');
                 }
             }
 
@@ -904,9 +972,11 @@
                 if (data.running) {
                     if (serverStatus) serverStatus.textContent = 'Online';
                     if (serverStatusDot) serverStatusDot.className = 'status-dot online';
-                    
-                    if (listenerCount) listenerCount.textContent = `${data.listeners || 42} / 128`;
-                    const listenerPercent = Math.min((data.listeners || 42) / 128 * 100, 100);
+
+                    const currentListeners = data.listeners || 0;
+                    const maxListeners = data.maxListeners || 100;
+                    if (listenerCount) listenerCount.textContent = `${currentListeners} / ${maxListeners}`;
+                    const listenerPercent = Math.min((currentListeners / maxListeners) * 100, 100);
                     if (listenerBar) listenerBar.style.width = `${listenerPercent}%`;
                     
                     if (data.uptime && serverUptime) {
@@ -1073,11 +1143,11 @@
                 // Temporarily disable LobbyMusicPlayer to test static fallback
                 const originalComponent = window.LobbyMusicPlayer;
                 window.LobbyMusicPlayer = undefined;
-                
+
                 this.componentManager.refreshSection('lobby-music-player').then(() => {
                     this.showNotification('Tested static fallback - check console for status', 'info');
                     this.componentManager.logStatus();
-                    
+
                     // Restore component after 5 seconds
                     setTimeout(() => {
                         window.LobbyMusicPlayer = originalComponent;
@@ -1086,11 +1156,54 @@
                     }, 5000);
                 });
             }
+
+            async loadVersionInfo() {
+                try {
+                    const response = await fetch('/api/system/update-check');
+                    const data = await response.json();
+
+                    if (data.success && data.current) {
+                        const versionElement = document.getElementById('version-info');
+                        if (versionElement) {
+                            versionElement.textContent = `LANStreamer v${data.current}`;
+                        }
+                    }
+                } catch (error) {
+                    console.warn('Failed to load version info:', error);
+                }
+
+                // Set up update check button
+                const updateBtn = document.getElementById('check-updates-btn');
+                if (updateBtn) {
+                    updateBtn.addEventListener('click', () => {
+                        if (window.updateNotification) {
+                            window.updateNotification.forceUpdateCheck();
+                        } else {
+                            this.showNotification('Update checker not available', 'error');
+                        }
+                    });
+                }
+            }
         }
 
         // Initialize dashboard when page loads
         let dashboard;
         document.addEventListener('DOMContentLoaded', () => {
+            // Add logout functionality
+            const logoutBtn = document.getElementById('logout-btn');
+            if (logoutBtn) {
+                logoutBtn.addEventListener('click', async () => {
+                    try {
+                        await fetch('/api/auth/logout', { method: 'POST' });
+                    } catch (error) {
+                        console.log('Logout request failed:', error);
+                    } finally {
+                        localStorage.removeItem('lanstreamer_token');
+                        window.location.href = '/login.html';
+                    }
+                });
+            }
+
             // Add a small delay to ensure all scripts are loaded
             setTimeout(() => {
                 console.log('Initializing LANStreamer Dashboard...');

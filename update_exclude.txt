@@ -1,0 +1,8 @@
+data\
+logs\
+.env
+icecast.xml
+device-config.json
+Update LANStreamer.bat
+update_exclude.txt
+update_backup_*

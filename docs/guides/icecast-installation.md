@@ -1,39 +1,39 @@
 # Icecast Installation Guide
 
-> **Simple 3-step guide to install Icecast streaming server**
+> **Simple guide to install Icecast streaming server for non-technical users**
 
 ## What is Icecast?
 Icecast is the streaming server that broadcasts your audio to listeners. LANStreamer sends audio to Icecast, which then distributes it over the network.
 
-## Quick Install
+## 📥 Easy Installation (Windows)
 
-### Windows (Recommended)
-```powershell
-# Download installer from https://icecast.org/download/
-# Run IcecastWin32-X.X.X-Setup.exe as Administrator
-# Default install location: C:\Program Files (x86)\Icecast\
-```
+### Step 1: Download Icecast
+1. **Visit**: https://icecast.org/download/
+2. **Find**: "Windows" section
+3. **Download**: Click the latest `IcecastWin32-X.X.X-Setup.exe` file
+4. **Save**: Download to your Downloads folder
 
-### macOS
-```bash
-brew install icecast
-```
+### Step 2: Install Icecast
+1. **Right-click** the downloaded file → **"Run as administrator"**
+2. **Follow** the installation wizard (click "Next" through all steps)
+3. **Accept** default installation location: `C:\Program Files (x86)\Icecast\`
+4. **Finish** the installation
 
-### Linux (Ubuntu/Debian)
-```bash
-sudo apt install icecast2 -y
-```
+### Step 3: Verify Installation
+1. **Open File Explorer**
+2. **Navigate to**: `C:\Program Files (x86)\Icecast\`
+3. **Check**: You should see folders like `bin`, `log`, `web`, etc.
+
+> **✅ That's it!** Icecast is now installed and ready to use with LANStreamer.
+
 
 ## Quick Test
 ```bash
-# Check if installed (Windows)
+# Check if installed
 cd "C:\Program Files (x86)\Icecast\bin"
 icecast.exe -v
 
-# Check if installed (macOS/Linux)
-icecast -v
-
-# Start Icecast (Windows)
+# Start Icecast
 cd "C:\Program Files (x86)\Icecast"
 icecast.exe -c icecast.xml
 
@@ -73,7 +73,13 @@ icecast.exe -c icecast.xml
    ```cmd
    ipconfig
    ```
-   Look for IPv4 Address (e.g., 192.168.1.100)
+   Look for "IPv4 Address" under your main network adapter (usually Wi-Fi or Ethernet)
+   
+   **Choose the right IP:**
+   - Use the IP from your **main network connection** (Wi-Fi or Ethernet)
+   - Avoid VPN IPs (usually 100.x.x.x or 10.x.x.x)
+   - Look for addresses starting with `192.168.` or `10.` (local network)
+   - Example: `192.168.1.100` or `10.0.0.50`
 
 ### 🚨 Critical Path Configuration Fix
 
@@ -131,8 +137,7 @@ Error: FATAL: could not open error logging (C:\Program Files (x86)\Icecast\log):
 **"Address already in use" error**
 ```bash
 # Something else is using port 8000
-netstat -tulpn | grep :8000  # Linux/Mac
-netstat -ano | findstr :8000  # Windows
+netstat -ano | findstr :8000
 # Kill the process or change Icecast port in config
 ```
 

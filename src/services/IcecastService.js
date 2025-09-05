@@ -211,6 +211,9 @@ class IcecastService {
         await this.ensureConfigDirectory();
       }
 
+      // Step 2.5: Parse max listeners from config
+      this.maxListeners = await this.parseMaxListeners();
+
       // Step 3: Check if already running
       await this.checkRunningStatus();
 
@@ -508,6 +511,45 @@ class IcecastService {
     }
   }
 
+  /**
+   * Parse max listeners from icecast.xml configuration
+   */
+  async parseMaxListeners() {
+    try {
+      if (!this.paths.config || !await fs.pathExists(this.paths.config)) {
+        logger.warn('Icecast config file not found, using default max listeners');
+        return 100;
+      }
+
+      const configContent = await fs.readFile(this.paths.config, 'utf8');
+
+      // Parse XML to find <clients> element
+      const clientsMatch = configContent.match(/<clients>(\d+)<\/clients>/);
+      if (clientsMatch) {
+        const maxListeners = parseInt(clientsMatch[1]);
+        logger.icecast('Parsed max listeners from config', { maxListeners, configPath: this.paths.config });
+        return maxListeners;
+      }
+
+      // Fallback: look for <client-timeout> section and find <clients> nearby
+      const clientTimeoutSection = configContent.match(/<client-timeout>[\s\S]*?<\/client-timeout>/);
+      if (clientTimeoutSection) {
+        const nearbyClientsMatch = configContent.match(/<clients>(\d+)<\/clients>/);
+        if (nearbyClientsMatch) {
+          const maxListeners = parseInt(nearbyClientsMatch[1]);
+          logger.icecast('Found max listeners near client-timeout section', { maxListeners });
+          return maxListeners;
+        }
+      }
+
+      logger.warn('Could not parse max listeners from config, using default');
+      return 100;
+    } catch (error) {
+      logger.error('Error parsing max listeners from config:', error);
+      return 100;
+    }
+  }
+
   async checkRunningStatus() {
     try {
       const response = await fetch(`http://${config.icecast.host}:${config.icecast.port}/admin/stats.xml`, {
@@ -535,7 +577,8 @@ class IcecastService {
       uptime: 0,
       version: installationCheck.version,
       port: config.icecast.port,
-      host: config.icecast.host
+      host: config.icecast.host,
+      maxListeners: this.maxListeners || 100 // Default fallback
     };
 
     if (stats) {
@@ -546,7 +589,8 @@ class IcecastService {
         version: stats.server_id || installationCheck.version,
         connections: parseInt(stats.clients) || 0,
         sources: parseInt(stats.sources) || 0,
-        listeners: parseInt(stats.listeners) || 0
+        listeners: parseInt(stats.listeners) || 0,
+        maxListeners: this.maxListeners || 100
       };
     }
 

@@ -1,12 +1,16 @@
 # LANStreamer User Guides
 
-> **Simple, actionable guides to get you streaming quickly**
+> **Simple, step-by-step guides for non-technical users**
 
-## Quick Start Guides
+## 📦 Required Software Installation
 
-### 📦 Installation
-- **[Icecast Installation](./icecast-installation.md)** - Install the streaming server (3 minutes)
-- **[FFmpeg Installation](./ffmpeg-installation.md)** - Install the audio processor (2 minutes)
+**Before using LANStreamer, you need to install these two programs:**
+
+### Essential Components
+- **[FFmpeg Installation](./ffmpeg-installation.md)** - Audio processor (5 minutes) ⭐ **Start here**
+- **[Icecast Installation](./icecast-installation.md)** - Streaming server (5 minutes)
+
+> **💡 Why do I need these?** LANStreamer is a web application that coordinates these two powerful tools to create your streaming server. Think of LANStreamer as the "control panel" and FFmpeg/Icecast as the "engines" that do the actual work.
 
 ### 🎧 Understanding LANStreamer
 - **[Audio Pipeline Concepts](./audio-pipeline-simple.md)** - How audio flows from source to listeners
@@ -43,9 +47,7 @@ These comprehensive guides contain extensive technical details:
 
 ## Supported Platforms
 
-- ✅ **Windows** (10/11)
-- ✅ **macOS** (Intel & Apple Silicon)
-- ✅ **Linux** (Ubuntu/Debian/CentOS/RHEL)
+- ✅ **Windows** (10/11) - Fully supported with one-click installer
 
 ## Getting Help
 

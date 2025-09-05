@@ -181,12 +181,12 @@ class EventManager {
                                 <label class="text-xs font-medium text-gray-300">Event Title</label>
                                 <input type="text"
                                        id="event-title"
-                                       maxlength="100"
+                                       maxlength="35"
                                        class="w-full px-3 py-2 bg-[#111111] border border-[var(--border-color)] rounded-lg text-sm text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)]/50 focus:border-[var(--primary-color)]"
                                        placeholder="Live Audio Streams"
                                        value="${this.eventDetails.eventTitle}">
                                 <div class="text-xs text-gray-500 mt-1">
-                                    <span id="event-title-count">${this.eventDetails.eventTitle.length}</span>/100 characters
+                                    <span id="event-title-count">${this.eventDetails.eventTitle.length}</span>/35 characters
                                 </div>
                             </div>
 
@@ -195,9 +195,13 @@ class EventManager {
                                 <label class="text-xs font-medium text-gray-300">Event Subtitle</label>
                                 <input type="text" 
                                        id="event-subtitle" 
+                                       maxlength="35"
                                        class="w-full px-3 py-2 bg-[#111111] border border-[var(--border-color)] rounded-lg text-sm text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)]/50 focus:border-[var(--primary-color)]" 
                                        placeholder="Click play to listen to any available stream" 
                                        value="${this.eventDetails.eventSubtitle}">
+                                <div class="text-xs text-gray-500 mt-1">
+                                    <span id="event-subtitle-count">${(this.eventDetails.eventSubtitle || '').length}</span>/35 characters
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -230,9 +234,13 @@ class EventManager {
                                 </div>
                                 <input type="text" 
                                        id="about-subtitle" 
+                                       maxlength="35"
                                        class="w-full px-3 py-2 bg-[#111111] border border-[var(--border-color)] rounded-lg text-sm text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)]/50 focus:border-[var(--primary-color)]" 
                                        placeholder="About this event" 
                                        value="${this.eventDetails.aboutSubtitle}">
+                                <div class="text-xs text-gray-500 mt-1">
+                                    <span id="about-subtitle-count">${(this.eventDetails.aboutSubtitle || '').length}</span>/35 characters
+                                </div>
                             </div>
 
                             <!-- About Description -->
@@ -240,8 +248,12 @@ class EventManager {
                                 <label class="text-xs font-medium text-gray-300">About Description</label>
                                 <textarea id="about-description" 
                                           rows="3"
+                                          maxlength="100"
                                           class="w-full px-3 py-2 bg-[#111111] border border-[var(--border-color)] rounded-lg text-sm text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)]/50 focus:border-[var(--primary-color)] resize-none" 
                                           placeholder="Welcome to LANStreamer - your local audio streaming platform. Listen to live audio streams from your network.">${this.eventDetails.aboutDescription}</textarea>
+                                <div class="text-xs text-gray-500 mt-1">
+                                    <span id="about-description-count">${(this.eventDetails.aboutDescription || '').length}</span>/100 characters
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -311,7 +323,7 @@ class EventManager {
         if (eventTitleInput) {
             eventTitleInput.addEventListener('input', (e) => {
                 this.updateEventField('eventTitle', e.target.value);
-                this.updateCharacterCount('event-title-count', e.target.value.length, 100);
+                this.updateCharacterCount('event-title-count', e.target.value.length, 35);
             });
         }
 
@@ -319,6 +331,7 @@ class EventManager {
         if (eventSubtitleInput) {
             eventSubtitleInput.addEventListener('input', (e) => {
                 this.updateEventField('eventSubtitle', e.target.value);
+                this.updateCharacterCount('event-subtitle-count', e.target.value.length, 35);
             });
         }
 
@@ -327,6 +340,7 @@ class EventManager {
         if (aboutSubtitleInput) {
             aboutSubtitleInput.addEventListener('input', (e) => {
                 this.updateEventField('aboutSubtitle', e.target.value);
+                this.updateCharacterCount('about-subtitle-count', e.target.value.length, 35);
             });
         }
 
@@ -334,6 +348,7 @@ class EventManager {
         if (aboutDescriptionInput) {
             aboutDescriptionInput.addEventListener('input', (e) => {
                 this.updateEventField('aboutDescription', e.target.value);
+                this.updateCharacterCount('about-description-count', e.target.value.length, 100);
             });
         }
 

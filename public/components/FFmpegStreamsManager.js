@@ -359,14 +359,21 @@ class FFmpegStreamsManager {
                 <form id="editStreamForm" class="space-y-4">
                     <div>
                         <label class="block text-sm font-medium text-gray-300 mb-2">Stream Name</label>
-                        <input
-                            type="text"
-                            id="editStreamName"
-                            value="${stream.name || ''}"
-                            class="w-full px-3 py-2 bg-[#1a1a1a] border border-[var(--border-color)] rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-[var(--primary-color)] transition-colors"
-                            placeholder="Enter stream name"
-                            required
-                        >
+                        <div class="relative">
+                            <input
+                                type="text"
+                                id="editStreamName"
+                                value="${stream.name || ''}"
+                                maxlength="35"
+                                class="w-full px-3 py-2 bg-[#1a1a1a] border border-[var(--border-color)] rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-[var(--primary-color)] transition-colors pr-12"
+                                placeholder="Enter stream name"
+                                required
+                            >
+                            <div class="absolute right-3 top-1/2 transform -translate-y-1/2">
+                                <span id="edit-stream-name-counter" class="text-xs text-gray-400">${(stream.name || '').length}/35</span>
+                            </div>
+                        </div>
+                        <p class="text-xs text-gray-400 mt-1">Maximum 35 characters</p>
                     </div>
 
                     <div>
@@ -406,6 +413,29 @@ class FFmpegStreamsManager {
 
         document.body.appendChild(modal);
 
+        // Setup character counter for edit stream name
+        const editStreamNameInput = document.getElementById('editStreamName');
+        const editStreamNameCounter = document.getElementById('edit-stream-name-counter');
+        
+        if (editStreamNameInput && editStreamNameCounter) {
+            const updateCounter = () => {
+                const length = editStreamNameInput.value.length;
+                editStreamNameCounter.textContent = `${length}/35`;
+                
+                // Change color based on character count
+                if (length > 30) {
+                    editStreamNameCounter.className = 'text-xs text-red-400';
+                } else if (length > 25) {
+                    editStreamNameCounter.className = 'text-xs text-yellow-400';
+                } else {
+                    editStreamNameCounter.className = 'text-xs text-gray-400';
+                }
+            };
+            
+            editStreamNameInput.addEventListener('input', updateCounter);
+            updateCounter(); // Initial update
+        }
+
         // Handle form submission
         const form = modal.querySelector('#editStreamForm');
         form.addEventListener('submit', async (e) => {
@@ -426,6 +456,9 @@ class FFmpegStreamsManager {
                     throw new Error('Please fill in all fields');
                 }
 
+                // Basic sanitization - remove potentially dangerous characters
+                const sanitizedName = name.replace(/[<>\"'&]/g, '');
+
                 // Update stream via API
                 const response = await fetch('/api/streams/update', {
                     method: 'POST',
@@ -434,7 +467,7 @@ class FFmpegStreamsManager {
                     },
                     body: JSON.stringify({
                         streamId: stream.id,
-                        name: name,
+                        name: sanitizedName,
                         deviceId: deviceId
                     })
                 });
@@ -764,18 +797,7 @@ class FFmpegStreamsManager {
                         </div>
                     </div>
 
-                    ${errorMessage ? `
-                    <!-- Error Message -->
-                    <div class="w-full mt-3 p-3 bg-red-900/20 border border-red-500/30 rounded-lg">
-                        <div class="flex items-start gap-2">
-                            <span class="material-symbols-rounded text-red-400 text-sm mt-0.5">error</span>
-                            <div>
-                                <p class="text-red-300 text-sm font-medium">Stream Error</p>
-                                <p class="text-red-200 text-xs mt-1">${errorMessage}</p>
-                            </div>
-                        </div>
-                    </div>
-                    ` : ''}
+
 
                     <!-- Stream Actions -->
                     <div class="flex items-center gap-3 w-full sm:w-auto">
@@ -884,15 +906,28 @@ class FFmpegStreamsManager {
                 ` : `
                     <!-- Error Status Info -->
                     <div class="mt-4 p-3 bg-red-500/10 border border-red-500/20 rounded-lg">
-                        <div class="flex items-center gap-2">
-                            <span class="material-symbols-rounded text-sm text-red-400">error</span>
-                            <span class="text-xs text-red-400">Stream encountered an error. Check logs or click Edit to change device, then Start.</span>
+                        <div class="flex items-start gap-2">
+                            <span class="material-symbols-rounded text-sm text-red-400 mt-0.5">error</span>
+                            <div class="flex-1">
+                                <p class="text-xs text-red-300 font-medium mb-1">${errorMessage}</p>
+                                <p class="text-xs text-red-400/80">Click Edit to change device, then Start.</p>
+                            </div>
                         </div>
                     </div>
                 `}
             </div>
         `;
         }).join('');
+    }
+
+    /**
+     * Check if VoiceMeeter devices are present
+     */
+    hasVoiceMeeterDevices() {
+        return this.audioDevices.some(device =>
+            device.name.toLowerCase().includes('voicemeeter') ||
+            device.name.toLowerCase().includes('vb-audio')
+        );
     }
 
     /**
@@ -981,7 +1016,18 @@ class FFmpegStreamsManager {
                                 <span class="material-symbols-rounded text-sm mr-1">label</span>
                                 Stream Name
                             </label>
-                            <input type="text" id="stream-name" class="w-full bg-[#2A2A2A] border border-[var(--border-color)] text-white text-sm rounded-md focus:ring-[var(--primary-color)] focus:border-[var(--primary-color)] block px-3 py-2.5" placeholder="e.g., Main Room Audio, DJ Mix, Podcast" required>
+                            <div class="relative">
+                                <input type="text" 
+                                       id="stream-name" 
+                                       maxlength="35"
+                                       class="w-full bg-[#2A2A2A] border border-[var(--border-color)] text-white text-sm rounded-md focus:ring-[var(--primary-color)] focus:border-[var(--primary-color)] block px-3 py-2.5 pr-12" 
+                                       placeholder="e.g., Main Room Audio, DJ Mix, Podcast" 
+                                       required>
+                                <div class="absolute right-3 top-1/2 transform -translate-y-1/2">
+                                    <span id="stream-name-counter" class="text-xs text-gray-400">0/35</span>
+                                </div>
+                            </div>
+                            <p class="text-xs text-gray-400 mt-1">Maximum 35 characters</p>
                         </div>
 
                         <div>
@@ -1000,6 +1046,11 @@ class FFmpegStreamsManager {
                                 `).join('')}
                             </select>
                             <p class="text-xs text-gray-400 mt-1">💡 Install VoiceMeeter for virtual audio routing</p>
+                            ${this.hasVoiceMeeterDevices() ? `
+                                <div class="mt-2 p-2 bg-yellow-500/10 border border-yellow-500/20 rounded text-xs text-yellow-300">
+                                    ⚠️ <strong>VoiceMeeter Notice:</strong> Virtual devices may occasionally disappear due to driver restarts. If streaming fails, try restarting VoiceMeeter or refresh audio devices.
+                                </div>
+                            ` : ''}
                         </div>
 
                         <div>
@@ -1032,6 +1083,29 @@ class FFmpegStreamsManager {
 
         document.body.appendChild(modal);
 
+        // Setup character counter for stream name
+        const streamNameInput = document.getElementById('stream-name');
+        const streamNameCounter = document.getElementById('stream-name-counter');
+        
+        if (streamNameInput && streamNameCounter) {
+            const updateCounter = () => {
+                const length = streamNameInput.value.length;
+                streamNameCounter.textContent = `${length}/35`;
+                
+                // Change color based on character count
+                if (length > 30) {
+                    streamNameCounter.className = 'text-xs text-red-400';
+                } else if (length > 25) {
+                    streamNameCounter.className = 'text-xs text-yellow-400';
+                } else {
+                    streamNameCounter.className = 'text-xs text-gray-400';
+                }
+            };
+            
+            streamNameInput.addEventListener('input', updateCounter);
+            updateCounter(); // Initial update
+        }
+
         // Handle form submission
         const form = modal.querySelector('#add-stream-form');
         form.addEventListener('submit', async (e) => {
@@ -1048,16 +1122,20 @@ class FFmpegStreamsManager {
             submitBtn.disabled = true;
 
             try {
-                const streamName = document.getElementById('stream-name').value;
+                const streamName = document.getElementById('stream-name').value.trim();
+                
+                // Basic sanitization - remove potentially dangerous characters
+                const sanitizedName = streamName.replace(/[<>\"'&]/g, '');
+                
                 // Generate clean stream ID from name
-                const cleanId = streamName
+                const cleanId = sanitizedName
                     .toLowerCase()
                     .replace(/[^a-z0-9\s]/g, '') // Remove special characters
                     .replace(/\s+/g, '_') // Replace spaces with underscores
                     .substring(0, 20); // Limit length
 
                 const streamConfig = {
-                    name: streamName,
+                    name: sanitizedName,
                     deviceId: document.getElementById('stream-device').value,
                     bitrate: parseInt(document.getElementById('stream-bitrate').value),
                     id: `${cleanId}_${Date.now()}`

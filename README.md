@@ -2,7 +2,121 @@
 
 A comprehensive solution that turns a standard PC into a multi-channel audio streaming server for local area networks (LAN). This project provides a **web-based application** that orchestrates **FFmpeg** and **Icecast** to deliver local, live, low-latency audio broadcasts for events like language interpretation, meetings, or conferences.
 
-For advanced users or for troubleshooting, **manual setup guides** are also available. If you have ideas and use-cases for improving this system, contact jerryagenyi@gmail.com.
+## ⚠️ **SECURITY NOTICE - IMPORTANT!**
+
+**🔐 CHANGE YOUR ADMIN LOGIN DETAILS IMMEDIATELY AFTER INSTALLATION!**
+
+LANStreamer comes with **default admin credentials** for easy setup, but you **MUST change these** to protect your installation:
+
+- **Default Username**: `admin`
+- **Default Password**: `lanstreamer123`
+
+**To change these:**
+1. Copy `env.example` to `.env` (if not already done)
+2. Edit the `.env` file and change:
+   - `ADMIN_USERNAME=your-new-username`
+   - `ADMIN_PASSWORD=your-strong-password`
+3. Restart LANStreamer
+
+**Why this matters:**
+- Anyone on your network can access the admin dashboard with default credentials
+- The admin dashboard controls all streaming functions
+- Default credentials are publicly known
+
+> **💡 Pro Tip**: Use a strong password with numbers, symbols, and mixed case letters!
+
+## 🚀 Quick Start (Non-Technical Users)
+
+**The easiest way to get started - no command line needed!**
+
+### Step 1: Install Prerequisites (One-time setup)
+**You need these two programs installed first:**
+- **Node.js**: Download from https://nodejs.org/ (choose "LTS" version)
+- **FFmpeg & Icecast**: See our [Installation Guides](docs/guides/README.md) for step-by-step instructions
+
+> **💡 Tip**: The installation guides are written for non-technical users with screenshots and simple steps.
+
+### Step 2: Download & Extract LANStreamer
+1. **Download**: Go to https://github.com/jerryagenyi/LANStreamer
+2. **Get ZIP**: Click the green **"Code"** button → **"Download ZIP"**
+3. **Extract**: Right-click the ZIP file → **"Extract All"** or **"Extract Here"**
+4. **Open Folder**: Navigate to the extracted `LANStreamer` folder
+
+### Step 3: One-Click Start
+1. **Double-click**: `Start LANStreamer Server.bat`
+2. **Wait**: The system will automatically install dependencies and start
+3. **Note the URLs**: The terminal will show your network addresses
+
+### Step 4: Access Your Streaming Server
+- **Admin Dashboard**: Visit `http://YOUR-IP:3001` (login required - see credentials below)
+- **Listener Page**: Visit `http://YOUR-IP:3001/streams` (public access for your audience)
+
+**Example URLs:**
+- Admin: `http://192.168.1.100:3001`
+- Listeners: `http://192.168.1.100:3001/streams`
+
+**Default Admin Credentials:**
+- **Username**: `admin`
+- **Password**: `lanstreamer123`
+- **⚠️ CRITICAL**: Change these immediately in your `.env` file for security!
+
+> **💡 That's it!** Your streaming server is now running. Share the listener URL with your audience.
+
+---
+
+## 🚀 Quick Start (Technical Users)
+
+**For developers and command-line users:**
+
+```bash
+# Clone the repository
+git clone https://github.com/jerryagenyi/LANStreamer.git
+cd LANStreamer
+
+# Install dependencies
+npm install
+
+# Start the server
+npm start
+```
+
+Then visit `http://localhost:3001` for the admin dashboard.
+
+---
+
+## 🔄 Updating LANStreamer
+
+**For ZIP Download Users (Recommended):**
+
+LANStreamer includes automatic update scripts that preserve your settings:
+
+### **Option 1: Full Update (Recommended)**
+1. **Double-click** `Update LANStreamer.bat` in your installation folder
+2. **Follow the prompts** - the script will:
+   - ✅ Backup your configuration and data
+   - ✅ Download the latest version
+   - ✅ Install updates while preserving your settings
+   - ✅ Show detailed progress
+
+### **Option 2: Quick Update**
+1. **Double-click** `Quick Update LANStreamer.bat` for a faster update
+2. **Less verbose** but preserves your critical settings
+
+### **Option 3: Manual Update**
+1. **Backup** your `.env`, `icecast.xml`, `data/`, and `logs/` folders
+2. **Download** the latest release from [GitHub Releases](https://github.com/jerryagenyi/LANStreamer/releases/latest)
+3. **Extract** the new files over your installation
+4. **Restore** your backed up files
+
+**For Git Users:**
+```bash
+git pull origin main
+npm install  # If dependencies changed
+```
+
+> **💡 Pro Tip:** The web dashboard will notify you when updates are available!
+
+---
 
 ## Why I Built This
 
@@ -17,6 +131,8 @@ For example:
 
 ## Table of Contents
 
+- [🚀 Quick Start (Non-Technical Users)](#-quick-start-non-technical-users)
+- [🚀 Quick Start (Technical Users)](#-quick-start-technical-users)
 - [Project Structure](#project-structure)
 - [Features](#features)
 - [How It Works](#how-it-works)
@@ -26,7 +142,6 @@ For example:
   - [Prerequisites](#prerequisites)
   - [Quick Installation Guide](#quick-installation-guide)
   - [Audio Device Configuration](#audio-device-configuration)
-  - [🚀 Quick Start](#-quick-start)
   - [❓ Troubleshooting Quick Start](#-troubleshooting-quick-start)
 - [Documentation](#documentation)
 - [Configuration](#configuration)
@@ -37,7 +152,7 @@ For example:
 
 ```
 LANStreamer/
-├── Start-LANStreamer.bat                   # Windows startup batch file
+├── Start LANStreamer Server.bat            # Windows startup batch file
 ├── Create-Desktop-Shortcut.ps1             # Desktop shortcut creator
 ├── README.md                               # This file - project overview
 ├── package.json                            # Node.js dependencies and scripts
@@ -130,7 +245,7 @@ The user-friendly page where listeners:
 ### Prerequisites
 
 **System Requirements:**
-- **Operating System**: Windows 10/11, macOS 10.15+, or Linux (Ubuntu 18.04+)
+- **Operating System**: Windows 10/11
 - **Node.js**: Version 18 or higher ([Download here](https://nodejs.org/))
 - **Git**: Only needed if using git clone method ([Download here](https://git-scm.com/)) - or download ZIP file instead
 - **Audio Input**: Any audio device (built-in microphone, USB microphone, audio interface, etc.)
@@ -153,24 +268,6 @@ winget install FFmpeg
 # Download Windows installer and run it
 ```
 
-#### macOS (Using Homebrew)
-```bash
-# Install FFmpeg
-brew install ffmpeg
-
-# Install Icecast
-brew install icecast
-```
-
-#### Linux (Ubuntu/Debian)
-```bash
-# Install FFmpeg
-sudo apt update
-sudo apt install ffmpeg
-
-# Install Icecast
-sudo apt install icecast2
-```
 
 **Verify Installation:**
 ```bash
@@ -180,9 +277,6 @@ ffmpeg -version
 # Check Icecast (Windows)
 cd "C:\Program Files (x86)\Icecast\bin"
 icecast.exe -v
-
-# Check Icecast (macOS/Linux)
-icecast -v
 ```
 
 
@@ -211,53 +305,49 @@ If using **Dante Virtual Soundcard** for interpretation:
 
 > **📝 Note:** Detailed setup guides for specific hardware configurations are available in the [`manual-setup/`](manual-setup/) folder.
 
-### 🚀 Quick Start
+### � Advanced Setup Options
 
-**Step 1: Download LANStreamer**
-
-**Option A: Using Git (for developers)**
+**Create Desktop Shortcut (Optional)**
 ```bash
-git clone https://github.com/jerryagenyi/LANStreamer.git
-cd LANStreamer
+# Navigate to your LANStreamer folder, then run:
+powershell -ExecutionPolicy Bypass -File Create-Desktop-Shortcut.ps1
+```
+
+**Desktop Shortcut Benefits:**
+- ✅ **One-click startup**: Double-click to start LANStreamer
+- ✅ **Dependency check**: Automatically installs npm packages if needed
+- ✅ **Icecast integration**: Option to start Icecast server automatically
+- ✅ **Error handling**: Clear error messages if something goes wrong
+- ✅ **Professional look**: Custom icon and proper Windows integration
+
+**Additional Options:**
+- **Pin to Taskbar**: Right-click shortcut → "Pin to taskbar"
+- **Pin to Start Menu**: Right-click shortcut → "Pin to Start"
+
+> **📍 Important**: The batch file expects Icecast to be installed at `C:\Program Files (x86)\Icecast`. If your Icecast is installed elsewhere, you'll need to start it manually or modify the batch file path.
+
+### 🔧 Advanced: Manual Startup
+
+If you prefer to start LANStreamer manually:
+
+**Step 1: Install Dependencies**
+```bash
 npm install
 ```
 
-**Option B: Download ZIP File (for everyone)**
-1. Go to: https://github.com/jerryagenyi/LANStreamer
-2. Click the green **"Code"** button
-3. Click **"Download ZIP"**
-4. Save the ZIP file to your computer (e.g., Downloads folder)
-5. Right-click the ZIP file and select **"Extract All"** or **"Extract Here"**
-6. Open the extracted `LANStreamer` folder
-7. Open Command Prompt or PowerShell in that folder
-8. Run: `npm install`
-
-**Step 2: Start LANStreamer**
+**Step 2: Start LANStreamer Server**
 ```bash
 npm start
 ```
 
-**Step 3: Open Browser**
-- Go to: `http://localhost:3001`
-
-**Step 5a: Easy Startup (Windows Users)**
+**Step 3: Start Icecast Server (separate terminal)**
 ```bash
-# Use the convenient batch file (recommended)
-double-click Start-LANStreamer.bat
-
-# Or create a desktop shortcut for one-click access
-# First, navigate to the LANStreamer project folder, then run:
-
-# PowerShell:
-cd C:\path\to\LANStreamer
-powershell -ExecutionPolicy Bypass -File Create-Desktop-Shortcut.ps1
-
-# Command Prompt:
-cd C:\path\to\LANStreamer
-powershell.exe -ExecutionPolicy Bypass -File Create-Desktop-Shortcut.ps1
+cd "C:\Program Files (x86)\Icecast\bin"
+icecast.exe -c ..\icecast.xml
 ```
 
-> **📍 Important**: The batch file expects Icecast to be installed at `C:\Program Files (x86)\Icecast`. If your Icecast is installed elsewhere, you'll need to start it manually or modify the batch file path.
+**Step 4: Access LANStreamer**
+- Open browser to: `http://localhost:3001` (admin) or `http://localhost:3001/streams` (listeners)
 
 **Desktop Shortcut Benefits:**
 - ✅ **One-click startup**: Double-click to start LANStreamer
@@ -290,7 +380,7 @@ icecast -c /usr/local/etc/icecast.xml
 
 **🎉 That's it!** LANStreamer should now be running and ready to detect your audio devices.
 
-> **💡 Pro Tip**: The `Start-LANStreamer.bat` file handles dependency installation, server startup, and can optionally start Icecast for you!
+> **💡 Pro Tip**: The `Start LANStreamer Server.bat` file handles dependency installation, server startup, and can optionally start Icecast for you!
 
 ---
 
@@ -330,22 +420,21 @@ icecast -c /usr/local/etc/icecast.xml
 **Typical First-Use Workflow:**
 
 > **📋 Correct Startup Order:**
-> 1. **Start LANStreamer Server** (`npm start` or use `Start-LANStreamer.bat`)
+> 1. **Start LANStreamer Server** (`npm start` or use `Start LANStreamer Server.bat`)
 > 2. **Start Icecast Server**
 > 3. **Create/Start FFmpeg Streams**
 
 **Detailed Steps:**
 
 1. **Start LANStreamer Server**:
-   - **Easy Way**: Double-click `Start-LANStreamer.bat` (Windows)
+   - **Easy Way**: Double-click `Start LANStreamer Server.bat` (Windows)
    - **Manual Way**: Run `npm start` in terminal
    - **Wait for**: "Server is listening on http://0.0.0.0:3001"
 
 2. **Start Icecast Server**:
-   - **Windows**: Navigate to `C:\Program Files (x86)\Icecast\bin` and run `icecast.exe -c ..\icecast.xml`
+   - Navigate to `C:\Program Files (x86)\Icecast\bin` and run `icecast.exe -c ..\icecast.xml`
    - **Recommended**: Double-click `icecast.bat` in the Icecast root folder (runs the .exe file in the bin folder automatically)
-   - **macOS/Linux**: Run `icecast -c /usr/local/etc/icecast.xml` (or your config path) [not confirmed yet]
-   - **Batch File**: The `Start-LANStreamer.bat` can do this for you automatically
+   - **Batch File**: The `Start LANStreamer Server.bat` can do this for you automatically
 
 3. **Check System Status**: Open `http://localhost:3001` and ensure all components show "✅ Ready"
 
@@ -389,18 +478,61 @@ If you wish to understand the core components or run the system without the web 
 
 The application uses environment variables for configuration. Most users only need to change a few settings:
 
-**Essential Setup:**
-1. Copy `.env.example` to `.env`
+### **Essential Security Setup:**
+1. **Copy** `env.example` to `.env`
 2. **Change these values** for security:
-   - `JWT_SECRET` - Used for secure authentication
-   - `ADMIN_PASSWORD` - Dashboard admin password
 
-**Optional Settings:**
+**🔐 Critical Security Settings:**
+```bash
+# Admin login credentials (CHANGE THESE!)
+ADMIN_USERNAME=admin                    # Your admin username
+ADMIN_PASSWORD=your-strong-password     # Use a strong password!
+
+# JWT secret for authentication tokens (CHANGE THIS!)
+JWT_SECRET=your-super-secret-jwt-key-here-make-it-long-and-random-123456789
+
+# Session secret for additional security (CHANGE THIS!)
+SESSION_SECRET=your-super-secret-session-key-here-make-it-long-and-random-987654321
+```
+
+**📝 Example Strong Passwords:**
+- `MySecureLANStreamer2024!`
+- `AudioStreaming@2024#Secure`
+- `LANStreamer-Admin-Pass123!`
+
+**🔑 Example JWT/Session Secrets:**
+- `lanstreamer-jwt-secret-key-2024-production-very-long-and-secure-123456789`
+- `my-super-secret-jwt-token-for-lanstreamer-authentication-987654321`
+
+### **Optional Settings:**
 - `DEFAULT_BITRATE` - Audio quality (128k is good for most uses)
 - `FFMPEG_PATH` - Only if FFmpeg isn't in your system PATH
 - `LOG_LEVEL` - Set to `error` for less verbose logging
 
 > **💡 Note**: Icecast passwords are configured in the `icecast.xml` file, not in `.env`
+
+## 🔐 Security Features
+
+LANStreamer includes built-in security to protect your admin dashboard:
+
+### **Admin Authentication:**
+- **Login Required**: Admin dashboard requires username/password
+- **JWT Tokens**: Secure authentication with 24-hour expiration
+- **Public Access**: Listener page (`/streams`) remains accessible without login
+- **Session Management**: Automatic logout and token refresh
+
+### **Input Protection:**
+- **Character Limits**: Form inputs limited to prevent abuse
+- **Input Sanitization**: Dangerous characters automatically removed
+- **Local Network Only**: Designed for trusted local network use
+
+### **Security Best Practices:**
+1. **Change Default Credentials**: Always update admin username/password
+2. **Use Strong Secrets**: Generate long, random JWT and session secrets
+3. **Regular Updates**: Keep LANStreamer updated for security patches
+4. **Network Security**: Ensure your local network is secure
+
+> **⚠️ Security Note**: While LANStreamer includes security features, it's designed for trusted local networks. For production use, consider additional network security measures.
 
 ## Technology Stack
 

@@ -1,44 +1,49 @@
 # FFmpeg Installation Guide
 
-> **Simple 3-step guide to install FFmpeg for audio processing**
+> **Simple guide to install FFmpeg for non-technical users**
 
 ## What is FFmpeg?
 FFmpeg is the audio processing engine that captures sound from your devices and sends it to Icecast for streaming.
 
-## Quick Install
+## 📥 Easy Installation (Windows)
 
-### Windows (Easiest)
-```powershell
-# Open Command Prompt or PowerShell as Administrator
-winget install FFmpeg
-```
-**✨ This is the easiest method - automatically handles PATH setup!**
+### Method 1: Automatic Installation (Recommended)
+1. **Press** `Windows Key + R`
+2. **Type**: `cmd` and press `Ctrl + Shift + Enter` (this opens as Administrator)
+3. **Copy and paste**: `winget install FFmpeg`
+4. **Press Enter** and wait for installation to complete
+5. **Close** the command prompt
 
-### macOS
-```bash
-brew install ffmpeg
-```
+**✨ This is the easiest method - automatically handles everything!**
 
-### Linux (Ubuntu/Debian)
-```bash
-sudo apt install ffmpeg -y
-```
+### Method 2: Manual Installation (If Method 1 fails)
+1. **Visit**: https://ffmpeg.org/download.html
+2. **Click**: "Windows" → "Windows builds by BtbN"
+3. **Download**: Latest release (usually `ffmpeg-master-latest-win64-gpl.zip`)
+4. **Extract**: Right-click ZIP → "Extract All" → Choose `C:\ffmpeg\`
+5. **Add to PATH**:
+   - Press `Windows Key + X` → "System"
+   - Click "Advanced system settings"
+   - Click "Environment Variables"
+   - Under "System variables", find "Path" → "Edit"
+   - Click "New" → Add `C:\ffmpeg\bin`
+   - Click "OK" on all windows
+6. **Restart** your computer
 
-## Quick Test
-```bash
-# Check if installed
-ffmpeg -version
 
-# Test audio device listing
-# Windows
-ffmpeg -list_devices true -f dshow -i dummy
+## ✅ Test Your Installation
 
-# macOS
-ffmpeg -f avfoundation -list_devices true -i ""
+### Step 1: Check if FFmpeg is installed
+1. **Press** `Windows Key + R`
+2. **Type**: `cmd` and press Enter
+3. **Type**: `ffmpeg -version` and press Enter
+4. **You should see**: Version information (like "ffmpeg version 6.0...")
 
-# Linux
-ffmpeg -f alsa -list_devices true -i dummy
-```
+### Step 2: Test audio device detection
+1. **In the same command prompt, type**: `ffmpeg -list_devices true -f dshow -i dummy`
+2. **You should see**: A list of your audio devices (microphones, speakers, etc.)
+
+> **✅ Success!** If both commands work, FFmpeg is properly installed and ready for LANStreamer.
 
 ## Common Issues
 
@@ -47,14 +52,10 @@ ffmpeg -f alsa -list_devices true -i dummy
 - If manual install: FFmpeg not added to PATH properly
 - Solution: Use winget method (recommended)
 
-**Permission denied (Linux/macOS)**
-- Solution: Use `sudo` for installation
-- Alternative: Install to user directory
-
 **No audio devices found**
-- Windows: May need to run as Administrator
-- Linux: Add user to audio group: `sudo usermod -a -G audio $USER`
-- macOS: Grant microphone permissions in System Preferences
+- May need to run as Administrator
+- Check Windows audio device settings
+- Ensure microphone permissions are granted
 
 ## Windows Alternative (Manual)
 If winget fails:

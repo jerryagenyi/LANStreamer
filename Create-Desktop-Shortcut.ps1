@@ -13,12 +13,12 @@ Write-Host ""
 
 # Get current directory and batch file path
 $currentDir = Get-Location
-$batchFile = Join-Path $currentDir "Start-LANStreamer.bat"
+$batchFile = Join-Path $currentDir "Start LANStreamer Server.bat"
 $iconFile = Join-Path $currentDir "public\assets\favicon.png"
 
 # Check if batch file exists
 if (-not (Test-Path $batchFile)) {
-    Write-Host "❌ ERROR: Start-LANStreamer.bat not found in current directory" -ForegroundColor Red
+    Write-Host "❌ ERROR: Start LANStreamer Server.bat not found in current directory" -ForegroundColor Red
     Write-Host "   Please run this script from the LANStreamer folder" -ForegroundColor Yellow
     Write-Host ""
     Read-Host "Press Enter to exit"
@@ -65,10 +65,10 @@ try {
     Write-Host "   Location: $shortcutPath" -ForegroundColor Gray
     Write-Host ""
     
-    # Ask about taskbar pinning
+    # Ask about additional options
     Write-Host "💡 Additional Options:" -ForegroundColor Cyan
-    Write-Host "   • Right-click the desktop shortcut and select 'Pin to taskbar'" -ForegroundColor Gray
-    Write-Host "   • Right-click and select 'Pin to Start' for Start menu access" -ForegroundColor Gray
+    Write-Host "   • The shortcut is now on your desktop for easy access" -ForegroundColor Gray
+    Write-Host "   • Double-click to start LANStreamer anytime" -ForegroundColor Gray
     Write-Host ""
     
     $openDesktop = Read-Host "Do you want to open the desktop folder to see the shortcut? (y/n)"
@@ -87,7 +87,7 @@ try {
 Write-Host ""
 Write-Host "🎉 Setup complete! You can now:" -ForegroundColor Green
 Write-Host "   1. Double-click the desktop shortcut to start LANStreamer" -ForegroundColor Gray
-Write-Host "   2. Pin it to taskbar for quick access" -ForegroundColor Gray
-Write-Host "   3. Pin it to Start menu" -ForegroundColor Gray
+Write-Host "   2. The shortcut is ready to use on your desktop" -ForegroundColor Gray
+Write-Host "   3. Easy access to start your audio streaming server" -ForegroundColor Gray
 Write-Host ""
 Read-Host "Press Enter to exit"

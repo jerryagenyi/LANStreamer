@@ -696,18 +696,50 @@ class StreamingService {
     // Convert unsigned 32-bit to signed for Windows
     const signedCode = exitCode > 2147483647 ? exitCode - 4294967296 : exitCode;
 
-    // Common FFmpeg error codes
+    // Analyze stderr for specific error patterns
+    const safeStderrData = stderrData || '';
+    const stderrLower = safeStderrData.toLowerCase();
+
+    // Device-specific error detection
+    if (stderrLower.includes('device not found') || stderrLower.includes('no such device')) {
+      return '🎤 Audio device not found - Device may have been disconnected or is no longer available';
+    }
+
+    if (stderrLower.includes('device busy') || stderrLower.includes('resource busy')) {
+      return '🔒 Audio device busy - Another application is using this device';
+    }
+
+    if (stderrLower.includes('permission denied') || stderrLower.includes('access denied')) {
+      return '🚫 Permission denied - Cannot access audio device (check permissions)';
+    }
+
+    if (stderrLower.includes('voicemeeter') && (stderrLower.includes('not found') || stderrLower.includes('unavailable'))) {
+      return '🎛️ VoiceMeeter device unavailable - VoiceMeeter devices often disappear/reappear. Try: 1) Restart VoiceMeeter app 2) Restart Windows Audio service 3) Check if VoiceMeeter is running';
+    }
+
+    if (stderrLower.includes('vb-audio') && (stderrLower.includes('not found') || stderrLower.includes('unavailable'))) {
+      return '🔗 VB-Audio device unavailable - Virtual audio devices can be unstable. Try restarting the VB-Audio Control Panel or use a physical microphone';
+    }
+
+    if (stderrLower.includes('connection refused') || stderrLower.includes('connection failed')) {
+      return '🌐 Cannot connect to Icecast server - Check if Icecast is running';
+    }
+
+    if (stderrLower.includes('invalid sample rate') || stderrLower.includes('unsupported sample rate')) {
+      return '📊 Invalid audio format - Device sample rate not supported';
+    }
+
+    // Common FFmpeg error codes with enhanced messages
     const errorMessages = {
-      '-5': 'Permission denied - Cannot access audio device. Check device permissions and ensure no other application is using it.',
-      '-22': 'Invalid argument - Audio device name or parameters are incorrect.',
-      '-2': 'No such file or directory - Audio device not found.',
-      '1': 'General error - Check FFmpeg command and device availability.'
+      '-5': '🚫 Permission denied - Cannot access audio device (may be in use by another app)',
+      '-22': '⚙️ Invalid device settings - Audio device name or parameters are incorrect',
+      '-2': '🎤 Audio device not found - Device may have been disconnected',
+      '1': '❌ Stream startup failed - Check device availability and try again'
     };
 
     let errorMsg = errorMessages[signedCode.toString()] || `FFmpeg exited with code ${exitCode} (${signedCode})`;
 
     // Ensure stderrData is a string and add specific error details from stderr
-    const safeStderrData = stderrData && typeof stderrData === 'string' ? stderrData : '';
 
     if (safeStderrData) {
       if (safeStderrData.includes('No such audio device') || safeStderrData.includes('Could not find audio only device')) {
