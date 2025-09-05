@@ -151,24 +151,6 @@ For example:
 - You see multiple streams on the page in different languages
 - You click to play the one you want
 
-## Table of Contents
-
-- [🚀 Quick Start (Non-Technical Users)](#-quick-start-non-technical-users)
-- [🚀 Quick Start (Technical Users)](#-quick-start-technical-users)
-- [Project Structure](#project-structure)
-- [Features](#features)
-- [How It Works](#how-it-works)
-- [Screenshots](#screenshots)
-- [Visual Concept Overview](#visual-concept-overview)
-- [Getting Started](#getting-started)
-  - [Prerequisites](#prerequisites)
-  - [Quick Installation Guide](#quick-installation-guide)
-  - [Audio Device Configuration](#audio-device-configuration)
-  - [❓ Troubleshooting Quick Start](#-troubleshooting-quick-start)
-- [Documentation](#documentation)
-- [Configuration](#configuration)
-- [Technology Stack](#technology-stack)
-- [Contributing](#contributing)
 
 ## Project Structure
 
