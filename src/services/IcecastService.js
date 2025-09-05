@@ -2204,34 +2204,51 @@ class IcecastService {
               }
             }
           } catch (error) {
-            // Skip inaccessible directories
+            logger.debug(`Skipping inaccessible directory: ${rootPath}`, error.message);
             continue;
           }
         }
+
+        if (rootDirs.length === 0) {
+          // Fallback to basic directories if none are accessible
+          rootDirs.push(
+            { name: 'C:', path: 'C:\\', type: 'directory', isRoot: true },
+            { name: 'Program Files', path: 'C:\\Program Files', type: 'directory', isRoot: true },
+            { name: 'Program Files (x86)', path: 'C:\\Program Files (x86)', type: 'directory', isRoot: true }
+          );
+        }
+
         return { directories: rootDirs, currentPath: null };
       }
 
       // Browse specific directory
       const directories = [];
-      const files = await fs.readdir(browsePath);
 
-      for (const file of files) {
-        try {
-          const fullPath = path.join(browsePath, file);
-          const stats = await fs.stat(fullPath);
+      try {
+        const files = await fs.readdir(browsePath);
 
-          if (stats.isDirectory()) {
-            directories.push({
-              name: file,
-              path: fullPath,
-              type: 'directory',
-              isRoot: false
-            });
+        for (const file of files) {
+          try {
+            const fullPath = path.join(browsePath, file);
+            const stats = await fs.stat(fullPath);
+
+            if (stats.isDirectory()) {
+              directories.push({
+                name: file,
+                path: fullPath,
+                type: 'directory',
+                isRoot: false
+              });
+            }
+          } catch (error) {
+            // Skip inaccessible files/directories
+            logger.debug(`Skipping inaccessible item: ${file}`, error.message);
+            continue;
           }
-        } catch (error) {
-          // Skip inaccessible files/directories
-          continue;
         }
+      } catch (error) {
+        logger.error(`Failed to read directory: ${browsePath}`, error.message);
+        throw new Error(`Cannot access directory: ${browsePath}. ${error.message}`);
       }
 
       // Sort directories alphabetically

@@ -364,16 +364,16 @@ class FFmpegStreamsManager {
                                 type="text"
                                 id="editStreamName"
                                 value="${stream.name || ''}"
-                                maxlength="35"
+                                maxlength="50"
                                 class="w-full px-3 py-2 bg-[#1a1a1a] border border-[var(--border-color)] rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-[var(--primary-color)] transition-colors pr-12"
                                 placeholder="Enter stream name"
                                 required
                             >
                             <div class="absolute right-3 top-1/2 transform -translate-y-1/2">
-                                <span id="edit-stream-name-counter" class="text-xs text-gray-400">${(stream.name || '').length}/35</span>
+                                <span id="edit-stream-name-counter" class="text-xs text-gray-400">${(stream.name || '').length}/50</span>
                             </div>
                         </div>
-                        <p class="text-xs text-gray-400 mt-1">Maximum 35 characters</p>
+                        <p class="text-xs text-gray-400 mt-1">Maximum 50 characters</p>
                     </div>
 
                     <div>
@@ -420,12 +420,12 @@ class FFmpegStreamsManager {
         if (editStreamNameInput && editStreamNameCounter) {
             const updateCounter = () => {
                 const length = editStreamNameInput.value.length;
-                editStreamNameCounter.textContent = `${length}/35`;
-                
+                editStreamNameCounter.textContent = `${length}/50`;
+
                 // Change color based on character count
-                if (length > 30) {
+                if (length > 45) {
                     editStreamNameCounter.className = 'text-xs text-red-400';
-                } else if (length > 25) {
+                } else if (length > 40) {
                     editStreamNameCounter.className = 'text-xs text-yellow-400';
                 } else {
                     editStreamNameCounter.className = 'text-xs text-gray-400';
@@ -1017,17 +1017,17 @@ class FFmpegStreamsManager {
                                 Stream Name
                             </label>
                             <div class="relative">
-                                <input type="text" 
-                                       id="stream-name" 
-                                       maxlength="35"
-                                       class="w-full bg-[#2A2A2A] border border-[var(--border-color)] text-white text-sm rounded-md focus:ring-[var(--primary-color)] focus:border-[var(--primary-color)] block px-3 py-2.5 pr-12" 
-                                       placeholder="e.g., Main Room Audio, DJ Mix, Podcast" 
+                                <input type="text"
+                                       id="stream-name"
+                                       maxlength="50"
+                                       class="w-full bg-[#2A2A2A] border border-[var(--border-color)] text-white text-sm rounded-md focus:ring-[var(--primary-color)] focus:border-[var(--primary-color)] block px-3 py-2.5 pr-12"
+                                       placeholder="e.g., Main Room Audio, DJ Mix, Podcast"
                                        required>
                                 <div class="absolute right-3 top-1/2 transform -translate-y-1/2">
-                                    <span id="stream-name-counter" class="text-xs text-gray-400">0/35</span>
+                                    <span id="stream-name-counter" class="text-xs text-gray-400">0/50</span>
                                 </div>
                             </div>
-                            <p class="text-xs text-gray-400 mt-1">Maximum 35 characters</p>
+                            <p class="text-xs text-gray-400 mt-1">Maximum 50 characters</p>
                         </div>
 
                         <div>
@@ -1090,12 +1090,12 @@ class FFmpegStreamsManager {
         if (streamNameInput && streamNameCounter) {
             const updateCounter = () => {
                 const length = streamNameInput.value.length;
-                streamNameCounter.textContent = `${length}/35`;
-                
+                streamNameCounter.textContent = `${length}/50`;
+
                 // Change color based on character count
-                if (length > 30) {
+                if (length > 45) {
                     streamNameCounter.className = 'text-xs text-red-400';
-                } else if (length > 25) {
+                } else if (length > 40) {
                     streamNameCounter.className = 'text-xs text-yellow-400';
                 } else {
                     streamNameCounter.className = 'text-xs text-gray-400';

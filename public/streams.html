@@ -387,7 +387,11 @@
                     const errorHandler = (e) => {
                         console.error('Audio error:', e);
                         this.audioPlayer.removeEventListener('error', errorHandler);
-                        this.showNotification('Stream not available. Please check if the stream is running.', 'error');
+
+                        // Don't show error notification if we're intentionally stopping
+                        if (!this.intentionallyStopping) {
+                            this.showNotification('Stream not available. Please check if the stream is running.', 'error');
+                        }
                     };
                     this.audioPlayer.addEventListener('error', errorHandler);
 
@@ -437,15 +441,26 @@
 
             stopStream() {
                 console.log('⏹️ Stopping stream');
-                
+
+                // Get the current stream title before clearing it
+                const streamTitle = this.currentStream ? this.currentStream.title || 'Stream' : 'Stream';
+
+                // Set flag to prevent error notifications when we intentionally stop
+                this.intentionallyStopping = true;
+
                 this.audioPlayer.pause();
                 this.audioPlayer.src = '';
                 this.currentStream = null;
-                
+
+                // Clear the flag after a short delay
+                setTimeout(() => {
+                    this.intentionallyStopping = false;
+                }, 1000);
+
                 // Update UI
                 this.renderStreams();
-                
-                this.showNotification('Stream stopped', 'info');
+
+                this.showNotification(`${streamTitle} stopped`, 'info');
             }
 
             copyStreamUrl(url) {
