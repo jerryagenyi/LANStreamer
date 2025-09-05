@@ -44,8 +44,16 @@ echo.
 
 :: Ask for confirmation
 echo ⚠️  WARNING: This will update LANStreamer to the latest version
-echo    Your configuration and data will be preserved, but the update process
-echo    will temporarily stop any running streams.
+echo.
+echo 📋 FILES THAT WILL BE PRESERVED:
+echo    • .env file (your environment settings)
+echo    • data/ folder (stream configurations, event settings)
+echo    • logs/ folder (application logs and history)
+echo    • config/icecast.xml (Icecast server configuration)
+echo    • device-config.json (audio device preferences)
+echo.
+echo ⚠️  IMPORTANT: The update process will temporarily stop any running streams.
+echo    After the update, you'll need to manually restart the server.
 echo.
 set /p "confirm=Do you want to continue? (y/N): "
 if /i not "%confirm%"=="y" (
@@ -116,9 +124,21 @@ powershell -Command "& {
 }"
 
 if errorlevel 1 (
-    echo ❌ Download failed. Please check your internet connection and try again.
-    echo    You can also manually download from: https://github.com/jerryagenyi/LANStreamer/releases/latest
-    pause
+    echo.
+    echo ❌ DOWNLOAD FAILED
+    echo.
+    echo 🔍 POSSIBLE CAUSES:
+    echo    • Internet connection issues
+    echo    • GitHub server temporarily unavailable
+    echo    • Firewall blocking the download
+    echo.
+    echo 🛠️  SOLUTIONS:
+    echo    • Check your internet connection
+    echo    • Try again in a few minutes
+    echo    • Manually download from: https://github.com/jerryagenyi/LANStreamer/releases/latest
+    echo.
+    echo Press any key to close...
+    pause >nul
     exit /b 1
 )
 
@@ -155,8 +175,19 @@ powershell -Command "& {
 }"
 
 if errorlevel 1 (
-    echo ❌ Extraction failed
-    pause
+    echo.
+    echo ❌ EXTRACTION FAILED
+    echo.
+    echo 🔍 The downloaded file could not be extracted.
+    echo    This might be due to a corrupted download or insufficient disk space.
+    echo.
+    echo 🛠️  SOLUTIONS:
+    echo    • Try running the update again
+    echo    • Check available disk space
+    echo    • Manually download and extract from GitHub
+    echo.
+    echo Press any key to close...
+    pause >nul
     exit /b 1
 )
 
@@ -206,12 +237,26 @@ echo ========================================
 echo ✅ UPDATE COMPLETED SUCCESSFULLY!
 echo ========================================
 echo.
-echo 🎉 LANStreamer has been updated to the latest version
-echo 📁 Your backup is saved at: %BACKUP_DIR%
-echo 🔧 Your configuration and data have been preserved
+echo 🎉 LANStreamer has been updated to the latest version!
 echo.
-echo 🚀 You can now run "Start LANStreamer Server.bat" to start the updated version
+echo 📋 WHAT HAPPENED:
+echo    • ✅ All your settings and data were preserved
+echo    • ✅ New LANStreamer files installed
+echo    • ✅ Backup created for safety
 echo.
-echo ⚠️  Note: You can safely delete the backup folder after confirming everything works
+echo 📁 BACKUP LOCATION: %BACKUP_DIR%
+echo    (You can delete this after confirming everything works)
 echo.
-pause
+echo 🚀 NEXT STEPS:
+echo    1. Close this window
+echo    2. Run "Start LANStreamer Server.bat" to start the updated version
+echo    3. Test your streams to make sure everything works
+echo.
+echo ⚠️  IMPORTANT: The server does NOT start automatically - this is intentional
+echo    so you can review the update results first.
+echo.
+echo Press any key to close this window...
+pause >nul
+echo.
+echo 👋 Update complete! You can now start LANStreamer.
+timeout /t 3 >nul
