@@ -9,9 +9,7 @@
     "dev": "nodemon src/server.js",
     "dev:simple": "nodemon src/server.js",
     "setup": "node scripts/setup.js",
-    "screenshots": "node scripts/generate-screenshots.js",
-    "test": "vitest run",
-    "test:e2e": "playwright test"
+    "screenshots": "node scripts/generate-screenshots.js"
   },
   "keywords": [
     "streaming",
@@ -33,11 +31,8 @@
     "xml2js": "^0.6.2"
   },
   "devDependencies": {
-    "@playwright/test": "^1.55.0",
     "browser-sync": "^3.0.4",
     "nodemon": "^2.0.0",
-    "puppeteer": "^24.0.0",
-    "supertest": "^7.1.4",
-    "vitest": "^3.2.4"
+    "puppeteer": "^24.0.0"
   }
 }

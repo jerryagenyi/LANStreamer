@@ -21,57 +21,24 @@ For the best development experience, use `npm run dev:live`:
 
 ## Documentation Overview
 
-### Core Documents
+### User Documentation
 
-- **[LANStreamer-PRD.md](./specifications/LANStreamer-PRD.md)** - Product Requirements Document
-  - Defines the vision, scope, and requirements for LANStreamer v1.0
-  - Outlines user stories, features, and technical requirements
-  - **Updated:** Includes audio monitoring user story for professional quality control
+- **[CHANGELOG.md](./CHANGELOG.md)** - Release History & Updates
+  - Version history with new features and improvements
+  - Bug fixes and known issues
+  - Update instructions and compatibility notes
 
-- **[LANStreamer-TDD.md](./specifications/LANStreamer-TDD.md)** - Test-Driven Development Plan
-  - Step-by-step TDD implementation guide (Steps 1-7 complete)
-  - Red-Green-Refactor workflow documentation
-  - **New:** Step 8 - Audio Monitoring Feature specification and testing strategy
+### 📁 Documentation Structure
 
-- **[LANStreamer-Technical-Specification.md](./specifications/LANStreamer-Technical-Specification.md)** - Technical Specifications
-  - Detailed technical architecture and implementation details
-  - API specifications and data models
-  - System requirements and dependencies
-
-- **[CHANGELOG.md](./CHANGELOG.md)** - Development Progress & History
-  - Complete tracking of all features, fixes, and improvements
-  - Version history with detailed implementation status
-  - Known issues and technical debt documentation
-
-### 📁 Organized Documentation Structure
-
-#### 📖 User Guides & Tutorials
-- **[guides/](./guides/)** - Simple installation and troubleshooting guides
-- **[tutorials/](./tutorials/)** - In-depth learning materials and concepts
-
-#### 📋 Specifications
-- **[specifications/](./specifications/)** - Technical specs, PRD, TDD, and security docs
-
-#### 🎨 Design & UI
-- **[design/](./design/)** - UI/UX specifications and visual design guides
-
-#### 💡 Examples & Configuration
-- **[examples/](./examples/)** - Configuration examples and environment templates
+#### 📖 User Guides
+- **[guides/](./guides/)** - Installation and troubleshooting guides for users
 
 
 
 ### 🚀 Quick Access Links
 
 - **[Installation Guides](./guides/README.md)** - Get LANStreamer running in minutes
-- **[Technical Specification](./specifications/LANStreamer-Technical-Specification.md)** - Complete technical reference
-- **[Troubleshooting](./guides/troubleshooting-simple.md)** - Quick fixes for common issues
-
-### Maintenance Documentation
-
-- **[File-Relationships-Guide.md](./File-Relationships-Guide.md)** - Documentation Maintenance Guide
-  - **New:** File dependencies and update relationships
-  - Change propagation checklist for documentation consistency
-  - Maintenance schedule and quality standards
+- **[Technical Documentation](./LANStreamer-Documentation.md)** - Complete technical reference
 
 ## Development Workflow
 
