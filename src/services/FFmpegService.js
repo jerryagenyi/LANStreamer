@@ -96,23 +96,55 @@ class FFmpegService {
   }
 
   /**
+   * Get audio format configurations for fallback system
+   * @returns {Array} Array of format configurations
+   */
+  getAudioFormats() {
+    return [
+      {
+        name: 'MP3',
+        codec: 'libmp3lame',
+        format: 'mp3',
+        contentType: 'audio/mpeg'
+      },
+      {
+        name: 'AAC',
+        codec: 'aac',
+        format: 'adts',
+        contentType: 'audio/aac'
+      },
+      {
+        name: 'OGG',
+        codec: 'libvorbis',
+        format: 'ogg',
+        contentType: 'audio/ogg'
+      }
+    ];
+  }
+
+  /**
    * Build FFmpeg command line arguments
    * @param {object} streamConfig - Stream configuration
+   * @param {number} formatIndex - Index of format to try (for fallback)
    * @returns {Array} Array of command line arguments
    */
-  buildFFmpegArgs(streamConfig) {
+  buildFFmpegArgs(streamConfig, formatIndex = 0) {
+    const formats = this.getAudioFormats();
+    const format = formats[formatIndex] || formats[0]; // Fallback to first format
+
     const args = [
       '-f', 'dshow',                    // DirectShow input format
       '-i', `audio="${streamConfig.deviceId}"`, // Audio input device
-      '-acodec', 'aac',                 // Audio codec (AAC for better browser support)
+      '-acodec', format.codec,          // Audio codec (with fallback support)
       '-ab', '128k',                    // Audio bitrate
       '-ar', '44100',                   // Sample rate
       '-ac', '2',                       // Audio channels
-      '-f', 'adts',                     // Output format (ADTS AAC)
+      '-f', format.format,              // Output format (with fallback support)
       '-',                              // Output to stdout
       '-loglevel', 'error'              // Only show errors
     ]
 
+    logger.info(`FFmpegService using ${format.name} format (${format.codec})`)
     return args
   }
 

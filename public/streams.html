@@ -367,13 +367,25 @@
                         this.stopStream();
                     }
 
-                    // Check browser audio support
-                    const aacSupport = this.audioPlayer.canPlayType('audio/aac');
-                    console.log(`🔊 Browser AAC support: ${aacSupport}`);
+                    // Check browser audio support for multiple formats
+                    const audioSupport = {
+                        mp3: this.audioPlayer.canPlayType('audio/mpeg'),
+                        aac: this.audioPlayer.canPlayType('audio/aac'),
+                        ogg: this.audioPlayer.canPlayType('audio/ogg')
+                    };
 
-                    if (!aacSupport || aacSupport === '') {
-                        throw new Error('Your browser does not support AAC audio playback. Please try Chrome, Firefox, or Edge.');
+                    console.log(`🔊 Browser audio format support:`, audioSupport);
+
+                    // Check if browser supports at least one format
+                    const supportedFormats = Object.entries(audioSupport)
+                        .filter(([format, support]) => support && support !== '')
+                        .map(([format]) => format.toUpperCase());
+
+                    if (supportedFormats.length === 0) {
+                        throw new Error('Your browser does not support any of the required audio formats (MP3, AAC, OGG). Please try Chrome, Firefox, or Edge.');
                     }
+
+                    console.log(`✅ Browser supports: ${supportedFormats.join(', ')} formats`);
 
                     // Show loading state
                     this.showNotification('Connecting to stream...', 'info');
@@ -436,7 +448,7 @@
                     let errorMessage = 'Failed to play stream';
 
                     if (error.name === 'NotSupportedError') {
-                        errorMessage = 'Stream format not supported by your browser. Try Chrome, Firefox, or Edge for better AAC support.';
+                        errorMessage = 'Stream format not supported by your browser. LANStreamer tried MP3, AAC, and OGG formats. Try Chrome, Firefox, or Edge for better compatibility.';
                     } else if (error.name === 'NotAllowedError') {
                         errorMessage = 'Audio playback blocked. Please allow audio and try again, or check if the stream is running.';
                     } else if (error.message.includes('network') || error.message.includes('NetworkError')) {
@@ -453,6 +465,7 @@
                         userAgent: navigator.userAgent,
                         audioSupport: {
                             mp3: this.audioPlayer.canPlayType('audio/mpeg'),
+                            aac: this.audioPlayer.canPlayType('audio/aac'),
                             ogg: this.audioPlayer.canPlayType('audio/ogg'),
                             wav: this.audioPlayer.canPlayType('audio/wav')
                         }

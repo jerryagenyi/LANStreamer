@@ -104,51 +104,74 @@ class StreamingService {
       }
     }
 
-    try {
-      const inputSource = streamConfig.inputFile ? `file: ${streamConfig.inputFile}` : `device: ${streamConfig.deviceId}`
-      logger.info(`Starting complete stream: ${streamId} for ${inputSource}`)
+    const formats = this.getAudioFormats()
+    let lastError = null
 
-      // Start FFmpeg process
-      const ffmpegProcess = await this.startFFmpegProcess(streamId, streamConfig)
+    // Try each format in succession
+    for (let formatIndex = 0; formatIndex < formats.length; formatIndex++) {
+      const currentFormat = formats[formatIndex]
 
-      // Store stream information
-      this.activeStreams[streamId] = {
-        id: streamId,
-        deviceId: streamConfig.deviceId,
-        inputFile: streamConfig.inputFile,
-        name: streamConfig.name || `Stream ${streamId}`,
-        status: 'running',
-        ffmpegProcess: ffmpegProcess,
-        startedAt: new Date(),
-        createdAt: new Date(),
-        config: streamConfig,
-        needsRestart: false,
-        intentionallyStopped: false  // Clear any previous intentional stop flag
+      try {
+        const inputSource = streamConfig.inputFile ? `file: ${streamConfig.inputFile}` : `device: ${streamConfig.deviceId}`
+        logger.info(`Starting stream: ${streamId} for ${inputSource} using ${currentFormat.name} format (attempt ${formatIndex + 1}/${formats.length})`)
+
+        // Start FFmpeg process with current format
+        const ffmpegProcess = await this.startFFmpegProcess(streamId, streamConfig, formatIndex)
+
+        // Store stream information
+        this.activeStreams[streamId] = {
+          id: streamId,
+          deviceId: streamConfig.deviceId,
+          inputFile: streamConfig.inputFile,
+          name: streamConfig.name || `Stream ${streamId}`,
+          status: 'running',
+          ffmpegProcess: ffmpegProcess,
+          startedAt: new Date(),
+          createdAt: new Date(),
+          config: streamConfig,
+          audioFormat: currentFormat.name,
+          formatIndex: formatIndex,
+          needsRestart: false,
+          intentionallyStopped: false  // Clear any previous intentional stop flag
+        }
+
+        // Save to persistent storage
+        this.savePersistentStreams()
+
+        logger.info(`Stream ${streamId} started successfully with ${currentFormat.name} format`)
+        return this.activeStreams[streamId]
+
+      } catch (error) {
+        lastError = error
+        logger.warn(`Failed to start stream ${streamId} with ${currentFormat.name} format (attempt ${formatIndex + 1}/${formats.length}):`, error.message)
+
+        // If this isn't the last format, continue to next format
+        if (formatIndex < formats.length - 1) {
+          logger.info(`Trying next audio format for stream ${streamId}...`)
+          continue
+        }
       }
-
-      // Save to persistent storage
-      this.savePersistentStreams()
-
-      logger.info(`Stream ${streamId} started successfully`)
-      return this.activeStreams[streamId]
-      
-    } catch (error) {
-      logger.error(`Failed to start stream ${streamId}:`, error)
-      throw error
     }
+
+    // If we get here, all formats failed
+    logger.error(`Failed to start stream ${streamId} with all available formats:`, lastError)
+    throw new Error(`Stream failed to start with all audio formats (MP3, AAC, OGG). Last error: ${lastError?.message || 'Unknown error'}`)
   }
 
   /**
-   * Start FFmpeg process for streaming
+   * Start FFmpeg process for streaming with format fallback
    * @param {string} streamId - Stream ID
    * @param {object} streamConfig - Stream configuration
+   * @param {number} formatIndex - Index of format to try (for fallback)
    * @returns {ChildProcess} FFmpeg process
    */
-  async startFFmpegProcess(streamId, streamConfig) {
+  async startFFmpegProcess(streamId, streamConfig, formatIndex = 0) {
     const ffmpegPath = this.findFFmpegPath()
-    const args = this.buildFFmpegArgs(streamId, streamConfig)
+    const formats = this.getAudioFormats()
+    const currentFormat = formats[formatIndex] || formats[0]
+    const args = this.buildFFmpegArgs(streamId, streamConfig, formatIndex)
 
-    logger.info(`Starting FFmpeg process for stream ${streamId} with args:`, args)
+    logger.info(`Starting FFmpeg process for stream ${streamId} (attempt ${formatIndex + 1}/${formats.length}) with ${currentFormat.name}:`, args)
     logger.info(`FFmpeg executable path: ${ffmpegPath}`)
     logger.info(`Full command: ${ffmpegPath} ${args.join(' ')}`)
 
@@ -209,14 +232,47 @@ class StreamingService {
   }
 
   /**
+   * Get audio format configurations for fallback system
+   * @returns {Array} Array of format configurations
+   */
+  getAudioFormats() {
+    return [
+      {
+        name: 'MP3',
+        codec: 'libmp3lame',
+        format: 'mp3',
+        contentType: 'audio/mpeg',
+        description: 'MP3 - Universal browser support'
+      },
+      {
+        name: 'AAC',
+        codec: 'aac',
+        format: 'adts',
+        contentType: 'audio/aac',
+        description: 'AAC - Modern browsers, better quality'
+      },
+      {
+        name: 'OGG',
+        codec: 'libvorbis',
+        format: 'ogg',
+        contentType: 'audio/ogg',
+        description: 'OGG Vorbis - Open source, Firefox/Chrome'
+      }
+    ];
+  }
+
+  /**
    * Build FFmpeg command line arguments for streaming
    * @param {string} streamId - Stream ID
    * @param {object} streamConfig - Stream configuration
+   * @param {number} formatIndex - Index of format to try (for fallback)
    * @returns {Array} Command line arguments
    */
-  buildFFmpegArgs(streamId, streamConfig) {
+  buildFFmpegArgs(streamId, streamConfig, formatIndex = 0) {
     const bitrate = streamConfig.bitrate || 192;
     const icecastUrl = `icecast://source:hackme@localhost:8000/${streamId}`;
+    const formats = this.getAudioFormats();
+    const format = formats[formatIndex] || formats[0]; // Fallback to first format
 
     let args = []
 
@@ -226,12 +282,12 @@ class StreamingService {
       args = [
         '-re',                          // Read input at native frame rate
         '-i', streamConfig.inputFile,   // Input file
-        '-acodec', 'aac',               // Use AAC for better browser compatibility
+        '-acodec', format.codec,        // Audio codec
         '-ab', `${bitrate}k`,           // Audio bitrate from config
         '-ar', '44100',                 // Sample rate
         '-ac', '2',                     // Audio channels
-        '-f', 'adts',                   // Output format (ADTS AAC)
-        '-content_type', 'audio/aac',   // Set proper content type for browsers
+        '-f', format.format,            // Output format
+        '-content_type', format.contentType, // Set proper content type for browsers
         icecastUrl,                     // Unique Icecast URL per stream
         '-loglevel', 'info'             // Show info level logs
       ]
@@ -267,12 +323,12 @@ class StreamingService {
       }
 
       args.push(
-        '-acodec', 'aac',                 // Use AAC for better browser compatibility
+        '-acodec', format.codec,          // Audio codec (with fallback support)
         '-ab', `${bitrate}k`,             // Audio bitrate from config
         '-ar', '44100',                   // Sample rate
         '-ac', '2',                       // Audio channels
-        '-f', 'adts',                     // Output format (ADTS AAC)
-        '-content_type', 'audio/aac',     // Set proper content type for browsers
+        '-f', format.format,              // Output format (with fallback support)
+        '-content_type', format.contentType, // Set proper content type for browsers
         icecastUrl,                       // Unique Icecast URL per stream
         '-loglevel', 'info'               // Show info level logs
       )
@@ -280,6 +336,9 @@ class StreamingService {
 
     logger.info(`Built FFmpeg args for stream ${streamId}:`, {
       streamId,
+      audioFormat: format.name,
+      codec: format.codec,
+      formatDescription: format.description,
       bitrate: `${bitrate}k`,
       icecastUrl,
       inputType: streamConfig.inputFile ? 'file' : 'device',
@@ -289,7 +348,7 @@ class StreamingService {
     });
 
     // Also log the exact command that would be executed
-    logger.info(`Full FFmpeg command for stream ${streamId}: ffmpeg ${args.join(' ')}`);
+    logger.info(`Full FFmpeg command for stream ${streamId} (${format.name}): ffmpeg ${args.join(' ')}`);
 
     return args
   }
