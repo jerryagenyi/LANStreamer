@@ -222,10 +222,14 @@ npm start
 double-click Start-LANStreamer.bat
 
 # Or create a desktop shortcut for one-click access
+# First, navigate to the LANStreamer project folder, then run:
+
 # PowerShell:
+cd C:\path\to\LANStreamer
 powershell -ExecutionPolicy Bypass -File Create-Desktop-Shortcut.ps1
 
 # Command Prompt:
+cd C:\path\to\LANStreamer
 powershell.exe -ExecutionPolicy Bypass -File Create-Desktop-Shortcut.ps1
 ```
 
