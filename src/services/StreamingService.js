@@ -247,9 +247,26 @@ class StreamingService {
         }
       }
 
+      // Check if this is a virtual audio device (like Voicemeeter)
+      const isVirtualDevice = deviceName.toLowerCase().includes('voicemeeter') ||
+                             deviceName.toLowerCase().includes('vb-audio') ||
+                             deviceName.toLowerCase().includes('virtual') ||
+                             deviceName.toLowerCase().includes('cable');
+
       args = [
         '-f', 'dshow',                    // DirectShow input format
         '-i', `audio=${deviceName}`,      // Audio input device (real DirectShow name)
+      ];
+
+      // Add virtual device specific parameters
+      if (isVirtualDevice) {
+        args.push(
+          '-rtbufsize', '100M',           // Increase buffer for virtual devices
+          '-thread_queue_size', '512'     // Increase thread queue for stability
+        );
+      }
+
+      args.push(
         '-acodec', 'libmp3lame',          // Use libmp3lame for better compatibility
         '-ab', `${bitrate}k`,             // Audio bitrate from config
         '-ar', '44100',                   // Sample rate
@@ -258,7 +275,7 @@ class StreamingService {
         '-content_type', 'audio/mpeg',    // Set proper content type for browsers
         icecastUrl,                       // Unique Icecast URL per stream
         '-loglevel', 'info'               // Show info level logs
-      ]
+      )
     }
 
     logger.info(`Built FFmpeg args for stream ${streamId}:`, {
@@ -478,6 +495,12 @@ class StreamingService {
           // For AMD devices, provide specific guidance
           if (stream.config.deviceId.toLowerCase().includes('amd')) {
             throw new Error(`AMD Streaming Audio Device not found. This device may be in use by another application or disconnected. Please:\n1. Close other applications using the microphone\n2. Refresh the device list\n3. Try selecting a different audio device`);
+          }
+
+          // For Voicemeeter devices, provide specific guidance
+          if (stream.config.deviceId.toLowerCase().includes('voicemeeter') ||
+              stream.config.deviceId.toLowerCase().includes('vb-audio')) {
+            throw new Error(`Voicemeeter virtual audio device not found. Please:\n1. Ensure Voicemeeter is running and configured\n2. Check that the virtual audio cable is active\n3. Restart Voicemeeter if needed\n4. Refresh the device list`);
           }
 
           // For other devices, provide general guidance

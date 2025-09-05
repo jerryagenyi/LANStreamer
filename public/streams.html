@@ -370,8 +370,32 @@
                         this.stopStream();
                     }
 
+                    // Check browser audio support
+                    const mp3Support = this.audioPlayer.canPlayType('audio/mpeg');
+                    console.log(`🔊 Browser MP3 support: ${mp3Support}`);
+
+                    if (!mp3Support || mp3Support === '') {
+                        throw new Error('Your browser does not support MP3 audio playback. Please try Chrome, Firefox, or Edge.');
+                    }
+
                     // Show loading state
                     this.showNotification('Connecting to stream...', 'info');
+
+                    // Validate stream URL
+                    try {
+                        const testResponse = await fetch(streamUrl, {
+                            method: 'HEAD',
+                            timeout: 5000
+                        });
+                        console.log(`🌐 Stream URL test: ${testResponse.status} ${testResponse.statusText}`);
+
+                        if (!testResponse.ok) {
+                            throw new Error(`Stream not available (HTTP ${testResponse.status})`);
+                        }
+                    } catch (fetchError) {
+                        console.warn('🚨 Stream URL validation failed:', fetchError.message);
+                        // Continue anyway - the stream might still work
+                    }
 
                     // Set up audio player with error handling
                     this.audioPlayer.src = streamUrl;
