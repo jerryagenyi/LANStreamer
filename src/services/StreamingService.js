@@ -533,6 +533,7 @@ class StreamingService {
    * Update a stream's configuration
    * @param {string} streamId - Stream ID to update
    * @param {object} updates - Updates to apply (name, deviceId, etc.)
+   * @returns {object} Updated stream information including new ID if name changed
    */
   async updateStream(streamId, updates) {
     logger.info(`Updating stream: ${streamId}`)
@@ -543,41 +544,88 @@ class StreamingService {
     }
 
     const prevDeviceId = stream.deviceId
+    const prevName = stream.name
+    let newStreamId = streamId
+
+    // If name is changing, generate a new stream ID
+    if (updates.name !== undefined && updates.name !== prevName) {
+      // Generate clean stream ID from new name (same logic as creating new stream)
+      const cleanId = updates.name
+        .toLowerCase()
+        .replace(/[^a-z0-9\s]/g, '') // Remove special characters
+        .replace(/\s+/g, '_') // Replace spaces with underscores
+        .substring(0, 20); // Limit length
+
+      newStreamId = `${cleanId}_${Date.now()}`
+
+      // If stream is running, we need to stop it first
+      if (stream.status === 'running' && stream.ffmpegProcess) {
+        logger.info(`Stopping running stream ${streamId} to update with new ID ${newStreamId}`)
+        try {
+          stream.ffmpegProcess.kill('SIGTERM')
+          stream.intentionallyStopped = true
+        } catch (e) { /* ignore */ }
+      }
+
+      // Create new stream entry with new ID
+      this.activeStreams[newStreamId] = {
+        ...stream,
+        id: newStreamId,
+        name: updates.name,
+        config: { ...stream.config, name: updates.name }
+      }
+
+      // Remove old stream entry
+      delete this.activeStreams[streamId]
+
+      logger.info(`Stream ID updated from ${streamId} to ${newStreamId}`)
+    }
+
+    // Get the stream reference (might be new ID now)
+    const currentStream = this.activeStreams[newStreamId]
 
     // Update stream properties
     if (updates.name !== undefined) {
-      stream.name = updates.name
-      stream.config.name = updates.name
+      currentStream.name = updates.name
+      currentStream.config.name = updates.name
     }
 
     if (updates.deviceId !== undefined) {
-      stream.deviceId = updates.deviceId
-      stream.config.deviceId = updates.deviceId
+      currentStream.deviceId = updates.deviceId
+      currentStream.config.deviceId = updates.deviceId
     }
 
-    // UX: If device changed OR stream was in error, reset to a clean stopped state
+    // UX: If device changed OR stream was in error OR name changed, reset to a clean stopped state
     const deviceChanged = updates.deviceId !== undefined && updates.deviceId !== prevDeviceId
-    if (deviceChanged || stream.status === 'error') {
-      logger.info(`Resetting stream state after update (deviceChanged=${deviceChanged}, previousStatus=${stream.status})`)
+    const nameChanged = updates.name !== undefined && updates.name !== prevName
+
+    if (deviceChanged || currentStream.status === 'error' || nameChanged) {
+      logger.info(`Resetting stream state after update (deviceChanged=${deviceChanged}, nameChanged=${nameChanged}, previousStatus=${currentStream.status})`)
       // Ensure any running process is cleared
-      if (stream.ffmpegProcess && typeof stream.ffmpegProcess.kill === 'function') {
-        try { stream.ffmpegProcess.kill('SIGTERM') } catch (e) { /* ignore */ }
+      if (currentStream.ffmpegProcess && typeof currentStream.ffmpegProcess.kill === 'function') {
+        try { currentStream.ffmpegProcess.kill('SIGTERM') } catch (e) { /* ignore */ }
       }
-      stream.ffmpegProcess = null
-      stream.status = 'stopped'
-      stream.error = undefined
-      stream.exitCode = undefined
-      stream.exitSignal = undefined
-      stream.exitedAt = undefined
-      stream.startedAt = undefined
-      stream.needsRestart = true
-      stream.intentionallyStopped = true
+      currentStream.ffmpegProcess = null
+      currentStream.status = 'stopped'
+      currentStream.error = undefined
+      currentStream.exitCode = undefined
+      currentStream.exitSignal = undefined
+      currentStream.exitedAt = undefined
+      currentStream.startedAt = undefined
+      currentStream.needsRestart = true
+      currentStream.intentionallyStopped = true
     }
 
     // Save to persistent storage
     this.savePersistentStreams()
 
-    logger.info(`Stream ${streamId} updated successfully`)
+    logger.info(`Stream updated successfully. New ID: ${newStreamId}`)
+
+    return {
+      oldStreamId: streamId,
+      newStreamId: newStreamId,
+      stream: currentStream
+    }
   }
 
   /**

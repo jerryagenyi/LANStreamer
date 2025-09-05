@@ -98,8 +98,13 @@ router.get('/status', (req, res) => {
 router.post('/update', async (req, res) => {
   try {
     const { streamId, name, deviceId } = req.body;
-    await streamingService.updateStream(streamId, { name, deviceId });
-    res.status(200).json({ message: 'Stream updated successfully', streamId });
+    const result = await streamingService.updateStream(streamId, { name, deviceId });
+    res.status(200).json({
+      message: 'Stream updated successfully',
+      oldStreamId: result.oldStreamId,
+      newStreamId: result.newStreamId,
+      streamId: result.newStreamId // For backward compatibility
+    });
   } catch (error) {
     logger.error('Error updating stream:', error);
     res.status(500).json({ message: 'Error updating stream', error: error.message });

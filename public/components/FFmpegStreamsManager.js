@@ -478,7 +478,13 @@ class FFmpegStreamsManager {
                     modal.remove();
                     await this.loadStreams();
                     this.render();
-                    this.showNotification('Stream updated. Device reset — click Start to begin streaming.', 'success');
+
+                    // Check if stream ID changed (name was updated)
+                    if (result.newStreamId && result.newStreamId !== result.oldStreamId) {
+                        this.showNotification('Stream updated with new URL. Device reset — click Start to begin streaming.', 'success');
+                    } else {
+                        this.showNotification('Stream updated. Device reset — click Start to begin streaming.', 'success');
+                    }
                 } else {
                     throw new Error(result.error || 'Failed to update stream');
                 }
