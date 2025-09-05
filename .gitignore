@@ -113,6 +113,9 @@ data/
 backups/
 config/icecast.xml
 
+# Update script backups (timestamped folders)
+update_backup_*/
+
 # User-specific configuration (should not be shared)
 config/streams.json
 config/device-config.json
