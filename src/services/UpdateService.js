@@ -153,15 +153,6 @@ export class UpdateService {
           "5. Restart LANStreamer"
         ],
         note: "Only use this method if the automatic updater doesn't work."
-      },
-      quickUpdate: {
-        title: "Quick Update",
-        steps: [
-          "1. Double-click 'Quick Update LANStreamer.bat'",
-          "2. Wait for completion",
-          "3. Restart LANStreamer"
-        ],
-        note: "Faster but with less detailed progress information."
       }
     };
   }
@@ -173,8 +164,7 @@ export class UpdateService {
     try {
       const rootDir = path.join(__dirname, '../..');
       const updateFiles = [
-        'Update LANStreamer.bat',
-        'Quick Update LANStreamer.bat'
+        'Update LANStreamer.bat'
       ];
 
       const results = {};

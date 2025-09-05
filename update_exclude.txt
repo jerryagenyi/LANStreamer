@@ -1,7 +1,12 @@
 data\
 logs\
 .env
-icecast.xml
+config\icecast.xml
+config\streams.json
+config\device-config.json
+config\contact-details.json
+config\web\
+config\admin\
 device-config.json
 Update LANStreamer.bat
 update_exclude.txt

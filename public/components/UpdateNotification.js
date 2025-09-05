@@ -266,18 +266,7 @@ class UpdateNotification {
                             <p class="text-xs text-green-200">✅ This method backs up your data and handles everything automatically.</p>
                         </div>
 
-                        <div class="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4">
-                            <h4 class="font-semibold text-blue-300 mb-2 flex items-center gap-2">
-                                <span class="material-symbols-rounded text-sm">flash_on</span>
-                                Quick Update
-                            </h4>
-                            <ol class="text-sm text-gray-300 space-y-1 mb-3">
-                                <li>1. Double-click <code class="bg-gray-700 px-1 rounded">Quick Update LANStreamer.bat</code></li>
-                                <li>2. Wait for completion</li>
-                                <li>3. Restart LANStreamer</li>
-                            </ol>
-                            <p class="text-xs text-blue-200">⚡ Faster but with less detailed progress information.</p>
-                        </div>
+
 
                         <div class="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-4">
                             <h4 class="font-semibold text-yellow-300 mb-2 flex items-center gap-2">

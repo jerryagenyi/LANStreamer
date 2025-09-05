@@ -113,6 +113,13 @@ data/
 backups/
 config/icecast.xml
 
+# User-specific configuration (should not be shared)
+config/streams.json
+config/device-config.json
+config/contact-details.json
+config/web/
+config/admin/
+
 # OS generated files
 Thumbs.db
 ehthumbs.db
