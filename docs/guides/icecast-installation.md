@@ -75,9 +75,19 @@ icecast.exe -c icecast.xml
 
 **If you get "FATAL: could not open error logging" or similar path errors:**
 
-The most common issue is Windows permission errors with relative paths. **Solution: Use absolute paths**
+The most common issue is Windows permission errors with relative paths. **Try these solutions in order:**
 
-**Replace this in `icecast.xml`:**
+#### **Step 1: Try Relative Paths First**
+**If this is what you have in `icecast.xml` (notice not preceding dot before the forward slash) :**
+```xml
+<paths>
+    <logdir>/log</logdir>
+    <webroot>/web</webroot>
+    <adminroot>/admin</adminroot>
+</paths>
+```
+
+**...then replace it with this (should be the default relative paths but...🤷🏼‍♂️):**
 ```xml
 <paths>
     <logdir>./log</logdir>
@@ -86,7 +96,8 @@ The most common issue is Windows permission errors with relative paths. **Soluti
 </paths>
 ```
 
-**With this (using your actual Icecast installation path):**
+#### **Step 2: If Relative Paths Don't Work, Use Absolute Paths**
+**If you still get errors, use full absolute paths:**
 ```xml
 <paths>
     <!-- Use full absolute paths to avoid Windows permission errors -->
@@ -95,6 +106,11 @@ The most common issue is Windows permission errors with relative paths. **Soluti
     <adminroot>C:\Program Files (x86)\Icecast\admin</adminroot>
 </paths>
 ```
+
+**Note about `mimetypes`:**
+- This file is optional and not present in all Icecast installations
+- Only include it if your installation actually has `mime.types` file
+- If you get errors about missing `mime.types`, comment out or remove that line
 
 **Common Error Example:**
 ```
