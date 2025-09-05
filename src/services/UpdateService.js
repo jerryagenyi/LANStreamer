@@ -1,4 +1,4 @@
-import fs from 'fs-extra';
+import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { logger } from '../utils/logger.js';
@@ -25,9 +25,9 @@ export class UpdateService {
       if (this.currentVersion) return this.currentVersion;
 
       const packagePath = path.join(__dirname, '../../package.json');
-      const packageData = await fs.readJson(packagePath);
+      const packageData = JSON.parse(fs.readFileSync(packagePath, 'utf8'));
       this.currentVersion = packageData.version || '1.0.0';
-      
+
       logger.system('Current LANStreamer version detected', { version: this.currentVersion });
       return this.currentVersion;
     } catch (error) {
@@ -170,7 +170,7 @@ export class UpdateService {
       const results = {};
       for (const file of updateFiles) {
         const filePath = path.join(rootDir, file);
-        results[file] = await fs.pathExists(filePath);
+        results[file] = fs.existsSync(filePath);
       }
 
       return results;
