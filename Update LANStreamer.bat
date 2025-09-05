@@ -16,9 +16,14 @@ echo.
 
 :: Check if we're in the right directory
 if not exist "package.json" (
-    echo ❌ Error: This script must be run from the LANStreamer root directory
-    echo    Make sure you're running it from the folder containing package.json
-    pause
+    echo.
+    echo ❌ ERROR: Wrong directory
+    echo.
+    echo This script must be run from the LANStreamer root directory
+    echo Make sure you're running it from the folder containing package.json
+    echo.
+    echo Press any key to close...
+    pause >nul
     exit /b 1
 )
 
@@ -26,9 +31,13 @@ if not exist "package.json" (
 echo 🌐 Checking internet connection...
 ping -n 1 github.com >nul 2>&1
 if errorlevel 1 (
-    echo ❌ Error: No internet connection detected
-    echo    Please check your internet connection and try again
-    pause
+    echo.
+    echo ❌ ERROR: No internet connection detected
+    echo.
+    echo Please check your internet connection and try again
+    echo.
+    echo Press any key to close...
+    pause >nul
     exit /b 1
 )
 
@@ -56,8 +65,11 @@ echo    After the update, you'll need to manually restart the server.
 echo.
 set /p "confirm=Do you want to continue? (y/N): "
 if /i not "%confirm%"=="y" (
-    echo Update cancelled by user
-    pause
+    echo.
+    echo ❌ Update cancelled by user
+    echo.
+    echo Press any key to close...
+    pause >nul
     exit /b 0
 )
 
@@ -77,6 +89,10 @@ if exist ".env" copy ".env" "%BACKUP_DIR%\" >nul 2>&1
 if exist "device-config.json" copy "device-config.json" "%BACKUP_DIR%\" >nul 2>&1
 
 echo ✅ Backup created at: %BACKUP_DIR%
+echo.
+echo Press any key to continue to next step...
+pause >nul
+echo.
 
 :: Step 2: Stop any running processes
 echo 🛑 Step 2/7: Stopping LANStreamer processes...
@@ -84,12 +100,20 @@ taskkill /f /im node.exe >nul 2>&1
 taskkill /f /im icecast.exe >nul 2>&1
 timeout /t 2 >nul
 echo ✅ Processes stopped
+echo.
+echo Press any key to continue to next step...
+pause >nul
+echo.
 
 :: Step 3: Clean temp directory
 echo 🧹 Step 3/7: Preparing download area...
 if exist "%TEMP_DIR%" rmdir /s /q "%TEMP_DIR%"
 mkdir "%TEMP_DIR%"
 echo ✅ Download area ready
+echo.
+echo Press any key to continue to download step...
+pause >nul
+echo.
 
 :: Step 4: Download latest release
 echo 📥 Step 4/7: Downloading latest version...
@@ -141,6 +165,10 @@ if errorlevel 1 (
 )
 
 echo ✅ Download completed
+echo.
+echo Press any key to continue to extraction step...
+pause >nul
+echo.
 
 :: Step 5: Extract the update
 echo 📂 Step 5/7: Extracting update...
@@ -192,6 +220,10 @@ if errorlevel 1 (
 :: Read the content path
 set /p CONTENT_PATH=<"%TEMP_DIR%\content_path.txt"
 echo ✅ Extraction completed
+echo.
+echo Press any key to continue to installation step...
+pause >nul
+echo.
 
 :: Step 6: Replace files
 echo 🔄 Step 6/7: Installing update...
@@ -224,6 +256,10 @@ if exist "%BACKUP_DIR%\.env" copy "%BACKUP_DIR%\.env" "." >nul 2>&1
 if exist "%BACKUP_DIR%\device-config.json" copy "%BACKUP_DIR%\device-config.json" "." >nul 2>&1
 
 echo ✅ Data restored
+echo.
+echo Press any key to continue to cleanup...
+pause >nul
+echo.
 
 :: Cleanup
 echo 🧹 Cleaning up temporary files...
@@ -252,8 +288,13 @@ echo.
 echo ⚠️  IMPORTANT: The server does NOT start automatically - this is intentional
 echo    so you can review the update results first.
 echo.
-echo Press any key to close this window...
-pause >nul
+echo ========================================
+echo 🎯 READY TO CLOSE TERMINAL
+echo ========================================
 echo.
-echo 👋 Update complete! You can now start LANStreamer.
-timeout /t 3 >nul
+echo ✅ Update process is 100%% complete
+echo ✅ You can now safely close this window
+echo ✅ Next: Run "Start LANStreamer Server.bat"
+echo.
+echo Press any key to close this terminal window...
+pause >nul
