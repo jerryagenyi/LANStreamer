@@ -2,6 +2,28 @@
 
 A comprehensive solution that turns a standard PC into a multi-channel audio streaming server for local area networks (LAN). This project provides a **web-based application** that orchestrates **FFmpeg** and **Icecast** to deliver local, live, low-latency audio broadcasts for events like language interpretation, meetings, or conferences.
 
+## 📋 Table of Contents
+
+- [Security Notice](#️-security-notice---important)
+- [Quick Start (Non-Technical Users)](#-quick-start-non-technical-users)
+- [What is LANStreamer?](#-what-is-lanstreamer)
+- [Key Features](#-key-features)
+- [Use Cases](#-use-cases)
+- [Project Structure](#-project-structure)
+- [System Requirements](#-system-requirements)
+- [Installation](#-installation)
+  - [Quick Installation Guide](#quick-installation-guide)
+  - [Audio Device Configuration](#audio-device-configuration)
+  - [Advanced Setup Options](#-advanced-setup-options)
+- [Manual Installation](#-manual-installation)
+- [Usage](#-usage)
+- [Configuration](#configuration)
+- [API Documentation](#-api-documentation)
+- [Troubleshooting](#-troubleshooting)
+- [Contributing](#-contributing)
+- [License](#-license)
+- [Support](#-support)
+
 ## ⚠️ **SECURITY NOTICE - IMPORTANT!**
 
 **🔐 CHANGE YOUR ADMIN LOGIN DETAILS IMMEDIATELY AFTER INSTALLATION!**
