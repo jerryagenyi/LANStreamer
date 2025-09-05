@@ -529,24 +529,24 @@ class AudioDeviceService {
         recommended: true
       },
       {
-        id: 'voicemeeter-vaio-working',
-        name: '🎛️ VB-Audio Voicemeeter VAIO (Working Alternative)',
+        id: 'virtual-audio-working',
+        name: '🎛️ Virtual Audio Device (Working Alternative)',
         type: 'audio',
         deviceType: 'input',
         platform: this.platform,
         fallback: true,
-        description: 'VoiceMeeter is detected as working - try this instead of Virtual Cable',
+        description: 'Virtual audio device is detected as working - DVS, VB-Audio, or similar',
         virtual: true,
         recommended: true
       },
       {
-        id: 'vb-cable-broken',
-        name: '❌ VB-Audio Virtual Cable (Not Working)',
+        id: 'virtual-audio-broken',
+        name: '❌ Virtual Audio Device (Not Working)',
         type: 'audio',
         deviceType: 'input',
         platform: this.platform,
         fallback: true,
-        description: 'Virtual Cable is installed but has Error status - needs to be restarted',
+        description: 'Virtual audio device is installed but has Error status - needs to be restarted',
         virtual: true,
         broken: true
       }

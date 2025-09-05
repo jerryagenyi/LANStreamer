@@ -710,7 +710,7 @@ class FFmpegStreamsManager {
 
                         <div class="mt-4 p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg">
                             <p class="text-xs text-blue-300">
-                                💡 <strong>Pro Tip:</strong> Install VoiceMeeter to route audio from music players, DJ software, or any application to LANStreamer.
+                                💡 <strong>Pro Tip:</strong> Install DVS (Dante Virtual Soundcard) or Virtual Audio Cable to route audio from music players, DJ software, or any application to LANStreamer.
                             </p>
                         </div>
                     </div>
@@ -921,12 +921,15 @@ class FFmpegStreamsManager {
     }
 
     /**
-     * Check if VoiceMeeter devices are present
+     * Check if virtual audio devices are present
      */
-    hasVoiceMeeterDevices() {
+    hasVirtualAudioDevices() {
         return this.audioDevices.some(device =>
             device.name.toLowerCase().includes('voicemeeter') ||
-            device.name.toLowerCase().includes('vb-audio')
+            device.name.toLowerCase().includes('vb-audio') ||
+            device.name.toLowerCase().includes('dante') ||
+            device.name.toLowerCase().includes('dvs') ||
+            device.name.toLowerCase().includes('virtual cable')
         );
     }
 
@@ -1045,10 +1048,10 @@ class FFmpegStreamsManager {
                                     </option>
                                 `).join('')}
                             </select>
-                            <p class="text-xs text-gray-400 mt-1">💡 Install VoiceMeeter for virtual audio routing</p>
-                            ${this.hasVoiceMeeterDevices() ? `
+                            <p class="text-xs text-gray-400 mt-1">💡 Install DVS or Virtual Audio Cable for virtual audio routing</p>
+                            ${this.hasVirtualAudioDevices() ? `
                                 <div class="mt-2 p-2 bg-yellow-500/10 border border-yellow-500/20 rounded text-xs text-yellow-300">
-                                    ⚠️ <strong>VoiceMeeter Notice:</strong> Virtual devices may occasionally disappear due to driver restarts. If streaming fails, try restarting VoiceMeeter or refresh audio devices.
+                                    ⚠️ <strong>Virtual Audio Notice:</strong> Virtual devices may occasionally disappear due to driver restarts. If streaming fails, try restarting your virtual audio software or refresh audio devices.
                                 </div>
                             ` : ''}
                         </div>
