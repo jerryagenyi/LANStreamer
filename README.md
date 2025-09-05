@@ -314,7 +314,7 @@ icecast -c /usr/local/etc/icecast.xml
 
 2. **Start Icecast Server**:
    - **Windows**: Navigate to `C:\Program Files (x86)\Icecast\bin` and run `icecast.exe -c ..\icecast.xml`
-   - **Alternative**: From root folder: `"C:\Program Files (x86)\Icecast\bin\icecast.exe" -c "C:\Program Files (x86)\Icecast\icecast.xml"`
+   - **Recommended**: Double-click `icecast.bat` in the Icecast root folder (runs the .exe file in the bin folder automatically)
    - **macOS/Linux**: Run `icecast -c /usr/local/etc/icecast.xml` (or your config path) [not confirmed yet]
    - **Batch File**: The `Start-LANStreamer.bat` can do this for you automatically
 
@@ -358,7 +358,20 @@ If you wish to understand the core components or run the system without the web 
 
 ## Configuration
 
-The application uses environment variables. Create a `.env` file in the root directory by copying `.env.example`. For detailed configuration options, see the [Environment Configuration Guide](docs/env-example.md).
+The application uses environment variables for configuration. Most users only need to change a few settings:
+
+**Essential Setup:**
+1. Copy `.env.example` to `.env`
+2. **Change these values** (marked with `CHANGE_THIS_VALUE`):
+   - `JWT_SECRET` - Used for secure authentication
+   - `ADMIN_PASSWORD` - Dashboard admin password
+
+**Optional Settings:**
+- `DEFAULT_BITRATE` - Audio quality (128k is good for most uses)
+- `FFMPEG_PATH` - Only if FFmpeg isn't in your system PATH
+- `LOG_LEVEL` - Set to `error` for less verbose logging
+
+> **💡 Note**: Icecast passwords are configured in the `icecast.xml` file, not in `.env`
 
 ## Technology Stack
 
