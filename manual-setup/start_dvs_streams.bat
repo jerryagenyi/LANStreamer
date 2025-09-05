@@ -63,7 +63,7 @@ set "ARABIC_DEVICE=DVS Receive 11-12 (Dante Virtual Soundcard)"
 set "AUDIO_BITRATE=128k"
 set "SAMPLE_RATE=44100"
 set "CHANNELS=1"
-set "CODEC=libmp3lame"
+set "CODEC=aac"
 
 :: ====================================================================
 :: === STREAMING COMMANDS (DO NOT EDIT BELOW) ===
@@ -96,36 +96,36 @@ echo.
 echo [1/4] Starting English stream...
 start "English Stream" /min ffmpeg -f dshow -i audio="%ENGLISH_DEVICE%" ^
 -acodec %CODEC% -b:a %AUDIO_BITRATE% -ar %SAMPLE_RATE% -ac %CHANNELS% ^
--content_type audio/mpeg -ice_name "English Interpretation" ^
+-content_type audio/aac -ice_name "English Interpretation" ^
 -ice_description "Live English interpretation stream" ^
--f mp3 icecast://%ICECAST_USER%:%ICECAST_PASSWORD%@%ICECAST_HOST%:%ICECAST_PORT%/english
+-f adts icecast://%ICECAST_USER%:%ICECAST_PASSWORD%@%ICECAST_HOST%:%ICECAST_PORT%/english
 
 timeout /t 2 /nobreak >nul
 
 echo [2/4] Starting French stream...
 start "French Stream" /min ffmpeg -f dshow -i audio="%FRENCH_DEVICE%" ^
 -acodec %CODEC% -b:a %AUDIO_BITRATE% -ar %SAMPLE_RATE% -ac %CHANNELS% ^
--content_type audio/mpeg -ice_name "French Interpretation" ^
+-content_type audio/aac -ice_name "French Interpretation" ^
 -ice_description "Live French interpretation stream" ^
--f mp3 icecast://%ICECAST_USER%:%ICECAST_PASSWORD%@%ICECAST_HOST%:%ICECAST_PORT%/french
+-f adts icecast://%ICECAST_USER%:%ICECAST_PASSWORD%@%ICECAST_HOST%:%ICECAST_PORT%/french
 
 timeout /t 2 /nobreak >nul
 
 echo [3/4] Starting Portuguese stream...
 start "Portuguese Stream" /min ffmpeg -f dshow -i audio="%PORTUGUESE_DEVICE%" ^
 -acodec %CODEC% -b:a %AUDIO_BITRATE% -ar %SAMPLE_RATE% -ac %CHANNELS% ^
--content_type audio/mpeg -ice_name "Portuguese Interpretation" ^
+-content_type audio/aac -ice_name "Portuguese Interpretation" ^
 -ice_description "Live Portuguese interpretation stream" ^
--f mp3 icecast://%ICECAST_USER%:%ICECAST_PASSWORD%@%ICECAST_HOST%:%ICECAST_PORT%/portuguese
+-f adts icecast://%ICECAST_USER%:%ICECAST_PASSWORD%@%ICECAST_HOST%:%ICECAST_PORT%/portuguese
 
 timeout /t 2 /nobreak >nul
 
 echo [4/4] Starting Arabic stream...
 start "Arabic Stream" /min ffmpeg -f dshow -i audio="%ARABIC_DEVICE%" ^
 -acodec %CODEC% -b:a %AUDIO_BITRATE% -ar %SAMPLE_RATE% -ac %CHANNELS% ^
--content_type audio/mpeg -ice_name "Arabic Interpretation" ^
+-content_type audio/aac -ice_name "Arabic Interpretation" ^
 -ice_description "Live Arabic interpretation stream" ^
--f mp3 icecast://%ICECAST_USER%:%ICECAST_PASSWORD%@%ICECAST_HOST%:%ICECAST_PORT%/arabic
+-f adts icecast://%ICECAST_USER%:%ICECAST_PASSWORD%@%ICECAST_HOST%:%ICECAST_PORT%/arabic
 
 echo.
 echo ====================================================================

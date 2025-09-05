@@ -127,3 +127,6 @@ config/admin/
 Thumbs.db
 ehthumbs.db
 Desktop.ini
+
+# Development notes and planning
+TODO.md

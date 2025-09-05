@@ -104,11 +104,11 @@ class FFmpegService {
     const args = [
       '-f', 'dshow',                    // DirectShow input format
       '-i', `audio="${streamConfig.deviceId}"`, // Audio input device
-      '-acodec', 'mp3',                 // Audio codec
+      '-acodec', 'aac',                 // Audio codec (AAC for better browser support)
       '-ab', '128k',                    // Audio bitrate
       '-ar', '44100',                   // Sample rate
       '-ac', '2',                       // Audio channels
-      '-f', 'mp3',                      // Output format
+      '-f', 'adts',                     // Output format (ADTS AAC)
       '-',                              // Output to stdout
       '-loglevel', 'error'              // Only show errors
     ]

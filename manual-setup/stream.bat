@@ -29,7 +29,7 @@ set "ICECAST_MOUNT=/stream.mp3"
 set "AUDIO_RATE=44100"
 set "AUDIO_CHANNELS=2"
 set "AUDIO_BITRATE=128k"
-set "AUDIO_FORMAT=mp3"
+set "AUDIO_FORMAT=adts"
 
 :: ====================================================================
 :: === DO NOT EDIT BELOW THIS LINE UNLESS YOU KNOW WHAT YOU'RE DOING ===
@@ -39,6 +39,7 @@ echo Starting stream from "%AUDIO_DEVICE%" to Icecast server...
 echo.
 
 ffmpeg -f dshow -i audio="%AUDIO_DEVICE%" ^
+-acodec aac ^
 -ar %AUDIO_RATE% ^
 -ac %AUDIO_CHANNELS% ^
 -b:a %AUDIO_BITRATE% ^

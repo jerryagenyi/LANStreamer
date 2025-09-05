@@ -226,12 +226,12 @@ class StreamingService {
       args = [
         '-re',                          // Read input at native frame rate
         '-i', streamConfig.inputFile,   // Input file
-        '-acodec', 'libmp3lame',        // Use libmp3lame for better compatibility
+        '-acodec', 'aac',               // Use AAC for better browser compatibility
         '-ab', `${bitrate}k`,           // Audio bitrate from config
         '-ar', '44100',                 // Sample rate
         '-ac', '2',                     // Audio channels
-        '-f', 'mp3',                    // Output format
-        '-content_type', 'audio/mpeg',  // Set proper content type for browsers
+        '-f', 'adts',                   // Output format (ADTS AAC)
+        '-content_type', 'audio/aac',   // Set proper content type for browsers
         icecastUrl,                     // Unique Icecast URL per stream
         '-loglevel', 'info'             // Show info level logs
       ]
@@ -267,12 +267,12 @@ class StreamingService {
       }
 
       args.push(
-        '-acodec', 'libmp3lame',          // Use libmp3lame for better compatibility
+        '-acodec', 'aac',                 // Use AAC for better browser compatibility
         '-ab', `${bitrate}k`,             // Audio bitrate from config
         '-ar', '44100',                   // Sample rate
         '-ac', '2',                       // Audio channels
-        '-f', 'mp3',                      // Output format
-        '-content_type', 'audio/mpeg',    // Set proper content type for browsers
+        '-f', 'adts',                     // Output format (ADTS AAC)
+        '-content_type', 'audio/aac',     // Set proper content type for browsers
         icecastUrl,                       // Unique Icecast URL per stream
         '-loglevel', 'info'               // Show info level logs
       )

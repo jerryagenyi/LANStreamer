@@ -312,7 +312,7 @@
                                         onclick="streamListener.playStream('${stream.id}', '${streamUrl}')"
                                         class="inline-flex items-center gap-2 rounded-md px-4 sm:px-6 py-2 sm:py-3 text-sm font-semibold text-white shadow-lg transition-all duration-300 btn-gradient flex-1 sm:flex-initial justify-center"
                                     >
-                                        <span class="material-symbols-rounded text-base" style="font-variation-settings: 'FILL' 1;">play_arrow</span>
+                                        <span class="material-symbols-rounded text-base" style="font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;">play_arrow</span>
                                         <span class="hidden sm:inline">Play</span>
                                     </button>
                                 `}
@@ -368,11 +368,11 @@
                     }
 
                     // Check browser audio support
-                    const mp3Support = this.audioPlayer.canPlayType('audio/mpeg');
-                    console.log(`🔊 Browser MP3 support: ${mp3Support}`);
+                    const aacSupport = this.audioPlayer.canPlayType('audio/aac');
+                    console.log(`🔊 Browser AAC support: ${aacSupport}`);
 
-                    if (!mp3Support || mp3Support === '') {
-                        throw new Error('Your browser does not support MP3 audio playback. Please try Chrome, Firefox, or Edge.');
+                    if (!aacSupport || aacSupport === '') {
+                        throw new Error('Your browser does not support AAC audio playback. Please try Chrome, Firefox, or Edge.');
                     }
 
                     // Show loading state
@@ -436,7 +436,7 @@
                     let errorMessage = 'Failed to play stream';
 
                     if (error.name === 'NotSupportedError') {
-                        errorMessage = 'Stream format not supported by your browser. Try Chrome, Firefox, or Edge for better MP3 support.';
+                        errorMessage = 'Stream format not supported by your browser. Try Chrome, Firefox, or Edge for better AAC support.';
                     } else if (error.name === 'NotAllowedError') {
                         errorMessage = 'Audio playback blocked. Please allow audio and try again, or check if the stream is running.';
                     } else if (error.message.includes('network') || error.message.includes('NetworkError')) {
