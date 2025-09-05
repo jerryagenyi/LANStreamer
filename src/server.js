@@ -83,21 +83,45 @@ app.get('*', (req, res) => {
 app.listen(PORT, HOST, () => {
   console.log(`Server is listening on http://${HOST}:${PORT}`);
   
-  // Get local IPv4 address for network access
+  // Get local IPv4 address for network access (prioritize local network, exclude VPN)
   const networkInterfaces = os.networkInterfaces();
   let localIPv4 = null;
-  
+
+  // Function to check if IP is a local network address
+  const isLocalNetworkIP = (ip) => {
+    return ip.startsWith('192.168.') ||
+           ip.startsWith('10.') ||
+           (ip.startsWith('172.') && parseInt(ip.split('.')[1]) >= 16 && parseInt(ip.split('.')[1]) <= 31);
+  };
+
+  // First pass: Look for local network IPs (192.168.x.x, 10.x.x.x, 172.16-31.x.x)
   for (const interfaceName in networkInterfaces) {
     const interfaces = networkInterfaces[interfaceName];
     if (interfaces) {
       for (const iface of interfaces) {
-        if (iface.family === 'IPv4' && !iface.internal) {
+        if (iface.family === 'IPv4' && !iface.internal && isLocalNetworkIP(iface.address)) {
           localIPv4 = iface.address;
           break;
         }
       }
     }
     if (localIPv4) break;
+  }
+
+  // Second pass: If no local network IP found, get any non-internal IPv4
+  if (!localIPv4) {
+    for (const interfaceName in networkInterfaces) {
+      const interfaces = networkInterfaces[interfaceName];
+      if (interfaces) {
+        for (const iface of interfaces) {
+          if (iface.family === 'IPv4' && !iface.internal) {
+            localIPv4 = iface.address;
+            break;
+          }
+        }
+      }
+      if (localIPv4) break;
+    }
   }
   
   if (HOST === '0.0.0.0') {
