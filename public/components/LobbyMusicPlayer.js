@@ -162,10 +162,10 @@ class LobbyMusicPlayer {
                     <div class="flex items-center justify-between">
                         <div class="flex items-center gap-4">
                             <div class="w-2 h-10 rounded-full ${this.isPlaying ? 'bg-[var(--live-color)] pulse-live' : 'bg-gray-600'}" id="music-status-indicator"></div>
-                            <div>
-                                <p class="font-semibold text-white">Background Music</p>
-                                <p class="text-sm font-medium flex items-center gap-1" id="music-status-text">
-                                    <span class="material-symbols-rounded text-sm">circle</span> 
+                            <div class="text-left">
+                                <p class="font-semibold text-white text-left">Background Music</p>
+                                <p class="text-sm font-medium flex items-center gap-1 text-left" id="music-status-text">
+                                    <span class="material-symbols-rounded text-sm">circle</span>
                                     <span class="${this.isPlaying ? 'text-[var(--live-color)]' : this.isPaused ? 'text-yellow-400' : 'text-gray-500'}" id="music-status-label">
                                         ${this.isPlaying ? 'Playing' : this.isPaused ? 'Paused' : 'Stopped'}
                                     </span>
@@ -186,7 +186,7 @@ class LobbyMusicPlayer {
                         <div class="flex items-center justify-between">
                             <div class="flex items-center gap-3 flex-1 min-w-0">
                                 <span class="material-symbols-rounded text-xl text-[var(--primary-color)]">library_music</span>
-                                <p class="text-sm font-mono text-gray-400 truncate" id="current-file-name">${fileNameDisplay}</p>
+                                <p class="text-sm font-mono text-gray-400 truncate text-left" id="current-file-name">${fileNameDisplay}</p>
                                 <input type="file" id="file-input" accept="${this.supportedFormats.join(',')}" class="hidden">
                             </div>
                             <button id="change-file-btn" class="flex items-center justify-center h-8 w-8 rounded-full text-[var(--primary-color)] hover:text-white transition-colors border border-[var(--primary-color)]/30 hover:bg-[var(--primary-color)]/20">
@@ -200,8 +200,8 @@ class LobbyMusicPlayer {
                                     <div class="bg-[var(--primary-color)] h-1.5 rounded-full transition-all duration-150" style="width: 0%" id="progress-bar"></div>
                                 </div>
                                 <div class="flex justify-between text-xs text-gray-500">
-                                    <span id="current-time">0:00</span>
-                                    <span id="duration">0:00</span>
+                                    <span id="current-time" class="text-left">0:00</span>
+                                    <span id="duration" class="text-right">0:00</span>
                                 </div>
                             </div>
                             <button id="loop-btn" class="flex items-center justify-center h-8 w-8 rounded-full transition-colors ${this.isLooping ? 'text-white bg-[var(--primary-color)]' : 'text-gray-400 bg-[#2A2A2A] hover:bg-gray-600'}" ${!this.currentFile ? 'disabled' : ''}>
@@ -214,11 +214,11 @@ class LobbyMusicPlayer {
                                 <span class="material-symbols-rounded text-base">${this.isMuted ? 'volume_off' : 'volume_up'}</span>
                             </button>
                             <div class="flex-1 flex items-center gap-3">
-                                <span class="text-xs text-gray-500 w-8">0%</span>
+                                <span class="text-xs text-gray-500 w-8 text-left">0%</span>
                                 <input id="volume-slider" class="flex-1" max="100" min="0" type="range" value="${this.volume}" title="${this.volume}%"/>
-                                <span class="text-xs text-gray-500 w-12">100%</span>
+                                <span class="text-xs text-gray-500 w-12 text-right">100%</span>
                             </div>
-                            <span class="text-sm font-mono text-gray-400 w-12" id="volume-display">${this.volume}%</span>
+                            <span class="text-sm font-mono text-gray-400 w-12 text-right" id="volume-display">${this.volume}%</span>
                         </div>
                     </div>
                 </div>
