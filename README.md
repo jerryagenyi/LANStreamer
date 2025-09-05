@@ -222,7 +222,11 @@ npm start
 double-click Start-LANStreamer.bat
 
 # Or create a desktop shortcut for one-click access
+# PowerShell:
 powershell -ExecutionPolicy Bypass -File Create-Desktop-Shortcut.ps1
+
+# Command Prompt:
+powershell.exe -ExecutionPolicy Bypass -File Create-Desktop-Shortcut.ps1
 ```
 
 > **📍 Important**: The batch file expects Icecast to be installed at `C:\Program Files (x86)\Icecast`. If your Icecast is installed elsewhere, you'll need to start it manually or modify the batch file path.
@@ -261,9 +265,6 @@ icecast -c /usr/local/etc/icecast.xml
 > **💡 Pro Tip**: The `Start-LANStreamer.bat` file handles dependency installation, server startup, and can optionally start Icecast for you!
 
 ---
-
-
-
 
 
 ### ❓ Troubleshooting Quick Start
@@ -362,7 +363,7 @@ The application uses environment variables for configuration. Most users only ne
 
 **Essential Setup:**
 1. Copy `.env.example` to `.env`
-2. **Change these values** (marked with `CHANGE_THIS_VALUE`):
+2. **Change these values** for security:
    - `JWT_SECRET` - Used for secure authentication
    - `ADMIN_PASSWORD` - Dashboard admin password
 
