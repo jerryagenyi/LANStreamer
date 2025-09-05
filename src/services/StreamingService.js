@@ -595,12 +595,18 @@ class StreamingService {
    * @returns {object} Updated stream information including new ID if name changed
    */
   async updateStream(streamId, updates) {
-    logger.info(`Updating stream: ${streamId}`)
+    logger.info(`Updating stream: ${streamId}`, { updates })
 
     const stream = this.activeStreams[streamId]
     if (!stream) {
       throw new Error(`Stream ${streamId} not found`)
     }
+
+    logger.info(`Current stream data:`, {
+      id: stream.id,
+      name: stream.name,
+      deviceId: stream.deviceId
+    })
 
     const prevDeviceId = stream.deviceId
     const prevName = stream.name
@@ -679,6 +685,12 @@ class StreamingService {
     this.savePersistentStreams()
 
     logger.info(`Stream updated successfully. New ID: ${newStreamId}`)
+    logger.info(`Updated stream data:`, {
+      id: currentStream.id,
+      name: currentStream.name,
+      deviceId: currentStream.deviceId,
+      config: currentStream.config
+    })
 
     return {
       oldStreamId: streamId,
@@ -923,7 +935,7 @@ class StreamingService {
     const activeStreams = Object.values(this.activeStreams)
     const runningStreams = activeStreams.filter(s => s.status === 'running')
     const errorStreams = activeStreams.filter(s => s.status === 'error')
-    
+
     return {
       total: activeStreams.length,
       running: runningStreams.length,
@@ -933,6 +945,13 @@ class StreamingService {
         name: s.name,
         status: s.status,
         deviceId: s.deviceId,
+        inputFile: s.inputFile,
+        config: s.config,
+        audioFormat: s.audioFormat,
+        formatIndex: s.formatIndex,
+        startedAt: s.startedAt,
+        createdAt: s.createdAt,
+        error: s.error,
         uptime: s.startedAt ? Date.now() - s.startedAt.getTime() : 0
       }))
     }

@@ -58,14 +58,20 @@ class FFmpegStreamsManager {
      */
     async loadStreams() {
         try {
-            const response = await fetch('/api/streams/status');
+            // Add cache-busting parameter to ensure fresh data
+            const response = await fetch(`/api/streams/status?t=${Date.now()}`);
             const data = await response.json();
+
+            console.log('🔄 Loaded streams data:', data); // Debug logging
 
             // The API returns { total, running, errors, streams } format
             if (data.streams) {
                 // Update client timers based on stream status changes
                 this.updateClientTimers(data.streams);
                 this.activeStreams = data.streams;
+
+                // Debug: Log stream names
+                console.log('📋 Stream names:', data.streams.map(s => ({ id: s.id, name: s.name })));
             } else {
                 this.activeStreams = [];
             }
@@ -474,8 +480,13 @@ class FFmpegStreamsManager {
 
                 const result = await response.json();
 
+                console.log('🔄 Stream update result:', result); // Debug logging
+
                 if (response.ok) {
                     modal.remove();
+
+                    // Force a fresh reload of streams
+                    console.log('🔄 Reloading streams after update...');
                     await this.loadStreams();
                     this.render();
 
