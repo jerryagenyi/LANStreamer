@@ -8,38 +8,33 @@ For advanced users or for troubleshooting, **manual setup guides** are also avai
 
 ```
 LANStreamer/
+├── Start-LANStreamer.bat                   # Windows startup batch file
+├── Create-Desktop-Shortcut.ps1             # Desktop shortcut creator
 ├── README.md                               # This file - project overview
-├── .env.example                            # Environment configuration template
-├── package.json                            # Node.js dependencies
-├── src/                                    # Server-side code (Express + Node.js)
-├── frontend/                               # Frontend code (Vue.js)
-├── tests/                                  # Automated tests
-├── docs/                                   # Comprehensive documentation
-│   ├── README.md                           # Documentation index and overview  
-│   ├── File-Relationships-Guide.md         # Documentation maintenance guide
-│   ├── LANStreamer-PRD.md                  # Product Requirements Document
-│   ├── LANStreamer-TDD.md                  # Test-Driven Development Plan
-│   ├── LANStreamer-Technical-Specification.md # Technical Architecture
-│   ├── Admin-Dashboard-UI-Design.md        # UI Design Specifications
-│   ├── Audio-Monitoring-Feature-Specification.md # Monitoring Feature Specs
-│   └── env-example.md                      # Environment Configuration Guide
-├── manual-setup/                           # Manual guides and scripts
-│   ├── README.md                           # Explanation of the manual setup
-│   ├── LANStreamer-basic-xr18.md           # XR18 hardware setup guide
-│   ├── LANStreamer-basic-dvs.md            # DVS/Dante setup guide
-│   └── ...                                 # Batch files, etc.
-└── images/                                 # Project images
+├── package.json                            # Node.js dependencies and scripts
+├── src/                                    # Backend Node.js application
+│   ├── server.js                           # Main server entry point
+│   ├── routes/                             # API route handlers
+│   └── services/                           # Core business logic
+├── public/                                 # Frontend web interface
+│   ├── index.html                          # Admin dashboard
+│   ├── streams.html                        # User streams page
+│   └── components/                         # Modular UI components
+├── config/                                 # Configuration files
+├── logs/                                   # Application logs
+├── docs/                                   # Documentation and guides
+│   └── guides/                             # Installation and troubleshooting guides
+└── manual-setup/                           # Advanced manual setup guides
 ```
 
 ## Features
 
-- **Automated Setup:** A guided wizard automates the installation and configuration of Icecast and FFmpeg.
-- **Professional Audio Device Detection:** Automatically detects and differentiates input and output audio devices for professional setups.
-- **Audio Monitoring:** Monitor live streams through local output devices for quality control before broadcasting.
-- **Multi-Stream Management:** Start, stop, and manage individual audio streams from a simple web-based dashboard.
-- **Real-time Status:** View the live status of all streams and system components via WebSockets.
-- **User-Friendly Interface:** A clean web interface allows users on the network to easily select and listen to the audio stream of their choice.
-- **Professional Integration:** Supports DVS/Dante audio interfaces for language interpretation and live event management.
+- **Audio Device Detection:** Automatically detects and lists available input audio devices (microphones, audio interfaces, virtual audio cables).
+- **Multi-Stream Management:** Create, start, and stop individual audio streams from a web-based dashboard.
+- **Real-time Status:** View live status of all streams and system components.
+- **Network Broadcasting:** Stream audio to any device on your local network via web browsers.
+- **Professional Audio Support:** Works with professional audio interfaces, virtual audio routing, and multi-channel setups.
+- **Easy Startup:** One-click Windows batch file for quick server startup with optional Icecast integration.
 
 ## How It Works
 
@@ -47,9 +42,9 @@ LANStreamer creates a complete audio streaming ecosystem with two main interface
 
 ### 🎛️ **Admin Dashboard** (`http://localhost:3001/`)
 The control center where administrators:
-- **Manage Streams:** Start, stop, and configure audio streams
+- **Manage Streams:** Create, Start, and Stop audio streams
 - **Monitor System:** Check FFmpeg and Icecast status in real-time
-- **Configure Settings:** Set up event details and contact information
+- **Configure Settings:** Set up event details and contact information for support
 - **View Analytics:** Monitor active streams and system performance
 
 ### 🎧 **Listener Interface** (`http://localhost:3001/streams`)
@@ -233,6 +228,8 @@ double-click Start-LANStreamer.bat
 powershell -ExecutionPolicy Bypass -File Create-Desktop-Shortcut.ps1
 ```
 
+> **📍 Important**: The batch file expects Icecast to be installed at `C:\Program Files (x86)\Icecast`. If your Icecast is installed elsewhere, you'll need to start it manually or modify the batch file path.
+
 **Step 5: Manual Startup (All Platforms)**
 ```bash
 # Start LANStreamer Server first
@@ -258,14 +255,7 @@ icecast -c /usr/local/etc/icecast.xml
 
 ---
 
-### 🔧 Advanced Development Mode
 
-**For developers or advanced users who want auto-refresh:**
-```bash
-# Start with live reload (auto-refreshes when you edit files)
-npm run dev:live
-```
-Then access: `http://localhost:3002` (BrowserSync with auto-refresh)
 
 ### 🖥️ Desktop Shortcut Setup (Windows)
 
@@ -360,25 +350,7 @@ powershell -ExecutionPolicy Bypass -File Create-Desktop-Shortcut.ps1
 - Others can access: `http://192.168.1.100:3001/streams`
 - Perfect for meetings, events, or presentations!
 
-### 🔄 Live Reload Development
 
-The `npm run dev:live` command uses **BrowserSync** for automatic browser refresh during development:
-
-- **Main Application:** `http://localhost:3002` (auto-refreshes on file changes)
-- **BrowserSync Dashboard:** `http://localhost:3002` (shows the interface you saw)
-- **Original Server:** `http://localhost:3001` (proxied by BrowserSync)
-
-**Features:**
-- ✅ **Auto-refresh** when you edit any file in `public/`
-- ✅ **Server restart** when you edit backend files
-- ✅ **Multiple device sync** (test on different browsers/devices simultaneously)
-- ✅ **Network access** via the External URL shown in the dashboard
-
-**Development Workflow:**
-1. Run `npm run dev:live`
-2. Open `http://localhost:3002` in your browser
-3. Edit any file in `public/components/` or `public/index.html`
-4. Watch the browser automatically refresh with your changes!
 
 ### Manual Setup (Advanced Users)
 
@@ -390,29 +362,8 @@ If you wish to understand the core components or run the system without the web 
 
 ## Documentation
 
-Comprehensive documentation is available in the [`docs/`](docs/) directory:
-
-### 📋 **Core Documentation**
-- **[Documentation Index](docs/README.md)** - Overview and current implementation status
-- **[LANStreamer Documentation](docs/LANStreamer-Documentation.md)** - Comprehensive technical documentation, installation guides, and component architecture
-- **[Product Requirements](docs/LANStreamer-PRD.md)** - Features, user stories, and project scope
-- **[Technical Specifications](docs/LANStreamer-Technical-Specification.md)** - API documentation and system architecture
-- **[Test-Driven Development Plan](docs/LANStreamer-TDD.md)** - Development methodology and testing strategy
-- **[Changelog](docs/CHANGELOG.md)** - Complete development history and progress tracking
-
-### 🎨 **Design & Features**
-- **[UI Design Specifications](docs/Admin-Dashboard-UI-Design.md)** - Complete visual design guidelines
-- **[Audio Monitoring Feature](docs/Audio-Monitoring-Feature-Specification.md)** - Professional monitoring capabilities
-- **[Audio Pipeline Concepts](docs/LANStreamer-Audio-Pipeline-Concepts.md)** - Understanding audio routing and hardware integration
-- **[Authentication & Security](docs/Authentication-Security-Specification.md)** - Login system and security measures
-
-### ⚙️ **Configuration & Maintenance**
-- **[Environment Configuration Guide](docs/env-example.md)** - Detailed environment setup
-- **[File Relationships Guide](docs/File-Relationships-Guide.md)** - Documentation maintenance
-
-### 🔧 **Setup Guides**
+- **[Installation Guides](docs/guides/README.md)** - Detailed setup and troubleshooting
 - **[Manual Setup](manual-setup/README.md)** - Hardware-specific configuration guides
-- **[Test Assets](assets/README.md)** - Sample audio files and testing resources
 
 ## Configuration
 
@@ -420,144 +371,22 @@ The application uses environment variables. Create a `.env` file in the root dir
 
 ## Technology Stack
 
-### Backend (Node.js + Express)
-- **Express.js**: Web server framework
-- **Socket.io**: Real-time WebSocket communication
-
-### Frontend (Vue.js)
-- **Vue.js 3**: Progressive JavaScript framework
-- **Vue Router**: Client-side routing
-- **Vuex/Pinia**: State management
+- **Backend**: Node.js + Express.js
+- **Frontend**: Vanilla JavaScript + HTML/CSS
+- **Real-time Communication**: WebSockets
+- **Audio Processing**: FFmpeg
+- **Streaming Server**: Icecast
 
 ## Contributing
 
-We welcome contributions to LANStreamer! Whether you're fixing bugs, adding features, improving documentation, or helping with testing, your contributions are valuable.
+We welcome contributions! Fork the repository, make your changes, and create a pull request.
 
-### 🚀 Quick Start for Contributors
-
-1. **Fork the repository** on GitHub
-2. **Clone your fork** locally:
-   ```bash
-   git clone https://github.com/YOUR-USERNAME/LANStreamer.git
-   cd LANStreamer
-   ```
-3. **Install dependencies**:
-   ```bash
-   npm install
-   ```
-4. **Create a feature branch**:
-   ```bash
-   git checkout -b feature/your-feature-name
-   ```
-5. **Make your changes** and test them
-6. **Commit your changes**:
-   ```bash
-   git commit -m "Add: your feature description"
-   ```
-7. **Push to your fork**:
-   ```bash
-   git push origin feature/your-feature-name
-   ```
-8. **Create a Pull Request** on GitHub
-
-### 🛠️ Development Setup
-
-**Start the development server:**
+**Development Setup:**
 ```bash
+git clone https://github.com/YOUR-USERNAME/LANStreamer.git
+cd LANStreamer
+npm install
 npm run dev
 ```
 
-**Generate screenshots for documentation:**
-```bash
-npm run screenshots
-```
-
-**Run tests:**
-```bash
-npm test
-npm run test:e2e
-```
-
-### 📝 Contribution Guidelines
-
-**Code Style:**
-- Use consistent indentation (2 spaces)
-- Follow existing naming conventions
-- Add comments for complex logic
-- Keep functions small and focused
-
-**Commit Messages:**
-- Use clear, descriptive commit messages
-- Start with a verb: `Add`, `Fix`, `Update`, `Remove`
-- Reference issues when applicable: `Fix: audio device detection (#123)`
-
-**Pull Requests:**
-- Provide a clear description of changes
-- Include screenshots for UI changes
-- Test your changes thoroughly
-- Update documentation if needed
-
-### 🐛 Bug Reports
-
-When reporting bugs, please include:
-- **Operating System** and version
-- **Node.js version** (`node --version`)
-- **Steps to reproduce** the issue
-- **Expected vs actual behavior**
-- **Console logs** or error messages
-- **Screenshots** if applicable
-
-### 💡 Feature Requests
-
-For new features, please:
-- Check existing issues first
-- Describe the use case clearly
-- Explain why it would be valuable
-- Consider implementation complexity
-
-### 🧪 Testing
-
-**Manual Testing:**
-- Test on different operating systems
-- Verify audio device detection
-- Test stream creation and playback
-- Check responsive design on mobile
-
-**Automated Testing:**
-- Unit tests with Vitest
-- End-to-end tests with Playwright
-- Screenshot regression testing
-
-### 📚 Documentation
-
-Help improve documentation by:
-- Fixing typos and grammar
-- Adding missing information
-- Creating tutorials or guides
-- Updating screenshots
-- Translating content
-
-### 🎯 Areas We Need Help With
-
-- **Cross-platform testing** (Windows, macOS, Linux)
-- **Audio device compatibility** testing
-- **Performance optimization**
-- **UI/UX improvements**
-- **Documentation and tutorials**
-- **Internationalization (i18n)**
-- **Accessibility improvements**
-
-### 📞 Getting Help
-
-- **GitHub Issues**: For bugs and feature requests
-- **GitHub Discussions**: For questions and community support
-- **Documentation**: Check the [`docs/`](docs/) directory
-
-### 🙏 Recognition
-
-Contributors are recognized in:
-- GitHub contributors list
-- Release notes for significant contributions
-- Documentation credits
-
-Thank you for helping make LANStreamer better! 🎉
+For bug reports, include your OS, Node.js version, and steps to reproduce the issue.
