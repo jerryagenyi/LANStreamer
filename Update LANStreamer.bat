@@ -78,7 +78,7 @@ echo 🚀 Starting update process...
 echo.
 
 :: Step 1: Create backup directory
-echo 📦 Step 1/7: Creating backup...
+echo 📦 Step 1/8: Creating backup...
 if exist "%BACKUP_DIR%" rmdir /s /q "%BACKUP_DIR%"
 mkdir "%BACKUP_DIR%" 2>nul
 
@@ -95,7 +95,7 @@ pause >nul
 echo.
 
 :: Step 2: Stop any running processes
-echo 🛑 Step 2/7: Stopping LANStreamer processes...
+echo 🛑 Step 2/8: Stopping LANStreamer processes...
 taskkill /f /im node.exe >nul 2>&1
 taskkill /f /im icecast.exe >nul 2>&1
 timeout /t 2 >nul
@@ -106,7 +106,7 @@ pause >nul
 echo.
 
 :: Step 3: Clean temp directory
-echo 🧹 Step 3/7: Preparing download area...
+echo 🧹 Step 3/8: Preparing download area...
 if exist "%TEMP_DIR%" rmdir /s /q "%TEMP_DIR%"
 mkdir "%TEMP_DIR%"
 echo ✅ Download area ready
@@ -116,7 +116,7 @@ pause >nul
 echo.
 
 :: Step 4: Download latest release
-echo 📥 Step 4/7: Downloading latest version...
+echo 📥 Step 4/8: Downloading latest version...
 echo    This may take a few minutes depending on your connection...
 
 :: Use PowerShell to download the latest release
@@ -171,7 +171,7 @@ pause >nul
 echo.
 
 :: Step 5: Extract the update
-echo 📂 Step 5/7: Extracting update...
+echo 📂 Step 5/8: Extracting update...
 powershell -Command "& {
     try {
         $zipPath = '%TEMP_DIR%\lanstreamer-latest.zip'
@@ -226,7 +226,7 @@ pause >nul
 echo.
 
 :: Step 6: Replace files
-echo 🔄 Step 6/7: Installing update...
+echo 🔄 Step 6/8: Installing update...
 echo    Preserving user data and configuration...
 
 :: Remove old files (except user data and this updater)
@@ -249,7 +249,7 @@ echo    📋 Installing new files...
 xcopy "%CONTENT_PATH%\*" "%INSTALL_DIR%\" /e /i /h /y /exclude:update_exclude.txt >nul 2>&1
 
 :: Step 7: Restore user data
-echo 🔄 Step 7/7: Restoring your data...
+echo 🔄 Step 7/8: Restoring your data...
 if exist "%BACKUP_DIR%\data" xcopy "%BACKUP_DIR%\data" "data\" /e /i /h /y >nul 2>&1
 if exist "%BACKUP_DIR%\logs" xcopy "%BACKUP_DIR%\logs" "logs\" /e /i /h /y >nul 2>&1
 if exist "%BACKUP_DIR%\.env" copy "%BACKUP_DIR%\.env" "." >nul 2>&1
@@ -259,6 +259,40 @@ echo ✅ Data restored
 echo.
 echo Press any key to continue to cleanup...
 pause >nul
+echo.
+
+:: Step 8: Recreate desktop shortcut if it existed
+echo 🔗 Step 8/8: Checking desktop shortcut...
+set "DESKTOP=%USERPROFILE%\Desktop"
+set "SHORTCUT_PATH=%DESKTOP%\LANStreamer.lnk"
+
+if exist "%SHORTCUT_PATH%" (
+    echo    🔄 Desktop shortcut found - recreating to ensure it works...
+    powershell -ExecutionPolicy Bypass -Command "& {
+        try {
+            $currentDir = '%INSTALL_DIR%'
+            $batchFile = Join-Path $currentDir 'Start LANStreamer Server.bat'
+            $shortcutPath = '%SHORTCUT_PATH%'
+
+            if (Test-Path $batchFile) {
+                $WshShell = New-Object -comObject WScript.Shell
+                $Shortcut = $WshShell.CreateShortcut($shortcutPath)
+                $Shortcut.TargetPath = $batchFile
+                $Shortcut.WorkingDirectory = $currentDir
+                $Shortcut.Description = 'Start LANStreamer Audio Streaming Server'
+                $Shortcut.IconLocation = 'shell32.dll,25'
+                $Shortcut.Save()
+                Write-Host '    ✅ Desktop shortcut updated successfully'
+            } else {
+                Write-Host '    ⚠️  Batch file not found - shortcut may not work'
+            }
+        } catch {
+            Write-Host ('    ❌ Failed to update shortcut: ' + $_.Exception.Message)
+        }
+    }"
+) else (
+    echo    ℹ️  No desktop shortcut found - skipping
+)
 echo.
 
 :: Cleanup
@@ -276,6 +310,7 @@ echo 📋 WHAT HAPPENED:
 echo    • ✅ All your settings and data were preserved
 echo    • ✅ New LANStreamer files installed
 echo    • ✅ Backup created for safety
+echo    • ✅ Desktop shortcut updated (if it existed)
 echo.
 echo 📁 BACKUP LOCATION: %BACKUP_DIR%
 echo    (You can delete this after confirming everything works)
