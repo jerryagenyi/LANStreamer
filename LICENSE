@@ -1,0 +1,59 @@
+# LANStreamer Dual License
+
+LANStreamer is available under a dual licensing model:
+
+## 1. Open Source License (GPL v3)
+
+For open source projects, educational use, and personal use, LANStreamer is licensed under the GNU General Public License v3.0.
+
+This means you can:
+- Use LANStreamer for personal, educational, or open source projects
+- Modify and distribute the software
+- Create derivative works
+
+**BUT you must:**
+- Keep the source code open and available
+- License any derivative works under GPL v3
+- Include proper attribution and copyright notices
+- Not use for commercial purposes without a commercial license
+
+See LICENSE-GPL3 for full terms.
+
+## 2. Commercial License
+
+For commercial use, proprietary applications, or if you want to distribute LANStreamer without GPL v3 restrictions, you need a commercial license.
+
+Commercial license allows you to:
+- Use LANStreamer in commercial products
+- Create proprietary derivative works
+- Distribute without source code disclosure
+- Remove GPL v3 restrictions
+
+**Commercial License Requirements:**
+- Contact the author for licensing terms
+- Include "Powered by LANStreamer" attribution in your application
+- Pay applicable licensing fees
+- Comply with commercial license terms
+
+## Contact for Commercial Licensing
+
+For commercial licensing inquiries, please contact:
+- GitHub: https://github.com/jerryagenyi/LANStreamer
+- Create an issue with "Commercial License Request" label
+
+## Copyright Notice
+
+Copyright (c) 2024 Jerry Agenyi. All rights reserved.
+
+LANStreamer name, logo, and associated trademarks are proprietary to Jerry Agenyi.
+
+## Attribution Requirements
+
+All uses of LANStreamer (both open source and commercial) must include:
+- Copyright notice: "Copyright (c) 2024 Jerry Agenyi"
+- Attribution: "Powered by LANStreamer"
+- Link to original repository: https://github.com/jerryagenyi/LANStreamer
+
+## Disclaimer
+
+LANStreamer is provided "as is" without warranty of any kind. The author is not liable for any damages arising from the use of this software.
