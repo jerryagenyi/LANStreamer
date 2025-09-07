@@ -215,6 +215,13 @@ The user-friendly page where listeners:
 
 ## Screenshots
 
+### Server Terminal: Professional Output
+<div align="center">
+  <img src="images/lanstreamer-server-terminal.png" width="90%" alt="LANStreamer Server Terminal" style="border: 1px solid #ccc; border-radius: 8px;" />
+</div>
+
+*Clean server output with filtered IP addresses and professional status indicators*
+
 ### Dashboard Interface
 <div align="center">
   <img src="images/screenshots/dashboard.png" width="90%" alt="LANStreamer Dashboard" style="border: 1px solid #ccc; border-radius: 8px;" />
