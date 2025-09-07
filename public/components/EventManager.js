@@ -367,15 +367,31 @@ class EventManager {
             });
         }
 
-        // Save button
+        // Save button - with additional debugging
         const saveButton = document.getElementById('save-event-settings');
         if (saveButton) {
             console.log('🎯 Event save button found, adding event listener');
-            saveButton.addEventListener('click', (e) => {
+
+            // Remove any existing listeners first
+            saveButton.replaceWith(saveButton.cloneNode(true));
+            const newSaveButton = document.getElementById('save-event-settings');
+
+            newSaveButton.addEventListener('click', (e) => {
                 console.log('🎯 Event save button clicked!');
                 e.preventDefault();
+                e.stopPropagation();
                 this.saveEventSettings();
             });
+
+            // Also add a backup listener for any form submission
+            const form = newSaveButton.closest('form');
+            if (form) {
+                form.addEventListener('submit', (e) => {
+                    console.log('🎯 Form submitted!');
+                    e.preventDefault();
+                    this.saveEventSettings();
+                });
+            }
         } else {
             console.error('❌ Event save button not found!');
         }
