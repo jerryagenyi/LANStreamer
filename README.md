@@ -215,19 +215,40 @@ The user-friendly page where listeners:
 
 ## Screenshots
 
+### Login Interface
+<div align="center">
+  <img src="images/screenshots/lanstreamer-login.png" width="90%" alt="LANStreamer Login Page" style="border: 1px solid #ccc; border-radius: 8px;" />
+</div>
+
+*Clean, professional login interface with LANStreamer branding*
+
 ### Dashboard Interface
 <div align="center">
-  <img src="images/screenshots/dashboard.png" width="90%" alt="LANStreamer Dashboard" style="border: 1px solid #ccc; border-radius: 8px;" />
+  <img src="images/screenshots/lanstreamer-dashboard.png" width="90%" alt="LANStreamer Dashboard" style="border: 1px solid #ccc; border-radius: 8px;" />
 </div>
 
 *The main dashboard provides system status, stream management, and real-time monitoring*
 
 ### Streams Interface
 <div align="center">
-  <img src="images/screenshots/streams.png" width="90%" alt="LANStreamer Streams Page" style="border: 1px solid #ccc; border-radius: 8px;" />
+  <img src="images/screenshots/lanstreamer-streams.png" width="90%" alt="LANStreamer Streams Page" style="border: 1px solid #ccc; border-radius: 8px;" />
 </div>
 
 *The streams page allows users to browse and listen to available audio streams*
+
+### Event Details Form
+<div align="center">
+  <img src="images/screenshots/lanstreamer-event-details-form.png" width="90%" alt="LANStreamer Event Details Form" style="border: 1px solid #ccc; border-radius: 8px;" />
+</div>
+
+*Professional event configuration form for organizers*
+
+### Contact & Feedback Form
+<div align="center">
+  <img src="images/screenshots/lanstreamer-feedback-contact-details-form.png" width="90%" alt="LANStreamer Contact Form" style="border: 1px solid #ccc; border-radius: 8px;" />
+</div>
+
+*Integrated feedback and contact system for event support*
 
 ## Visual Concept Overview
 
