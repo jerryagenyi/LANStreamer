@@ -220,7 +220,14 @@ The user-friendly page where listeners:
   <img src="images/lanstreamer-server-terminal.png" width="90%" alt="LANStreamer Server Terminal" style="border: 1px solid #ccc; border-radius: 8px;" />
 </div>
 
-*Clean server output with filtered IP addresses and professional status indicators*
+*Clean server output with filtered IP addresses (only showing local network IP 192.168.1.244) and professional status indicators*
+
+### Login Interface
+<div align="center">
+  <img src="images/screenshots/login.png" width="90%" alt="LANStreamer Login Page" style="border: 1px solid #ccc; border-radius: 8px;" />
+</div>
+
+*Clean, professional login interface with LANStreamer branding*
 
 ### Dashboard Interface
 <div align="center">
@@ -229,7 +236,7 @@ The user-friendly page where listeners:
 
 *The main dashboard provides system status, stream management, and real-time monitoring*
 
-### Streams Interface
+### Streams Interface (Listeners Page)
 <div align="center">
   <img src="images/screenshots/streams.png" width="90%" alt="LANStreamer Streams Page" style="border: 1px solid #ccc; border-radius: 8px;" />
 </div>
