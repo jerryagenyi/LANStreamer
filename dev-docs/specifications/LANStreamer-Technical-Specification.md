@@ -24,7 +24,9 @@ LANStreamer is a Node.js-based application that transforms a standard Windows PC
 - **WebSocket:** Socket.io for real-time communication
 - **Process Management:** Node.js `child_process` for FFmpeg and Icecast control
 - **Validation:** Joi for schema validation
-- **Logging:** Winston with daily log rotation
+- **Logging:** Winston with daily log rotation and professional console output
+  - **IP Filtering:** Clean terminal output showing only relevant local network IP (192.168.1.244) instead of multiple confusing interfaces
+  - **Professional Branding:** Clean ASCII art and status indicators for production environments
 - **System Information:** `systeminformation` library for hardware monitoring
 
 ### 2.2 Frontend Technologies

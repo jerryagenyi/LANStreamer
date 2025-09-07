@@ -1201,6 +1201,66 @@ const logger = winston.createLogger({
 - **User Actions**: Admin login, configuration changes, manual operations
 - **Error Tracking**: Detailed error information with stack traces
 
+#### **Professional Server Output**
+
+LANStreamer provides clean, professional terminal output designed for production environments:
+
+**IP Address Filtering:**
+```javascript
+// Network interface filtering for clean output
+function getRelevantNetworkInfo() {
+  const interfaces = os.networkInterfaces();
+  const relevantIPs = [];
+
+  for (const [name, addresses] of Object.entries(interfaces)) {
+    // Filter out loopback, virtual, and irrelevant interfaces
+    if (name.includes('Loopback') || name.includes('VMware') || name.includes('VirtualBox')) {
+      continue;
+    }
+
+    addresses.forEach(addr => {
+      // Only show local network IPv4 addresses
+      if (addr.family === 'IPv4' && !addr.internal && addr.address.startsWith('192.168.')) {
+        relevantIPs.push({
+          interface: name,
+          address: addr.address,
+          type: 'Local Network'
+        });
+      }
+    });
+  }
+
+  return relevantIPs;
+}
+```
+
+**Clean Terminal Output Features:**
+- **Filtered IP Display**: Only shows relevant local network IP (e.g., 192.168.1.244) instead of multiple confusing interfaces
+- **Professional Branding**: Clean ASCII art and consistent formatting
+- **Status Indicators**: Clear visual indicators for service status
+- **Important Warnings**: Critical information highlighted appropriately
+- **Minimal Noise**: Suppresses verbose technical output that confuses non-technical users
+
+**Example Clean Output:**
+```
+LANStreamer Server
+Audio Streaming Server
+
+Starting LANStreamer Server...
+
+Admin Dashboard: http://192.168.1.244:3001
+Streams Page for Listeners: http://192.168.1.244:3001/streams
+
+TIP: Start Icecast server before creating streams
+
+Server is listening on http://0.0.0.0:3001
+Network access: Server is accessible from other devices on your network
+Admin Dashboard: http://192.168.1.244:3001
+Listener Page: http://192.168.1.244:3001/streams
+```
+
+This approach ensures that event organizers see only the information they need without technical clutter.
+
 ### Performance and Optimization
 
 #### **Memory Management**
