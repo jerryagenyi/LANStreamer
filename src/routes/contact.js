@@ -1,6 +1,7 @@
 import express from 'express';
 import fs from 'fs-extra';
 import path from 'path';
+import multer from 'multer';
 import { fileURLToPath } from 'url';
 import logger from '../utils/logger.js';
 import { ValidationError, ErrorCodes } from '../utils/errors.js';
@@ -13,6 +14,42 @@ const router = express.Router();
 // Path to contact details config file
 const contactConfigPath = path.join(process.cwd(), 'config', 'contact-details.json');
 
+// Path for event image uploads
+const UPLOADS_DIR = path.join(process.cwd(), 'public', 'uploads', 'events');
+
+// Configure multer for event image uploads
+const storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+        // Ensure uploads directory exists
+        fs.ensureDirSync(UPLOADS_DIR);
+        cb(null, UPLOADS_DIR);
+    },
+    filename: function (req, file, cb) {
+        // Generate unique filename with timestamp
+        const timestamp = Date.now();
+        const ext = path.extname(file.originalname);
+        const name = path.basename(file.originalname, ext);
+        cb(null, `event_${timestamp}${ext}`);
+    }
+});
+
+const upload = multer({
+    storage: storage,
+    limits: {
+        fileSize: 2 * 1024 * 1024 // 2MB limit for images
+    },
+    fileFilter: function (req, file, cb) {
+        // Check file type
+        const allowedTypes = ['.jpg', '.jpeg', '.png', '.gif', '.webp'];
+        const ext = path.extname(file.originalname).toLowerCase();
+        if (allowedTypes.includes(ext)) {
+            cb(null, true);
+        } else {
+            cb(new Error(`Unsupported image format. Allowed: ${allowedTypes.join(', ')}`));
+        }
+    }
+});
+
 // Default contact details
 const defaultContactDetails = {
     email: '',
@@ -24,11 +61,10 @@ const defaultContactDetails = {
     // Event configuration
     eventTitle: '',
     eventSubtitle: '',
+    eventImage: '',
     // About section configuration
-    showAbout: true,
     aboutSubtitle: '',
     aboutDescription: '',
-    showAboutSubtitle: true,
     lastUpdated: new Date().toISOString()
 };
 
@@ -69,9 +105,9 @@ router.get('/contact-details', async (req, res) => {
  */
 router.post('/contact-details', async (req, res) => {
     try {
-        const { 
+        const {
             email, phone, whatsapp, showEmail, showPhone, showWhatsapp,
-            eventTitle, eventSubtitle, showAbout, aboutSubtitle, aboutDescription, showAboutSubtitle
+            eventTitle, eventSubtitle, eventImage, aboutSubtitle, aboutDescription
         } = req.body;
         
         logger.contact('Updating contact details', { 
@@ -107,11 +143,10 @@ router.post('/contact-details', async (req, res) => {
             // Event configuration
             eventTitle: eventTitle || '',
             eventSubtitle: eventSubtitle || '',
+            eventImage: eventImage || '',
             // About section configuration
-            showAbout: Boolean(showAbout),
             aboutSubtitle: aboutSubtitle || '',
             aboutDescription: aboutDescription || '',
-            showAboutSubtitle: Boolean(showAboutSubtitle),
             lastUpdated: new Date().toISOString()
         };
 
@@ -170,5 +205,85 @@ function isValidPhone(phone) {
     const phoneRegex = /^\+?[1-9]\d{6,14}$/;
     return phoneRegex.test(cleaned);
 }
+
+/**
+ * POST /api/upload-event-image
+ * Upload event image
+ */
+router.post('/upload-event-image', upload.single('eventImage'), async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ error: 'No image file uploaded' });
+        }
+
+        const filename = req.file.filename;
+        const imageUrl = `/uploads/events/${filename}`;
+
+        logger.contact('Event image uploaded successfully', {
+            filename,
+            originalName: req.file.originalname,
+            size: req.file.size
+        });
+
+        res.json({
+            success: true,
+            message: 'Event image uploaded successfully',
+            imageUrl: imageUrl
+        });
+    } catch (error) {
+        logger.error('Failed to upload event image:', error);
+
+        // Clean up uploaded file if there was an error
+        if (req.file) {
+            try {
+                await fs.remove(req.file.path);
+            } catch (cleanupError) {
+                logger.error('Error cleaning up uploaded file:', cleanupError);
+            }
+        }
+
+        res.status(500).json({
+            error: 'Failed to upload event image',
+            message: error.message
+        });
+    }
+});
+
+/**
+ * POST /api/remove-event-image
+ * Remove event image
+ */
+router.post('/remove-event-image', async (req, res) => {
+    try {
+        const { imageUrl } = req.body;
+
+        if (!imageUrl) {
+            return res.status(400).json({ error: 'Image URL is required' });
+        }
+
+        // Extract filename from URL
+        const filename = path.basename(imageUrl);
+        const filePath = path.join(UPLOADS_DIR, filename);
+
+        // Check if file exists and remove it
+        if (await fs.pathExists(filePath)) {
+            await fs.remove(filePath);
+            logger.contact('Event image removed successfully', { filename });
+        } else {
+            logger.contact('Event image file not found, but continuing', { filename });
+        }
+
+        res.json({
+            success: true,
+            message: 'Event image removed successfully'
+        });
+    } catch (error) {
+        logger.error('Failed to remove event image:', error);
+        res.status(500).json({
+            error: 'Failed to remove event image',
+            message: error.message
+        });
+    }
+});
 
 export default router;

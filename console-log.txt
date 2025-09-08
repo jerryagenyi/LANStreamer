@@ -1,0 +1,480 @@
+3background.js:2  Uncaught (in promise) Error: Could not establish connection. Receiving end does not exist.
+2background.js:2  Uncaught (in promise) Error: No tab with id: 593873388.
+background.js:2  Uncaught (in promise) Error: Could not establish connection. Receiving end does not exist.
+?plugins=forms,container-queries:64  cdn.tailwindcss.com should not be used in production. To use Tailwind CSS in production, install it as a PostCSS plugin or use the Tailwind CLI: https://tailwindcss.com/docs/installation
+(anonymous) @ ?plugins=forms,container-queries:64
+FFmpegStreamsManager.js:65 🔄 Loaded streams data: Object
+FFmpegStreamsManager.js:74 📋 Stream names: Array(3)
+ 🔍 Script loading check:
+ - ComponentManager: function
+ - FFmpegStreamsManager: function
+ - window.FFmpegStreamsManager: function
+ - EventManager: function
+ - window.EventManager: function
+ - ContactManager: function
+ - window.ContactManager: function
+ - ffmpeg-streams container: <div id=​"ffmpeg-streams">​…​</div>​
+api/system/update-check:1   Failed to load resource: the server responded with a status of 500 (Internal Server Error)
+FFmpegStreamsManager.js:105 Loaded 18 unique audio devices
+debug-console.html:1213 Initializing LANStreamer Dashboard...
+debug-console.html:481 ComponentManager initialized
+debug-console.html:484 Available components on window: Object
+debug-console.html:708 Audio devices rendered: Array(18)
+debug-console.html:498 LobbyMusicPlayer available: true
+debug-console.html:499 window.LobbyMusicPlayer: function
+ComponentManager.js:146 Initializing section: lobby-music-player with config: Object
+ComponentManager.js:156 🔍 Component class for lobby-music-player: class LobbyMusicPlayer {
+    constructor(containerId) {
+        this.containerId = containerId;
+        this.currentFile = null;
+        this.isPlaying = false;
+        this.isPaused = false; // New s… Type: function
+ComponentManager.js:157 🔍 Looking for component: LobbyMusicPlayer on window object
+ComponentManager.js:158 🔍 Available components on window: Array(7)
+ComponentManager.js:187 🚀 Attempting to initialize Lobby Background Music component with class: LobbyMusicPlayer
+ComponentManager.js:204 🔧 Calling init() method for Lobby Background Music component
+2LobbyMusicPlayer.js:108 Music file verified: Afrobeats Saxophone  2 hours.mp3
+ComponentManager.js:213 ✅ Lobby Background Music - Using Component
+ComponentManager.js:146 Initializing section: audio-devices with config: Object
+ComponentManager.js:156 🔍 Component class for audio-devices: undefined Type: undefined
+ComponentManager.js:157 🔍 Looking for component: AudioDeviceSelector on window object
+ComponentManager.js:158 🔍 Available components on window: Array(7)
+ComponentManager.js:173 ⚠️ Component class not found for audio-devices, using static fallback
+ComponentManager.js:233 ⚠️ Audio Devices - Using Static Content
+ComponentManager.js:146 Initializing section: icecast-server with config: Object
+ComponentManager.js:156 🔍 Component class for icecast-server: class IcecastManager {
+    constructor(containerId) {
+        console.log('IcecastManager constructor called with containerId:', containerId);
+        this.containerId = containerId;
+        this.statu… Type: function
+ComponentManager.js:157 🔍 Looking for component: IcecastManager on window object
+ComponentManager.js:158 🔍 Available components on window: Array(7)
+ComponentManager.js:187 🚀 Attempting to initialize Icecast Server component with class: IcecastManager
+IcecastManager.js:100 IcecastManager constructor called with containerId: icecast-server
+IcecastManager.js:136 IcecastManager initializing...
+ComponentManager.js:204 🔧 Calling init() method for Icecast Server component
+IcecastManager.js:181 Icecast installation detected at: C:\Program Files (x86)\Icecast
+IcecastManager.js:182 File validation results: Object
+IcecastManager.js:183 Log directory status: false
+IcecastManager.js:181 Icecast installation detected at: C:\Program Files (x86)\Icecast
+IcecastManager.js:182 File validation results: Object
+IcecastManager.js:183 Log directory status: false
+4IcecastManager.js:385 IcecastManager render() called for container: icecast-server
+ComponentManager.js:213 ✅ Icecast Server - Using Component
+ComponentManager.js:146 Initializing section: ffmpeg-streams with config: Object
+ComponentManager.js:156 🔍 Component class for ffmpeg-streams: class FFmpegStreamsManager {
+    constructor(containerId = 'ffmpeg-streams') {
+        this.activeStreams = [];
+        this.audioDevices = [];
+        this.isInitialized = false;
+        this.statusC… Type: function
+ComponentManager.js:157 🔍 Looking for component: FFmpegStreamsManager on window object
+ComponentManager.js:158 🔍 Available components on window: Array(8)
+ComponentManager.js:162 🎤 FFmpeg Streams Debug:
+ComponentManager.js:163 - Container exists: true
+ComponentManager.js:164 - Component class: class FFmpegStreamsManager {
+    constructor(containerId = 'ffmpeg-streams') {
+        this.activeStreams = [];
+        this.audioDevices = [];
+        this.isInitialized = false;
+        this.statusC…
+ComponentManager.js:165 - Global instance: FFmpegStreamsManager
+ComponentManager.js:187 🚀 Attempting to initialize FFmpeg Streams component with class: FFmpegStreamsManager
+ComponentManager.js:192 🎤 Using existing global FFmpeg streams manager instance
+ComponentManager.js:213 ✅ FFmpeg Streams - Using Component
+ComponentManager.js:146 Initializing section: video-sources with config: Object
+ComponentManager.js:156 🔍 Component class for video-sources: undefined Type: undefined
+ComponentManager.js:157 🔍 Looking for component: VideoSourcesPanel on window object
+ComponentManager.js:158 🔍 Available components on window: Array(8)
+ComponentManager.js:173 ⚠️ Component class not found for video-sources, using static fallback
+ComponentManager.js:233 ⚠️ Video Sources - Using Static Content
+ComponentManager.js:146 Initializing section: event-manager with config: Object
+ComponentManager.js:156 🔍 Component class for event-manager: class EventManager {
+    constructor(containerId = 'event-manager') {
+        this.containerId = containerId;
+        this.eventDetails = {
+            // Event configuration
+            eventTitle: '… Type: function
+ComponentManager.js:157 🔍 Looking for component: EventManager on window object
+ComponentManager.js:158 🔍 Available components on window: Array(8)
+ComponentManager.js:187 🚀 Attempting to initialize Event Configuration component with class: EventManager
+ComponentManager.js:204 🔧 Calling init() method for Event Configuration component
+EventManager.js:25 🎯 EventManager initializing...
+EventManager.js:35 🎯 Loading event details...
+EventManager.js:49 🎯 Event details loaded: Object
+EventManager.js:381 🖼️ Setting up image upload listeners...
+EventManager.js:386 🖼️ Upload button found: true
+EventManager.js:387 🖼️ Upload input found: true
+EventManager.js:388 🖼️ Remove button found: true
+EventManager.js:391 🖼️ Adding upload button listener...
+EventManager.js:392 🖼️ Upload button properties:
+EventManager.js:393   - ID: upload-event-image
+EventManager.js:394   - Text: 
+                                    upload
+                                    Change Image
+                                
+EventManager.js:395   - Disabled: false
+EventManager.js:396   - Type: submit
+EventManager.js:426 🖼️ Upload button and input listeners added successfully
+EventManager.js:429 🖼️ Testing upload button click in 3 seconds...
+EventManager.js:442 🖼️ Adding remove button listener...
+EventManager.js:473 💾 Setting up save button listener...
+EventManager.js:474 💾 Current DOM state: complete
+EventManager.js:30 ✅ EventManager initialization complete
+ComponentManager.js:213 ✅ Event Configuration - Using Component
+ComponentManager.js:146 Initializing section: contact-manager with config: Object
+ComponentManager.js:156 🔍 Component class for contact-manager: class ContactManager {
+    constructor() {
+        this.contactDetails = {
+            email: '',
+            phone: '',
+            whatsapp: '',
+            showEmail: false,
+            showPhone… Type: function
+ComponentManager.js:157 🔍 Looking for component: ContactManager on window object
+ComponentManager.js:158 🔍 Available components on window: Array(8)
+ComponentManager.js:187 🚀 Attempting to initialize Contact Information component with class: ContactManager
+ContactManager.js:17 📞 ContactManager initializing...
+ContactManager.js:25 📞 Loading contact details...
+ComponentManager.js:204 🔧 Calling init() method for Contact Information component
+ContactManager.js:17 📞 ContactManager initializing...
+ContactManager.js:25 📞 Loading contact details...
+EventManager.js:303 🖼️ Setting up remove button listener after render...
+ContactManager.js:38 📞 Contact details loaded: Object
+ContactManager.js:349 📞 Contact save button found, adding event listener
+ContactManager.js:38 📞 Contact details loaded: Object
+ContactManager.js:349 📞 Contact save button found, adding event listener
+ComponentManager.js:213 ✅ Contact Information - Using Component
+ComponentManager.js:413 🏗️ Dashboard Component Status
+ComponentManager.js:414 📊 Total Sections: 7
+ComponentManager.js:415 ✅ Using Components: 5
+ComponentManager.js:416 ⚠️ Using Static: 2
+ComponentManager.js:417 ❌ Missing: 0
+ComponentManager.js:419 📋 Section Details:
+ComponentManager.js:423 ✅ Lobby Background Music (LobbyMusicPlayer)
+ComponentManager.js:423 ⚠️ Audio Devices (AudioDeviceSelector)
+ComponentManager.js:423 ✅ Icecast Server (IcecastManager)
+ComponentManager.js:423 ✅ FFmpeg Streams (FFmpegStreamsManager)
+ComponentManager.js:423 ⚠️ Video Sources (VideoSourcesPanel)
+ComponentManager.js:423 ✅ Event Configuration (EventManager)
+ComponentManager.js:423 ✅ Contact Information (ContactManager)
+debug-console.html:511 ✅ Lobby Music Player component successfully integrated
+debug-console.html:520 ✅ Icecast Manager component successfully integrated
+api/system/update-check:1   Failed to load resource: the server responded with a status of 500 (Internal Server Error)
+ContactManager.js:17 📞 ContactManager initializing...
+ContactManager.js:25 📞 Loading contact details...
+debug-console.html:532 ✅ Contact Manager initialized successfully
+debug-console.html:708 Audio devices rendered: Array(18)
+ContactManager.js:38 📞 Contact details loaded: Object
+ContactManager.js:349 📞 Contact save button found, adding event listener
+EventManager.js:478 💾 Looking for save button with ID: save-event-settings
+EventManager.js:480 💾 Save button found: true
+EventManager.js:481 💾 Save button element: <button id=​"save-event-settings" class=​"w-full inline-flex items-center justify-center gap-2 rounded-md px-4 py-3 text-sm font-semibold text-white shadow-lg transition-all duration-300 btn-gradient">​…​</button>​
+EventManager.js:484 💾 Save button properties:
+EventManager.js:485   - ID: save-event-settings
+EventManager.js:486   - Text: 
+                        event
+                        Save Event Settings
+                    
+EventManager.js:487   - Disabled: false
+EventManager.js:488   - Type: submit
+EventManager.js:489   - Parent: <div class=​"space-y-3 hidden">​…​</div>​
+EventManager.js:511 💾 Save button listener added successfully
+EventManager.js:514 💾 Testing button click in 2 seconds...
+ 🔍 Post-load check:
+ - FFmpeg container exists: true
+ - FFmpeg container content: 16534 chars
+ - Global ffmpegStreamsManager: object
+ - FFmpeg manager initialized: true
+EventManager.js:516 💾 Programmatically clicking save button...
+EventManager.js:496 💾 SAVE BUTTON CLICKED!
+EventManager.js:497 💾 Event details: PointerEvent
+EventManager.js:498 💾 Target: <button id=​"save-event-settings" class=​"w-full inline-flex items-center justify-center gap-2 rounded-md px-4 py-3 text-sm font-semibold text-white shadow-lg transition-all duration-300 btn-gradient">​…​</button>​
+EventManager.js:499 💾 Current target: <button id=​"save-event-settings" class=​"w-full inline-flex items-center justify-center gap-2 rounded-md px-4 py-3 text-sm font-semibold text-white shadow-lg transition-all duration-300 btn-gradient">​…​</button>​
+EventManager.js:503 💾 About to call saveEventSettings...
+EventManager.js:82 🎯 saveEventSettings called
+EventManager.js:96 🎯 Starting event settings save process...
+EventManager.js:101 🎯 Saving event settings...
+EventManager.js:121 ✅ Event settings saved successfully
+EventManager.js:505 💾 saveEventSettings completed
+EventManager.js:303 🖼️ Setting up remove button listener after render...
+EventManager.js:431 🖼️ Programmatically clicking upload button...
+EventManager.js:402 🖼️ UPLOAD BUTTON CLICKED!
+EventManager.js:403 🖼️ Event details: PointerEvent
+EventManager.js:404 🖼️ Target: <button id=​"upload-event-image" class=​"inline-flex items-center gap-2 px-4 py-2 bg-[var(--primary-color)​]​ hover:​bg-[var(--primary-color)​]​/​80 text-white rounded-lg text-sm font-medium transition-colors">​…​</button>​
+EventManager.js:408 🖼️ About to trigger file input click...
+EventManager.js:410 🖼️ File input click triggered
+FFmpegStreamsManager.js:65 🔄 Loaded streams data: Object
+FFmpegStreamsManager.js:74 📋 Stream names: Array(3)
+IcecastManager.js:181 Icecast installation detected at: C:\Program Files (x86)\Icecast
+IcecastManager.js:182 File validation results: Object
+IcecastManager.js:183 Log directory status: false
+IcecastManager.js:385 IcecastManager render() called for container: icecast-server
+FFmpegStreamsManager.js:65 🔄 Loaded streams data: Object
+FFmpegStreamsManager.js:74 📋 Stream names: Array(3)
+IcecastManager.js:181 Icecast installation detected at: C:\Program Files (x86)\Icecast
+IcecastManager.js:182 File validation results: Object
+IcecastManager.js:183 Log directory status: false
+IcecastManager.js:385 IcecastManager render() called for container: icecast-server
+EventManager.js:417 🖼️ FILE INPUT CHANGED!
+EventManager.js:418 🖼️ Files: FileList
+EventManager.js:419 🖼️ File count: 1
+EventManager.js:421 🖼️ First file: File
+EventManager.js:608 🖼️ Uploading event image...
+EventManager.js:621 ✅ Event image uploaded successfully: /uploads/events/event_1757298840073.jpg
+EventManager.js:633  Uncaught (in promise) TypeError: Cannot set properties of null (setting 'value')
+    at EventManager.handleImageUpload (EventManager.js:633:28)
+EventManager.js:303 🖼️ Setting up remove button listener after render...
+FFmpegStreamsManager.js:65 🔄 Loaded streams data: Object
+FFmpegStreamsManager.js:74 📋 Stream names: Array(3)
+IcecastManager.js:181 Icecast installation detected at: C:\Program Files (x86)\Icecast
+IcecastManager.js:182 File validation results: Object
+IcecastManager.js:183 Log directory status: false
+IcecastManager.js:385 IcecastManager render() called for container: icecast-server
+FFmpegStreamsManager.js:65 🔄 Loaded streams data: Object
+FFmpegStreamsManager.js:74 📋 Stream names: Array(3)
+IcecastManager.js:181 Icecast installation detected at: C:\Program Files (x86)\Icecast
+IcecastManager.js:182 File validation results: Object
+IcecastManager.js:183 Log directory status: false
+IcecastManager.js:385 IcecastManager render() called for container: icecast-server
+FFmpegStreamsManager.js:65 🔄 Loaded streams data: Object
+FFmpegStreamsManager.js:74 📋 Stream names: Array(3)
+IcecastManager.js:181 Icecast installation detected at: C:\Program Files (x86)\Icecast
+IcecastManager.js:182 File validation results: Object
+IcecastManager.js:183 Log directory status: false
+IcecastManager.js:385 IcecastManager render() called for container: icecast-server
+FFmpegStreamsManager.js:65 🔄 Loaded streams data: Object
+FFmpegStreamsManager.js:74 📋 Stream names: Array(3)
+IcecastManager.js:181 Icecast installation detected at: C:\Program Files (x86)\Icecast
+IcecastManager.js:182 File validation results: Object
+IcecastManager.js:183 Log directory status: false
+IcecastManager.js:385 IcecastManager render() called for container: icecast-server
+FFmpegStreamsManager.js:65 🔄 Loaded streams data: Object
+FFmpegStreamsManager.js:74 📋 Stream names: Array(3)
+IcecastManager.js:181 Icecast installation detected at: C:\Program Files (x86)\Icecast
+IcecastManager.js:182 File validation results: Object
+IcecastManager.js:183 Log directory status: false
+IcecastManager.js:385 IcecastManager render() called for container: icecast-server
+FFmpegStreamsManager.js:65 🔄 Loaded streams data: Object
+FFmpegStreamsManager.js:74 📋 Stream names: Array(3)
+IcecastManager.js:181 Icecast installation detected at: C:\Program Files (x86)\Icecast
+IcecastManager.js:182 File validation results: Object
+IcecastManager.js:183 Log directory status: false
+IcecastManager.js:385 IcecastManager render() called for container: icecast-server
+FFmpegStreamsManager.js:65 🔄 Loaded streams data: Object
+FFmpegStreamsManager.js:74 📋 Stream names: Array(3)
+IcecastManager.js:181 Icecast installation detected at: C:\Program Files (x86)\Icecast
+IcecastManager.js:182 File validation results: Object
+IcecastManager.js:183 Log directory status: false
+IcecastManager.js:385 IcecastManager render() called for container: icecast-server
+FFmpegStreamsManager.js:65 🔄 Loaded streams data: Object
+FFmpegStreamsManager.js:74 📋 Stream names: Array(3)
+IcecastManager.js:181 Icecast installation detected at: C:\Program Files (x86)\Icecast
+IcecastManager.js:182 File validation results: Object
+IcecastManager.js:183 Log directory status: false
+IcecastManager.js:385 IcecastManager render() called for container: icecast-server
+FFmpegStreamsManager.js:65 🔄 Loaded streams data: Object
+FFmpegStreamsManager.js:74 📋 Stream names: Array(3)
+IcecastManager.js:181 Icecast installation detected at: C:\Program Files (x86)\Icecast
+IcecastManager.js:182 File validation results: Object
+IcecastManager.js:183 Log directory status: false
+IcecastManager.js:385 IcecastManager render() called for container: icecast-server
+FFmpegStreamsManager.js:65 🔄 Loaded streams data: Object
+FFmpegStreamsManager.js:74 📋 Stream names: Array(3)
+IcecastManager.js:181 Icecast installation detected at: C:\Program Files (x86)\Icecast
+IcecastManager.js:182 File validation results: Object
+IcecastManager.js:183 Log directory status: false
+IcecastManager.js:385 IcecastManager render() called for container: icecast-server
+FFmpegStreamsManager.js:65 🔄 Loaded streams data: Object
+FFmpegStreamsManager.js:74 📋 Stream names: Array(3)
+IcecastManager.js:181 Icecast installation detected at: C:\Program Files (x86)\Icecast
+IcecastManager.js:182 File validation results: Object
+IcecastManager.js:183 Log directory status: false
+IcecastManager.js:385 IcecastManager render() called for container: icecast-server
+FFmpegStreamsManager.js:65 🔄 Loaded streams data: Object
+FFmpegStreamsManager.js:74 📋 Stream names: Array(3)
+IcecastManager.js:181 Icecast installation detected at: C:\Program Files (x86)\Icecast
+IcecastManager.js:182 File validation results: Object
+IcecastManager.js:183 Log directory status: false
+IcecastManager.js:385 IcecastManager render() called for container: icecast-server
+FFmpegStreamsManager.js:65 🔄 Loaded streams data: Object
+FFmpegStreamsManager.js:74 📋 Stream names: Array(3)
+IcecastManager.js:181 Icecast installation detected at: C:\Program Files (x86)\Icecast
+IcecastManager.js:182 File validation results: Object
+IcecastManager.js:183 Log directory status: false
+IcecastManager.js:385 IcecastManager render() called for container: icecast-server
+FFmpegStreamsManager.js:65 🔄 Loaded streams data: Object
+FFmpegStreamsManager.js:74 📋 Stream names: Array(3)
+IcecastManager.js:181 Icecast installation detected at: C:\Program Files (x86)\Icecast
+IcecastManager.js:182 File validation results: Object
+IcecastManager.js:183 Log directory status: false
+IcecastManager.js:385 IcecastManager render() called for container: icecast-server
+FFmpegStreamsManager.js:65 🔄 Loaded streams data: Object
+FFmpegStreamsManager.js:74 📋 Stream names: Array(3)
+IcecastManager.js:181 Icecast installation detected at: C:\Program Files (x86)\Icecast
+IcecastManager.js:182 File validation results: Object
+IcecastManager.js:183 Log directory status: false
+IcecastManager.js:385 IcecastManager render() called for container: icecast-server
+FFmpegStreamsManager.js:65 🔄 Loaded streams data: Object
+FFmpegStreamsManager.js:74 📋 Stream names: Array(3)
+IcecastManager.js:181 Icecast installation detected at: C:\Program Files (x86)\Icecast
+IcecastManager.js:182 File validation results: Object
+IcecastManager.js:183 Log directory status: false
+FFmpegStreamsManager.js:65 🔄 Loaded streams data: Object
+FFmpegStreamsManager.js:74 📋 Stream names: Array(3)
+IcecastManager.js:385 IcecastManager render() called for container: icecast-server
+FFmpegStreamsManager.js:65 🔄 Loaded streams data: Object
+FFmpegStreamsManager.js:74 📋 Stream names: Array(3)
+IcecastManager.js:181 Icecast installation detected at: C:\Program Files (x86)\Icecast
+IcecastManager.js:182 File validation results: Object
+IcecastManager.js:183 Log directory status: false
+IcecastManager.js:385 IcecastManager render() called for container: icecast-server
+IcecastManager.js:181 Icecast installation detected at: C:\Program Files (x86)\Icecast
+IcecastManager.js:182 File validation results: Object
+IcecastManager.js:183 Log directory status: false
+FFmpegStreamsManager.js:65 🔄 Loaded streams data: Object
+FFmpegStreamsManager.js:74 📋 Stream names: Array(3)
+IcecastManager.js:385 IcecastManager render() called for container: icecast-server
+IcecastManager.js:181 Icecast installation detected at: C:\Program Files (x86)\Icecast
+IcecastManager.js:182 File validation results: Object
+IcecastManager.js:183 Log directory status: false
+FFmpegStreamsManager.js:65 🔄 Loaded streams data: Object
+FFmpegStreamsManager.js:74 📋 Stream names: Array(3)
+IcecastManager.js:385 IcecastManager render() called for container: icecast-server
+FFmpegStreamsManager.js:65 🔄 Loaded streams data: Object
+FFmpegStreamsManager.js:74 📋 Stream names: Array(3)
+IcecastManager.js:181 Icecast installation detected at: C:\Program Files (x86)\Icecast
+IcecastManager.js:182 File validation results: Object
+IcecastManager.js:183 Log directory status: false
+IcecastManager.js:385 IcecastManager render() called for container: icecast-server
+IcecastManager.js:181 Icecast installation detected at: C:\Program Files (x86)\Icecast
+IcecastManager.js:182 File validation results: Object
+IcecastManager.js:183 Log directory status: false
+FFmpegStreamsManager.js:65 🔄 Loaded streams data: Object
+FFmpegStreamsManager.js:74 📋 Stream names: Array(3)
+IcecastManager.js:385 IcecastManager render() called for container: icecast-server
+FFmpegStreamsManager.js:65 🔄 Loaded streams data: Object
+FFmpegStreamsManager.js:74 📋 Stream names: Array(3)
+IcecastManager.js:181 Icecast installation detected at: C:\Program Files (x86)\Icecast
+IcecastManager.js:182 File validation results: Object
+IcecastManager.js:183 Log directory status: false
+IcecastManager.js:385 IcecastManager render() called for container: icecast-server
+FFmpegStreamsManager.js:65 🔄 Loaded streams data: Object
+FFmpegStreamsManager.js:74 📋 Stream names: Array(3)
+IcecastManager.js:181 Icecast installation detected at: C:\Program Files (x86)\Icecast
+IcecastManager.js:182 File validation results: Object
+IcecastManager.js:183 Log directory status: false
+IcecastManager.js:385 IcecastManager render() called for container: icecast-server
+FFmpegStreamsManager.js:65 🔄 Loaded streams data: Object
+FFmpegStreamsManager.js:74 📋 Stream names: Array(3)
+IcecastManager.js:181 Icecast installation detected at: C:\Program Files (x86)\Icecast
+IcecastManager.js:182 File validation results: Object
+IcecastManager.js:183 Log directory status: false
+IcecastManager.js:385 IcecastManager render() called for container: icecast-server
+FFmpegStreamsManager.js:65 🔄 Loaded streams data: Object
+FFmpegStreamsManager.js:74 📋 Stream names: Array(3)
+IcecastManager.js:181 Icecast installation detected at: C:\Program Files (x86)\Icecast
+IcecastManager.js:182 File validation results: Object
+IcecastManager.js:183 Log directory status: false
+IcecastManager.js:385 IcecastManager render() called for container: icecast-server
+FFmpegStreamsManager.js:65 🔄 Loaded streams data: Object
+FFmpegStreamsManager.js:74 📋 Stream names: Array(3)
+IcecastManager.js:181 Icecast installation detected at: C:\Program Files (x86)\Icecast
+IcecastManager.js:182 File validation results: Object
+IcecastManager.js:183 Log directory status: false
+IcecastManager.js:385 IcecastManager render() called for container: icecast-server
+FFmpegStreamsManager.js:65 🔄 Loaded streams data: Object
+FFmpegStreamsManager.js:74 📋 Stream names: Array(3)
+IcecastManager.js:181 Icecast installation detected at: C:\Program Files (x86)\Icecast
+IcecastManager.js:182 File validation results: Object
+IcecastManager.js:183 Log directory status: false
+IcecastManager.js:385 IcecastManager render() called for container: icecast-server
+FFmpegStreamsManager.js:65 🔄 Loaded streams data: Object
+FFmpegStreamsManager.js:74 📋 Stream names: Array(3)
+IcecastManager.js:181 Icecast installation detected at: C:\Program Files (x86)\Icecast
+IcecastManager.js:182 File validation results: Object
+IcecastManager.js:183 Log directory status: false
+IcecastManager.js:385 IcecastManager render() called for container: icecast-server
+FFmpegStreamsManager.js:65 🔄 Loaded streams data: Object
+FFmpegStreamsManager.js:74 📋 Stream names: Array(3)
+IcecastManager.js:181 Icecast installation detected at: C:\Program Files (x86)\Icecast
+IcecastManager.js:182 File validation results: Object
+IcecastManager.js:183 Log directory status: false
+IcecastManager.js:385 IcecastManager render() called for container: icecast-server
+FFmpegStreamsManager.js:65 🔄 Loaded streams data: Object
+FFmpegStreamsManager.js:74 📋 Stream names: Array(3)
+IcecastManager.js:181 Icecast installation detected at: C:\Program Files (x86)\Icecast
+IcecastManager.js:182 File validation results: Object
+IcecastManager.js:183 Log directory status: false
+IcecastManager.js:385 IcecastManager render() called for container: icecast-server
+FFmpegStreamsManager.js:65 🔄 Loaded streams data: Object
+FFmpegStreamsManager.js:74 📋 Stream names: Array(3)
+IcecastManager.js:181 Icecast installation detected at: C:\Program Files (x86)\Icecast
+IcecastManager.js:182 File validation results: Object
+IcecastManager.js:183 Log directory status: false
+IcecastManager.js:385 IcecastManager render() called for container: icecast-server
+FFmpegStreamsManager.js:65 🔄 Loaded streams data: Object
+FFmpegStreamsManager.js:74 📋 Stream names: Array(3)
+IcecastManager.js:181 Icecast installation detected at: C:\Program Files (x86)\Icecast
+IcecastManager.js:182 File validation results: Object
+IcecastManager.js:183 Log directory status: false
+IcecastManager.js:385 IcecastManager render() called for container: icecast-server
+FFmpegStreamsManager.js:65 🔄 Loaded streams data: Object
+FFmpegStreamsManager.js:74 📋 Stream names: Array(3)
+IcecastManager.js:181 Icecast installation detected at: C:\Program Files (x86)\Icecast
+IcecastManager.js:182 File validation results: Object
+IcecastManager.js:183 Log directory status: false
+IcecastManager.js:385 IcecastManager render() called for container: icecast-server
+FFmpegStreamsManager.js:65 🔄 Loaded streams data: Object
+FFmpegStreamsManager.js:74 📋 Stream names: Array(3)
+IcecastManager.js:181 Icecast installation detected at: C:\Program Files (x86)\Icecast
+IcecastManager.js:182 File validation results: Object
+IcecastManager.js:183 Log directory status: false
+IcecastManager.js:385 IcecastManager render() called for container: icecast-server
+IcecastManager.js:181 Icecast installation detected at: C:\Program Files (x86)\Icecast
+IcecastManager.js:182 File validation results: Object
+IcecastManager.js:183 Log directory status: false
+FFmpegStreamsManager.js:65 🔄 Loaded streams data: Object
+FFmpegStreamsManager.js:74 📋 Stream names: Array(3)
+IcecastManager.js:385 IcecastManager render() called for container: icecast-server
+FFmpegStreamsManager.js:65 🔄 Loaded streams data: Object
+FFmpegStreamsManager.js:74 📋 Stream names: Array(3)
+IcecastManager.js:181 Icecast installation detected at: C:\Program Files (x86)\Icecast
+IcecastManager.js:182 File validation results: Object
+IcecastManager.js:183 Log directory status: false
+IcecastManager.js:385 IcecastManager render() called for container: icecast-server
+[NEW] Explain Console errors by using Copilot in Edge: click
+         
+         to explain an error. 
+        Learn more
+        Don't show again
+FFmpegStreamsManager.js:65 🔄 Loaded streams data: {total: 3, running: 0, errors: 0, streams: Array(3)}
+FFmpegStreamsManager.js:74 📋 Stream names: (3) [{…}, {…}, {…}]
+IcecastManager.js:181 Icecast installation detected at: C:\Program Files (x86)\Icecast
+IcecastManager.js:182 File validation results: {executable: true, batchFile: true, config: true, logDir: false, accessLog: false, …}
+IcecastManager.js:183 Log directory status: false
+IcecastManager.js:385 IcecastManager render() called for container: icecast-server
+FFmpegStreamsManager.js:65 🔄 Loaded streams data: {total: 3, running: 0, errors: 0, streams: Array(3)}
+FFmpegStreamsManager.js:74 📋 Stream names: (3) [{…}, {…}, {…}]
+IcecastManager.js:181 Icecast installation detected at: C:\Program Files (x86)\Icecast
+IcecastManager.js:182 File validation results: {executable: true, batchFile: true, config: true, logDir: false, accessLog: false, …}
+IcecastManager.js:183 Log directory status: false
+IcecastManager.js:385 IcecastManager render() called for container: icecast-server
+FFmpegStreamsManager.js:65 🔄 Loaded streams data: {total: 3, running: 0, errors: 0, streams: Array(3)}
+FFmpegStreamsManager.js:74 📋 Stream names: (3) [{…}, {…}, {…}]
+IcecastManager.js:181 Icecast installation detected at: C:\Program Files (x86)\Icecast
+IcecastManager.js:182 File validation results: {executable: true, batchFile: true, config: true, logDir: false, accessLog: false, …}
+IcecastManager.js:183 Log directory status: false
+IcecastManager.js:385 IcecastManager render() called for container: icecast-server
+FFmpegStreamsManager.js:65 🔄 Loaded streams data: {total: 3, running: 0, errors: 0, streams: Array(3)}
+FFmpegStreamsManager.js:74 📋 Stream names: (3) [{…}, {…}, {…}]
+IcecastManager.js:181 Icecast installation detected at: C:\Program Files (x86)\Icecast
+IcecastManager.js:182 File validation results: {executable: true, batchFile: true, config: true, logDir: false, accessLog: false, …}
+IcecastManager.js:183 Log directory status: false
+IcecastManager.js:385 IcecastManager render() called for container: icecast-server
+FFmpegStreamsManager.js:65 🔄 Loaded streams data: {total: 3, running: 0, errors: 0, streams: Array(3)}
+FFmpegStreamsManager.js:74 📋 Stream names: (3) [{…}, {…}, {…}]
+IcecastManager.js:181 Icecast installation detected at: C:\Program Files (x86)\Icecast
+IcecastManager.js:182 File validation results: {executable: true, batchFile: true, config: true, logDir: false, accessLog: false, …}
+IcecastManager.js:183 Log directory status: false
+IcecastManager.js:385 IcecastManager render() called for container: icecast-server

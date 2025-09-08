@@ -155,20 +155,27 @@
                     
                     <!-- Right Column (Sidebar) -->
                     <div class="space-y-6">
-                        <!-- Contact & Feedback Section -->
-                        <div id="contact-section" class="bg-[var(--card-bg)] border border-[var(--border-color)] rounded-2xl p-6 shadow-2xl shadow-black/30">
-                            <h3 class="text-lg font-semibold text-white mb-4">📞 Contact & Feedback</h3>
-                            <div id="contact-details" class="space-y-3">
-                                <!-- Contact details will be loaded here -->
+                        <!-- Event Image -->
+                        <div id="event-image-container" class="hidden">
+                            <div class="bg-[var(--card-bg)] border border-[var(--border-color)] rounded-2xl p-4 shadow-2xl shadow-black/30">
+                                <img id="event-image" src="" alt="Event Image" class="w-full h-48 object-cover rounded-xl border border-[var(--border-color)]">
                             </div>
                         </div>
-                        
+
                         <!-- About Section -->
                         <div id="about-section" class="bg-[var(--card-bg)] border border-[var(--border-color)] rounded-2xl p-6 shadow-2xl shadow-black/30">
                             <h3 class="text-lg font-semibold text-white mb-4">ℹ️ About</h3>
                             <div id="about-content" class="space-y-3 text-sm text-gray-400">
                                 <p>Welcome to LANStreamer - your local audio streaming platform.</p>
                                 <p>Listen to live audio streams from your network.</p>
+                            </div>
+                        </div>
+
+                        <!-- Contact & Feedback Section -->
+                        <div id="contact-section" class="bg-[var(--card-bg)] border border-[var(--border-color)] rounded-2xl p-6 shadow-2xl shadow-black/30">
+                            <h3 class="text-lg font-semibold text-white mb-4">📞 Contact & Feedback</h3>
+                            <div id="contact-details" class="space-y-3">
+                                <!-- Contact details will be loaded here -->
                             </div>
                         </div>
                     </div>
@@ -584,9 +591,15 @@
                     const response = await fetch('/api/contact-details');
                     const data = await response.json();
 
-                    this.renderContactDetails(data);
-                    this.renderEventConfiguration(data);
-                    this.renderAboutSection(data);
+                    console.log('📞 Contact details received:', data);
+
+                    // Force update with a small delay to ensure DOM is ready
+                    setTimeout(() => {
+                        this.renderContactDetails(data);
+                        this.renderEventConfiguration(data);
+                        this.renderAboutSection(data);
+                        console.log('📞 Contact details rendered');
+                    }, 50);
                 } catch (error) {
                     console.error('❌ Failed to load contact details:', error);
                     this.renderContactDetails({});
@@ -616,7 +629,8 @@
 
             renderContactDetails(contactData) {
                 const container = document.getElementById('contact-details');
-                if (!container) return;
+                const contactSection = document.getElementById('contact-section');
+                if (!container || !contactSection) return;
 
                 const contactItems = [];
 
@@ -648,16 +662,11 @@
                     `);
                 }
 
+                // Hide the entire contact section if no contact details are available
                 if (contactItems.length === 0) {
-                    container.innerHTML = `
-                        <div class="py-4">
-                            <div class="flex items-center gap-2 mb-2">
-                                <span class="material-symbols-rounded text-lg text-gray-600">contact_support</span>
-                                <p class="text-sm text-gray-500">No contact information available</p>
-                            </div>
-                        </div>
-                    `;
+                    contactSection.style.display = 'none';
                 } else {
+                    contactSection.style.display = 'block';
                     container.innerHTML = contactItems.join('');
                 }
             }
@@ -665,47 +674,57 @@
             renderEventConfiguration(configData) {
                 const titleElement = document.getElementById('event-title');
                 const subtitleElement = document.getElementById('event-subtitle');
-                
+                const imageContainer = document.getElementById('event-image-container');
+                const imageElement = document.getElementById('event-image');
+
                 if (titleElement) {
                     titleElement.textContent = configData.eventTitle || 'Live Audio Streams';
                 }
-                
+
                 if (subtitleElement) {
                     subtitleElement.textContent = configData.eventSubtitle || 'Click play to listen to any available stream';
+                }
+
+                // Handle event image
+                if (configData.eventImage && imageContainer && imageElement) {
+                    imageElement.src = configData.eventImage;
+                    imageContainer.classList.remove('hidden');
+                } else if (imageContainer) {
+                    imageContainer.classList.add('hidden');
                 }
             }
 
             renderAboutSection(configData) {
                 const aboutSection = document.getElementById('about-section');
                 const aboutContent = document.getElementById('about-content');
-                
+
                 if (!aboutSection || !aboutContent) return;
-                
-                // Hide section if disabled
-                if (configData.showAbout === false) {
-                    aboutSection.style.display = 'none';
-                    return;
-                } else {
-                    aboutSection.style.display = 'block';
-                }
-                
+
                 let content = '';
-                
-                if (configData.aboutSubtitle && configData.showAboutSubtitle !== false) {
+                let hasContent = false;
+
+                // Show subtitle if it has content
+                if (configData.aboutSubtitle && configData.aboutSubtitle.trim()) {
                     content += `<h4 class="font-medium text-white mb-2">${configData.aboutSubtitle}</h4>`;
+                    hasContent = true;
                 }
-                
-                if (configData.aboutDescription) {
+
+                // Show description if it has content
+                if (configData.aboutDescription && configData.aboutDescription.trim()) {
                     content += `<p class="text-sm text-gray-400">${configData.aboutDescription}</p>`;
-                } else {
-                    // Fallback content
+                    hasContent = true;
+                }
+
+                // If no custom content, show default
+                if (!hasContent) {
                     content = `
                         <p class="text-sm text-gray-400">Welcome to LANStreamer - your local audio streaming platform.</p>
                         <p class="text-sm text-gray-400">Listen to live audio streams from your network.</p>
                     `;
                 }
-                
+
                 aboutContent.innerHTML = content;
+                aboutSection.style.display = 'block';
             }
 
             updateLiveIndicator() {
@@ -811,8 +830,18 @@
         // Initialize when page loads
         let streamListener;
         document.addEventListener('DOMContentLoaded', () => {
+            console.log('🚀 DOM Content Loaded, initializing StreamListener...');
             streamListener = new StreamListener();
         });
+
+        // Fallback initialization if DOMContentLoaded already fired
+        if (document.readyState === 'loading') {
+            // Document is still loading, DOMContentLoaded will fire
+        } else {
+            // Document has already loaded
+            console.log('🚀 Document already loaded, initializing StreamListener immediately...');
+            streamListener = new StreamListener();
+        }
 
 
     </script>
