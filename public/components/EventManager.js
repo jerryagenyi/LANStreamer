@@ -120,6 +120,12 @@ class EventManager {
             if (response.ok) {
                 console.log('✅ Event settings saved successfully');
                 this.showNotification('Event settings saved successfully', 'success');
+
+                // Collapse the form after successful save to provide visual feedback
+                setTimeout(() => {
+                    this.isCollapsed = true;
+                    this.render();
+                }, 1000); // Small delay to let user see the success message
             } else {
                 throw new Error(data.error || 'Failed to save event settings');
             }
@@ -200,36 +206,34 @@ class EventManager {
 
                 <div class="space-y-3 ${this.isCollapsed ? 'hidden' : ''}">
                     <!-- Event Configuration -->
-                    <div class="border-b border-[var(--border-color)] pb-3 mb-3">
+                    <div class="space-y-3">
                         <h3 class="text-base font-semibold text-white mb-3">📅 Event Details</h3>
-                        
-                        <div class="space-y-3">
-                            <!-- Event Title -->
-                            <div class="space-y-1">
-                                <label class="text-xs font-medium text-gray-300">Event Title</label>
-                                <input type="text"
-                                       id="event-title"
-                                       maxlength="50"
-                                       class="w-full px-3 py-2 bg-[#111111] border border-[var(--border-color)] rounded-lg text-sm text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)]/50 focus:border-[var(--primary-color)]"
-                                       placeholder="Live Audio Streams"
-                                       value="${this.eventDetails.eventTitle}">
-                                <div class="text-xs text-gray-500 mt-1">
-                                    <span id="event-title-count">${this.eventDetails.eventTitle.length}</span>/50 characters
-                                </div>
-                            </div>
 
-                            <!-- Event Subtitle -->
-                            <div class="space-y-1">
-                                <label class="text-xs font-medium text-gray-300">Event Subtitle</label>
-                                <input type="text"
-                                       id="event-subtitle"
-                                       maxlength="60"
-                                       class="w-full px-3 py-2 bg-[#111111] border border-[var(--border-color)] rounded-lg text-sm text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)]/50 focus:border-[var(--primary-color)]"
-                                       placeholder="Click play to listen to any available stream"
-                                       value="${this.eventDetails.eventSubtitle}">
-                                <div class="text-xs text-gray-500 mt-1">
-                                    <span id="event-subtitle-count">${(this.eventDetails.eventSubtitle || '').length}</span>/60 characters
-                                </div>
+                        <!-- Event Title -->
+                        <div class="space-y-1">
+                            <label class="text-xs font-medium text-gray-300">Event Title</label>
+                            <input type="text"
+                                   id="event-title"
+                                   maxlength="50"
+                                   class="w-full px-3 py-2 bg-[#111111] border border-[var(--border-color)] rounded-lg text-sm text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)]/50 focus:border-[var(--primary-color)]"
+                                   placeholder="Live Audio Streams"
+                                   value="${this.eventDetails.eventTitle}">
+                            <div class="text-xs text-gray-500 mt-1">
+                                <span id="event-title-count">${this.eventDetails.eventTitle.length}</span>/50 characters
+                            </div>
+                        </div>
+
+                        <!-- Event Subtitle -->
+                        <div class="space-y-1">
+                            <label class="text-xs font-medium text-gray-300">Event Subtitle</label>
+                            <input type="text"
+                                   id="event-subtitle"
+                                   maxlength="60"
+                                   class="w-full px-3 py-2 bg-[#111111] border border-[var(--border-color)] rounded-lg text-sm text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)]/50 focus:border-[var(--primary-color)]"
+                                   placeholder="Click play to listen to any available stream"
+                                   value="${this.eventDetails.eventSubtitle}">
+                            <div class="text-xs text-gray-500 mt-1">
+                                <span id="event-subtitle-count">${(this.eventDetails.eventSubtitle || '').length}</span>/60 characters
                             </div>
                         </div>
                     </div>
