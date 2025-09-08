@@ -229,7 +229,11 @@
                     console.log('📊 Streams data:', data);
                     
                     if (data.streams && data.streams.length > 0) {
-                        this.streams = data.streams.filter(stream => stream.status === 'running');
+                        // Debug: Log all stream statuses
+                        console.log('🔍 All streams with status:', data.streams.map(s => ({ id: s.id, name: s.name, status: s.status })));
+
+                        // Show all streams regardless of status for debugging
+                        this.streams = data.streams;
                         this.renderStreams();
                     } else {
                         this.showNoStreams();
@@ -298,6 +302,10 @@
                                         <span class="flex items-center gap-1">
                                             <span class="material-symbols-rounded text-sm">radio</span>
                                             ${stream.config?.bitrate || '192'} kbps
+                                        </span>
+                                        <span class="flex items-center gap-1">
+                                            <span class="material-symbols-rounded text-sm">info</span>
+                                            Status: ${stream.status || 'unknown'}
                                         </span>
 
                                     </div>
