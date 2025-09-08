@@ -242,14 +242,14 @@ class StreamingService {
         codec: 'libmp3lame',
         format: 'mp3',
         contentType: 'audio/mpeg',
-        description: 'MP3 - Universal browser support'
+        description: 'MP3 - Universal browser support (BEST)'
       },
       {
         name: 'AAC',
         codec: 'aac',
-        format: 'mp4',
-        contentType: 'audio/mp4',
-        description: 'AAC in MP4 - Better browser compatibility'
+        format: 'adts',
+        contentType: 'audio/aac',
+        description: 'AAC ADTS - Live streaming compatible'
       },
       {
         name: 'OGG',
