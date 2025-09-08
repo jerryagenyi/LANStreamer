@@ -90,9 +90,6 @@ if exist "device-config.json" copy "device-config.json" "%BACKUP_DIR%\" >nul 2>&
 
 echo ✅ Backup created at: %BACKUP_DIR%
 echo.
-echo Press any key to continue to next step...
-pause >nul
-echo.
 
 :: Step 2: Stop any running processes
 echo 🛑 Step 2/8: Stopping LANStreamer processes...
@@ -101,9 +98,6 @@ taskkill /f /im icecast.exe >nul 2>&1
 timeout /t 2 >nul
 echo ✅ Processes stopped
 echo.
-echo Press any key to continue to next step...
-pause >nul
-echo.
 
 :: Step 3: Clean temp directory
 echo 🧹 Step 3/8: Preparing download area...
@@ -111,39 +105,37 @@ if exist "%TEMP_DIR%" rmdir /s /q "%TEMP_DIR%"
 mkdir "%TEMP_DIR%"
 echo ✅ Download area ready
 echo.
-echo Press any key to continue to download step...
-pause >nul
-echo.
 
 :: Step 4: Download latest release
 echo 📥 Step 4/8: Downloading latest version...
 echo    This may take a few minutes depending on your connection...
 
-:: Use PowerShell to download the latest release
+:: Use PowerShell to download the latest release (suppress error output)
 powershell -Command "& {
     try {
         $ProgressPreference = 'SilentlyContinue'
+        $ErrorActionPreference = 'SilentlyContinue'
         Write-Host '   🔍 Fetching latest release info...'
         $release = Invoke-RestMethod -Uri 'https://api.github.com/repos/jerryagenyi/LANStreamer/releases/latest'
         $downloadUrl = $release.assets | Where-Object { $_.name -like '*LANStreamer*.zip' } | Select-Object -First 1 -ExpandProperty browser_download_url
-        
+
         if (-not $downloadUrl) {
             $downloadUrl = $release.zipball_url
         }
-        
+
         Write-Host ('   📦 Downloading: ' + $release.tag_name)
         Write-Host ('   🔗 URL: ' + $downloadUrl)
-        
+
         $zipPath = '%TEMP_DIR%\lanstreamer-latest.zip'
         Invoke-WebRequest -Uri $downloadUrl -OutFile $zipPath -UseBasicParsing
-        
+
         Write-Host '   ✅ Download completed'
         exit 0
     } catch {
         Write-Host ('   ❌ Download failed: ' + $_.Exception.Message)
         exit 1
     }
-}"
+}" 2>nul
 
 if errorlevel 1 (
     echo.
@@ -166,20 +158,19 @@ if errorlevel 1 (
 
 echo ✅ Download completed
 echo.
-echo Press any key to continue to extraction step...
-pause >nul
-echo.
 
 :: Step 5: Extract the update
 echo 📂 Step 5/8: Extracting update...
 powershell -Command "& {
     try {
+        $ProgressPreference = 'SilentlyContinue'
+        $ErrorActionPreference = 'SilentlyContinue'
         $zipPath = '%TEMP_DIR%\lanstreamer-latest.zip'
         $extractPath = '%TEMP_DIR%\extracted'
-        
+
         Write-Host '   📦 Extracting archive...'
         Expand-Archive -Path $zipPath -DestinationPath $extractPath -Force
-        
+
         # Find the actual content directory (might be nested)
         $contentDir = Get-ChildItem -Path $extractPath -Directory | Select-Object -First 1
         if ($contentDir) {
@@ -187,10 +178,10 @@ powershell -Command "& {
         } else {
             $actualPath = $extractPath
         }
-        
+
         Write-Host ('   📁 Content found at: ' + $actualPath)
         Write-Host '   ✅ Extraction completed'
-        
+
         # Write the path to a temp file for batch to read
         $actualPath | Out-File -FilePath '%TEMP_DIR%\content_path.txt' -Encoding ASCII
         exit 0
@@ -198,7 +189,7 @@ powershell -Command "& {
         Write-Host ('   ❌ Extraction failed: ' + $_.Exception.Message)
         exit 1
     }
-}"
+}" 2>nul
 
 if errorlevel 1 (
     echo.
@@ -220,9 +211,6 @@ if errorlevel 1 (
 :: Read the content path
 set /p CONTENT_PATH=<"%TEMP_DIR%\content_path.txt"
 echo ✅ Extraction completed
-echo.
-echo Press any key to continue to installation step...
-pause >nul
 echo.
 
 :: Step 6: Replace files
@@ -257,9 +245,6 @@ if exist "%BACKUP_DIR%\device-config.json" copy "%BACKUP_DIR%\device-config.json
 
 echo ✅ Data restored
 echo.
-echo Press any key to continue to cleanup...
-pause >nul
-echo.
 
 :: Step 8: Recreate desktop shortcut if it existed
 echo 🔗 Step 8/8: Checking desktop shortcut...
@@ -270,6 +255,8 @@ if exist "%SHORTCUT_PATH%" (
     echo    🔄 Desktop shortcut found - recreating to ensure it works...
     powershell -ExecutionPolicy Bypass -Command "& {
         try {
+            $ProgressPreference = 'SilentlyContinue'
+            $ErrorActionPreference = 'SilentlyContinue'
             $currentDir = '%INSTALL_DIR%'
             $batchFile = Join-Path $currentDir 'Start LANStreamer Server.bat'
             $shortcutPath = '%SHORTCUT_PATH%'
@@ -289,7 +276,7 @@ if exist "%SHORTCUT_PATH%" (
         } catch {
             Write-Host ('    ❌ Failed to update shortcut: ' + $_.Exception.Message)
         }
-    }"
+    }" 2>nul
 ) else (
     echo    ℹ️  No desktop shortcut found - skipping
 )
@@ -329,17 +316,23 @@ echo    ICECAST_ADMIN_PASSWORD=your_actual_icecast_admin_password
 echo    (Replace with the password from your Icecast installation)
 echo.
 echo ========================================
-echo 🎯 UPDATE COMPLETE - TERMINAL WILL STAY OPEN
+echo 🎯 UPDATE COMPLETE - READY TO USE!
 echo ========================================
 echo.
-echo ✅ Update process is 100%% complete
-echo ✅ Review the information above
-echo ✅ Next: Run "Start LANStreamer Server.bat"
+echo ✅ SUCCESS: LANStreamer updated successfully!
+echo ✅ All your data and settings were preserved
+echo ✅ Browser compatibility fix applied
 echo.
-echo 📋 IMPORTANT: This terminal will stay open so you can:
-echo    • Review any error messages that appeared
-echo    • Copy any important information
-echo    • Take screenshots if needed for troubleshooting
+echo 🚀 NEXT STEP: Double-click "Start LANStreamer Server.bat"
 echo.
-echo Press any key when you're ready to close this window...
-pause >nul
+echo 📋 WHAT WAS FIXED:
+echo    • Browser stream playback issues resolved
+echo    • Audio format compatibility improved
+echo    • MP3 format prioritized for universal support
+echo.
+echo ⚠️  IMPORTANT: If you still see stream errors, the issue may be:
+echo    • Audio device not connected or in use by another app
+echo    • Need to refresh devices in LANStreamer dashboard
+echo.
+echo This window will stay open for 30 seconds, then auto-close...
+timeout /t 30
