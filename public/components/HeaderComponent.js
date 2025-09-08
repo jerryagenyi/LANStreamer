@@ -68,12 +68,6 @@ class HeaderComponent {
                             <span class="hidden sm:inline">Logout</span>
                         </button>
                     </div>
-
-                    <!-- User Avatar -->
-                    <div class="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-10 ml-4" 
-                         style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuDSIzxTEv03JUEwpU1vqD79kbeH63SzCaGfIIFbumOYFeslE7o8s5BELsy84X5hdHbqgGM91dgl8SECCQAuQUyN5TzULy0C6hTXlMd2FdmoEp4c0WAiQhyasooFF0UAFZoOLRnhrfiUJjHhWPasQr2g2MWISZolmDkAER-lahc8ZqnqZSr95hHY9Z-0DIFIJDnrExTC0CHjbWsTgsGY2Pj1xH87e8JybvN0dCpF-U1oWs_K8Q3OXkC3yMhMSgHVXCilnq_8LYez-3g");'
-                         title="Admin User">
-                    </div>
                 </div>
             </header>
         `;

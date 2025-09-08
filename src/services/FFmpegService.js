@@ -110,8 +110,8 @@ class FFmpegService {
       {
         name: 'AAC',
         codec: 'aac',
-        format: 'adts',
-        contentType: 'audio/aac'
+        format: 'mp4',  // Changed from 'adts' to 'mp4' for better browser support
+        contentType: 'audio/mp4'  // Changed content type
       },
       {
         name: 'OGG',

@@ -247,9 +247,9 @@ class StreamingService {
       {
         name: 'AAC',
         codec: 'aac',
-        format: 'adts',
-        contentType: 'audio/aac',
-        description: 'AAC - Modern browsers, better quality'
+        format: 'mp4',
+        contentType: 'audio/mp4',
+        description: 'AAC in MP4 - Better browser compatibility'
       },
       {
         name: 'OGG',
