@@ -81,40 +81,8 @@
     </head>
     <body class="bg-[var(--dark-bg)]">
     <div class="relative flex size-full min-h-screen flex-col bg-gradient-to-br from-[#111111] to-[#0A0A0A] dark group/design-root overflow-x-hidden" style='font-family: Inter, "Noto Sans", sans-serif;'>
-    <header class="sticky top-0 z-50 flex items-center justify-between whitespace-nowrap border-b border-solid border-[var(--border-color)] bg-[var(--dark-bg)]/80 px-10 py-4 backdrop-blur-lg">
-    <div class="flex items-center gap-4 text-white">
-        <a href="http://localhost:3001" class="flex items-center gap-2 text-white hover:text-[var(--primary-color)] transition-colors">
-            <img src="/assets/lanstreamer-logo.png" alt="LANStreamer" class="h-16 w-auto" id="logo-image" onerror="this.style.display='none'; document.getElementById('logo-fallback').style.display='flex';">
-            <div id="logo-fallback" style="display: none;" class="flex items-center">
-                <span class="text-xl font-bold tracking-wider">LANStreamer</span>
-            </div>
-        </a>
-    </div>
-    <div class="flex items-center gap-3">
-        <!-- Update Check Button -->
-        <button id="check-updates-btn" class="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-300 hover:text-white bg-gray-800/50 hover:bg-gray-700/50 border border-gray-600/30 hover:border-gray-500/50 rounded-lg transition-all duration-300" title="Check for Updates">
-            <span class="material-symbols-rounded text-sm">system_update</span>
-            <span class="hidden sm:inline">Updates</span>
-        </button>
-
-        <!-- Admin Navigation Links -->
-        <div class="flex items-center gap-2">
-            <a href="/streams" target="_blank"
-               class="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-300 hover:text-white bg-gray-800/50 hover:bg-gray-700/50 border border-gray-600/30 hover:border-gray-500/50 rounded-lg transition-all duration-300"
-               title="Open Streams Page (for listeners)">
-                <span class="material-symbols-rounded text-sm">radio</span>
-                <span class="hidden sm:inline">Listen to Streams</span>
-            </a>
-            <button id="logout-btn"
-               class="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-300 hover:text-white bg-gray-800/50 hover:bg-gray-700/50 border border-gray-600/30 hover:border-gray-500/50 rounded-lg transition-all duration-300"
-               title="Logout from Admin Dashboard">
-                <span class="material-symbols-rounded text-sm">logout</span>
-                <span class="hidden sm:inline">Logout</span>
-            </button>
-    </div>
-    <div class="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-10 ml-4" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuDSIzxTEv03JUEwpU1vqD79kbeH63SzCaGfIIFbumOYFeslE7o8s5BELsy84X5hdHbqgGM91dgl8SECCQAuQUyN5TzULy0C6hTXlMd2FdmoEp4c0WAiQhyasooFF0UAFZoOLRnhrfiUJjHhWPasQr2g2MWISZolmDkAER-lahc8ZqnqZSr95hHY9Z-0DIFIJDnrExTC0CHjbWsTgsGY2Pj1xH87e8JybvN0dCpF-U1oWs_K8Q3OXkC3yMhMSgHVXCilnq_8LYez-3g");'></div>
-    </div>
-    </header>
+    <!-- Header Component Container -->
+    <div id="header-container"></div>
     <main class="flex-1 px-4 sm:px-6 lg:px-10 py-8">
     <div class="mx-auto max-w-7xl">
     <!-- Security Warning Banner (will be populated by JavaScript) -->
@@ -391,6 +359,7 @@
     <script src="/components/FFmpegStreamsManager.js"></script>
     <script src="/components/EventManager.js"></script>
     <script src="/components/ContactManager.js"></script>
+    <script src="/components/HeaderComponent.js"></script>
     <script src="/components/FooterComponent.js"></script>
     <script src="/components/UpdateNotification.js"></script>
 
@@ -438,6 +407,9 @@
             }
 
             async init() {
+                // Initialize Header Component first (navigation and user interface)
+                await this.initializeHeader();
+
                 // Initialize ComponentManager after all scripts have loaded
                 await this.initializeComponentManager();
                 await this.loadAudioDevices();
@@ -1152,6 +1124,21 @@
                 });
             }
 
+            async initializeHeader() {
+                try {
+                    console.log('🎯 Initializing Header Component...');
+                    if (window.HeaderComponent) {
+                        this.headerComponent = new window.HeaderComponent('header-container');
+                        await this.headerComponent.init();
+                        console.log('✅ Header Component initialized successfully');
+                    } else {
+                        console.error('❌ HeaderComponent not found on window object');
+                    }
+                } catch (error) {
+                    console.error('❌ Failed to initialize Header Component:', error);
+                }
+            }
+
             async initializeFooter() {
                 try {
                     console.log('🦶 Initializing Footer Component...');
@@ -1191,20 +1178,7 @@
         // Initialize dashboard when page loads
         let dashboard;
         document.addEventListener('DOMContentLoaded', () => {
-            // Add logout functionality
-            const logoutBtn = document.getElementById('logout-btn');
-            if (logoutBtn) {
-                logoutBtn.addEventListener('click', async () => {
-                    try {
-                        await fetch('/api/auth/logout', { method: 'POST' });
-                    } catch (error) {
-                        console.log('Logout request failed:', error);
-                    } finally {
-                        localStorage.removeItem('lanstreamer_token');
-                        window.location.href = '/login.html';
-                    }
-                });
-            }
+            // Logout functionality is now handled by HeaderComponent
 
             // Add a small delay to ensure all scripts are loaded
             setTimeout(() => {
