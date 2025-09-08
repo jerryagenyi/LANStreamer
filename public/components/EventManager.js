@@ -123,8 +123,21 @@ class EventManager {
 
                 // Collapse the form after successful save to provide visual feedback
                 setTimeout(() => {
-                    this.isCollapsed = true;
-                    this.render();
+                    const formContent = document.querySelector(`#${this.containerId} .space-y-3:not(.hidden)`);
+                    if (formContent) {
+                        // Add smooth closing animation
+                        formContent.style.transition = 'all 0.3s ease-out';
+                        formContent.style.opacity = '0';
+                        formContent.style.transform = 'translateY(-10px)';
+
+                        setTimeout(() => {
+                            this.isCollapsed = true;
+                            this.render();
+                        }, 300); // Wait for animation to complete
+                    } else {
+                        this.isCollapsed = true;
+                        this.render();
+                    }
                 }, 1000); // Small delay to let user see the success message
             } else {
                 throw new Error(data.error || 'Failed to save event settings');
