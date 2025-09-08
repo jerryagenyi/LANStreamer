@@ -476,12 +476,29 @@ router.get('/update-check', async (req, res, next) => {
   try {
     const { updateService } = await import('../services/UpdateService.js');
     const updateInfo = await updateService.getUpdateInfo();
+
+    // Ensure we return the current version for the frontend
     res.json({
       success: true,
+      current: updateInfo.current || await updateService.getCurrentVersion(),
       ...updateInfo
     });
   } catch (error) {
-    next(error);
+    console.error('Update check error:', error);
+    // Fallback response with just the current version
+    try {
+      const { updateService } = await import('../services/UpdateService.js');
+      const currentVersion = await updateService.getCurrentVersion();
+      res.json({
+        success: true,
+        current: currentVersion,
+        latest: null,
+        updateAvailable: false,
+        error: error.message
+      });
+    } catch (fallbackError) {
+      next(error);
+    }
   }
 });
 

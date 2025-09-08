@@ -378,21 +378,8 @@
     </div>
     </div>
 
-    <!-- Footer -->
-    <footer class="mt-12 border-t border-[var(--border-color)] pt-8 pb-8 px-4 sm:px-6 lg:px-8">
-        <div class="flex flex-col sm:flex-row items-center justify-between gap-6 text-xs text-gray-500">
-            <div class="flex items-center gap-4">
-                <span id="version-info">LANStreamer v1.0.0</span>
-                <a href="https://github.com/jerryagenyi/LANStreamer" target="_blank" class="text-blue-400 hover:text-blue-300 transition-colors flex items-center gap-1">
-                    <span class="material-symbols-rounded text-sm">open_in_new</span>
-                    GitHub Repository
-                </a>
-            </div>
-            <div class="flex items-center gap-4">
-                <span>© September 2025 LANStreamer</span>
-            </div>
-        </div>
-    </footer>
+    <!-- Footer Component Container -->
+    <div id="footer-container"></div>
     </main>
     </div>
 
@@ -404,6 +391,7 @@
     <script src="/components/FFmpegStreamsManager.js"></script>
     <script src="/components/EventManager.js"></script>
     <script src="/components/ContactManager.js"></script>
+    <script src="/components/FooterComponent.js"></script>
     <script src="/components/UpdateNotification.js"></script>
 
     <!-- Debug script loading -->
@@ -457,7 +445,9 @@
                 await this.initializeComponents();
                 this.setupEventListeners();
                 this.startStatusPolling();
-                this.loadVersionInfo();
+
+                // Initialize Footer Component (replaces loadVersionInfo)
+                await this.initializeFooter();
 
                 // Check for security vulnerabilities
                 await this.checkSecurityWarning();
@@ -467,7 +457,7 @@
 
                 // Force render audio devices to ensure dynamic content is shown
                 this.renderAudioDevices();
-                
+
                 // Icecast Manager will be initialized by ComponentManager with proper fallback
             }
 
@@ -1162,7 +1152,26 @@
                 });
             }
 
-            async loadVersionInfo() {
+            async initializeFooter() {
+                try {
+                    console.log('🦶 Initializing Footer Component...');
+                    if (window.FooterComponent) {
+                        this.footerComponent = new window.FooterComponent('footer-container');
+                        await this.footerComponent.init();
+                        console.log('✅ Footer Component initialized successfully');
+                    } else {
+                        console.error('❌ FooterComponent not found on window object');
+                        // Fallback: keep the old loadVersionInfo behavior
+                        this.loadVersionInfoFallback();
+                    }
+                } catch (error) {
+                    console.error('❌ Failed to initialize Footer Component:', error);
+                    this.loadVersionInfoFallback();
+                }
+            }
+
+            // Fallback method for version loading if FooterComponent fails
+            async loadVersionInfoFallback() {
                 try {
                     const response = await fetch('/api/system/update-check');
                     const data = await response.json();
@@ -1175,18 +1184,6 @@
                     }
                 } catch (error) {
                     console.warn('Failed to load version info:', error);
-                }
-
-                // Set up update check button
-                const updateBtn = document.getElementById('check-updates-btn');
-                if (updateBtn) {
-                    updateBtn.addEventListener('click', () => {
-                        if (window.updateNotification) {
-                            window.updateNotification.forceUpdateCheck();
-                        } else {
-                            this.showNotification('Update checker not available', 'error');
-                        }
-                    });
                 }
             }
         }
