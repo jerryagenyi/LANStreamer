@@ -323,13 +323,23 @@ echo.
 echo ⚠️  IMPORTANT: The server does NOT start automatically - this is intentional
 echo    so you can review the update results first.
 echo.
+echo ⚠️  TROUBLESHOOTING: If you see "HTTP 401" errors in the terminal:
+echo    This means Icecast admin password mismatch. Create a .env file with:
+echo    ICECAST_ADMIN_PASSWORD=your_actual_icecast_admin_password
+echo    (Replace with the password from your Icecast installation)
+echo.
 echo ========================================
-echo 🎯 READY TO CLOSE TERMINAL
+echo 🎯 UPDATE COMPLETE - TERMINAL WILL STAY OPEN
 echo ========================================
 echo.
 echo ✅ Update process is 100%% complete
-echo ✅ You can now safely close this window
+echo ✅ Review the information above
 echo ✅ Next: Run "Start LANStreamer Server.bat"
 echo.
-echo Press any key to close this terminal window...
+echo 📋 IMPORTANT: This terminal will stay open so you can:
+echo    • Review any error messages that appeared
+echo    • Copy any important information
+echo    • Take screenshots if needed for troubleshooting
+echo.
+echo Press any key when you're ready to close this window...
 pause >nul
