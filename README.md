@@ -120,7 +120,7 @@ npm install
 npm start
 ```
 
-Then visit `http://localhost:3001` for the admin dashboard.
+Then visit `http://lanstreamer.local:3001` (or `http://localhost:3001` locally) for the admin dashboard.
 
 ---
 
@@ -174,8 +174,11 @@ For example:
 
 ```
 LANStreamer/
-├── Start LANStreamer Server.bat            # Windows startup batch file
-├── Create-Desktop-Shortcut.ps1             # Desktop shortcut creator
+├── INSTALL LANStreamer.bat                 # Dependency installation script
+├── SETUP Windows Hostname.bat             # Windows hostname setup (recommended)
+├── SETUP mDNS.bat                          # Cross-platform mDNS setup
+├── Start LANStreamer Server.bat            # Server startup script
+├── COMPLETE-SETUP-GUIDE.md                 # Comprehensive technical guide
 ├── README.md                               # This file - project overview
 ├── package.json                            # Node.js dependencies and scripts
 ├── src/                                    # Backend Node.js application
@@ -183,14 +186,13 @@ LANStreamer/
 │   ├── routes/                             # API route handlers
 │   └── services/                           # Core business logic
 ├── public/                                 # Frontend web interface
-│   ├── index.html                          # Admin dashboard
+│   ├── index.html                          # Admin dashboard (Tailwind CSS)
 │   ├── streams.html                        # User streams page
+│   ├── login.html                          # Authentication interface
 │   └── components/                         # Modular UI components
 ├── config/                                 # Configuration files
 ├── logs/                                   # Application logs
-├── docs/                                   # Documentation and guides
-│   └── guides/                             # Installation and troubleshooting guides
-└── manual-setup/                           # Advanced manual setup guides
+└── docs/                                   # Documentation and installation guides
 ```
 
 ## Features
@@ -206,14 +208,14 @@ LANStreamer/
 
 LANStreamer creates a complete audio streaming ecosystem with two main interfaces and three core components:
 
-### 🎛️ **Admin Dashboard** (`http://localhost:3001/`)
+### 🎛️ **Admin Dashboard** (`http://lanstreamer.local:3001/`)
 The control center where administrators:
 - **Manage Streams:** Create, Start, and Stop audio streams
 - **Monitor System:** Check FFmpeg and Icecast status in real-time
 - **Configure Settings:** Set up event details and contact information for support
 - **View Analytics:** Monitor active streams and system performance
 
-### 🎧 **Listener Interface** (`http://localhost:3001/streams`)
+### 🎧 **Listener Interface** (`http://lanstreamer.local:3001/streams`)
 The user-friendly page where listeners:
 - **Browse Streams:** See all available audio streams
 - **Listen Live:** Click to play any stream instantly
@@ -345,16 +347,13 @@ If using **Dante Virtual Soundcard** for interpretation:
 
 ### � Advanced Setup Options
 
-**Create Desktop Shortcut (Optional)**
-```bash
-# Navigate to your LANStreamer folder, then run:
-powershell -ExecutionPolicy Bypass -File Create-Desktop-Shortcut.ps1
-```
+**Desktop Shortcut (Automatic)**
+The `INSTALL LANStreamer.bat` script automatically creates a desktop shortcut for you.
 
 **Desktop Shortcut Benefits:**
 - ✅ **One-click startup**: Double-click to start LANStreamer
 - ✅ **Dependency check**: Automatically installs npm packages if needed
-- ✅ **Icecast integration**: Option to start Icecast server automatically
+- ✅ **Network detection**: Shows current IP addresses for sharing
 - ✅ **Error handling**: Clear error messages if something goes wrong
 - ✅ **Professional look**: Custom icon and proper Windows integration
 
@@ -385,7 +384,7 @@ icecast.exe -c ..\icecast.xml
 ```
 
 **Step 4: Access LANStreamer**
-- Open browser to: `http://localhost:3001` (admin) or `http://localhost:3001/streams` (listeners)
+- Open browser to: `http://lanstreamer.local:3001` (admin) or `http://lanstreamer.local:3001/streams` (listeners)
 
 **Desktop Shortcut Benefits:**
 - ✅ **One-click startup**: Double-click to start LANStreamer
@@ -414,7 +413,7 @@ icecast -c /usr/local/etc/icecast.xml
 
 **Step 6: Open in Browser**
 - Open your web browser
-- Go to: `http://localhost:3001`
+- Go to: `http://lanstreamer.local:3001` (or `http://localhost:3001` locally)
 
 **🎉 That's it!** LANStreamer should now be running and ready to detect your audio devices.
 
@@ -474,7 +473,7 @@ icecast -c /usr/local/etc/icecast.xml
    - **Recommended**: Double-click `icecast.bat` in the Icecast root folder (runs the .exe file in the bin folder automatically)
    - **Batch File**: The `Start LANStreamer Server.bat` can do this for you automatically
 
-3. **Check System Status**: Open `http://localhost:3001` and ensure all components show "✅ Ready"
+3. **Check System Status**: Open `http://lanstreamer.local:3001` and ensure all components show "✅ Ready"
 
 4. **Browse Audio Devices**: See what microphones/inputs are detected
 
@@ -485,7 +484,7 @@ icecast -c /usr/local/etc/icecast.xml
    - Click "Start Stream"
 
 6. **Test the Stream**:
-   - Go to `http://localhost:3001/streams`
+   - Go to `http://lanstreamer.local:3001/streams`
    - You should see your stream listed
    - Click "Play" to test audio playback
 
@@ -575,10 +574,11 @@ LANStreamer includes built-in security to protect your admin dashboard:
 ## Technology Stack
 
 - **Backend**: Node.js + Express.js
-- **Frontend**: Vanilla JavaScript classes + HTML/CSS
+- **Frontend**: Vanilla JavaScript classes + HTML/CSS + Tailwind CSS
 - **Real-time Communication**: WebSockets
 - **Audio Processing**: FFmpeg
 - **Streaming Server**: Icecast
+- **Network Discovery**: Bonjour/mDNS
 
 ## Contributing
 
