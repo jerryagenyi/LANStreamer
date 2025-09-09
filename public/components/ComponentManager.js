@@ -219,6 +219,21 @@ class ComponentManager {
                 throw new Error(`Component constructor returned invalid instance for ${config.name}`);
             }
 
+            // Set global references for components so buttons can access them
+            if (sectionId === 'ffmpeg-streams') {
+                window.ffmpegStreamsManager = componentInstance;
+                console.log('🔗 Set global ffmpegStreamsManager reference');
+            } else if (sectionId === 'icecast-server') {
+                window.icecastManager = componentInstance;
+                console.log('🔗 Set global icecastManager reference');
+            } else if (sectionId === 'event-manager') {
+                window.eventManager = componentInstance;
+                console.log('🔗 Set global eventManager reference');
+            } else if (sectionId === 'contact-manager') {
+                window.contactManager = componentInstance;
+                console.log('🔗 Set global contactManager reference');
+            }
+
             // Initialize the component if it has an init method
             if (typeof componentInstance.init === 'function') {
                 console.log(`🔧 Calling init() method for ${config.name} component`);

@@ -51,47 +51,6 @@ class FFmpegStreamsManager {
         }
     }
 
-    /**
-     * Load audio devices from the API
-     */
-    async loadAudioDevices() {
-        try {
-            const response = await fetch('/api/system/audio-devices');
-            const data = await response.json();
-
-            if (data.success) {
-                this.audioDevices = data.devices || [];
-                console.log('🎵 Audio devices loaded:', this.audioDevices.length, 'devices');
-            } else {
-                console.warn('Failed to load audio devices:', data.message);
-                this.audioDevices = [];
-            }
-        } catch (error) {
-            console.error('Failed to load audio devices:', error);
-            this.audioDevices = [];
-        }
-    }
-
-    /**
-     * Refresh audio devices (for button click)
-     */
-    async refreshAudioDevices() {
-        try {
-            const response = await fetch('/api/system/audio-devices?refresh=true');
-            const data = await response.json();
-
-            if (data.success) {
-                this.audioDevices = data.devices || [];
-                this.render(); // Re-render to update device lists
-                this.showNotification(`Audio devices refreshed - ${this.audioDevices.length} devices found`, 'success');
-            } else {
-                throw new Error(data.message || 'Failed to refresh devices');
-            }
-        } catch (error) {
-            console.error('Failed to refresh audio devices:', error);
-            this.showNotification(`Failed to refresh audio devices: ${error.message}`, 'error');
-        }
-    }
 
     /**
      * Load active streams from the API
@@ -155,7 +114,7 @@ class FFmpegStreamsManager {
     async refreshAudioDevices() {
         try {
             // Safety check: prevent refresh during active streams
-            const activeStreams = this.streams.filter(stream => stream.status === 'running');
+            const activeStreams = this.activeStreams.filter(stream => stream.status === 'running');
             if (activeStreams.length > 0) {
                 const confirmed = await this.showDeviceRefreshConfirmation(activeStreams.length);
                 if (!confirmed) {
@@ -165,19 +124,29 @@ class FFmpegStreamsManager {
 
             this.showNotification('Refreshing audio devices...', 'info');
 
-            const response = await fetch('/api/system/audio-devices/refresh', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                }
-            });
-
+            const response = await fetch('/api/system/audio-devices?refresh=true');
             const data = await response.json();
 
             if (data.success) {
-                this.audioDevices = data.devices || [];
+                // Handle both old format (array) and new format (object with devices array)
+                const devices = data.devices || data || [];
+                
+                // Ensure devices is an array
+                if (!Array.isArray(devices)) {
+                    throw new Error('Invalid response format: devices is not an array');
+                }
+
+                // Filter out duplicate devices by name and type
+                const uniqueDevices = devices.filter((device, index, self) => {
+                    return index === self.findIndex(d =>
+                        d.name === device.name &&
+                        d.deviceType === device.deviceType
+                    );
+                });
+
+                this.audioDevices = uniqueDevices;
                 this.render(); // Re-render to update device lists
-                this.showNotification(`Audio devices refreshed - ${data.count} devices found`, 'success');
+                this.showNotification(`Audio devices refreshed - ${this.audioDevices.length} devices found`, 'success');
             } else {
                 throw new Error(data.message || 'Failed to refresh devices');
             }
