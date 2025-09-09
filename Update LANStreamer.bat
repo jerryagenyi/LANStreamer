@@ -110,11 +110,11 @@ echo.
 echo 📥 Step 4/8: Downloading latest version...
 echo    This may take a few minutes depending on your connection...
 
-:: Use PowerShell to download the latest release (suppress error output)
+:: Use PowerShell to download the latest release (show errors)
 powershell -Command "& {
     try {
         $ProgressPreference = 'SilentlyContinue'
-        $ErrorActionPreference = 'SilentlyContinue'
+        $ErrorActionPreference = 'Stop'
         Write-Host '   🔍 Fetching latest release info...'
         $release = Invoke-RestMethod -Uri 'https://api.github.com/repos/jerryagenyi/LANStreamer/releases/latest'
         $downloadUrl = $release.assets | Where-Object { $_.name -like '*LANStreamer*.zip' } | Select-Object -First 1 -ExpandProperty browser_download_url
@@ -133,9 +133,10 @@ powershell -Command "& {
         exit 0
     } catch {
         Write-Host ('   ❌ Download failed: ' + $_.Exception.Message)
+        Write-Host ('   ❌ Error details: ' + $_.Exception.ToString())
         exit 1
     }
-}" 2>nul
+}"
 
 if errorlevel 1 (
     echo.
@@ -164,7 +165,7 @@ echo 📂 Step 5/8: Extracting update...
 powershell -Command "& {
     try {
         $ProgressPreference = 'SilentlyContinue'
-        $ErrorActionPreference = 'SilentlyContinue'
+        $ErrorActionPreference = 'Stop'
         $zipPath = '%TEMP_DIR%\lanstreamer-latest.zip'
         $extractPath = '%TEMP_DIR%\extracted'
 
@@ -187,9 +188,10 @@ powershell -Command "& {
         exit 0
     } catch {
         Write-Host ('   ❌ Extraction failed: ' + $_.Exception.Message)
+        Write-Host ('   ❌ Error details: ' + $_.Exception.ToString())
         exit 1
     }
-}" 2>nul
+}"
 
 if errorlevel 1 (
     echo.
