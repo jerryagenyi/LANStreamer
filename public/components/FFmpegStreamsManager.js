@@ -125,24 +125,18 @@ class FFmpegStreamsManager {
      */
     async refreshAudioDevices() {
         try {
-            // Safety check: prevent refresh during active streams
-            const activeStreams = this.activeStreams.filter(stream => stream.status === 'running');
-            if (activeStreams.length > 0) {
-                const confirmed = await this.showDeviceRefreshConfirmation(activeStreams.length);
-                if (!confirmed) {
-                    return;
-                }
-            }
-
             this.showNotification('Refreshing audio devices...', 'info');
 
             const response = await fetch('/api/system/audio-devices?refresh=true');
+            
+            console.log('Refresh devices response status:', response.status, response.statusText);
             
             if (!response.ok) {
                 throw new Error(`HTTP ${response.status}: ${response.statusText}`);
             }
             
             const data = await response.json();
+            console.log('Refresh devices response data:', data);
 
             if (data.success) {
                 // Handle both old format (array) and new format (object with devices array)
@@ -169,6 +163,11 @@ class FFmpegStreamsManager {
             }
         } catch (error) {
             console.error('Failed to refresh audio devices:', error);
+            console.error('Error details:', {
+                message: error.message,
+                stack: error.stack,
+                response: error.response
+            });
             this.showNotification(`Failed to refresh audio devices: ${error.message}`, 'error');
         }
     }
@@ -1307,55 +1306,6 @@ class FFmpegStreamsManager {
         return this.activeStreams.filter(stream => stream.status === 'running').length;
     }
 
-    /**
-     * Show confirmation dialog for device refresh when streams are active
-     */
-    async showDeviceRefreshConfirmation(activeStreamCount) {
-        return new Promise((resolve) => {
-            const modal = document.createElement('div');
-            modal.className = 'fixed inset-0 bg-black/50 flex items-center justify-center z-50';
-            modal.innerHTML = `
-                <div class="bg-[var(--card-bg)] border border-[var(--border-color)] rounded-2xl p-6 max-w-md mx-4 shadow-2xl">
-                    <div class="flex items-center gap-3 mb-4">
-                        <span class="material-symbols-rounded text-yellow-500">warning</span>
-                        <h3 class="text-lg font-semibold text-white">Refresh Audio Devices</h3>
-                    </div>
-                    <p class="text-gray-300 mb-4">
-                        You have ${activeStreamCount} active stream${activeStreamCount > 1 ? 's' : ''} running.
-                        Refreshing audio devices may temporarily disrupt these streams.
-                    </p>
-                    <p class="text-sm text-yellow-200 mb-6">⚠️ Consider stopping active streams first to avoid interruptions.</p>
-                    <div class="flex justify-end gap-3">
-                        <button id="cancel-refresh" class="px-4 py-2 bg-gray-600 hover:bg-gray-500 text-white rounded-lg transition-colors">
-                            Cancel
-                        </button>
-                        <button id="confirm-refresh" class="px-4 py-2 bg-yellow-600 hover:bg-yellow-500 text-white rounded-lg transition-colors">
-                            Refresh Anyway
-                        </button>
-                    </div>
-                </div>
-            `;
-
-            document.body.appendChild(modal);
-
-            document.getElementById('cancel-refresh').addEventListener('click', () => {
-                document.body.removeChild(modal);
-                resolve(false);
-            });
-
-            document.getElementById('confirm-refresh').addEventListener('click', () => {
-                document.body.removeChild(modal);
-                resolve(true);
-            });
-
-            modal.addEventListener('click', (e) => {
-                if (e.target === modal) {
-                    document.body.removeChild(modal);
-                    resolve(false);
-                }
-            });
-        });
-    }
 
     /**
      * Generate unique stream ID using crypto API for better uniqueness
