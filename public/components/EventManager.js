@@ -12,6 +12,13 @@ class EventManager {
         this.isLoading = false;
         this.isCollapsed = true; // Collapsed by default
         this.isInitialized = false;
+
+        // Rate limiting for saves
+        this.saveTimeout = null;
+        this.saveDebounceMs = 500;
+        this.lastSaveTime = 0;
+        this.minSaveInterval = 1000; // Minimum 1 second between saves
+
         // Don't call init() here - let ComponentManager handle it
     }
 
@@ -27,6 +34,67 @@ class EventManager {
         this.setupEventListeners();
         this.isInitialized = true;
         console.log('✅ EventManager initialization complete');
+    }
+
+    /**
+     * Sanitize input to prevent XSS and injection attacks
+     */
+    sanitizeInput(input) {
+        if (typeof input !== 'string') {
+            return '';
+        }
+
+        // Remove HTML tags and dangerous characters
+        return input
+            .replace(/<[^>]*>/g, '') // Remove HTML tags
+            .replace(/[<>'"&]/g, (match) => { // Escape dangerous characters
+                const escapeMap = {
+                    '<': '&lt;',
+                    '>': '&gt;',
+                    '"': '&quot;',
+                    "'": '&#x27;',
+                    '&': '&amp;'
+                };
+                return escapeMap[match];
+            })
+            .trim();
+    }
+
+    /**
+     * Sanitize text with length limits
+     */
+    sanitizeText(text, maxLength = 500) {
+        return this.sanitizeInput(text).substring(0, maxLength);
+    }
+
+    /**
+     * Sanitize URL for image uploads
+     */
+    sanitizeImageUrl(url) {
+        if (!url || typeof url !== 'string') {
+            return '';
+        }
+
+        // Basic URL validation - ensure it's a safe image URL
+        const sanitized = this.sanitizeInput(url);
+
+        // Only allow relative URLs or trusted domains
+        if (sanitized.startsWith('/') || sanitized.startsWith('./') || sanitized.startsWith('../')) {
+            return sanitized;
+        }
+
+        // For absolute URLs, validate they're from trusted sources
+        try {
+            const urlObj = new URL(sanitized);
+            const allowedDomains = ['localhost', '127.0.0.1', window.location.hostname];
+            if (allowedDomains.includes(urlObj.hostname)) {
+                return sanitized;
+            }
+        } catch (e) {
+            console.warn('Invalid URL provided:', sanitized);
+        }
+
+        return '';
     }
 
     async loadEventDetails() {

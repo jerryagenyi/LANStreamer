@@ -1,5 +1,10 @@
 <html><head>
     <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.tailwindcss.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; media-src 'self' blob:;">
+    <meta http-equiv="X-Content-Type-Options" content="nosniff">
+    <meta http-equiv="X-Frame-Options" content="DENY">
+    <meta http-equiv="X-XSS-Protection" content="1; mode=block">
     <link crossorigin="" href="https://fonts.gstatic.com/" rel="preconnect"/>
     <link as="style" href="https://fonts.googleapis.com/css2?display=swap&amp;family=Inter%3Awght%40400%3B500%3B700%3B900&amp;family=Noto+Sans%3Awght%40400%3B500%3B700%3B900" onload="this.rel='stylesheet'" rel="stylesheet"/>
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:FILL@1" rel="stylesheet"/>
@@ -98,12 +103,12 @@
             <div id="audio-devices"></div>
             
             <!-- Video Sources - Collapsible Panel (Hidden by default) -->
-            <div class="collapsible-section">
+            <div class="collapsible-section hidden">
                 <button id="video-sources-toggle" class="w-full flex items-center justify-between p-3 bg-[var(--card-bg)] border border-[var(--border-color)] rounded-xl hover:bg-[var(--card-bg)]/80 transition-all duration-300">
                     <div class="flex items-center gap-3">
                         <span class="material-symbols-rounded text-gray-400">videocam</span>
                         <span class="text-gray-300 font-medium">Video Sources</span>
-                        <span class="text-xs text-gray-500">(Future Feature)</span>
+                        <span class="text-xs text-blue-400 bg-blue-500/10 px-2 py-1 rounded-full border border-blue-500/20">Coming Soon</span>
                     </div>
                     <span class="material-symbols-rounded text-gray-400 transition-transform duration-300" id="video-sources-arrow">expand_more</span>
                 </button>
@@ -221,19 +226,15 @@
             <div class="bg-[var(--card-bg)] border border-[var(--border-color)] rounded-2xl p-6 shadow-2xl shadow-black/30">
                 <div class="flex items-center justify-between mb-4">
                     <h2 class="text-xl font-bold text-white">Video Sources captured by FFmpeg</h2>
-                    <button class="flex items-center gap-2 rounded-md px-3 py-1.5 text-sm font-semibold text-white bg-[var(--primary-color)]/10 hover:bg-[var(--primary-color)]/20 border border-[var(--border-color)] transition-all duration-300">
-                        <span class="material-symbols-rounded text-base">refresh</span>
-                        Refresh device list
-                    </button>
+                    <span class="text-xs text-blue-400 bg-blue-500/10 px-3 py-1.5 rounded-full border border-blue-500/20">Coming Soon</span>
                 </div>
                 <div class="space-y-4">
-                    <div class="flex items-center justify-between p-4 bg-[#111111] rounded-xl border border-[var(--border-color)]">
-                        <div class="flex items-center gap-3">
-                            <span class="material-symbols-rounded text-2xl text-gray-600">videocam_off</span>
-                            <div>
-                                <p class="font-semibold text-white">No video sources detected</p>
-                                <p class="text-sm text-gray-400">Connect a camera or capture card.</p>
-                            </div>
+                    <div class="flex items-center justify-center p-8 bg-[#111111] rounded-xl border border-[var(--border-color)] opacity-50">
+                        <div class="text-center">
+                            <span class="material-symbols-rounded text-4xl text-gray-600 mb-3 block">videocam_off</span>
+                            <p class="font-semibold text-white mb-2">Video Streaming Feature</p>
+                            <p class="text-sm text-gray-400">This feature is planned for a future release.</p>
+                            <p class="text-xs text-gray-500 mt-2">Currently focusing on audio streaming excellence.</p>
                         </div>
                     </div>
                 </div>
@@ -1041,16 +1042,52 @@
             }
 
             startStatusPolling() {
-                // Poll every 5 seconds for status updates
+                console.log('🔄 Starting real-time status polling...');
+
+                // Poll every 5 seconds for critical status updates
                 setInterval(async () => {
-                    await this.checkIcecastStatus();
-                    await this.checkFFmpegStatus();
+                    try {
+                        await this.checkIcecastStatus();
+                        await this.checkFFmpegStatus();
+
+                        // Update component statuses if ComponentManager is available
+                        if (this.componentManager) {
+                            // Refresh Icecast component status
+                            const icecastComponent = this.componentManager.components.get('icecast-server');
+                            if (icecastComponent && typeof icecastComponent.checkStatus === 'function') {
+                                await icecastComponent.checkStatus();
+                            }
+
+                            // Refresh FFmpeg streams status
+                            const ffmpegComponent = this.componentManager.components.get('ffmpeg-streams');
+                            if (ffmpegComponent && typeof ffmpegComponent.loadStreams === 'function') {
+                                await ffmpegComponent.loadStreams();
+                            }
+                        }
+                    } catch (error) {
+                        console.warn('Status polling error:', error);
+                    }
                 }, 5000);
 
                 // Check security warnings every 30 seconds
                 setInterval(async () => {
-                    await this.checkSecurityWarning();
+                    try {
+                        await this.checkSecurityWarning();
+                    } catch (error) {
+                        console.warn('Security check error:', error);
+                    }
                 }, 30000);
+
+                // Refresh audio devices every 60 seconds
+                setInterval(async () => {
+                    try {
+                        await this.loadAudioDevices();
+                    } catch (error) {
+                        console.warn('Audio devices refresh error:', error);
+                    }
+                }, 60000);
+
+                console.log('✅ Real-time status polling started');
             }
 
             showNotification(message, type = 'info') {

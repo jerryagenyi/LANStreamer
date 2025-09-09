@@ -63,6 +63,12 @@
             outline: none;
         }
 
+        .volume-slider::-webkit-slider-track {
+            background: #374151;
+            height: 8px;
+            border-radius: 4px;
+        }
+
         .volume-slider::-webkit-slider-thumb {
             appearance: none;
             width: 16px;
@@ -77,6 +83,13 @@
         .volume-slider::-webkit-slider-thumb:hover {
             background: #0088CC;
             transform: scale(1.1);
+        }
+
+        .volume-slider::-moz-range-track {
+            background: #374151;
+            height: 8px;
+            border-radius: 4px;
+            border: none;
         }
 
         .volume-slider::-moz-range-thumb {
@@ -196,6 +209,11 @@
                 this.volume = this.loadVolume(); // Load saved volume or default to 75
                 this.isMuted = false;
                 this.volumeBeforeMute = this.volume;
+
+                // Client-side timer tracking for real-time uptime updates
+                this.clientTimers = new Map(); // streamId -> { startTime, isRunning }
+                this.uptimeUpdateInterval = null;
+
                 this.init();
             }
 
@@ -205,6 +223,14 @@
                 await this.loadContactDetails();
                 this.updateLiveIndicator(); // Update Live indicator on init
                 this.startAutoRefresh();
+
+                // Start real-time uptime updates
+                this.startUptimeUpdates();
+
+                // Cleanup on page unload
+                window.addEventListener('beforeunload', () => {
+                    this.stopUptimeUpdates();
+                });
             }
 
             updateNetworkInfo() {
@@ -232,9 +258,17 @@
                         // Debug: Log all stream statuses
                         console.log('🔍 All streams with status:', data.streams.map(s => ({ id: s.id, name: s.name, status: s.status })));
 
-                        // Show all streams regardless of status for debugging
-                        this.streams = data.streams;
-                        this.renderStreams();
+                        // Filter to only show running streams for listeners
+                        const runningStreams = data.streams.filter(stream => stream.status === 'running');
+                        console.log('🎵 Running streams:', runningStreams.map(s => ({ id: s.id, name: s.name })));
+
+                        if (runningStreams.length > 0) {
+                            this.streams = runningStreams;
+                            this.updateClientTimers(runningStreams);
+                            this.renderStreams();
+                        } else {
+                            this.showNoStreams();
+                        }
                     } else {
                         this.showNoStreams();
                     }
@@ -297,7 +331,7 @@
                                     <div class="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4 text-xs sm:text-sm text-gray-400">
                                         <span class="flex items-center gap-1">
                                             <span class="material-symbols-rounded text-sm">schedule</span>
-                                            ${uptime}
+                                            <span data-stream-uptime="${stream.id}">${uptime}</span>
                                         </span>
                                         <span class="flex items-center gap-1">
                                             <span class="material-symbols-rounded text-sm">radio</span>
@@ -362,9 +396,8 @@
                                            min="0"
                                            max="100"
                                            value="${this.isMuted ? 0 : this.volume}"
-                                           class="flex-1 h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer volume-slider"
-                                           onchange="streamListener.setVolume(this.value)"
-                                           oninput="streamListener.updateVolumeDisplay(this.value)">
+                                           class="flex-1 h-2 bg-gray-700 rounded-lg appearance-none volume-slider"
+                                           oninput="streamListener.setVolume(this.value)">
                                     <span class="text-xs text-gray-400 font-mono min-w-[3rem]" id="volume-display">${this.isMuted ? 'Muted' : this.volume + '%'}</span>
                                 </div>
                             </div>
@@ -402,8 +435,8 @@
 
                     console.log(`✅ Browser supports: ${supportedFormats.join(', ')} formats`);
 
-                    // Show loading state
-                    this.showNotification('Connecting to stream...', 'info');
+                    // Show loading state with more detailed feedback
+                    this.showNotification('🔄 Connecting to stream... Please wait', 'info');
 
                     // Validate stream URL
                     try {
@@ -425,20 +458,46 @@
                     this.audioPlayer.src = streamUrl;
                     this.audioPlayer.volume = this.volume / 100; // Set initial volume (0-1 range)
 
-                    // Set audio format hints for better browser compatibility
-                    this.audioPlayer.setAttribute('type', 'audio/mpeg');
+                    // Let browser auto-detect format from server Content-Type header
+                    // Removing hardcoded type to prevent format mismatch issues
                     this.audioPlayer.preload = 'none'; // Don't preload to avoid format issues
 
                     this.audioPlayer.load();
 
                     // Add error event listener
                     const errorHandler = (e) => {
-                        console.error('Audio error:', e);
+                        console.error('Audio error details:', {
+                            code: e.target.error?.code,
+                            message: e.target.error?.message,
+                            name: e.name,
+                            src: e.target.src,
+                            networkState: e.target.networkState,
+                            readyState: e.target.readyState
+                        });
                         this.audioPlayer.removeEventListener('error', errorHandler);
 
                         // Don't show error notification if we're intentionally stopping
                         if (!this.intentionallyStopping) {
-                            this.showNotification('Stream not available. Please check if the stream is running.', 'error');
+                            const errorCode = e.target.error?.code;
+                            const networkState = e.target.networkState;
+                            let errorMessage = 'Stream not available. Please check if the stream is running.';
+
+                            // Provide more specific error messages based on error code and network state
+                            if (errorCode === 4) { // MEDIA_ERR_SRC_NOT_SUPPORTED
+                                errorMessage = 'Stream format not supported by your browser. Try Chrome, Firefox, or Edge for better AAC support.';
+                            } else if (errorCode === 2) { // MEDIA_ERR_NETWORK
+                                if (networkState === 2 || networkState === 3) {
+                                    errorMessage = 'Network error loading stream. Check if the Icecast server is running and try again.';
+                                } else {
+                                    errorMessage = 'Network error loading stream. Check your connection and try again.';
+                                }
+                            } else if (errorCode === 3) { // MEDIA_ERR_DECODE
+                                errorMessage = 'Stream decode error. The audio format may be corrupted or incompatible.';
+                            } else if (networkState === 2 || networkState === 3) {
+                                errorMessage = 'Stream server unavailable. Please check if the Icecast server is running.';
+                            }
+
+                            this.showNotification(errorMessage, 'error');
                         }
                     };
                     this.audioPlayer.addEventListener('error', errorHandler);
@@ -447,7 +506,7 @@
                     const loadedHandler = () => {
                         console.log('Stream loaded successfully');
                         this.audioPlayer.removeEventListener('loadeddata', loadedHandler);
-                        this.showNotification(`Now playing: ${streamId}`, 'success');
+                        this.showNotification(`🎵 Now playing: ${streamId}`, 'success');
                     };
                     this.audioPlayer.addEventListener('loadeddata', loadedHandler);
 
@@ -577,19 +636,88 @@
                 }, 3000);
             }
 
-            formatUptime(seconds) {
-                if (!seconds) return 'Just started';
-                
-                const hours = Math.floor(seconds / 3600);
-                const minutes = Math.floor((seconds % 3600) / 60);
-                const secs = seconds % 60;
-                
+            /**
+             * Start real-time uptime updates (every second)
+             */
+            startUptimeUpdates() {
+                this.uptimeUpdateInterval = setInterval(() => {
+                    this.updateUptimeDisplays();
+                }, 1000);
+            }
+
+            /**
+             * Stop uptime updates
+             */
+            stopUptimeUpdates() {
+                if (this.uptimeUpdateInterval) {
+                    clearInterval(this.uptimeUpdateInterval);
+                    this.uptimeUpdateInterval = null;
+                }
+            }
+
+            /**
+             * Update client-side timers based on server stream data
+             */
+            updateClientTimers(serverStreams) {
+                serverStreams.forEach(stream => {
+                    if (stream.status === 'running') {
+                        const clientTimer = this.clientTimers.get(stream.id);
+
+                        if (!clientTimer || !clientTimer.isRunning) {
+                            // Stream just started or resumed - start client timer
+                            this.clientTimers.set(stream.id, {
+                                startTime: Date.now() - (stream.uptime || 0), // Adjust for existing uptime
+                                isRunning: true
+                            });
+                            console.log(`Started client timer for stream ${stream.id}`);
+                        }
+                    } else {
+                        // Stream stopped - mark timer as not running
+                        const clientTimer = this.clientTimers.get(stream.id);
+                        if (clientTimer) {
+                            clientTimer.isRunning = false;
+                        }
+                    }
+                });
+
+                // Clean up timers for streams that no longer exist
+                const serverStreamIds = new Set(serverStreams.map(s => s.id));
+                for (const [streamId] of this.clientTimers) {
+                    if (!serverStreamIds.has(streamId)) {
+                        this.clientTimers.delete(streamId);
+                        console.log(`Cleaned up timer for removed stream ${streamId}`);
+                    }
+                }
+            }
+
+            /**
+             * Update uptime displays using client-side timers
+             */
+            updateUptimeDisplays() {
+                this.clientTimers.forEach((timer, streamId) => {
+                    const uptimeElement = document.querySelector(`[data-stream-uptime="${streamId}"]`);
+                    if (uptimeElement && timer.isRunning) {
+                        const currentUptime = Date.now() - timer.startTime;
+                        uptimeElement.textContent = this.formatUptime(currentUptime);
+                    }
+                });
+            }
+
+            formatUptime(milliseconds) {
+                if (!milliseconds || milliseconds === 0) return 'Just started';
+
+                // Convert milliseconds to seconds first
+                const totalSeconds = Math.floor(milliseconds / 1000);
+                const hours = Math.floor(totalSeconds / 3600);
+                const minutes = Math.floor((totalSeconds % 3600) / 60);
+                const seconds = totalSeconds % 60;
+
                 if (hours > 0) {
                     return `${hours}h ${minutes}m`;
                 } else if (minutes > 0) {
-                    return `${minutes}m ${secs}s`;
+                    return `${minutes}m ${seconds}s`;
                 } else {
-                    return `${secs}s`;
+                    return `${seconds}s`;
                 }
             }
 
@@ -773,10 +901,8 @@
                 this.saveVolume(); // Save volume preference
                 console.log(`🔊 Volume set to ${this.volume}%${this.isMuted ? ' (Muted)' : ''}`);
 
-                // Re-render to update mute button icon
-                if (this.currentStream) {
-                    this.renderStreams();
-                }
+                // Don't re-render during volume changes to avoid interfering with slider interaction
+                // The updateVolumeDisplay() method handles updating the UI elements
             }
 
             toggleMute() {

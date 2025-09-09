@@ -151,31 +151,38 @@ class ComponentManager {
         }
 
         try {
-            // Check if component class exists
+            // Enhanced dependency validation
             const ComponentClass = window[config.component];
-            console.log(`🔍 Component class for ${sectionId}:`, ComponentClass, 'Type:', typeof ComponentClass);
-            console.log(`🔍 Looking for component: ${config.component} on window object`);
-            console.log(`🔍 Available components on window:`, Object.keys(window).filter(key => key.includes('Manager') || key.includes('Player')));
 
-            // Special debugging for FFmpeg streams
-            if (sectionId === 'ffmpeg-streams') {
-                console.log('🎤 FFmpeg Streams Debug:');
-                console.log('- Container exists:', !!document.getElementById(sectionId));
-                console.log('- Component class:', ComponentClass);
-                console.log('- Global instance:', window.ffmpegStreamsManager);
+            // Comprehensive component availability check
+            const isComponentAvailable = this.validateComponentDependency(config.component, ComponentClass);
+
+            if (process.env.NODE_ENV !== 'production') {
+                console.log(`🔍 Component class for ${sectionId}:`, ComponentClass, 'Type:', typeof ComponentClass);
+                console.log(`🔍 Looking for component: ${config.component} on window object`);
+                console.log(`🔍 Available components on window:`, Object.keys(window).filter(key => key.includes('Manager') || key.includes('Player')));
+
+                // Special debugging for FFmpeg streams
+                if (sectionId === 'ffmpeg-streams') {
+                    console.log('🎤 FFmpeg Streams Debug:');
+                    console.log('- Container exists:', !!document.getElementById(sectionId));
+                    console.log('- Component class:', ComponentClass);
+                    console.log('- Global instance:', window.ffmpegStreamsManager);
+                }
             }
 
-            if (ComponentClass && typeof ComponentClass === 'function') {
-                // Component exists - use it
+            if (isComponentAvailable) {
+                // Component exists and is valid - use it
                 await this.useComponent(sectionId, ComponentClass, config);
             } else {
-                // Component doesn't exist - use static with notice
-                console.log(`⚠️ Component class not found for ${sectionId}, using static fallback`);
+                // Component doesn't exist or is invalid - use static with notice
+                console.log(`⚠️ Component ${config.component} not available for ${sectionId}, using static fallback`);
                 this.useStaticWithNotice(sectionId, config);
             }
         } catch (error) {
-            console.error(`❌ Error initializing ${config.name}:`, error);
-            this.useStaticWithNotice(sectionId, config);
+            console.error(`❌ Critical error initializing ${config.name}:`, error);
+            // Ensure we always have a fallback, even if static fails
+            this.useEmergencyFallback(sectionId, config);
         }
     }
 
@@ -183,38 +190,151 @@ class ComponentManager {
      * Use component for the section
      */
     async useComponent(sectionId, ComponentClass, config) {
+        let componentInstance = null;
+
         try {
             console.log(`🚀 Attempting to initialize ${config.name} component with class:`, ComponentClass.name);
 
+            // Enhanced validation before component creation
+            if (!ComponentClass || typeof ComponentClass !== 'function') {
+                throw new Error(`Invalid component class for ${config.component}`);
+            }
+
             // Special handling for FFmpeg streams - don't create new instance if global one exists
-            let componentInstance;
             if (sectionId === 'ffmpeg-streams' && window.ffmpegStreamsManager) {
                 console.log('🎤 Using existing global FFmpeg streams manager instance');
                 componentInstance = window.ffmpegStreamsManager;
-                // Ensure it's initialized
+
+                // Validate existing instance
+                if (!componentInstance || typeof componentInstance !== 'object') {
+                    throw new Error('Invalid existing FFmpeg streams manager instance');
+                }
+
+                // Ensure it's initialized with error boundary
                 if (!componentInstance.isInitialized) {
                     console.log('🎤 Initializing existing FFmpeg streams manager');
-                    await componentInstance.init();
+                    try {
+                        await componentInstance.init();
+                    } catch (initError) {
+                        console.error('Failed to initialize existing FFmpeg instance:', initError);
+                        throw initError;
+                    }
                 }
             } else {
-                componentInstance = new ComponentClass(sectionId);
+                // Create new component instance with error boundary
+                try {
+                    componentInstance = new ComponentClass(sectionId);
+                } catch (constructorError) {
+                    console.error(`Component constructor failed for ${config.name}:`, constructorError);
+                    throw new Error(`Component constructor failed: ${constructorError.message}`);
+                }
+
+                // Validate component instance
+                if (!componentInstance || typeof componentInstance !== 'object') {
+                    throw new Error(`Component constructor returned invalid instance for ${config.name}`);
+                }
 
                 // Initialize the component if it has an init method
                 if (typeof componentInstance.init === 'function') {
                     console.log(`🔧 Calling init() method for ${config.name} component`);
-                    await componentInstance.init();
+                    try {
+                        await componentInstance.init();
+                    } catch (initError) {
+                        console.error(`Component init failed for ${config.name}:`, initError);
+                        throw new Error(`Component initialization failed: ${initError.message}`);
+                    }
+                } else {
+                    console.warn(`Component ${config.name} has no init() method - this may be intentional`);
                 }
             }
 
+            // Final validation before storing
+            if (!componentInstance) {
+                throw new Error(`Component instance is null after initialization for ${config.name}`);
+            }
+
             this.components.set(sectionId, componentInstance);
+            console.log(`✅ ${config.name} - Component initialized successfully`);
 
-            // Component successfully initialized - no status indicator needed in production
-
-            console.log(`✅ ${config.name} - Using Component`);
         } catch (error) {
             console.error(`❌ Failed to initialize ${config.name} component:`, error);
+
+            // Clean up any partial initialization
+            if (componentInstance && typeof componentInstance.destroy === 'function') {
+                try {
+                    componentInstance.destroy();
+                } catch (destroyError) {
+                    console.warn(`Failed to destroy component ${sectionId}:`, destroyError);
+                }
+            }
+
+            // Remove from components map if it was added
+            if (this.components.has(sectionId)) {
+                this.components.delete(sectionId);
+            }
+
+            // Fall back to static content
             this.useStaticWithNotice(sectionId, config);
         }
+    }
+
+    /**
+     * Validate component dependency with comprehensive checks
+     */
+    validateComponentDependency(componentName, ComponentClass) {
+        // Check if component exists
+        if (!ComponentClass) {
+            return false;
+        }
+
+        // Check if it's a function (constructor)
+        if (typeof ComponentClass !== 'function') {
+            console.warn(`Component ${componentName} exists but is not a constructor function`);
+            return false;
+        }
+
+        // Check if it has a prototype (proper class/function)
+        if (!ComponentClass.prototype) {
+            console.warn(`Component ${componentName} has no prototype`);
+            return false;
+        }
+
+        // Additional validation for known component patterns
+        try {
+            // Test if we can create a temporary instance (without calling constructor)
+            const hasValidConstructor = ComponentClass.toString().includes('constructor') ||
+                                      ComponentClass.toString().includes('function');
+            if (!hasValidConstructor) {
+                console.warn(`Component ${componentName} doesn't appear to be a valid constructor`);
+                return false;
+            }
+        } catch (error) {
+            console.warn(`Component ${componentName} validation failed:`, error);
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Emergency fallback when even static content fails
+     */
+    useEmergencyFallback(sectionId, config) {
+        const container = document.getElementById(sectionId);
+        if (container) {
+            container.innerHTML = `
+                <div class="bg-[var(--card-bg)] border border-[var(--border-color)] rounded-2xl p-6 shadow-2xl shadow-black/30">
+                    <div class="flex items-center gap-3 p-3 bg-red-500/10 border border-red-500/20 rounded-xl">
+                        <span class="material-symbols-rounded text-red-500">error</span>
+                        <div class="flex-1">
+                            <p class="text-sm font-medium text-red-400">Component Unavailable</p>
+                            <p class="text-xs text-red-300">${config.name} could not be loaded</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+        console.error(`Emergency fallback used for ${sectionId}`);
     }
 
     /**

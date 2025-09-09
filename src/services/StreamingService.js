@@ -14,6 +14,14 @@ class StreamingService {
     this.ffmpegService = FFmpegService
     this.streamsConfigPath = join(process.cwd(), 'config', 'streams.json')
     this.loadPersistentStreams()
+
+    // Clean up old streams on startup
+    this.cleanupOldStreams()
+
+    // Set up periodic cleanup (every 6 hours)
+    this.cleanupInterval = setInterval(() => {
+      this.cleanupOldStreams()
+    }, 6 * 60 * 60 * 1000)
   }
 
   /**
@@ -725,7 +733,38 @@ class StreamingService {
     logger.info(`Stream ${streamId} deleted successfully`)
   }
 
+  /**
+   * Clean up old stopped/error streams from persistent storage
+   * @param {number} maxAge - Maximum age in milliseconds (default: 24 hours)
+   */
+  cleanupOldStreams(maxAge = 24 * 60 * 60 * 1000) {
+    const now = Date.now()
+    let cleanedCount = 0
 
+    Object.keys(this.activeStreams).forEach(streamId => {
+      const stream = this.activeStreams[streamId]
+
+      // Only clean up stopped or error streams
+      if (stream.status === 'stopped' || stream.status === 'error') {
+        const streamAge = stream.stoppedAt ? now - new Date(stream.stoppedAt).getTime() :
+                         stream.exitedAt ? now - new Date(stream.exitedAt).getTime() :
+                         now - new Date(stream.createdAt).getTime()
+
+        if (streamAge > maxAge) {
+          logger.info(`Cleaning up old ${stream.status} stream: ${streamId} (age: ${Math.round(streamAge / (60 * 60 * 1000))}h)`)
+          delete this.activeStreams[streamId]
+          cleanedCount++
+        }
+      }
+    })
+
+    if (cleanedCount > 0) {
+      this.savePersistentStreams()
+      logger.info(`Cleaned up ${cleanedCount} old streams`)
+    }
+
+    return cleanedCount
+  }
 
   /**
    * Get stream status

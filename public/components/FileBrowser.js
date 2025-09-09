@@ -17,16 +17,56 @@ class FileBrowser {
     }
 
     /**
+     * Sanitize and normalize file path
+     */
+    sanitizePath(path) {
+        if (!path || typeof path !== 'string') {
+            return '';
+        }
+
+        // Remove dangerous characters and normalize path
+        let sanitized = path
+            .replace(/[<>"|?*]/g, '') // Remove dangerous characters
+            .replace(/\.\./g, '') // Remove parent directory traversal
+            .trim();
+
+        // Normalize path separators for Windows
+        sanitized = sanitized.replace(/\//g, '\\');
+
+        // Remove multiple consecutive backslashes
+        sanitized = sanitized.replace(/\\+/g, '\\');
+
+        // Remove leading/trailing backslashes
+        sanitized = sanitized.replace(/^\\+|\\+$/g, '');
+
+        // Validate path length
+        if (sanitized.length > 260) { // Windows MAX_PATH limit
+            throw new Error('Path too long (maximum 260 characters)');
+        }
+
+        return sanitized;
+    }
+
+    /**
      * Validate selected directory and process result
      */
     async validateSelectedDirectory(directoryPath) {
         try {
+            // Sanitize the path before validation
+            const sanitizedPath = this.sanitizePath(directoryPath);
+
+            if (!sanitizedPath) {
+                throw new Error('Invalid directory path provided');
+            }
+
+            console.log('Validating sanitized path:', sanitizedPath);
+
             const response = await fetch('/api/system/icecast/validate-custom-path', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({ path: directoryPath })
+                body: JSON.stringify({ path: sanitizedPath })
             });
 
             const result = await response.json();

@@ -3,6 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.tailwindcss.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self';">
+    <meta http-equiv="X-Content-Type-Options" content="nosniff">
+    <meta http-equiv="X-Frame-Options" content="DENY">
+    <meta http-equiv="X-XSS-Protection" content="1; mode=block">
     <title>LANStreamer - Admin Login</title>
     <link rel="icon" type="image/png" href="/assets/favicon.png">
     <script src="https://cdn.tailwindcss.com"></script>
@@ -98,10 +102,9 @@
                 <div class="flex items-start gap-2">
                     <span class="material-symbols-rounded text-blue-400 text-sm mt-0.5">info</span>
                     <div class="text-xs text-blue-300">
-                        <p class="font-medium mb-1">Default Credentials:</p>
-                        <p>Username: <code class="bg-blue-900/30 px-1 rounded">admin</code></p>
-                        <p>Password: <code class="bg-blue-900/30 px-1 rounded">lanstreamer123</code></p>
-                        <p class="mt-2 text-blue-200/80">Change these in your <code class="bg-blue-900/30 px-1 rounded">.env</code> file</p>
+                        <p class="font-medium mb-1">First Time Setup:</p>
+                        <p class="mt-1 text-blue-200/80">Admin credentials are configured in your <code class="bg-blue-900/30 px-1 rounded">.env</code> file.</p>
+                        <p class="mt-1 text-blue-200/80">See the setup guide in <code class="bg-blue-900/30 px-1 rounded">README.md</code> for configuration details.</p>
                     </div>
                 </div>
             </div>
@@ -118,24 +121,29 @@
     <script>
         document.getElementById('loginForm').addEventListener('submit', async (e) => {
             e.preventDefault();
-            
+
             const username = document.getElementById('username').value.trim();
             const password = document.getElementById('password').value;
             const errorDiv = document.getElementById('errorMessage');
             const errorText = document.getElementById('errorText');
             const submitBtn = e.target.querySelector('button[type="submit"]');
-            
+
             // Show loading state
             const originalText = submitBtn.innerHTML;
             submitBtn.innerHTML = '<span class="material-symbols-rounded animate-spin">refresh</span> Signing In...';
             submitBtn.disabled = true;
             errorDiv.classList.add('hidden');
-            
+
             try {
+                // Get CSRF token first
+                const csrfResponse = await fetch('/api/auth/csrf-token');
+                const csrfData = await csrfResponse.json();
+
                 const response = await fetch('/api/auth/login', {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json'
+                        'Content-Type': 'application/json',
+                        'X-CSRF-Token': csrfData.csrfToken
                     },
                     body: JSON.stringify({ username, password })
                 });

@@ -63,8 +63,10 @@ class HeaderComponent {
                         
                         <button id="header-logout-btn"
                                class="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-300 hover:text-white bg-gray-800/50 hover:bg-gray-700/50 border border-gray-600/30 hover:border-gray-500/50 rounded-lg transition-all duration-300"
-                               title="Logout from Admin Dashboard">
-                            <span class="material-symbols-rounded text-sm">logout</span>
+                               title="Logout from Admin Dashboard"
+                               aria-label="Sign out of admin dashboard"
+                               role="button">
+                            <span class="material-symbols-rounded text-sm" aria-hidden="true">logout</span>
                             <span class="hidden sm:inline">Logout</span>
                         </button>
                     </div>
@@ -125,23 +127,127 @@ class HeaderComponent {
         // Logout Button
         const logoutBtn = document.getElementById('header-logout-btn');
         if (logoutBtn) {
-            logoutBtn.addEventListener('click', async () => {
+            logoutBtn.addEventListener('click', async (e) => {
+                e.preventDefault();
                 console.log('🚪 Logout requested');
-                
+
+                // Show confirmation dialog
+                const confirmed = await this.showLogoutConfirmation();
+                if (!confirmed) {
+                    return;
+                }
+
+                // Show loading state
+                const originalContent = logoutBtn.innerHTML;
+                logoutBtn.innerHTML = '<span class="material-symbols-rounded text-sm animate-spin">refresh</span><span class="hidden sm:inline">Signing Out...</span>';
+                logoutBtn.disabled = true;
+
                 try {
-                    // Call logout API
-                    await fetch('/api/auth/logout', { method: 'POST' });
+                    // Call logout API with timeout
+                    const controller = new AbortController();
+                    const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+
+                    await fetch('/api/auth/logout', {
+                        method: 'POST',
+                        signal: controller.signal,
+                        headers: {
+                            'Authorization': `Bearer ${localStorage.getItem('lanstreamer_token')}`,
+                            'Content-Type': 'application/json'
+                        }
+                    });
+
+                    clearTimeout(timeoutId);
                 } catch (error) {
                     console.log('Logout request failed:', error);
+                    // Continue with logout even if API fails
                 } finally {
-                    // Clear token and redirect regardless of API response
-                    localStorage.removeItem('lanstreamer_token');
+                    // Comprehensive token and session clearance
+                    this.clearAllAuthData();
+
+                    // Redirect to login page
                     window.location.href = '/login.html';
                 }
             });
         }
 
         console.log('🎯 Header event listeners setup complete');
+    }
+
+    /**
+     * Show logout confirmation dialog
+     */
+    async showLogoutConfirmation() {
+        return new Promise((resolve) => {
+            // Create modal
+            const modal = document.createElement('div');
+            modal.className = 'fixed inset-0 bg-black/50 flex items-center justify-center z-50';
+            modal.innerHTML = `
+                <div class="bg-[var(--card-bg)] border border-[var(--border-color)] rounded-2xl p-6 max-w-md mx-4 shadow-2xl">
+                    <div class="flex items-center gap-3 mb-4">
+                        <span class="material-symbols-rounded text-yellow-500">logout</span>
+                        <h3 class="text-lg font-semibold text-white">Confirm Logout</h3>
+                    </div>
+                    <p class="text-gray-300 mb-6">Are you sure you want to sign out of the admin dashboard?</p>
+                    <div class="flex justify-end gap-3">
+                        <button id="cancel-logout" class="px-4 py-2 bg-gray-600 hover:bg-gray-500 text-white rounded-lg transition-colors">
+                            Cancel
+                        </button>
+                        <button id="confirm-logout" class="px-4 py-2 bg-red-600 hover:bg-red-500 text-white rounded-lg transition-colors">
+                            Sign Out
+                        </button>
+                    </div>
+                </div>
+            `;
+
+            document.body.appendChild(modal);
+
+            // Add event listeners
+            document.getElementById('cancel-logout').addEventListener('click', () => {
+                document.body.removeChild(modal);
+                resolve(false);
+            });
+
+            document.getElementById('confirm-logout').addEventListener('click', () => {
+                document.body.removeChild(modal);
+                resolve(true);
+            });
+
+            // Close on backdrop click
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    document.body.removeChild(modal);
+                    resolve(false);
+                }
+            });
+        });
+    }
+
+    /**
+     * Clear all authentication data comprehensively
+     */
+    clearAllAuthData() {
+        // Clear localStorage
+        localStorage.removeItem('lanstreamer_token');
+        localStorage.removeItem('lanstreamer_user');
+        localStorage.removeItem('lanstreamer_session');
+
+        // Clear sessionStorage
+        sessionStorage.removeItem('lanstreamer_token');
+        sessionStorage.removeItem('lanstreamer_user');
+        sessionStorage.removeItem('lanstreamer_session');
+
+        // Clear any auth-related cookies
+        document.cookie.split(";").forEach((c) => {
+            const eqPos = c.indexOf("=");
+            const name = eqPos > -1 ? c.substr(0, eqPos) : c;
+            if (name.trim().toLowerCase().includes('lanstreamer') ||
+                name.trim().toLowerCase().includes('auth') ||
+                name.trim().toLowerCase().includes('token')) {
+                document.cookie = name + "=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/";
+            }
+        });
+
+        console.log('🧹 All authentication data cleared');
     }
 
     showNotification(message, type = 'info') {

@@ -91,6 +91,25 @@ router.get('/status', (req, res) => {
 });
 
 /**
+ * @route POST /api/streams/cleanup
+ * @description Clean up old stopped/error streams from persistent storage.
+ * @access Public
+ */
+router.post('/cleanup', (req, res) => {
+  try {
+    const maxAge = req.body.maxAge || 24 * 60 * 60 * 1000; // Default 24 hours
+    const cleanedCount = streamingService.cleanupOldStreams(maxAge);
+    res.status(200).json({
+      message: 'Stream cleanup completed',
+      cleanedCount: cleanedCount
+    });
+  } catch (error) {
+    logger.error('Error cleaning up streams:', error);
+    res.status(500).json({ message: 'Error cleaning up streams', error: error.message });
+  }
+});
+
+/**
  * @route POST /api/streams/update
  * @description Update a stream's configuration.
  * @access Public

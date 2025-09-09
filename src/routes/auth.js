@@ -1,5 +1,5 @@
 import express from 'express';
-import { generateToken, verifyCredentials, authenticateToken } from '../middleware/auth.js';
+import { generateToken, verifyCredentials, authenticateToken, generateCSRFToken } from '../middleware/auth.js';
 
 const router = express.Router();
 
@@ -45,6 +45,16 @@ router.get('/verify', authenticateToken, (req, res) => {
     res.json({
         message: 'Token is valid',
         user: req.user
+    });
+});
+
+/**
+ * Get CSRF token endpoint
+ */
+router.get('/csrf-token', (req, res) => {
+    const csrfToken = generateCSRFToken();
+    res.json({
+        csrfToken
     });
 });
 

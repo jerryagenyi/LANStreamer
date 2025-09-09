@@ -7,17 +7,70 @@ class UpdateNotification {
         this.updateInfo = null;
         this.checkInterval = 6 * 60 * 60 * 1000; // 6 hours
         this.lastCheck = null;
+
+        // Trusted domains for release URLs
+        this.trustedDomains = [
+            'github.com',
+            'api.github.com',
+            'releases.github.com'
+        ];
+
         this.init();
     }
 
     async init() {
         // Check for updates on startup
         await this.checkForUpdates();
-        
+
         // Set up periodic checks
         setInterval(() => {
             this.checkForUpdates();
         }, this.checkInterval);
+    }
+
+    /**
+     * Validate URL to ensure it's from a trusted domain
+     */
+    validateReleaseUrl(url) {
+        if (!url || typeof url !== 'string') {
+            console.warn('Invalid URL provided:', url);
+            return false;
+        }
+
+        try {
+            const urlObj = new URL(url);
+
+            // Check if domain is in trusted list
+            const isTrusted = this.trustedDomains.some(domain =>
+                urlObj.hostname === domain || urlObj.hostname.endsWith('.' + domain)
+            );
+
+            if (!isTrusted) {
+                console.warn('Untrusted domain for release URL:', urlObj.hostname);
+                return false;
+            }
+
+            // Additional security checks
+            if (urlObj.protocol !== 'https:') {
+                console.warn('Release URL must use HTTPS:', url);
+                return false;
+            }
+
+            return true;
+        } catch (error) {
+            console.warn('Invalid URL format:', url, error);
+            return false;
+        }
+    }
+
+    /**
+     * Sanitize URL for safe usage
+     */
+    sanitizeUrl(url) {
+        if (!this.validateReleaseUrl(url)) {
+            return '#'; // Return safe fallback
+        }
+        return url;
     }
 
     async checkForUpdates() {
@@ -275,7 +328,7 @@ class UpdateNotification {
                             </h4>
                             <ol class="text-sm text-gray-300 space-y-1 mb-3">
                                 <li>1. Backup your <code class="bg-gray-700 px-1 rounded">.env</code>, <code class="bg-gray-700 px-1 rounded">icecast.xml</code>, and <code class="bg-gray-700 px-1 rounded">data/</code> folders</li>
-                                <li>2. <a href="${this.updateInfo.releaseUrl}" target="_blank" class="text-blue-400 hover:text-blue-300 underline">Download the latest release</a></li>
+                                <li>2. <a href="${this.sanitizeUrl(this.updateInfo.releaseUrl)}" target="_blank" rel="noopener noreferrer" class="text-blue-400 hover:text-blue-300 underline">Download the latest release</a></li>
                                 <li>3. Extract the new files over your installation</li>
                                 <li>4. Restore your backed up files</li>
                             </ol>
@@ -288,7 +341,7 @@ class UpdateNotification {
                     <button id="modal-later" class="px-4 py-2 bg-gray-600 hover:bg-gray-500 text-white rounded-lg transition-colors">
                         Update Later
                     </button>
-                    <a href="${this.updateInfo.releaseUrl}" target="_blank" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg transition-colors">
+                    <a href="${this.sanitizeUrl(this.updateInfo.releaseUrl)}" target="_blank" rel="noopener noreferrer" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg transition-colors">
                         View Release Notes
                     </a>
                 </div>

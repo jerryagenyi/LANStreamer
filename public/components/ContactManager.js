@@ -10,6 +10,13 @@ class ContactManager {
         };
         this.isLoading = false;
         this.isCollapsed = true; // Collapsed by default
+
+        // Rate limiting for saves
+        this.saveTimeout = null;
+        this.saveDebounceMs = 500;
+        this.lastSaveTime = 0;
+        this.minSaveInterval = 1000; // Minimum 1 second between saves
+
         this.init();
     }
 
@@ -18,6 +25,61 @@ class ContactManager {
         await this.loadContactDetails();
         this.render();
         this.setupEventListeners();
+    }
+
+    /**
+     * Sanitize input to prevent XSS and injection attacks
+     */
+    sanitizeInput(input) {
+        if (typeof input !== 'string') {
+            return '';
+        }
+
+        // Remove HTML tags and dangerous characters
+        return input
+            .replace(/<[^>]*>/g, '') // Remove HTML tags
+            .replace(/[<>'"&]/g, (match) => { // Escape dangerous characters
+                const escapeMap = {
+                    '<': '&lt;',
+                    '>': '&gt;',
+                    '"': '&quot;',
+                    "'": '&#x27;',
+                    '&': '&amp;'
+                };
+                return escapeMap[match];
+            })
+            .trim()
+            .substring(0, 500); // Limit length
+    }
+
+    /**
+     * Sanitize and validate email
+     */
+    sanitizeEmail(email) {
+        const sanitized = this.sanitizeInput(email);
+        // Additional email-specific sanitization
+        return sanitized.toLowerCase().replace(/[^a-z0-9@._-]/g, '');
+    }
+
+    /**
+     * Sanitize and validate phone number
+     */
+    sanitizePhone(phone) {
+        const sanitized = this.sanitizeInput(phone);
+        // Keep only digits, plus, spaces, hyphens, parentheses
+        return sanitized.replace(/[^0-9+\s\-()]/g, '');
+    }
+
+    /**
+     * Sanitize URL
+     */
+    sanitizeUrl(url) {
+        const sanitized = this.sanitizeInput(url);
+        // Basic URL validation - must start with http:// or https://
+        if (sanitized && !sanitized.match(/^https?:\/\//)) {
+            return 'https://' + sanitized;
+        }
+        return sanitized;
     }
 
     async loadContactDetails() {
@@ -89,12 +151,41 @@ class ContactManager {
 
 
 
-    async saveContactDetails() {
-        console.log('📞 saveContactDetails called');
+    /**
+     * Debounced save to prevent API spam
+     */
+    saveContactDetails() {
+        // Clear existing timeout
+        if (this.saveTimeout) {
+            clearTimeout(this.saveTimeout);
+        }
+
+        // Set new timeout for debounced save
+        this.saveTimeout = setTimeout(() => {
+            this.performSave();
+        }, this.saveDebounceMs);
+    }
+
+    /**
+     * Perform the actual save with rate limiting
+     */
+    async performSave() {
+        console.log('📞 performSave called');
+
+        // Rate limiting check
+        const now = Date.now();
+        if (now - this.lastSaveTime < this.minSaveInterval) {
+            console.log('📞 Rate limited, scheduling retry');
+            setTimeout(() => this.performSave(), this.minSaveInterval - (now - this.lastSaveTime));
+            return;
+        }
+
         if (this.isLoading) {
             console.log('📞 Already loading, returning');
             return;
         }
+
+        this.lastSaveTime = now;
         
         // Basic form validation for contact fields only
         const validationErrors = this.validateForm();
@@ -110,14 +201,18 @@ class ContactManager {
 
         try {
             console.log('📞 Saving contact details...');
+
+            // Sanitize all inputs before sending to API
             const contactData = {
-                email: this.contactDetails.email,
-                phone: this.contactDetails.phone,
-                whatsapp: this.contactDetails.whatsapp,
-                showEmail: this.contactDetails.showEmail,
-                showPhone: this.contactDetails.showPhone,
-                showWhatsapp: this.contactDetails.showWhatsapp
+                email: this.sanitizeEmail(this.contactDetails.email),
+                phone: this.sanitizePhone(this.contactDetails.phone),
+                whatsapp: this.sanitizePhone(this.contactDetails.whatsapp),
+                showEmail: Boolean(this.contactDetails.showEmail),
+                showPhone: Boolean(this.contactDetails.showPhone),
+                showWhatsapp: Boolean(this.contactDetails.showWhatsapp)
             };
+
+            console.log('📞 Sanitized contact data:', contactData);
 
             const response = await fetch('/api/contact-details', {
                 method: 'POST',
