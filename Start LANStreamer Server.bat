@@ -38,16 +38,24 @@ if not exist "package.json" (
 :: Check if node_modules exists
 if not exist "node_modules" (
     echo  📦 Installing dependencies...
+    echo  This may take a few minutes...
     echo.
     npm install
     if errorlevel 1 (
         echo.
         echo  ❌ ERROR: Failed to install dependencies
         echo.
+        echo  Please run INSTALL LANStreamer.bat first for proper setup.
+        echo.
         pause
         exit /b 1
     )
     echo.
+    echo  ✅ Dependencies installed successfully
+    echo  Please run this script again to start the server.
+    echo.
+    pause
+    exit /b 0
 )
 
 :: Get local IPv4 address (prefer 192.168.x.x range for main network)
