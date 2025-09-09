@@ -138,29 +138,36 @@ class FFmpegStreamsManager {
             const data = await response.json();
             console.log('Refresh devices response data:', data);
 
-            if (data.success) {
-                // Handle both old format (array) and new format (object with devices array)
-                const devices = data.devices || data || [];
-                
-                // Ensure devices is an array
-                if (!Array.isArray(devices)) {
-                    throw new Error('Invalid response format: devices is not an array');
-                }
-
-                // Filter out duplicate devices by name and type
-                const uniqueDevices = devices.filter((device, index, self) => {
-                    return index === self.findIndex(d =>
-                        d.name === device.name &&
-                        d.deviceType === device.deviceType
-                    );
-                });
-
-                this.audioDevices = uniqueDevices;
-                this.render(); // Re-render to update device lists
-                this.showNotification(`Audio devices refreshed - ${this.audioDevices.length} devices found`, 'success');
+            // Handle both old format (array) and new format (object with devices array)
+            let devices;
+            if (Array.isArray(data)) {
+                // Old format: direct array
+                devices = data;
+                console.log('Using old API format (direct array)');
+            } else if (data.success && Array.isArray(data.devices)) {
+                // New format: object with success flag
+                devices = data.devices;
+                console.log('Using new API format (object with success flag)');
             } else {
-                throw new Error(data.message || 'Failed to refresh devices');
+                throw new Error('Invalid response format: expected array or object with devices array');
             }
+            
+            // Ensure devices is an array
+            if (!Array.isArray(devices)) {
+                throw new Error('Invalid response format: devices is not an array');
+            }
+
+            // Filter out duplicate devices by name and type
+            const uniqueDevices = devices.filter((device, index, self) => {
+                return index === self.findIndex(d =>
+                    d.name === device.name &&
+                    d.deviceType === device.deviceType
+                );
+            });
+
+            this.audioDevices = uniqueDevices;
+            this.render(); // Re-render to update device lists
+            this.showNotification(`Audio devices refreshed - ${this.audioDevices.length} devices found`, 'success');
         } catch (error) {
             console.error('Failed to refresh audio devices:', error);
             console.error('Error details:', {
