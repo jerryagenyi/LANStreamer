@@ -77,6 +77,8 @@ LANStreamer comes with **default admin credentials** for easy setup, but you **M
 - Admin: `http://192.168.1.100:3001`
 - Listeners: `http://192.168.1.100:3001/streams`
 
+**⚠️ For Live Events**: Set up a static IP address to prevent connection drops. See [Network Setup Guide](docs/NETWORK-SETUP.md) for instructions.
+
 **Default Admin Credentials:**
 - **Username**: `admin`
 - **Password**: `lanstreamer123`
@@ -120,9 +122,10 @@ LANStreamer includes automatic update scripts that preserve your settings:
    - ✅ Install updates while preserving your settings
    - ✅ Show detailed progress
 
-### **Option 2: Quick Update**
-1. **Double-click** `Quick Update LANStreamer.bat` for a faster update
-2. **Less verbose** but preserves your critical settings
+### **Option 2: Restore from Backup**
+1. **Double-click** `RESTORE LANStreamer.bat` to restore from a previous backup
+2. **Select backup** from available restore points with timestamps
+3. **Confirm restoration** to recover your previous configuration
 
 ### **Option 3: Manual Update**
 1. **Backup** your `.env`, `icecast.xml`, `data/`, and `logs/` folders
@@ -481,6 +484,8 @@ icecast -c /usr/local/etc/icecast.xml
 **For Network Access:**
 - Find your computer's IP address (e.g., `192.168.1.100`)
 - Others can access: `http://192.168.1.100:3001/streams`
+- **⚠️ Important**: For live events, set up a static IP to prevent connection drops
+- **📖 See**: [Network Setup Guide](docs/NETWORK-SETUP.md) for detailed instructions
 
 
 
@@ -497,6 +502,7 @@ If you wish to understand the core components or run the system without the web 
 ## Documentation
 
 - **[Installation Guides](docs/guides/README.md)** - Detailed setup and troubleshooting
+- **[Network Setup Guide](docs/NETWORK-SETUP.md)** - Static IP configuration for live events
 - **[Manual Setup](manual-setup/README.md)** - Hardware-specific configuration guides
 
 ## Configuration

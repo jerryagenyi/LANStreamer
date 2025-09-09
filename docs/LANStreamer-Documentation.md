@@ -472,6 +472,9 @@ When LANStreamer starts (`npm start`) and the web application loads:
 - **"Audio device not found"**: Refresh devices, check Windows audio settings
 - **"Port already in use"**: Check for other Icecast instances, change port in config
 - **"Log directory access errors"**: Use full paths in icecast.xml instead of relative paths
+- **"Failed to refresh devices"**: Fixed in v1.0.0-beta - API now handles both old and new response formats
+- **"Buttons not responding"**: Fixed in v1.0.0-beta - Global component references now properly set
+- **"Update script fails silently"**: Fixed in v1.0.0-beta - Enhanced error reporting and logging
 
 ### Icecast Log Path Configuration Fix
 

@@ -8,13 +8,64 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Planned
-- Audio device detection and selection interface
 - Stream configuration and mount point management
 - FFmpeg integration for audio streaming
 - Listener web player interface
 - QR code generation for listener access
 - Real-time stream monitoring and statistics
 - Final packaging as standalone `.exe`
+
+---
+
+## [1.0.0-beta] - 2025-01-09
+
+### Added
+- **Component Button Functionality**
+  - Fixed edit, delete, start, stop, and copy URL buttons in FFmpegStreamsManager
+  - Added global component instance references for proper onclick handler access
+  - Enhanced button state management and user feedback
+
+- **API Compatibility Improvements**
+  - Updated audio devices endpoint to handle both old and new response formats
+  - Added refresh parameter support for clearing device cache
+  - Improved error handling and response consistency
+
+- **User Experience Enhancements**
+  - Removed annoying device refresh warning dialog
+  - Added comprehensive error logging and debugging information
+  - Improved component loading reliability and error recovery
+
+- **Update and Restore Tools**
+  - Enhanced Update LANStreamer.bat with better error reporting
+  - Added RESTORE LANStreamer.bat for easy backup restoration
+  - Improved error visibility and prevented silent failures
+
+### Fixed
+- **Critical Button Issues**
+  - Fixed non-responsive edit, delete, start, stop, and copy URL buttons
+  - Resolved global variable reference issues in onclick handlers
+  - Improved component instance management and accessibility
+
+- **Audio Device Management**
+  - Fixed "Failed to refresh devices" error with improved API handling
+  - Enhanced device detection and caching mechanisms
+  - Improved error messages and user feedback
+
+- **Update Script Reliability**
+  - Fixed silent failures in Update LANStreamer.bat
+  - Added detailed error logging and user-friendly error messages
+  - Prevented premature window closure on errors
+
+### Changed
+- **Component Architecture**
+  - Enhanced ComponentManager with better global reference management
+  - Improved component initialization and error handling
+  - Streamlined component loading process
+
+- **API Response Format**
+  - Standardized audio devices API to return consistent object format
+  - Added backward compatibility for existing implementations
+  - Improved error response structure and messaging
 
 ---
 

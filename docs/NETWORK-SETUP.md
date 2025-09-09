@@ -114,6 +114,14 @@ Use any QR code generator with your LANStreamer URL for easy mobile access.
 - **Monitor network stability** during events
 - **Consider a dedicated streaming computer** for important events
 
+## 🔮 **Future Features**
+
+### **mDNS Support (Planned)**
+- **Stable hostnames**: Future versions will support `http://lanstreamer.local:3001/streams`
+- **Automatic discovery**: Listeners will be able to find LANStreamer without knowing IP addresses
+- **No configuration needed**: Works automatically on supported networks
+- **Status**: Currently in development for future releases
+
 ---
 
 *For technical support, check the main README.md or create an issue on GitHub.*
