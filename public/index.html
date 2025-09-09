@@ -47,6 +47,16 @@
                 box-shadow: 0 0 0 10px rgba(76, 175, 80, 0);
             }
         }
+        
+        /* Loading animations */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .animate-fade-in {
+            animation: fadeIn 0.3s ease-out;
+        }
         input[type=range] {
             -webkit-appearance: none;
             appearance: none;
@@ -383,15 +393,7 @@
             console.log('🔍 Post-load check:');
             console.log('- FFmpeg container exists:', !!document.getElementById('ffmpeg-streams'));
             console.log('- FFmpeg container content:', document.getElementById('ffmpeg-streams')?.innerHTML?.length || 0, 'chars');
-            console.log('- Global ffmpegStreamsManager:', typeof window.ffmpegStreamsManager);
-            console.log('- FFmpeg manager initialized:', window.ffmpegStreamsManager?.isInitialized);
-
-            // Force render if component exists but container is empty
-            const container = document.getElementById('ffmpeg-streams');
-            if (container && container.innerHTML.trim().length === 0 && window.ffmpegStreamsManager) {
-                console.log('🔧 Container empty, forcing FFmpeg component initialization...');
-                window.ffmpegStreamsManager.init().catch(console.error);
-            }
+            console.log('- ComponentManager will handle FFmpeg initialization');
         }, 2000);
     </script>
     
@@ -488,6 +490,7 @@
                 
                 // FFmpeg Streams Manager will be initialized by ComponentManager
             }
+
 
             async initializeContactManager() {
                 try {
@@ -1215,13 +1218,28 @@
         // Initialize dashboard when page loads
         let dashboard;
         document.addEventListener('DOMContentLoaded', () => {
-            // Logout functionality is now handled by HeaderComponent
+            console.log('🚀 Initializing LANStreamer Dashboard...');
 
             // Add a small delay to ensure all scripts are loaded
             setTimeout(() => {
-                console.log('Initializing LANStreamer Dashboard...');
-            dashboard = new LANStreamerDashboard();
-            }, 100);
+                try {
+                    dashboard = new LANStreamerDashboard();
+                    console.log('✅ Dashboard initialized successfully');
+                } catch (error) {
+                    console.error('❌ Failed to initialize dashboard:', error);
+                    // Show error message to user
+                    document.body.innerHTML = `
+                        <div style="padding: 20px; color: #ff6b6b; background: #1a1a1a; font-family: Arial;">
+                            <h2>⚠️ LANStreamer Loading Error</h2>
+                            <p>Failed to initialize dashboard. Please refresh the page.</p>
+                            <p>Error: ${error.message}</p>
+                            <button onclick="location.reload()" style="padding: 10px 20px; background: #4CAF50; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                                🔄 Refresh Page
+                            </button>
+                        </div>
+                    `;
+                }
+            }, 500);
         });
 
 

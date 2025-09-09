@@ -933,28 +933,28 @@ class IcecastService {
         vulnerabilities.push({
           type: 'default_admin_credentials',
           severity: 'critical',
-          message: 'Default admin credentials (admin/hackme) are in use',
+          message: 'ICECAST: Default admin credentials (admin/hackme) are in use',
           description: 'Anyone can access the Icecast admin panel and control your server',
           fix: 'Change admin-user and admin-password in icecast.xml',
           adminUrl: `http://${config.icecast.host}:${config.icecast.port}/admin/`
         });
       }
-      
+
       if (hasDefaultSourcePassword) {
         vulnerabilities.push({
           type: 'default_source_password',
           severity: 'high',
-          message: 'Default source password (hackme) is in use',
+          message: 'ICECAST: Default source password (hackme) is in use',
           description: 'Anyone can stream to your Icecast server',
           fix: 'Change source-password in icecast.xml'
         });
       }
-      
+
       if (hasDefaultRelayPassword) {
         vulnerabilities.push({
           type: 'default_relay_password',
           severity: 'high',
-          message: 'Default relay password (hackme) is in use',
+          message: 'ICECAST: Default relay password (hackme) is in use',
           description: 'Anyone can relay your streams',
           fix: 'Change relay-password in icecast.xml'
         });

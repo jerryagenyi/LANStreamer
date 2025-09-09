@@ -15,10 +15,8 @@ class FFmpegStreamsManager {
         // Client-side timer tracking
         this.clientTimers = new Map(); // streamId -> { startTime, isRunning }
 
-        // Auto-initialize immediately to ensure component loads
-        this.init().catch(error => {
-            console.error('Failed to auto-initialize FFmpegStreamsManager:', error);
-        });
+        // Don't auto-initialize - let ComponentManager handle it
+        // this.init() will be called by ComponentManager when DOM is ready
     }
 
     /**
@@ -50,6 +48,48 @@ class FFmpegStreamsManager {
         } catch (error) {
             console.error('Failed to initialize FFmpeg Streams Manager:', error);
             this.renderError('Failed to initialize FFmpeg Streams Manager');
+        }
+    }
+
+    /**
+     * Load audio devices from the API
+     */
+    async loadAudioDevices() {
+        try {
+            const response = await fetch('/api/system/audio-devices');
+            const data = await response.json();
+
+            if (data.success) {
+                this.audioDevices = data.devices || [];
+                console.log('🎵 Audio devices loaded:', this.audioDevices.length, 'devices');
+            } else {
+                console.warn('Failed to load audio devices:', data.message);
+                this.audioDevices = [];
+            }
+        } catch (error) {
+            console.error('Failed to load audio devices:', error);
+            this.audioDevices = [];
+        }
+    }
+
+    /**
+     * Refresh audio devices (for button click)
+     */
+    async refreshAudioDevices() {
+        try {
+            const response = await fetch('/api/system/audio-devices?refresh=true');
+            const data = await response.json();
+
+            if (data.success) {
+                this.audioDevices = data.devices || [];
+                this.render(); // Re-render to update device lists
+                this.showNotification(`Audio devices refreshed - ${this.audioDevices.length} devices found`, 'success');
+            } else {
+                throw new Error(data.message || 'Failed to refresh devices');
+            }
+        } catch (error) {
+            console.error('Failed to refresh audio devices:', error);
+            this.showNotification(`Failed to refresh audio devices: ${error.message}`, 'error');
         }
     }
 
@@ -1359,8 +1399,5 @@ class FFmpegStreamsManager {
     }
 }
 
-// Create global instance
-window.ffmpegStreamsManager = new FFmpegStreamsManager();
-
-// Also make the class available globally
+// Make the class available globally for ComponentManager
 window.FFmpegStreamsManager = FFmpegStreamsManager;
