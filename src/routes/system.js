@@ -1,15 +1,31 @@
 import express from 'express';
 import audioDeviceService from '../services/AudioDeviceService.js';
 import IcecastService from '../services/IcecastService.js';
+import SystemService from '../services/SystemService.js';
 // import { updateService } from '../services/UpdateService.js';
 import { ErrorHandler, errorMiddleware } from '../utils/errors.js';
 
 const router = express.Router();
 const icecastService = new IcecastService();
+const systemService = new SystemService();
 
-// Initialize the service
+// Initialize the services
 icecastService.initialize().catch(error => {
   console.error('Failed to initialize Icecast service:', error.message);
+});
+
+/**
+ * @route GET /api/system/info
+ * @description Get system information including network details.
+ * @access Public
+ */
+router.get('/info', async (req, res, next) => {
+  try {
+    const systemInfo = await systemService.getSystemInfo();
+    res.json(systemInfo);
+  } catch (error) {
+    next(error); // Pass to error middleware
+  }
 });
 
 /**

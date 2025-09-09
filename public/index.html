@@ -112,8 +112,8 @@
                 <p class="text-sm text-blue-300/80">
                     Listeners can access streams via <strong>http://lanstreamer.local:3001/streams</strong> for stable local network access (no need to update IP addresses!)
                 </p>
-                <p class="text-xs text-blue-300/60 mt-2">
-                    Current IP: <strong>100.102.126.128</strong> | Use <strong>http://100.102.126.128:3001/streams</strong> if mDNS is not working
+                <p class="text-xs text-blue-300/60 mt-2" id="current-ip-info">
+                    Current IP: <strong id="current-ip">Loading...</strong> | Use <strong>http://<span id="current-ip-link">Loading...</span>:3001/streams</strong> if mDNS is not working
                 </p>
             </div>
         </div>
@@ -1259,6 +1259,39 @@
             }, 500);
         });
 
+        // Update current IP display dynamically
+        async function updateCurrentIP() {
+            try {
+                const response = await fetch('/api/system/info');
+                const data = await response.json();
+
+                // Get the primary network interface IP
+                const currentIP = data.network?.address || window.location.hostname;
+
+                // Update the IP display elements
+                const ipElement = document.getElementById('current-ip');
+                const ipLinkElement = document.getElementById('current-ip-link');
+
+                if (ipElement && ipLinkElement) {
+                    ipElement.textContent = currentIP;
+                    ipLinkElement.textContent = currentIP;
+                }
+            } catch (error) {
+                console.log('Could not fetch current IP:', error);
+                // Fallback to current hostname
+                const currentIP = window.location.hostname;
+                const ipElement = document.getElementById('current-ip');
+                const ipLinkElement = document.getElementById('current-ip-link');
+
+                if (ipElement && ipLinkElement) {
+                    ipElement.textContent = currentIP;
+                    ipLinkElement.textContent = currentIP;
+                }
+            }
+        }
+
+        // Update IP on page load
+        updateCurrentIP();
 
     </script>
     </body>

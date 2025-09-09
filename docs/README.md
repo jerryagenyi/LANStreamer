@@ -19,26 +19,24 @@ For the best development experience, use `npm run dev:live`:
 - **Multi-device testing** support
 - **Network access** for testing on other devices
 
-## Documentation Overview
+## 📚 Documentation Overview
 
-### User Documentation
+### 🚀 Getting Started
+- **[LANStreamer Installation Guide](./LANStreamer-installation-guide.md)** - Step-by-step setup instructions
+- **[Network Setup](./NETWORK-SETUP.md)** - Configure static IPs and network stability
+- **[mDNS Setup](./MDNS-SETUP.md)** - Enable hostname resolution
 
-- **[CHANGELOG.md](./CHANGELOG.md)** - Release History & Updates
-  - Version history with new features and improvements
-  - Bug fixes and known issues
-  - Update instructions and compatibility notes
+### 🔧 Installation Guides
+- **[FFmpeg Installation](./ffmpeg-installation.md)** - Install audio processing toolkit
+- **[Icecast Installation](./icecast-installation.md)** - Set up streaming server
+- **[Audio Pipeline Setup](./audio-pipeline-simple.md)** - Configure audio routing
 
-### 📁 Documentation Structure
+### 📖 Technical Documentation
+- **[Complete Technical Reference](./LANStreamer-Documentation.md)** - Comprehensive technical guide
+- **[Changelog](./CHANGELOG.md)** - Version history and updates
 
-#### 📖 User Guides
-- **[guides/](./guides/)** - Installation and troubleshooting guides for users
-
-
-
-### 🚀 Quick Access Links
-
-- **[Installation Guides](./guides/README.md)** - Get LANStreamer running in minutes
-- **[Technical Documentation](./LANStreamer-Documentation.md)** - Complete technical reference
+### 🗂️ Archive
+- **[Guides Overview](./guides-README.md)** - Former guides directory overview
 
 ## Development Workflow
 

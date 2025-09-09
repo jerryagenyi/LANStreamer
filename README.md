@@ -47,34 +47,52 @@ LANStreamer comes with **default admin credentials** for easy setup, but you **M
 
 > **💡 Pro Tip**: Use a strong password with numbers, symbols, and mixed case letters!
 
-## 🚀 Quick Start (Non-Technical Users)
+## 🚀 Quick Start
 
-**The easiest way to get started - no command line needed!**
+**The easiest way to get started - no technical knowledge required!**
 
-### Step 1: Install Prerequisites (One-time setup)
-**You need these two programs installed first:**
-- **Node.js**: Download from https://nodejs.org/ (choose "LTS" version)
-- **FFmpeg & Icecast**: See our [Installation Guides](docs/guides/README.md) for step-by-step instructions
+> 📖 **Need detailed setup instructions?** See our [Complete Setup Guide](COMPLETE-SETUP-GUIDE.md) for comprehensive installation, troubleshooting, and advanced configuration.
 
-> **💡 Tip**: The installation guides are written for non-technical users with screenshots and simple steps.
+### Step 1: Download LANStreamer
 
-### Step 2: Download & Extract LANStreamer
-1. **Download**: Go to https://github.com/jerryagenyi/LANStreamer
-2. **Get ZIP**: Click the green **"Code"** button → **"Download ZIP"**
-3. **Extract**: Right-click the ZIP file → **"Extract All"** or **"Extract Here"**
-4. **Open Folder**: Navigate to the extracted `LANStreamer` folder
+**Option A: Download ZIP** (Recommended for most users)
+1. **Go to**: https://github.com/jerryagenyi/LANStreamer
+2. **Click**: Green **"Code"** button → **"Download ZIP"**
+3. **Extract**: Right-click ZIP file → **"Extract All"**
+4. **Open**: Navigate to the extracted `LANStreamer` folder
 
-### Step 3: One-Click Start
+**Option B: Git Clone** (For developers)
+```bash
+git clone https://github.com/jerryagenyi/LANStreamer.git
+cd LANStreamer
+```
+
+### Step 2: Install Dependencies
+1. **Double-click**: `INSTALL LANStreamer.bat`
+2. **Wait**: System automatically installs Node.js and all dependencies
+3. **Result**: Desktop shortcut created, ready to use!
+
+### Step 3: Network Setup (Choose One)
+**Option A: Windows Hostname Setup** ⭐ **Recommended**
+- **Right-click**: `SETUP Windows Hostname.bat` → **"Run as administrator"**
+- **Result**: Creates reliable `lanstreamer.local` hostname that works after router reboots
+
+**Option B: mDNS Setup** (Cross-platform, less reliable on Windows)
+- **Right-click**: `SETUP mDNS.bat` → **"Run as administrator"**
+
+> **💡 Network Issues?** See [COMPLETE-SETUP-GUIDE.md](COMPLETE-SETUP-GUIDE.md#network-configuration) for detailed network troubleshooting, static IP setup, and professional event configuration.
+
+### Step 4: Start Streaming
 1. **Double-click**: `Start LANStreamer Server.bat`
-2. **Wait**: The system will automatically install dependencies and start
-3. **Note the URLs**: The terminal will show your network addresses
+2. **Access**: Open `http://lanstreamer.local:3001` in your browser
+3. **Share**: Give listeners the URL to join your stream
 
-### Step 4: Access Your Streaming Server
-- **Admin Dashboard**: Visit `http://YOUR-IP:3001` (login required - see credentials below)
-- **Listener Page**: Visit `http://YOUR-IP:3001/streams` (public access for your audience)
+### Step 5: Access Your Streaming Server
+- **Admin Dashboard**: `http://lanstreamer.local:3001` (login required)
+- **Listener Page**: `http://lanstreamer.local:3001/streams` (share this with your audience)
 
-**Example URLs:**
-- Admin: `http://192.168.1.100:3001`
+**Backup URLs** (if hostname doesn't work):
+- Admin: `http://192.168.1.100:3001` (replace with your actual IP)
 - Listeners: `http://192.168.1.100:3001/streams`
 
 **Default Admin Credentials:**
@@ -250,12 +268,7 @@ The user-friendly page where listeners:
 
 *Integrated feedback and contact system for event support*
 
-## Visual Concept Overview
 
-<div align="center">
-  <img src="images/lanstreamer-local-audio-concept-1.jpg" width="45%" alt="LANStreamer Local Server Setup" style="border: 1px solid #ccc;" />
-  <img src="images/lanstreamer-local-audio-concept-2.jpg" width="45%" alt="LANStreamer Alternative Setup" style="border: 1px solid #ccc;" />
-</div>
 
 **Key Benefits:**
 - **Complete Control:** Your own local streaming server.
@@ -429,7 +442,7 @@ icecast -c /usr/local/etc/icecast.xml
 - Check: Is Node.js installed and in your system PATH?
 - Try: Right-click batch file → "Run as administrator"
 
-**Need more help?** Check the [Installation Guides](docs/guides/README.md) for detailed troubleshooting.
+**Need more help?** Check the [Complete Setup Guide](COMPLETE-SETUP-GUIDE.md) for detailed troubleshooting.
 
 ---
 
@@ -496,7 +509,7 @@ If you wish to understand the core components or run the system without the web 
 
 ## Documentation
 
-- **[Installation Guides](docs/guides/README.md)** - Detailed setup and troubleshooting
+- **[Complete Setup Guide](COMPLETE-SETUP-GUIDE.md)** - Comprehensive installation, troubleshooting, and configuration
 - **[Manual Setup](manual-setup/README.md)** - Hardware-specific configuration guides
 
 ## Configuration

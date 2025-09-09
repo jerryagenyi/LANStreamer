@@ -384,6 +384,17 @@ When LANStreamer starts (`npm start`) and the web application loads:
 
 ## Installation Guides
 
+### Complete Installation Guide
+
+For comprehensive installation instructions with mDNS support, see:
+- **[LANStreamer Installation Guide](./guides/LANStreamer-installation-guide.md)** - Complete setup with automated scripts
+
+### Component-Specific Guides
+
+For detailed component installation:
+- **[FFmpeg Installation Guide](./guides/ffmpeg-installation.md)** - Audio processor setup
+- **[Icecast Installation Guide](./guides/icecast-installation.md)** - Streaming server setup
+
 ### Quick Installation Steps
 
 #### Icecast Installation
