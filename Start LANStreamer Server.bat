@@ -73,8 +73,10 @@ for /f "tokens=2 delims=:" %%a in ('ipconfig ^| findstr /c:"IPv4 Address"') do (
 echo  🚀 Starting LANStreamer Server...
 echo.
 echo  ✅ Admin Dashboard: http://%LOCAL_IP%:3001
-echo  ✅ Streams Page for Listeners: http://%LOCAL_IP%:3001/streams
+echo  ✅ Streams Page for Listeners: http://lanstreamer.local:3001/streams (preferred)
+echo  ✅ Streams Page for Listeners: http://%LOCAL_IP%:3001/streams (fallback)
 echo.
+echo  🌐 mDNS: Server will advertise as 'lanstreamer.local' for stable access
 echo  💡 TIP: Start Icecast server before creating streams!
 echo.
 echo  ⚠️  IMPORTANT: DO NOT CLOSE THIS WINDOW - IT WILL STOP THE SERVER!

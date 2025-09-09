@@ -2,6 +2,7 @@ import express from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import os from 'os';
+import bonjour from 'bonjour';
 import systemRouter from './routes/system.js';
 import streamsRouter from './routes/streams.js';
 import settingsRouter from './routes/settings.js';
@@ -138,6 +139,30 @@ app.listen(PORT, HOST, () => {
   console.log('');
   console.log('⚠️  DO NOT CLOSE THIS TERMINAL TO KEEP LANStreamer SERVER RUNNING!');
   console.log('');
+
+  // Start mDNS advertisement for stable hostname access
+  try {
+    const instance = bonjour();
+    instance.publish({
+      name: 'LANStreamer',
+      type: 'http',
+      port: PORT,
+      txt: {
+        path: '/streams',
+        description: 'LANStreamer Audio Streaming Server'
+      }
+    });
+    console.log('🌐 mDNS: Advertising LANStreamer service on port ' + PORT);
+    console.log('📡 Listeners can access: http://lanstreamer.local:' + PORT + '/streams');
+    console.log('📡 Or browse for "LANStreamer" in network discovery');
+  } catch (error) {
+    console.log('⚠️  mDNS advertisement failed: ' + error.message);
+    if (localIPv4) {
+      console.log('📡 Fallback: Use http://' + localIPv4 + ':' + PORT + '/streams');
+    } else {
+      console.log('📡 Fallback: Use http://localhost:' + PORT + '/streams');
+    }
+  }
 });
 
 // console.log('[SERVER] Script finished. Exporting app.');

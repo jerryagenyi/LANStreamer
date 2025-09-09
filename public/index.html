@@ -102,6 +102,20 @@
     <div class="mx-auto max-w-7xl">
     <!-- Security Warning Banner (will be populated by JavaScript) -->
     <div id="security-warning-banner"></div>
+    
+    <!-- mDNS Information Banner -->
+    <div class="mb-6 p-4 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-300">
+        <div class="flex items-center gap-3">
+            <span class="material-symbols-rounded text-blue-400">wifi</span>
+            <div>
+                <p class="font-medium text-blue-200">🌐 mDNS Enabled</p>
+                <p class="text-sm text-blue-300/80">
+                    Listeners can access streams via <strong>http://lanstreamer.local:3001/streams</strong> for stable local network access (no need to update IP addresses!)
+                </p>
+            </div>
+        </div>
+    </div>
+    
     <div class="grid grid-cols-1 xl:grid-cols-3 gap-8">
         <!-- Left Column (Primary Controls) -->
         <div class="xl:col-span-2 space-y-8">

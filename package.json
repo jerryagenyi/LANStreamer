@@ -24,6 +24,7 @@
     "express": "^4.21.2",
     "fs-extra": "^11.3.1",
     "jsonwebtoken": "^9.0.2",
+    "bonjour": "^3.5.0",
     "multer": "^2.0.2",
     "node-fetch": "^3.3.2",
     "winston": "^3.17.0",
