@@ -19,10 +19,25 @@ icecastService.initialize().catch(error => {
  */
 router.get('/audio-devices', async (req, res) => {
   try {
+    // Check if refresh is requested
+    if (req.query.refresh === 'true') {
+      audioDeviceService.clearCache();
+    }
+    
     const devices = await audioDeviceService.getAudioDevices();
-    res.json(devices);
+    
+    // Return in the format expected by the frontend
+    res.json({
+      success: true,
+      devices: devices,
+      count: devices.length
+    });
   } catch (error) {
-    res.status(500).json({ message: 'Error retrieving audio devices', error: error.message });
+    res.status(500).json({ 
+      success: false,
+      message: 'Error retrieving audio devices', 
+      error: error.message 
+    });
   }
 });
 

@@ -86,10 +86,22 @@ class FFmpegStreamsManager {
     async loadAudioDevices() {
         try {
             const response = await fetch('/api/system/audio-devices');
+            
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+            
             const data = await response.json();
 
             // Handle both old format (array) and new format (object with devices array)
             const devices = data.devices || data || [];
+
+            // Ensure devices is an array
+            if (!Array.isArray(devices)) {
+                console.warn('Invalid response format: devices is not an array', data);
+                this.audioDevices = [];
+                return;
+            }
 
             // Filter out duplicate devices by name and type
             const uniqueDevices = devices.filter((device, index, self) => {
@@ -125,6 +137,11 @@ class FFmpegStreamsManager {
             this.showNotification('Refreshing audio devices...', 'info');
 
             const response = await fetch('/api/system/audio-devices?refresh=true');
+            
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+            
             const data = await response.json();
 
             if (data.success) {
