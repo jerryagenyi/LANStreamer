@@ -66,7 +66,7 @@ LANStreamer comes with **default admin credentials** for easy setup, but you **M
 
 ### Step 3: One-Click Start
 1. **Double-click**: `Start LANStreamer Server.bat`
-2. **Wait**: The system will automatically install dependencies and start
+2. **Wait**: The system will automatically install dependencies and start (if it doesnt' click it again to start)
 3. **Note the URLs**: The terminal will show your network addresses
 
 ### Step 4: Access Your Streaming Server
@@ -122,12 +122,7 @@ LANStreamer includes automatic update scripts that preserve your settings:
    - ✅ Install updates while preserving your settings
    - ✅ Show detailed progress
 
-### **Option 2: Restore from Backup**
-1. **Double-click** `RESTORE LANStreamer.bat` to restore from a previous backup
-2. **Select backup** from available restore points with timestamps
-3. **Confirm restoration** to recover your previous configuration
-
-### **Option 3: Manual Update**
+### **Option 2: Manual Update**
 1. **Backup** your `.env`, `icecast.xml`, `data/`, and `logs/` folders
 2. **Download** the latest release from [GitHub Releases](https://github.com/jerryagenyi/LANStreamer/releases/latest)
 3. **Extract** the new files over your installation
@@ -284,7 +279,7 @@ The user-friendly page where listeners:
 
 > ⚠️ **Important**: You must install FFmpeg and Icecast manually before running LANStreamer. See installation guides below or in the [`manual-setup/`](manual-setup/) directory.
 
-### Quick Installation Guide
+### Detailed Installation Guide
 
 #### Windows (Recommended - Using Winget)
 ```bash
@@ -379,7 +374,7 @@ icecast.exe -c ..\icecast.xml
 
 **Desktop Shortcut Benefits:**
 - ✅ **One-click startup**: Double-click to start LANStreamer
-- ✅ **Dependency check**: Automatically installs npm packages if needed
+- ✅ **Dependency check**: Automatically installs npm packages if needed (might need to click Start LANStreamer again after installation of dependencies run)
 - ✅ **Icecast integration**: Option to start Icecast server automatically
 - ✅ **Error handling**: Clear error messages if something goes wrong
 - ✅ **Professional look**: Custom icon and proper Windows integration
