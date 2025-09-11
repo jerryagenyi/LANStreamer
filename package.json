@@ -1,6 +1,6 @@
 {
   "name": "lanstreamer-server",
-  "version": "1.1.0",
+  "version": "1.2.1-dev",
   "description": "Backend server for the LANStreamer application.",
   "main": "src/server.js",
   "type": "module",
