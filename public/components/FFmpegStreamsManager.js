@@ -1195,11 +1195,14 @@ class FFmpegStreamsManager {
                     .replace(/\s+/g, '_') // Replace spaces with underscores
                     .substring(0, 20); // Limit length
 
+                // Use name-based ID with timestamp for uniqueness
+                const streamId = cleanId ? `${cleanId}_${Date.now()}` : this.generateUniqueStreamId();
+
                 const streamConfig = {
                     name: sanitizedName,
                     deviceId: document.getElementById('stream-device').value,
                     bitrate: parseInt(document.getElementById('stream-bitrate').value),
-                    id: this.generateUniqueStreamId()
+                    id: streamId
                 };
 
                 modal.remove();
