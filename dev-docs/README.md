@@ -1,10 +1,27 @@
-# LANStreamer Development Documentation
+# LANStreamer Development Documentation (Isolated Branch)
 
-> **🔒 This is the development branch containing planning documents, specifications, and development resources.**
+## 🔒 **Branch Purpose: Complete Isolation**
 
-This folder contains all the development and planning documentation that was used to build LANStreamer. These files are preserved for future development reference but are not needed by end users.
+This is the **`dev-docs-isolated`** branch - a true **orphan branch** with **no shared history** with the main codebase. This branch contains **only** internal development documentation, specifications, and resources for LANStreamer.
 
-## 📁 Folder Structure
+### 🛡️ **Why Isolated?**
+
+- **No Accidental Merges**: Git will refuse to merge this branch into main without explicit `--allow-unrelated-histories` flag
+- **Clean Main Branch**: Keeps the main branch free of internal development files for public release
+- **Complete Separation**: Development documentation lives independently from production code
+- **Safe Experimentation**: Can modify, reorganize, or restructure documentation without affecting main codebase
+
+### ⚠️ **Important Notes**
+
+- **This branch has NO shared history with main** - it's completely isolated
+- **Cannot be accidentally merged** into main branch
+- **Only contains development documentation** - no production code
+- **Safe to delete/recreate** without affecting main codebase
+- **Independent versioning** from main branch releases
+
+---
+
+## 📁 Directory Structure
 
 ### 📋 `/specifications/`
 **Product planning and technical specifications used during development:**
@@ -57,43 +74,71 @@ This folder contains all the development and planning documentation that was use
   - Full application workflow testing
   - Integration testing with Playwright
 
-## 🎯 Purpose
-
-These files were essential during LANStreamer's development for:
-- **Planning**: PRD and specifications guided feature development
-- **Architecture**: Technical specs ensured proper system design
-- **Testing**: Comprehensive test suite ensured quality and reliability
-- **Documentation**: Maintained consistency and tracked progress
-
-## 🚀 For Future Development
-
-If you're continuing development on LANStreamer:
-
-1. **Review the PRD** to understand the original vision and requirements
-2. **Check the Technical Specification** for architecture decisions and API design
-3. **Use the TDD guide** to maintain the test-driven development approach
-4. **Run the test suite** to ensure changes don't break existing functionality
-5. **Update documentation** following the File-Relationships-Guide
-
-## 🔄 Accessing These Files
-
-**To switch to this branch:**
-```bash
-git checkout dev-docs
-```
-
-**To return to the main user branch:**
-```bash
-git checkout main
-```
-
-## 📚 User Documentation
-
-For user-facing documentation, see the **main branch**:
-- Installation guides
-- User troubleshooting
-- Technical documentation for administrators
+### **Root Files**
+- **TODO.md** - Development roadmap and task tracking
+- **Adebayo-Ariyo-Profile.pdf** - Inspiration and background context
 
 ---
 
-**Note**: This development documentation is preserved for historical reference and future development. End users should refer to the documentation in the main branch.
+## 🎯 Purpose
+
+This isolated documentation branch serves multiple purposes:
+
+1. **Technical Reference** - Detailed specifications and architectural decisions
+2. **Development Guides** - Step-by-step tutorials for complex implementations
+3. **Testing Framework** - Comprehensive test suites for quality assurance
+4. **Project Planning** - Requirements, roadmaps, and design decisions (TODO.md)
+5. **Knowledge Sharing** - Blog posts and articles about the development process
+6. **Internal Resources** - Development files not suitable for public main branch
+
+## 🚀 Getting Started
+
+For developers working on LANStreamer:
+
+1. **Switch to this branch**: `git checkout dev-docs-isolated`
+2. **Start with the PRD** (`specifications/LANStreamer-PRD.md`) to understand the product vision
+3. **Review the TDD** (`specifications/LANStreamer-TDD.md`) for technical architecture
+4. **Check TODO.md** for current development priorities and roadmap
+5. **Follow the Technical Walkthrough** (`tutorials/LANStreamer-Complete-Technical-Walkthrough.md`) for implementation details
+6. **Run the tests** in `/tests/` to ensure your changes don't break existing functionality
+
+## 📋 Contributing
+
+When adding new documentation:
+
+- **Specifications** go in `/specifications/`
+- **Tests** go in the appropriate `/tests/` subdirectory
+- **Tutorials and guides** go in `/tutorials/`
+- **Planning documents** go in `/planning/`
+- **Blog posts** go in `/blog/`
+- **Development tasks** go in `TODO.md`
+
+Keep documentation up-to-date with code changes and follow the established naming conventions.
+
+## 🔄 Branch Management
+
+### **Working with the Isolated Branch**
+
+```bash
+# Switch to isolated documentation branch
+git checkout dev-docs-isolated
+
+# Make documentation changes
+git add .
+git commit -m "Update development documentation"
+git push
+
+# Switch back to main for code work
+git checkout main
+```
+
+### **Safety Features**
+
+- **Merge Protection**: Git will show error if you try to merge into main
+- **No Contamination**: Changes here cannot accidentally affect production code
+- **Independent History**: This branch has its own commit history separate from main
+- **Safe Deletion**: Can be deleted and recreated without affecting main branch
+
+---
+
+**This branch represents the complete internal development knowledge base for LANStreamer, safely isolated from the production codebase.**
