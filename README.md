@@ -248,19 +248,6 @@ The user-friendly page where listeners:
 
 *Integrated feedback and contact system for event support*
 
-## Visual Concept Overview
-
-<div align="center">
-  <img src="images/lanstreamer-local-audio-concept-1.jpg" width="45%" alt="LANStreamer Local Server Setup" style="border: 1px solid #ccc;" />
-  <img src="images/lanstreamer-local-audio-concept-2.jpg" width="45%" alt="LANStreamer Alternative Setup" style="border: 1px solid #ccc;" />
-</div>
-
-**Key Benefits:**
-- **Complete Control:** Your own local streaming server.
-- **No Internet Required:** Works entirely on your local network.
-- **Cost-Effective:** Uses free, open-source software.
-- **Privacy:** Audio never leaves your network.
-
 > 💡 **Perfect for:** Conferences, meetings, language interpretation events, and any situation where you need reliable, low-latency audio distribution to multiple listeners on a local network.
 
 ## Getting Started
