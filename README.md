@@ -54,9 +54,24 @@ LANStreamer comes with **default admin credentials** for easy setup, but you **M
 ### Step 1: Install Prerequisites (One-time setup)
 **You need these two programs installed first:**
 - **Node.js**: Download from https://nodejs.org/ (choose "LTS" version)
-- **FFmpeg & Icecast**: See our [Installation Guides](docs/guides/README.md) for step-by-step instructions. (LANStreamer expects icecast to be in this folder "C:\Program Files (x86)\Icecast").
+- **FFmpeg & Icecast**: See our [Installation Guides](docs/guides/README.md) for step-by-step instructions.
 
 > **💡 Tip**: The installation guides are written for non-technical users with screenshots and simple steps.
+
+#### 🔍 If Icecast Can't Be Found
+LANStreamer expects to find Icecast installed at `C:\Program Files (x86)\Icecast`. If LANStreamer cannot find Icecast, it searches for it in the following priority order:
+1. **Environment variables** (`.env` file settings) - *highest priority*
+2. **Saved device config** (from previous manual selection)
+3. **Other possible installation paths**:
+   - `C:\Program Files\Icecast`
+   - `C:\Icecast`
+4. **System PATH** - *lowest priority*
+
+**If you see "Icecast installation not found", you have these options:**
+- **Option 1 (Easiest)**: Move your Icecast to `C:\Program Files (x86)\Icecast`
+- **Option 2**: Click **"Browse for Icecast"** in the dashboard to select your installation
+- **Option 3**: Add your custom path to the `.env` file (see `env.example` for variables)
+- **Option 4**: Reinstall Icecast to the default location using our [Installation Guide](docs/guides/README.md)
 
 ### Step 2: Download & Extract LANStreamer
 1. **Download**: Go to https://github.com/jerryagenyi/LANStreamer
