@@ -54,7 +54,7 @@ LANStreamer comes with **default admin credentials** for easy setup, but you **M
 ### Step 1: Install Prerequisites (One-time setup)
 **You need these two programs installed first:**
 - **Node.js**: Download from https://nodejs.org/ (choose "LTS" version)
-- **FFmpeg & Icecast**: See our [Installation Guides](docs/guides/README.md) for step-by-step instructions
+- **FFmpeg & Icecast**: See our [Installation Guides](docs/guides/README.md) for step-by-step instructions. (LANStreamer expects icecast to be in this folder "C:\Program Files (x86)\Icecast").
 
 > **💡 Tip**: The installation guides are written for non-technical users with screenshots and simple steps.
 
