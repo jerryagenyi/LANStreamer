@@ -215,6 +215,7 @@ LANStreamer/
 - **[Installation Guides](docs/guides/README.md)** - Detailed setup and troubleshooting
 - **[Network Setup Guide](docs/NETWORK-SETUP.md)** - Static IP configuration for live events
 - **[Manual Setup](manual-setup/README.md)** - Hardware-specific configuration guides
+- **[Comprehensive Developer Documentation](README-LDR.md)** - Detailed technical information for developers and researchers
 
 ## 🤝 Contributing
 
