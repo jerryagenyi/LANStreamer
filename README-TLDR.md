@@ -1,6 +1,6 @@
-# LANStreamer - Comprehensive Developer & Lead Researcher Documentation
+# LANStreamer - Comprehensive Documentation (TLDR)
 
-> **📋 For Lead Developers & Researchers**: This comprehensive documentation contains detailed technical information, advanced configuration options, and in-depth troubleshooting guides for LANStreamer.
+> **📋 TLDR (Too Long, Don't Read)**: This comprehensive documentation contains detailed technical information, advanced configuration options, and in-depth troubleshooting guides for LANStreamer. Perfect for those who want the complete picture.
 
 A comprehensive solution that turns a standard PC into a multi-channel audio streaming server for local area networks (LAN). This project provides a **web-based application** that orchestrates **FFmpeg** and **Icecast** to deliver local, live, low-latency audio broadcasts for events like language interpretation, meetings, or conferences.
 
