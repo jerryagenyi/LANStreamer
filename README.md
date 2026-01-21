@@ -4,14 +4,14 @@ A comprehensive solution that turns a standard PC into a multi-channel audio str
 
 ## 📋 Documentation
 
-Choose the documentation that best fits your needs:
-
-| Documentation | Description | Link |
-|--------------|-------------|------|
-| **Quick Start** | This README - get up and running quickly | You're here! |
-| **Comprehensive Docs** | Complete technical documentation with troubleshooting | [docs/LANStreamer-Documentation.md](docs/LANStreamer-Documentation.md) |
-| **Installation Guides** | FFmpeg, Icecast setup guides | [docs/guides/](docs/guides/README.md) |
-| **Developer Guide** | Architecture, code structure, and contribution guide | [CLAUDE.md](CLAUDE.md) |
+| Documentation | Description |
+|--------------|-------------|
+| **Quick Start** | This README - get up and running quickly |
+| **[Troubleshooting](docs/TROUBLESHOOTING.md)** | Common issues: network, firewall, playback problems |
+| [Installation Guides](docs/guides/README.md) | FFmpeg, Icecast setup guides |
+| [Network Setup](docs/NETWORK-SETUP.md) | Static IP configuration for events |
+| [Comprehensive Docs](docs/LANStreamer-Documentation.md) | Complete technical documentation |
+| [Developer Guide](CLAUDE.md) | Architecture and contribution guide |
 
 ---
 
@@ -89,31 +89,16 @@ LANStreamer creates a complete audio streaming ecosystem with two main interface
 
 ```
 LANStreamer/
-├── Start LANStreamer Server.bat            # Windows startup batch file
-├── Update LANStreamer.bat                  # Update script
-├── README.md                               # This file - main entry point
-├── README-backup.md                        # Quick start guide
-├── README-TLDR.md                          # Comprehensive documentation
-├── CLAUDE.md                               # Developer/architecture guide
-├── package.json                            # Node.js dependencies
-├── src/                                    # Backend Node.js application
-│   ├── server.js                           # Main server entry point
-│   ├── config/                             # Configuration modules
-│   ├── middleware/                         # Express middleware
-│   ├── routes/                             # API route handlers
-│   ├── services/                           # Core business logic
-│   └── utils/                              # Utility functions
-├── public/                                 # Frontend web interface
-│   ├── index.html                          # Admin dashboard
-│   ├── login.html                          # Login page
-│   ├── streams.html                        # User streams page
-│   └── components/                         # Modular UI components
-├── config/                                 # Runtime configuration files
-├── logs/                                   # Application logs
-├── docs/                                   # Documentation and guides
-├── scripts/                                # Setup and utility scripts
-└── manual-setup/                           # Hardware-specific guides
+├── Start LANStreamer Server.bat    # Windows startup (double-click to start)
+├── Update LANStreamer.bat          # Update script
+├── src/                            # Backend (Node.js/Express)
+├── public/                         # Frontend (web interface)
+├── config/                         # Runtime config (auto-generated)
+├── docs/                           # Documentation
+└── manual-setup/                   # Hardware-specific guides
 ```
+
+> **For developers:** See [CLAUDE.md](CLAUDE.md) for detailed architecture and code structure.
 
 ---
 
@@ -159,25 +144,30 @@ npm install  # If dependencies changed
 
 ## 🛠️ Troubleshooting
 
-| Problem | Solution |
-|---------|----------|
+**Common Issues:**
+
+| Problem | Quick Fix |
+|---------|-----------|
 | "npm not found" | Install Node.js from [nodejs.org](https://nodejs.org/) |
 | "Port 3001 already in use" | Close other apps using port 3001, or change `PORT` in `.env` |
-| "No audio devices detected" | Ensure your audio device is connected and working |
-| "Icecast installation not found" | See [Icecast installation guide](docs/guides/icecast-installation.md) |
+| "This site can't be reached" | Check [Network Troubleshooting](docs/TROUBLESHOOTING.md#network-connectivity-issues) - likely subnet mismatch |
+| "Connection refused" | Check [Firewall Setup](docs/TROUBLESHOOTING.md#firewall-issues) |
+| "No audio devices detected" | Ensure device is connected and not in use by another app |
+| "Stream format not supported" | See [Stream Playback Issues](docs/TROUBLESHOOTING.md#stream-playback-issues) |
 
-> **Need more help?** See the [Installation Guides](docs/guides/README.md) or [Comprehensive Documentation](docs/LANStreamer-Documentation.md)
+> **📖 Full Troubleshooting Guide:** See [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) for detailed solutions including subnet issues, firewall configuration, and network diagnostics.
 
 ---
 
-## 📚 Full Documentation
+## 📚 Documentation
 
 | Document | Description |
 |----------|-------------|
-| [Comprehensive Documentation](docs/LANStreamer-Documentation.md) | Complete technical documentation, troubleshooting, and advanced configuration |
-| [Developer Guide](CLAUDE.md) | Architecture, code structure, and development workflow |
-| [Installation Guides](docs/guides/README.md) | FFmpeg and Icecast setup guides |
+| **[Troubleshooting Guide](docs/TROUBLESHOOTING.md)** | Common issues and solutions (subnet, firewall, playback) |
 | [Network Setup](docs/NETWORK-SETUP.md) | Static IP configuration for live events |
+| [Installation Guides](docs/guides/README.md) | FFmpeg and Icecast setup guides |
+| [Comprehensive Docs](docs/LANStreamer-Documentation.md) | Complete technical documentation |
+| [Developer Guide](CLAUDE.md) | Architecture and development workflow |
 | [Manual Setup](manual-setup/README.md) | Hardware-specific configuration guides |
 | [Changelog](docs/CHANGELOG.md) | Version history and release notes |
 
@@ -199,9 +189,10 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 🆘 Support
 
-1. Check the [Installation Guides](docs/guides/README.md) first
-2. Review the [Comprehensive Documentation](README-TLDR.md)
-3. Create an issue on GitHub with detailed information
+1. Check the [Troubleshooting Guide](docs/TROUBLESHOOTING.md) first
+2. Review the [Installation Guides](docs/guides/README.md)
+3. See [Comprehensive Documentation](docs/LANStreamer-Documentation.md) for advanced topics
+4. Create an issue on GitHub with detailed information
 
 ---
 
