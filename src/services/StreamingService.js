@@ -146,6 +146,9 @@ class StreamingService {
         const inputSource = streamConfig.inputFile ? `file: ${streamConfig.inputFile}` : `device: ${streamConfig.deviceId}`
         logger.info(`Starting stream: ${streamId} for ${inputSource} using ${currentFormat.name} format (attempt ${formatIndex + 1}/${formats.length})`)
 
+        // Get device name for error reporting (validate before starting)
+        const deviceName = streamConfig.inputFile ? null : this.validateAndGetDeviceName(streamConfig.deviceId)
+
         // Start FFmpeg process with current format
         const ffmpegProcess = await this.startFFmpegProcess(streamId, streamConfig, formatIndex)
 
@@ -153,6 +156,7 @@ class StreamingService {
         this.activeStreams[streamId] = {
           id: streamId,
           deviceId: streamConfig.deviceId,
+          deviceName: deviceName,  // Store actual DirectShow device name for error messages
           inputFile: streamConfig.inputFile,
           name: streamConfig.name || `Stream ${streamId}`,
           status: 'running',
@@ -985,7 +989,9 @@ class StreamingService {
           logger.warn(`Stream ${streamId} crashed immediately after startup (${runTime}ms), likely a device/codec issue`)
         }
         
-        this.activeStreams[streamId].error = this.parseFFmpegError(code, safeStderrData)
+        // Get device info before parsing error
+        const deviceName = stream.deviceName || stream.deviceId || 'Unknown device'
+        this.activeStreams[streamId].error = this.parseFFmpegError(code, safeStderrData, deviceName)
         logger.error(`Stream ${streamId} failed with exit code ${code}:`, this.activeStreams[streamId].error)
       }
     }
@@ -995,9 +1001,10 @@ class StreamingService {
    * Parse FFmpeg error from exit code and stderr
    * @param {number} exitCode - FFmpeg exit code
    * @param {string} stderrData - FFmpeg stderr output
+   * @param {string} deviceName - Optional device name for better error messages
    * @returns {string} Human-readable error message
    */
-  parseFFmpegError(exitCode, stderrData) {
+  parseFFmpegError(exitCode, stderrData, deviceName = null) {
     // Convert unsigned 32-bit to signed for Windows
     const signedCode = exitCode > 2147483647 ? exitCode - 4294967296 : exitCode;
 
@@ -1005,15 +1012,18 @@ class StreamingService {
     const safeStderrData = stderrData || '';
     const stderrLower = safeStderrData.toLowerCase();
 
+    // Get device info - use provided name or try to find it
+    let deviceInfo = deviceName || 'Unknown device'
+    if (!deviceName && this.activeStreams) {
+      // Fallback: try to find device from any recent stream with this exit code
+      const stream = Object.values(this.activeStreams).find(s => s.exitCode === exitCode)
+      if (stream) {
+        deviceInfo = stream.deviceName || stream.deviceId || stream.name || 'Unknown'
+      }
+    }
+
     // 🎯 CRITICAL: Windows-specific crash detection (exit code 2812791304 = 0xA7F00008)
     if (exitCode === 2812791304 || signedCode === -1482175992) {
-      let deviceInfo = 'Unknown device'
-      if (this.activeStreams) {
-        const stream = Object.values(this.activeStreams).find(s => s.exitCode === exitCode)
-        if (stream) {
-          deviceInfo = stream.deviceId || stream.name || 'Unknown'
-        }
-      }
 
       return `💥 CRITICAL: FFmpeg process crashed immediately after startup (exit code 0xA7F00008)
 
@@ -1346,7 +1356,8 @@ class StreamingService {
 
             // Generate error message
             if (exitCode !== null) {
-              s.error = this.parseFFmpegError(exitCode, s.lastStderr || 'FFmpeg process exited without error output')
+              const deviceName = s.deviceName || s.deviceId || s.name || null
+              s.error = this.parseFFmpegError(exitCode, s.lastStderr || 'FFmpeg process exited without error output', deviceName)
             } else {
               s.error = 'FFmpeg process terminated unexpectedly (no exit code). This may indicate a system-level issue.'
             }
