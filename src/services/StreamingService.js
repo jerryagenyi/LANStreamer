@@ -443,14 +443,20 @@ class StreamingService {
   validateAndGetDeviceName(deviceId) {
     // FIRST: Try to look up the device in AudioDeviceService cache
     // This is the most reliable way to get the exact DirectShow name
-    if (AudioDeviceService.cachedDevices && AudioDeviceService.cachedDevices.length > 0) {
-      const cachedDevice = AudioDeviceService.cachedDevices.find(d => d.id === deviceId);
+    const devices = AudioDeviceService.cachedDevices;
+    
+    if (devices && devices.length > 0) {
+      const cachedDevice = devices.find(d => d.id === deviceId);
       if (cachedDevice && cachedDevice.name) {
         logger.info(`Found device in cache: "${deviceId}" -> "${cachedDevice.name}"`);
         return cachedDevice.name;
+      } else {
+        logger.warn(`Device ID "${deviceId}" not found in ${devices.length} cached devices`);
+        // Log available devices for debugging
+        logger.info(`Available device IDs: ${devices.slice(0, 5).map(d => d.id).join(', ')}...`);
       }
     } else {
-      logger.warn('AudioDeviceService cache is empty - devices may not have been loaded yet');
+      logger.warn('AudioDeviceService cache is empty');
     }
 
     // Map of common device IDs to actual DirectShow names
@@ -491,6 +497,13 @@ class StreamingService {
       'ps-input-vb-audio-virtual-cable': 'CABLE Output (VB-Audio Virtual Cable)', // VB-Audio Virtual Cable (alternative naming)
       'cable-output': 'CABLE Output (VB-Audio Virtual Cable)', // VB-Audio Virtual Cable (short name)
       'virtual-cable': 'CABLE Output (VB-Audio Virtual Cable)', // VB-Audio Virtual Cable (generic name)
+      // VB-Audio Virtual Cable variants (multiple cables installed)
+      'cable-output-2-vb-audio-virtual-cable': 'CABLE Output (2- VB-Audio Virtual Cable)',
+      'cable-output-vb-audio-virtual-cable': 'CABLE Output (VB-Audio Virtual Cable)',
+      'cable-a-output-vb-audio-virtual-cable-a': 'CABLE-A Output (VB-Audio Virtual Cable A)',
+      'cable-b-output-vb-audio-virtual-cable-b': 'CABLE-B Output (VB-Audio Virtual Cable B)',
+      'cable-c-output-vb-audio-cable-c': 'CABLE-C Output (VB-Audio Cable C)',
+      'cable-d-output-vb-audio-cable-d': 'CABLE-D Output (VB-Audio Cable D)',
     };
 
     // First try direct mapping
