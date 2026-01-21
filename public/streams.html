@@ -252,21 +252,17 @@
         <footer class="mt-12 border-t border-[var(--border-color)] pt-8 pb-8 px-4 sm:px-6 lg:px-10">
             <div class="flex flex-col sm:flex-row items-center justify-between gap-6 text-xs text-gray-500">
                 <div class="flex items-center gap-4">
-                    <span id="version-info">LANStreamer v1.1.0</span>
+                    <span id="version-info">LANStreamer</span>
                     <a href="https://github.com/jerryagenyi/LANStreamer" 
-                       target="_blank" 
+                       target="_blank"
+                       rel="noopener noreferrer"
                        class="text-blue-400 hover:text-blue-300 transition-colors flex items-center gap-1">
                         <span class="material-symbols-rounded text-sm">open_in_new</span>
                         GitHub Repository
                     </a>
                 </div>
                 <div class="flex items-center gap-4">
-                    <a href="/" class="text-blue-400 hover:text-blue-300 transition-colors flex items-center gap-1">
-                        <span class="material-symbols-rounded text-sm">admin_panel_settings</span>
-                        Admin Dashboard
-                    </a>
-                    <span class="text-gray-600">|</span>
-                    <span>© January 2025 LANStreamer</span>
+                    <span>© 2025-2026 LANStreamer</span>
                 </div>
             </div>
         </footer>
@@ -303,6 +299,7 @@
             async init() {
                 console.log('🎧 StreamListener initialized');
                 await this.loadConfig(); // Load config first to get Icecast port
+                await this.loadVersion(); // Load version for footer
                 await this.loadStreams();
                 await this.loadContactDetails();
                 this.updateLiveIndicator(); // Update Live indicator on init
@@ -329,6 +326,23 @@
                     }
                 } catch (error) {
                     console.warn('Failed to load config, using default Icecast port:', this.icecastPort);
+                }
+            }
+
+            async loadVersion() {
+                try {
+                    const response = await fetch('/api/info');
+                    if (response.ok) {
+                        const info = await response.json();
+                        if (info.data?.version) {
+                            const versionEl = document.getElementById('version-info');
+                            if (versionEl) {
+                                versionEl.textContent = `LANStreamer v${info.data.version}`;
+                            }
+                        }
+                    }
+                } catch (error) {
+                    console.warn('Failed to load version info');
                 }
             }
 
