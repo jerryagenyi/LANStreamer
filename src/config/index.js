@@ -40,7 +40,7 @@ const config = {
   // Icecast Configuration
   icecast: {
     host: process.env.ICECAST_HOST || 'localhost',
-    port: parseInt(process.env.ICECAST_PORT) || 8000,
+    port: parseInt(process.env.ICECAST_PORT) || 8001,
     adminPassword: process.env.ICECAST_ADMIN_PASSWORD || 'hackme',
     sourcePassword: process.env.ICECAST_SOURCE_PASSWORD || 'hackme',
     // Manual path configuration (prioritized over automatic detection)
@@ -72,7 +72,7 @@ const config = {
 
   // Network Configuration
   network: {
-    streamBaseUrl: process.env.STREAM_BASE_URL || 'http://localhost:8000',
+    streamBaseUrl: process.env.STREAM_BASE_URL || 'http://localhost:8001',
     clientPort: parseInt(process.env.CLIENT_PORT) || 8080,
     websocketPort: parseInt(process.env.WEBSOCKET_PORT) || 3001,
     enableCors: process.env.ENABLE_CORS === 'true',

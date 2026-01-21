@@ -12,6 +12,9 @@ class FFmpegStreamsManager {
         this.containerId = containerId;
         this.container = null;
 
+        // Dynamic Icecast port (fetched from config)
+        this.icecastPort = 8001; // Default fallback
+
         // Client-side timer tracking
         this.clientTimers = new Map(); // streamId -> { startTime, isRunning }
 
@@ -29,6 +32,9 @@ class FFmpegStreamsManager {
                 console.error('FFmpeg streams container not found for ID:', this.containerId);
                 return;
             }
+
+            // Load config first to get dynamic Icecast port
+            await this.loadConfig();
 
             // Load initial data
             await this.loadStreams();
@@ -48,6 +54,24 @@ class FFmpegStreamsManager {
         } catch (error) {
             console.error('Failed to initialize FFmpeg Streams Manager:', error);
             this.renderError('Failed to initialize FFmpeg Streams Manager');
+        }
+    }
+
+    /**
+     * Load system config to get dynamic Icecast port
+     */
+    async loadConfig() {
+        try {
+            const response = await fetch('/api/system/config');
+            if (response.ok) {
+                const config = await response.json();
+                if (config.icecast?.port) {
+                    this.icecastPort = config.icecast.port;
+                    console.log('📡 Icecast port loaded from config:', this.icecastPort);
+                }
+            }
+        } catch (error) {
+            console.warn('Failed to load config, using default Icecast port:', this.icecastPort);
         }
     }
 
@@ -207,7 +231,7 @@ class FFmpegStreamsManager {
                 
                 // Generate stream URL and show success message
                 const currentHost = window.location.hostname;
-                const streamUrl = `http://${currentHost}:8000/${streamConfig.id || 'stream'}`;
+                const streamUrl = `http://${currentHost}:${this.icecastPort}/${streamConfig.id || 'stream'}`;
                 this.showNotification(`Stream started successfully! Stream is now available in the list below.`, 'success');
             } else {
                 throw new Error(data.error || 'Failed to start stream');
@@ -566,21 +590,40 @@ class FFmpegStreamsManager {
     }
 
     /**
-     * Copy stream URL to clipboard
+     * Copy stream URL to clipboard (with fallback for non-HTTPS)
      */
     async copyStreamUrl(url, button) {
         try {
-            await navigator.clipboard.writeText(url);
+            // Try modern clipboard API first (requires HTTPS or localhost)
+            if (navigator.clipboard && window.isSecureContext) {
+                await navigator.clipboard.writeText(url);
+            } else {
+                // Fallback for HTTP: use textarea + execCommand
+                const textArea = document.createElement('textarea');
+                textArea.value = url;
+                textArea.style.position = 'fixed';
+                textArea.style.left = '-9999px';
+                textArea.style.top = '-9999px';
+                document.body.appendChild(textArea);
+                textArea.focus();
+                textArea.select();
+                const successful = document.execCommand('copy');
+                document.body.removeChild(textArea);
+                if (!successful) throw new Error('execCommand failed');
+            }
+            
             const originalText = button.innerHTML;
             button.innerHTML = '<span class="material-symbols-rounded text-sm">check</span>';
             button.classList.add('text-green-400');
+            this.showNotification('Stream URL copied!', 'success');
             setTimeout(() => {
                 button.innerHTML = originalText;
                 button.classList.remove('text-green-400');
             }, 2000);
         } catch (error) {
             console.error('Failed to copy URL:', error);
-            this.showNotification('Failed to copy URL to clipboard', 'error');
+            // Show the URL in a prompt as last resort
+            prompt('Copy this URL:', url);
         }
     }
 
@@ -790,7 +833,7 @@ class FFmpegStreamsManager {
             }
 
             const currentHost = window.location.hostname;
-            const streamUrl = `http://${currentHost}:8000/${stream.id}`;
+            const streamUrl = `http://${currentHost}:${this.icecastPort}/${stream.id}`;
 
             // Determine status styling and icon
             let statusColor, statusIcon, statusText, statusBg, errorMessage = '';
@@ -862,7 +905,7 @@ class FFmpegStreamsManager {
                         <div class="flex items-center gap-2 flex-1 sm:flex-initial">
                             ${stream.status === 'running' ? `
                                 <button
-                                    onclick="navigator.clipboard.writeText('${streamUrl}'); ffmpegStreamsManager.showNotification('Stream URL copied!', 'success')"
+                                    onclick="ffmpegStreamsManager.copyStreamUrl('${streamUrl}', this)"
                                     class="inline-flex items-center justify-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-gray-300 bg-[#2A2A2A] hover:bg-[#3A3A3A] border border-[var(--border-color)] transition-all duration-300"
                                     title="Copy stream URL"
                                 >

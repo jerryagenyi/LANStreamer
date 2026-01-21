@@ -1,0 +1,28 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(tasklist:*)",
+      "Bash(findstr:*)",
+      "Bash(ipconfig:*)",
+      "Bash(npm start)",
+      "mcp__MCP_DOCKER__browser_navigate",
+      "mcp__MCP_DOCKER__browser_take_screenshot",
+      "Bash(curl:*)",
+      "Bash(1 -H \"Icy-MetaData: 1\")",
+      "Bash(start \"\" \"c:\\\\Users\\\\Username\\\\Documents\\\\github\\\\LANStreamer\\\\Start LANStreamer Server.bat\")",
+      "Bash(timeout /t 5 /nobreak)",
+      "Bash(node:*)",
+      "Bash(cmd /c \"cd /d C:\\\\Users\\\\Username\\\\Documents\\\\github\\\\LANStreamer && dir package.json && dir node_modules >nul 2>&1 && echo node_modules exists || echo node_modules NOT found\")",
+      "mcp__MCP_DOCKER__browser_network_requests",
+      "Bash(cmd /c \"cd /d C:\\\\Users\\\\Username\\\\Documents\\\\github\\\\LANStreamer && Start~1~LAN~1.Server.bat 2>&1\")",
+      "Bash(git branch:*)",
+      "Bash(cmd /c \"node --version && echo Node.js OK\")",
+      "Bash(cmd /c:*)",
+      "Bash(git fetch:*)",
+      "Bash(netstat:*)",
+      "Bash(taskkill:*)",
+      "Bash(powershell -Command \"Stop-Process -Id 57624 -Force\")",
+      "mcp__MCP_DOCKER__fetch"
+    ]
+  }
+}
