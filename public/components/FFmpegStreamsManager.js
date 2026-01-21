@@ -13,7 +13,7 @@ class FFmpegStreamsManager {
         this.container = null;
 
         // Dynamic Icecast port (fetched from config)
-        this.icecastPort = 8001; // Default fallback
+        this.icecastPort = 8000; // Default fallback (Icecast standard port)
 
         // Client-side timer tracking
         this.clientTimers = new Map(); // streamId -> { startTime, isRunning }

@@ -359,7 +359,7 @@ class StreamingService {
    */
   buildFFmpegArgs(streamId, streamConfig, formatIndex = 0) {
     const bitrate = streamConfig.bitrate || 192;
-    const icecastUrl = `icecast://source:hackme@localhost:8001/${streamId}`;
+    const icecastUrl = `icecast://source:hackme@localhost:8000/${streamId}`;
     const formats = this.getAudioFormats();
     const format = formats[formatIndex] || formats[0]; // Fallback to first format
 
@@ -1102,17 +1102,21 @@ class StreamingService {
    • Note: VB-Audio has no control panel - restart by reinstalling or rebooting`
     }
 
-    if (stderrLower.includes('connection refused') || stderrLower.includes('connection failed')) {
-      return `🌐 Cannot connect to Icecast server
+    if (stderrLower.includes('connection refused') || stderrLower.includes('connection failed') || stderrLower.includes('error number -138')) {
+      return `🌐 Cannot connect to Icecast server (Connection Refused)
 
 📊 DEPENDENCY CHAIN:
    ⚠️ Audio Device → FFmpeg → ❌ Icecast (UNREACHABLE) → Listeners
 
-💡 SOLUTION:
-   • Start the Icecast server from the dashboard
-   • Check if Icecast is running on port 8000
-   • Verify icecast.xml configuration
-   • Check firewall settings`
+🔧 COMMON CAUSES:
+   1. Icecast not running - Start it from the dashboard
+   2. Port mismatch - LANStreamer uses port 8000 by default
+      • Check <port> in your icecast.xml matches 8000
+      • Or set ICECAST_PORT=xxxx in your .env file
+   3. Firewall blocking localhost connections
+
+💡 QUICK TEST (run in PowerShell):
+   Test-NetConnection localhost -Port 8000`
     }
 
     if (stderrLower.includes('invalid sample rate') || stderrLower.includes('unsupported sample rate')) {
