@@ -633,16 +633,18 @@ class IcecastService {
         return installationCheck;
       }
       
-      // Check if process is running
+      // Check if process is running - THIS IS THE SOURCE OF TRUTH
       const processRunning = await this.isIcecastRunning();
       if (!processRunning) {
         this.isRunning = false;
+        // Process is not running - return stopped status immediately
+        // Don't trust HTTP check if process isn't running
         return this._createStatusResponse(installationCheck, false, 'stopped');
       }
 
       this.isRunning = true;
 
-      // Try to get stats from admin interface
+      // Try to get stats from admin interface (for additional info, but process check is authoritative)
       try {
       const response = await fetch(`http://${config.icecast.host}:${config.icecast.port}/admin/stats.xml`, {
         timeout: 5000,
@@ -652,6 +654,13 @@ class IcecastService {
         });
 
       if (!response.ok) {
+          // Process is running but HTTP failed - might be starting up
+          // Double-check process is still running (could have crashed)
+          const stillRunning = await this.isIcecastRunning();
+          if (!stillRunning) {
+            this.isRunning = false;
+            return this._createStatusResponse(installationCheck, false, 'stopped');
+          }
           logger.warn(`HTTP request failed with status ${response.status}, server may still be starting up`);
           return this._createStatusResponse(installationCheck, true, 'starting');
         }
@@ -660,8 +669,21 @@ class IcecastService {
         const parser = new xml2js.Parser();
         const result = await parser.parseStringPromise(xmlData);
 
+        // Verify process is still running after HTTP check (defense against race conditions)
+        const stillRunning = await this.isIcecastRunning();
+        if (!stillRunning) {
+          this.isRunning = false;
+          return this._createStatusResponse(installationCheck, false, 'stopped');
+        }
+
         return this._createStatusResponse(installationCheck, true, 'running', result.icestats);
       } catch (error) {
+        // HTTP request failed - verify process is still actually running
+        const stillRunning = await this.isIcecastRunning();
+        if (!stillRunning) {
+          this.isRunning = false;
+          return this._createStatusResponse(installationCheck, false, 'stopped');
+        }
         logger.warn(`HTTP request failed: ${error.message}, server may still be starting up`);
         return this._createStatusResponse(installationCheck, true, 'starting');
       }

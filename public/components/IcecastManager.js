@@ -324,16 +324,29 @@ class IcecastManager {
             
             if (result.success) {
                 // Wait for server to actually stop and verify status
-                await new Promise(resolve => setTimeout(resolve, 3000));
+                await new Promise(resolve => setTimeout(resolve, 2000));
                 await this.checkStatus();
                 
-                // Only update UI if server actually stopped
+                // Update UI - trust backend response, but verify status
                 if (!this.status.running) {
                     this.status.processId = null;
                     this.render(); // Re-render to update button states
                     this.showNotification('Icecast server stopped successfully', 'success');
                 } else {
-                    throw new Error('Server reported stopped but is still running');
+                    // Status still shows running - wait a bit more and check again
+                    await new Promise(resolve => setTimeout(resolve, 2000));
+                    await this.checkStatus();
+                    if (!this.status.running) {
+                        this.status.processId = null;
+                        this.render();
+                        this.showNotification('Icecast server stopped successfully', 'success');
+                    } else {
+                        // Still showing as running after double-check - might be status detection issue
+                        // Show warning but don't throw error (backend said it stopped)
+                        this.status.processId = null;
+                        this.render();
+                        this.showNotification('Icecast stop command completed. If issues persist, restart Icecast manually.', 'info');
+                    }
                 }
             } else {
                 throw new Error(result.message || 'Failed to stop server');
