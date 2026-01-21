@@ -17,36 +17,41 @@
 - Icecast is reachable (`Test-NetConnection localhost -Port 8000` succeeds)
 - Manual Icecast streaming returns `HTTP error 500 Internal Server Error`
 - All audio devices fail with same crash code when using LANStreamer
+- ✅ **Icecast config checked:** No mountpoint restrictions, passwords correct (`hackme`)
+- ⚠️ **Icecast logs:** Old (Aug 2025), no recent entries - logs may not be updating
 
-**Possible Causes:**
-- Icecast configuration issue (HTTP 500 suggests mountpoint/auth problem)
-- FFmpeg command arguments when connecting to Icecast
-- Timing issue (FFmpeg connecting before Icecast mountpoint is ready)
-- Icecast password/authentication mismatch
+**Root Cause (Likely):**
+- HTTP 500 suggests Icecast is rejecting the mountpoint format
+- Test used `/test` but LANStreamer uses `/${streamId}` (no extension)
+- May need mountpoint to match format (e.g., `/test.mp3` for MP3)
 
 **Next Steps:**
-- [ ] Check Icecast logs for HTTP 500 details
-- [ ] Verify Icecast mountpoint configuration
-- [ ] Test with different Icecast password
-- [ ] Compare working manual command vs LANStreamer command
-- [ ] Check if mountpoint needs to be created first
+- [x] Check Icecast logs (old, no recent entries)
+- [x] Verify Icecast mountpoint configuration (no restrictions found)
+- [ ] Test mountpoint with file extension: `icecast://source:hackme@localhost:8000/test.mp3`
+- [ ] Test without `-content_type` header (may be causing HTTP 500)
+- [ ] Check if Icecast needs mountpoint to be created first
+- [ ] Verify Icecast is actually running (restart may be needed)
 
 ---
 
 ### 2. Stream Limit (Max 2 Streams)
-**Status:** 🔴 Active  
+**Status:** ✅ **ROOT CAUSE FOUND**  
 **Priority:** MEDIUM  
 **Description:** Cannot create more than 2 streams
 
-**Possible Causes:**
-- Hardcoded limit in code
-- Icecast source limit configuration
-- Resource/process limit
+**Root Cause:**
+- ✅ **Found in Icecast config:** `<sources>2</sources>` in `C:\Program Files (x86)\Icecast\icecast.xml`
+- This is an Icecast server limit, not a LANStreamer limit
+
+**Fix:**
+- Change `<sources>2</sources>` to `<sources>10</sources>` (or desired number)
+- Restart Icecast server after change
 
 **Next Steps:**
-- [ ] Check `src/services/StreamingService.js` for stream limits
-- [ ] Check `config/icecast.xml` for `<sources>` limit
-- [ ] Verify if it's a frontend or backend limit
+- [ ] Update Icecast XML: Change `<sources>2</sources>` to higher number
+- [ ] Restart Icecast server
+- [ ] Test creating 3+ streams
 
 ---
 
@@ -107,17 +112,33 @@
 [out#0/mp3 @ 00000227c9139900] Error opening output icecast://source:hackme@localhost:8000/test: Server returned 5XX Server Error reply
 ```
 
+**Findings:**
+- ✅ Icecast config checked: Passwords correct (`hackme`), no mountpoint restrictions
+- ⚠️ Icecast logs are old (Aug 2025) - may not be logging recent errors
+- Test command used: `icecast://source:hackme@localhost:8000/test` (no extension)
+
 **Possible Causes:**
-- Icecast mountpoint not configured correctly
-- Authentication issue (password mismatch)
-- Icecast XML configuration error
-- Mountpoint path issue
+- Mountpoint format issue (may need `.mp3` extension for MP3 streams)
+- `-content_type` header causing Icecast to reject connection
+- Icecast not properly restarted after config changes
+- Mountpoint path format incompatible
+
+**Test Commands to Try:**
+```powershell
+# Test 1: With file extension
+ffmpeg -f dshow -i audio="CABLE Output (VB-Audio Virtual Cable)" -acodec libmp3lame -b:a 192k -ar 44100 -ac 2 -f mp3 "icecast://source:hackme@localhost:8000/test.mp3" -t 5
+
+# Test 2: Without content_type header
+ffmpeg -f dshow -i audio="CABLE Output (VB-Audio Virtual Cable)" -acodec libmp3lame -b:a 192k -ar 44100 -ac 2 -f mp3 "icecast://source:hackme@localhost:8000/test" -t 5
+```
 
 **Next Steps:**
-- [ ] Check Icecast error logs (`C:\Program Files (x86)\Icecast\log\error.log`)
-- [ ] Verify Icecast XML configuration
-- [ ] Test with different mountpoint names
-- [ ] Check if mountpoint needs to exist before streaming
+- [x] Check Icecast error logs (old, no recent entries)
+- [x] Verify Icecast XML configuration (passwords correct)
+- [ ] Test mountpoint with `.mp3` extension
+- [ ] Test without `-content_type` header
+- [ ] Restart Icecast server (may need fresh start)
+- [ ] Check Icecast process is actually running
 
 ---
 
