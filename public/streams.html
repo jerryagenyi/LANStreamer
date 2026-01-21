@@ -287,6 +287,9 @@
                 // Client-side timer tracking for real-time uptime updates
                 this.clientTimers = new Map(); // streamId -> { startTime, isRunning }
                 this.uptimeUpdateInterval = null;
+                
+                // Mobile detection
+                this.isMobileDevice = this.isMobile();
 
                 // Track known stream IDs to detect new streams
                 this.knownStreamIds = new Set();
@@ -506,6 +509,15 @@
                                     <span class="hidden sm:inline">Copy</span>
                                 </button>
                             </div>
+                            ${this.isMobileDevice ? `
+                            <div class="mt-3 p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+                                <p class="text-xs text-blue-300 mb-2">📱 Mobile users: If playback fails, try:</p>
+                                <a href="${streamUrl}" target="_blank" class="inline-flex items-center gap-2 text-blue-400 hover:text-blue-300 text-sm font-medium transition-colors">
+                                    <span class="material-symbols-rounded text-base">open_in_new</span>
+                                    Open in native player
+                                </a>
+                            </div>
+                            ` : ''}
                         </div>
                         
                         ${isPlaying ? `
@@ -615,7 +627,11 @@
 
                             // Provide more specific error messages based on error code and network state
                             if (errorCode === 4) { // MEDIA_ERR_SRC_NOT_SUPPORTED
-                                errorMessage = 'Stream format not supported by your browser. Try Chrome, Firefox, or Edge for better AAC support.';
+                                if (this.isMobileDevice) {
+                                    errorMessage = 'Mobile browser cannot play this stream format. Use the "Open in native player" link below the stream card.';
+                                } else {
+                                    errorMessage = 'Stream format not supported by your browser. Try Chrome, Firefox, or Edge for better AAC support.';
+                                }
                             } else if (errorCode === 2) { // MEDIA_ERR_NETWORK
                                 if (networkState === 2 || networkState === 3) {
                                     errorMessage = 'Network error loading stream. Check if the Icecast server is running and try again.';
@@ -653,7 +669,11 @@
                     let errorMessage = 'Failed to play stream';
 
                     if (error.name === 'NotSupportedError') {
-                        errorMessage = 'Stream format not supported by your browser. LANStreamer tried MP3, AAC, and OGG formats. Try Chrome, Firefox, or Edge for better compatibility.';
+                        if (this.isMobileDevice) {
+                            errorMessage = 'Mobile browsers often have issues with HTML5 audio streaming. Try the "Open in native player" link below the stream, or use a desktop browser.';
+                        } else {
+                            errorMessage = 'Stream format not supported by your browser. LANStreamer tried MP3, AAC, and OGG formats. Try Chrome, Firefox, or Edge for better compatibility.';
+                        }
                     } else if (error.name === 'NotAllowedError') {
                         errorMessage = 'Audio playback blocked. Please allow audio and try again, or check if the stream is running.';
                     } else if (error.message.includes('network') || error.message.includes('NetworkError')) {
@@ -957,6 +977,11 @@
                 } else {
                     return `${seconds}s`;
                 }
+            }
+
+            isMobile() {
+                return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+                       (window.innerWidth <= 768);
             }
 
             async loadContactDetails() {
