@@ -2,45 +2,50 @@
 
 A comprehensive solution that turns a standard PC into a multi-channel audio streaming server for local area networks (LAN). This project provides a **web-based application** that orchestrates **FFmpeg** and **Icecast** to deliver local, live, low-latency audio broadcasts for events like language interpretation, meetings, or conferences.
 
+## 📋 Documentation
+
+Choose the documentation that best fits your needs:
+
+| Documentation | Description | Link |
+|--------------|-------------|------|
+| **Quick Start** | Get up and running quickly (non-technical & technical) | [README-backup.md](README-backup.md) |
+| **Comprehensive Docs** | Complete technical documentation with troubleshooting | [README-TLDR.md](README-TLDR.md) |
+| **Developer Guide** | Architecture, code structure, and contribution guide | [CLAUDE.md](CLAUDE.md) |
+
+---
+
 ## 🚀 Quick Start
 
 ### For Non-Technical Users
 
-**The easiest way to get started - no command line needed!**
-
-#### Step 1: Install Prerequisites
-You need these three programs installed first:
+**Step 1: Install Prerequisites**
 - **Node.js**: Download from https://nodejs.org/ (choose "LTS" version)
-- **FFmpeg & Icecast**: See our [Installation Guides](docs/guides/README.md) for step-by-step instructions
+- **FFmpeg & Icecast**: See [Installation Guides](docs/guides/README.md)
 
-#### Step 2: Download & Extract LANStreamer
-1. **Download**: Go to https://github.com/jerryagenyi/LANStreamer
-2. **Get ZIP**: Click the green **"Code"** button → **"Download ZIP"**
-3. **Extract**: Right-click the ZIP file → **"Extract All"** or **"Extract Here"**
-4. **Open Folder**: Navigate to the extracted `LANStreamer` folder
+**Step 2: Download & Extract**
+1. Go to https://github.com/jerryagenyi/LANStreamer
+2. Click **"Code"** → **"Download ZIP"**
+3. Extract the ZIP file and open the `LANStreamer` folder
 
-#### Step 3: One-Click Start
-1. **Double-click**: `Start LANStreamer Server.bat`
-2. **Wait**: The system will automatically install dependencies and start (if the terminal window disappears, just double-click the file again, and you should be up and running) - do not close the terminal, else LANSteamer Server session will end
-3. **Note the URLs**: The terminal will show your network addresses
+**Step 3: One-Click Start**
+1. Double-click `Start LANStreamer Server.bat`
+2. Wait for dependencies to install and the server to start
+3. Note the URLs shown in the terminal
 
-#### Step 4: Access Your Streaming Server
-- **Admin Dashboard**: Visit `http://YOUR-IP:3001` (login required)
-- **Listener Page**: Visit `http://YOUR-IP:3001/streams` (public access for your audience)
+**Step 4: Access Your Streaming Server**
+- **Admin Dashboard**: `http://YOUR-IP:3001` (login required)
+- **Listener Page**: `http://YOUR-IP:3001/streams` (public access)
 
-**Default Admin Credentials:**
+**Default Admin Credentials** (change these immediately in `.env`):
 - **Username**: `admin`
 - **Password**: `lanstreamer123`
-- **⚠️ CRITICAL**: Change these immediately in your `.env` file for security!
 
 ### For Technical Users
 
 ```bash
-# Clone the repository
+# Clone and install
 git clone https://github.com/jerryagenyi/LANStreamer.git
 cd LANStreamer
-
-# Install dependencies
 npm install
 
 # Start the server
@@ -49,190 +54,153 @@ npm start
 
 Then visit `http://localhost:3001` for the admin dashboard.
 
-## 🔧 Installation Requirements
+> **Need more detail?** See [Quick Start Guide (README-backup.md)](README-backup.md) or [Comprehensive Documentation (README-TLDR.md)](README-TLDR.md)
 
-### System Requirements
-- **Operating System**: Windows 10/11
-- **Node.js**: Version 18 or higher ([Download here](https://nodejs.org/))
-- **Audio Input**: Any audio device (built-in microphone, USB microphone, audio interface, etc.)
-
-### Required Components (Manual Installation Required)
-- **FFmpeg**: Audio/video processing toolkit ([Official site](https://ffmpeg.org/))
-- **Icecast**: Open-source streaming media server ([Official site](https://icecast.org/))
-
-### Windows Installation (Using Winget)
-```bash
-# Install FFmpeg
-winget install FFmpeg
-
-# Install Icecast (download from official site)
-# Visit: https://icecast.org/download/
-# Download Windows installer and run it
-```
-
-**Verify Installation:**
-```bash
-# Check FFmpeg
-ffmpeg -version
-
-# Check Icecast (Windows)
-cd "C:\Program Files (x86)\Icecast\bin"
-icecast.exe -v
-```
-
-### 🔧 **Icecast Log Directory Configuration**
-
-**Common Issue**: When you first install Icecast and try to use it, you may get this error:
-```
-FATAL: could not open error logging (./log\error.log): No such file or directory
-```
-
-**Solution**: Update the log directory path in your `icecast.xml` configuration file:
-
-1. **Navigate to your Icecast installation folder** (usually `C:\Program Files (x86)\Icecast`)
-2. **Open `icecast.xml`** in a text editor
-3. **Find the `<paths>` section** and locate the `<logdir>` tag
-4. **Get the full path to your log folder**:
-   - Navigate to the Icecast root folder
-   - Right-click on the `log` folder
-   - Select "Copy as path" (or similar option)
-5. **Update the `<logdir>` tag** with the full path:
-
-```xml
-<paths>
-    <logdir>C:\Program Files (x86)\Icecast\log</logdir>
-    <!-- other path configurations -->
-</paths>
-```
-
-**Example**: If your Icecast is installed at `C:\Program Files (x86)\Icecast`, the log directory should be:
-```xml
-<logdir>C:\Program Files (x86)\Icecast\log</logdir>
-```
-
-> **💡 Tip**: Make sure the log directory exists and Icecast has write permissions to it.
+---
 
 ## 🎯 What is LANStreamer?
 
 LANStreamer creates a complete audio streaming ecosystem with two main interfaces and three core components:
 
-### 🎛️ **Admin Dashboard** (`http://localhost:3001/`)
-The control center where administrators:
-- **Manage Streams**: Create, Start, and Stop audio streams
-- **Monitor System**: Check FFmpeg and Icecast status in real-time
-- **Configure Settings**: Set up event details and contact information for support
-- **View Analytics**: Monitor active streams and system performance
+### Interfaces
 
-### 🎧 **Listener Interface** (`http://localhost:3001/streams`)
-The user-friendly page where listeners:
-- **Browse Streams**: See all available audio streams
-- **Listen Live**: Click to play any stream instantly
-- **Mobile Friendly**: Works on phones, tablets, and computers
-- **No Apps Required**: Just open in any web browser
+| Interface | Purpose | Access |
+|-----------|---------|--------|
+| **Admin Dashboard** | Control center for managing streams | `http://localhost:3001/` (auth required) |
+| **Listener Interface** | User-friendly page for browsing and playing streams | `http://localhost:3001/streams` (public) |
 
-### ⚙️ **Core Components**
-1. **Audio Input**: Any detected audio device (microphone, audio interface, virtual audio cable) provides audio to the host PC
-2. **FFmpeg**: This powerful tool reads the audio channels, encodes them, and pushes them to the streaming server
-3. **Icecast**: The open-source streaming server that broadcasts the streams to any connected client on the network
+### Core Components
 
-## 🎯 Use Cases
+1. **Audio Input** - Any detected audio device (microphone, audio interface, virtual audio cable)
+2. **FFmpeg** - Reads audio channels, encodes, and pushes to streaming server
+3. **Icecast** - Open-source streaming server that broadcasts to network clients
 
-**Perfect for:**
+### Use Cases
+
 - **Language Interpretation**: Multiple language channels for conferences
 - **Meeting Audio**: Professional audio distribution for events
 - **Training Sessions**: Audio streaming for educational content
 - **Local Broadcasting**: Any situation requiring reliable, low-latency audio distribution
 
-## 🔐 Security Setup
-
-**⚠️ CRITICAL: Change Default Credentials Immediately!**
-
-LANStreamer comes with default admin credentials that you **MUST change** for security:
-
-1. **Copy** `env.example` to `.env` (if not already done)
-2. **Edit the `.env` file** and change:
-   - `ADMIN_USERNAME=your-new-username`
-   - `ADMIN_PASSWORD=your-strong-password`
-3. **Restart LANStreamer**
-
-**Example Strong Passwords:**
-- `MySecureLANStreamer2024!`
-- `AudioStreaming@2024#Secure`
-- `LANStreamer-Admin-Pass123!`
-
-## 🔄 Updating LANStreamer
-
-### For ZIP Download Users (Recommended)
-1. **Double-click** `Update LANStreamer.bat` in your installation folder
-2. **Follow the prompts** - the script will backup your configuration and install updates
-
-### For Git Users
-```bash
-git pull origin main
-npm install  # If dependencies changed
-```
+---
 
 ## 📁 Project Structure
 
 ```
 LANStreamer/
 ├── Start LANStreamer Server.bat            # Windows startup batch file
-├── README.md                               # This file - project overview
-├── package.json                            # Node.js dependencies and scripts
+├── Update LANStreamer.bat                  # Update script
+├── README.md                               # This file - main entry point
+├── README-backup.md                        # Quick start guide
+├── README-TLDR.md                          # Comprehensive documentation
+├── CLAUDE.md                               # Developer/architecture guide
+├── package.json                            # Node.js dependencies
 ├── src/                                    # Backend Node.js application
 │   ├── server.js                           # Main server entry point
+│   ├── config/                             # Configuration modules
+│   ├── middleware/                         # Express middleware
 │   ├── routes/                             # API route handlers
-│   └── services/                           # Core business logic
+│   ├── services/                           # Core business logic
+│   └── utils/                              # Utility functions
 ├── public/                                 # Frontend web interface
 │   ├── index.html                          # Admin dashboard
+│   ├── login.html                          # Login page
 │   ├── streams.html                        # User streams page
 │   └── components/                         # Modular UI components
-├── config/                                 # Configuration files
+├── config/                                 # Runtime configuration files
 ├── logs/                                   # Application logs
-└── docs/                                   # Documentation and guides
+├── docs/                                   # Documentation and guides
+├── scripts/                                # Setup and utility scripts
+└── manual-setup/                           # Hardware-specific guides
 ```
+
+---
+
+## ⚙️ System Requirements
+
+- **Operating System**: Windows 10/11 (macOS/Linux supported)
+- **Node.js**: Version 18 or higher ([Download](https://nodejs.org/))
+- **FFmpeg**: Audio/video processing toolkit ([Download](https://ffmpeg.org/))
+- **Icecast**: Streaming media server ([Download](https://icecast.org/))
+- **Audio Input**: Any audio device (built-in mic, USB mic, audio interface, etc.)
+
+---
+
+## 🔐 Security Setup
+
+**⚠️ CRITICAL: Change Default Credentials Immediately!**
+
+1. Copy `env.example` to `.env`
+2. Edit `.env` and change:
+   - `ADMIN_USERNAME=your-new-username`
+   - `ADMIN_PASSWORD=your-strong-password`
+   - `JWT_SECRET=your-jwt-secret`
+   - `SESSION_SECRET=your-session-secret`
+3. Restart LANStreamer
+
+---
+
+## 🔄 Updating
+
+**For ZIP Users:**
+```bash
+# Double-click this file in your installation folder
+Update LANStreamer.bat
+```
+
+**For Git Users:**
+```bash
+git pull origin main
+npm install  # If dependencies changed
+```
+
+---
 
 ## 🛠️ Troubleshooting
 
-**Problem: "npm not found"**
-- Solution: Install Node.js from [nodejs.org](https://nodejs.org/)
+| Problem | Solution |
+|---------|----------|
+| "npm not found" | Install Node.js from [nodejs.org](https://nodejs.org/) |
+| "Port 3001 already in use" | Close other apps using port 3001, or change `PORT` in `.env` |
+| "No audio devices detected" | Ensure your audio device is connected and working |
+| "Icecast installation not found" | See [Icecast installation guide](docs/guides/icecast-installation.md) |
 
-**Problem: "Port 3001 already in use"**
-- Solution: Close other applications using port 3001, or edit `.env` to change `PORT=3001` to another port
+> **Need more help?** See the [Installation Guides](docs/guides/README.md) or [Comprehensive Documentation](README-TLDR.md)
 
-**Problem: "No audio devices detected"**
-- Solution: Ensure your microphone/audio device is connected and working in your system settings
+---
 
-**Problem: "Icecast installation not found"**
-- **Option 1 (Easiest)**: Move your Icecast to `C:\Program Files (x86)\Icecast`
-- **Option 2**: Click **"Browse for Icecast"** in the dashboard to select your installation
-- **Option 3**: Add your custom path to the `.env` file (see `env.example` for variables)
+## 📚 Full Documentation
 
-**Need more help?** Check the [Installation Guides](docs/guides/README.md) for detailed troubleshooting.
+| Document | Description |
+|----------|-------------|
+| [Quick Start Guide](README-backup.md) | Essential setup steps for non-technical and technical users |
+| [Comprehensive Documentation](README-TLDR.md) | Complete technical documentation, troubleshooting, and advanced configuration |
+| [Developer Guide](CLAUDE.md) | Architecture, code structure, and development workflow |
+| [Installation Guides](docs/guides/README.md) | Detailed setup and troubleshooting guides |
+| [Network Setup](docs/NETWORK-SETUP.md) | Static IP configuration for live events |
+| [Manual Setup](manual-setup/README.md) | Hardware-specific configuration guides |
 
-## 📚 Documentation
-
-- **[Installation Guides](docs/guides/README.md)** - Detailed setup and troubleshooting
-- **[Network Setup Guide](docs/NETWORK-SETUP.md)** - Static IP configuration for live events
-- **[Manual Setup](manual-setup/README.md)** - Hardware-specific configuration guides
-- **[Comprehensive Documentation (TLDR)](README-TLDR.md)** - Detailed technical information and complete setup guide
+---
 
 ## 🤝 Contributing
 
-We welcome contributions! Fork the repository, make your changes, and create a pull request.
+We welcome contributions! See [CLAUDE.md](CLAUDE.md) for the development workflow and architecture guide.
 
-For bug reports, include your OS, Node.js version, and steps to reproduce the issue.
+For bug reports, include your OS, Node.js version, and steps to reproduce.
+
+---
 
 ## 📄 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
+---
+
 ## 🆘 Support
 
-If you need help:
 1. Check the [Installation Guides](docs/guides/README.md) first
-2. Review the troubleshooting section above
-3. Create an issue on GitHub with detailed information about your setup
+2. Review the [Comprehensive Documentation](README-TLDR.md)
+3. Create an issue on GitHub with detailed information
 
 ---
 

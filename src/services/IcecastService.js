@@ -2441,4 +2441,5 @@ class IcecastService {
   }
 }
 
-export default IcecastService
+// Export a singleton instance (matches the service-layer pattern used elsewhere)
+export default new IcecastService()

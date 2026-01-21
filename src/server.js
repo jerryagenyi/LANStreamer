@@ -2,12 +2,15 @@ import express from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import os from 'os';
+import readline from 'readline';
 import systemRouter from './routes/system.js';
 import streamsRouter from './routes/streams.js';
 import settingsRouter from './routes/settings.js';
 import contactRouter from './routes/contact.js';
 import authRouter from './routes/auth.js';
 import { optionalAuth, authenticateToken } from './middleware/auth.js';
+import streamingService from './services/StreamingService.js';
+import logger from './utils/logger.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -79,8 +82,90 @@ app.get('*', (req, res) => {
   }
 });
 
+// Global server reference for graceful shutdown
+let server = null;
+
+// Graceful shutdown handler
+async function gracefulShutdown(signal = 'SIGINT') {
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout
+  });
+
+  return new Promise((resolve) => {
+    rl.question(
+      '\n⚠️  Shutdown requested. Stop LANStreamer server? [Y/n] (default: Y) ',
+      async (answer) => {
+        rl.close();
+
+        const shouldShutdown = !answer || answer.toLowerCase() === 'y' || answer === '';
+
+        if (!shouldShutdown) {
+          console.log('❌ Shutdown cancelled. Server continues running.\n');
+          resolve(false);
+          return;
+        }
+
+        console.log('\n🛑 Shutting down LANStreamer server...');
+
+        try {
+          // Stop all active streams
+          const stats = streamingService.getStats();
+          const activeCount = stats.streams.filter(s => s.status === 'running').length;
+
+          if (activeCount > 0) {
+            console.log(`📡 Stopping ${activeCount} active stream(s)...`);
+            await streamingService.stopAllStreams();
+            console.log('✅ All streams stopped.');
+          } else {
+            console.log('✅ No active streams to stop.');
+          }
+
+          // Close the server
+          if (server) {
+            server.close(() => {
+              console.log('✅ Server closed.');
+              console.log('\n👋 LANStreamer has been shut down gracefully.\n');
+              resolve(true);
+            });
+
+            // Force shutdown after 5 seconds if server doesn't close
+            setTimeout(() => {
+              console.log('\n⚠️  Forced shutdown after timeout.');
+              resolve(true);
+              process.exit(0);
+            }, 5000);
+          } else {
+            console.log('✅ Shutdown complete.');
+            resolve(true);
+          }
+        } catch (error) {
+          logger.error('Error during shutdown:', error);
+          console.log('❌ Error during shutdown:', error.message);
+          resolve(true);
+        }
+      }
+    );
+  });
+}
+
+// Handle shutdown signals
+process.on('SIGINT', async () => {
+  const shouldExit = await gracefulShutdown('SIGINT');
+  if (shouldExit) {
+    process.exit(0);
+  }
+});
+
+process.on('SIGTERM', async () => {
+  const shouldExit = await gracefulShutdown('SIGTERM');
+  if (shouldExit) {
+    process.exit(0);
+  }
+});
+
 // Always start the server when this file is run
-app.listen(PORT, HOST, () => {
+server = app.listen(PORT, HOST, () => {
   console.log(`Server is listening on http://${HOST}:${PORT}`);
   
   // Get local IPv4 address for network access (prioritize local network, exclude VPN)

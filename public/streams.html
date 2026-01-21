@@ -27,13 +27,65 @@
         .pulse-live {
             animation: pulse-live 2s infinite;
         }
-        
+
         @keyframes pulse-live {
             0%, 100% {
                 box-shadow: 0 0 0 0 rgba(76, 175, 80, 0.7);
             }
             70% {
                 box-shadow: 0 0 0 10px rgba(76, 175, 80, 0);
+            }
+        }
+
+        /* ON AIR Button Styles */
+        .on-air-button {
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+        }
+
+        .on-air-button.active {
+            background: linear-gradient(135deg, #DC2626 0%, #B91C1C 100%);
+            box-shadow: 0 0 20px rgba(220, 38, 38, 0.6), 0 0 40px rgba(220, 38, 38, 0.4);
+            animation: on-air-pulse 1.5s ease-in-out infinite;
+            border-color: rgba(255, 255, 255, 0.3);
+        }
+
+        .on-air-button.inactive {
+            background: linear-gradient(135deg, #374151 0%, #1F2937 100%);
+            box-shadow: none;
+            border-color: #4B5563;
+        }
+
+        @keyframes on-air-pulse {
+            0%, 100% {
+                box-shadow: 0 0 20px rgba(220, 38, 38, 0.6), 0 0 40px rgba(220, 38, 38, 0.4), 0 0 60px rgba(220, 38, 38, 0.2);
+                transform: scale(1);
+            }
+            50% {
+                box-shadow: 0 0 30px rgba(220, 38, 38, 0.8), 0 0 60px rgba(220, 38, 38, 0.6), 0 0 90px rgba(220, 38, 38, 0.3);
+                transform: scale(1.02);
+            }
+        }
+
+        .on-air-indicator {
+            transition: all 0.3s ease;
+        }
+
+        .on-air-indicator.active {
+            background-color: #FEE2E2;
+            animation: indicator-pulse 1.5s ease-in-out infinite;
+        }
+
+        .on-air-indicator.inactive {
+            background-color: #6B7280;
+        }
+
+        @keyframes indicator-pulse {
+            0%, 100% {
+                box-shadow: 0 0 0 0 rgba(254, 226, 226, 0.8);
+            }
+            50% {
+                box-shadow: 0 0 0 8px rgba(254, 226, 226, 0);
             }
         }
         
@@ -116,9 +168,9 @@
                 </a>
             </div>
             <div class="flex items-center gap-2 sm:gap-3 flex-shrink-0">
-                <div class="flex items-center gap-1 sm:gap-2">
-                    <div id="header-live-indicator" class="w-2 h-2 rounded-full bg-gray-500"></div>
-                    <span class="text-xs sm:text-sm text-gray-300">Live</span>
+                <div id="on-air-button" class="on-air-button inactive rounded-xl px-3 sm:px-4 py-2 sm:py-2.5 flex items-center gap-2 sm:gap-2.5">
+                    <div id="on-air-indicator" class="on-air-indicator inactive w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full"></div>
+                    <span id="on-air-text" class="text-xs sm:text-sm font-semibold tracking-wide text-gray-400">OFF AIR</span>
                 </div>
             </div>
         </header>
@@ -233,6 +285,9 @@
                 this.isMuted = false;
                 this.volumeBeforeMute = this.volume;
 
+                // Dynamic Icecast port (fetched from config)
+                this.icecastPort = 8001; // Default fallback
+
                 // Client-side timer tracking for real-time uptime updates
                 this.clientTimers = new Map(); // streamId -> { startTime, isRunning }
                 this.uptimeUpdateInterval = null;
@@ -242,6 +297,7 @@
 
             async init() {
                 console.log('🎧 StreamListener initialized');
+                await this.loadConfig(); // Load config first to get Icecast port
                 await this.loadStreams();
                 await this.loadContactDetails();
                 this.updateLiveIndicator(); // Update Live indicator on init
@@ -254,6 +310,21 @@
                 window.addEventListener('beforeunload', () => {
                     this.stopUptimeUpdates();
                 });
+            }
+
+            async loadConfig() {
+                try {
+                    const response = await fetch('/api/system/config');
+                    if (response.ok) {
+                        const config = await response.json();
+                        if (config.icecast?.port) {
+                            this.icecastPort = config.icecast.port;
+                            console.log('📡 Icecast port loaded from config:', this.icecastPort);
+                        }
+                    }
+                } catch (error) {
+                    console.warn('Failed to load config, using default Icecast port:', this.icecastPort);
+                }
             }
 
             updateNetworkInfo() {
@@ -334,7 +405,7 @@
                 const currentHost = window.location.hostname;
                 // For mobile access, show the actual IP instead of localhost
                 const displayHost = currentHost === 'localhost' ? window.location.hostname : currentHost;
-                const streamUrl = `http://${displayHost}:8000/${stream.id}`;
+                const streamUrl = `http://${displayHost}:${this.icecastPort}/${stream.id}`;
                 const isPlaying = this.currentStream === stream.id;
                 const uptime = this.formatUptime(stream.uptime || 0);
 
@@ -595,29 +666,91 @@
             }
 
             copyStreamUrl(url) {
-                if (!navigator.clipboard) {
-                    // Fallback for older browsers or non-HTTPS contexts
-                    const textArea = document.createElement('textarea');
-                    textArea.value = url;
-                    document.body.appendChild(textArea);
-                    textArea.select();
-                    try {
-                        document.execCommand('copy');
-                        this.showNotification('Stream URL copied to clipboard!', 'success');
-                    } catch (error) {
-                        console.error('Fallback copy failed:', error);
-                        this.showNotification('Failed to copy URL. Please copy manually: ' + url, 'error');
-                    }
-                    document.body.removeChild(textArea);
+                // Try modern clipboard API first
+                if (navigator.clipboard && (window.location.protocol === 'https:' || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
+                    navigator.clipboard.writeText(url).then(() => {
+                        this.showNotification('📋 Stream URL copied to clipboard!', 'success');
+                    }).catch(error => {
+                        console.error('Clipboard API failed:', error);
+                        this.showManualCopyFallback(url);
+                    });
                     return;
                 }
 
-                navigator.clipboard.writeText(url).then(() => {
-                    this.showNotification('Stream URL copied to clipboard!', 'success');
-                }).catch(error => {
-                    console.error('Failed to copy URL:', error);
-                    this.showNotification('Failed to copy URL. Please copy manually: ' + url, 'error');
+                // Fallback for older browsers or non-secure contexts (IP addresses, etc)
+                const textArea = document.createElement('textarea');
+                textArea.value = url;
+                textArea.style.position = 'fixed';
+                textArea.style.top = '0';
+                textArea.style.left = '0';
+                textArea.style.width = '2px';
+                textArea.style.height = '2px';
+                textArea.style.padding = '0';
+                textArea.style.border = 'none';
+                textArea.style.outline = 'none';
+                textArea.style.boxShadow = 'none';
+                textArea.style.background = 'transparent';
+                textArea.style.opacity = '0';
+                document.body.appendChild(textArea);
+                textArea.focus();
+                textArea.select();
+
+                try {
+                    const successful = document.execCommand('copy');
+                    document.body.removeChild(textArea);
+
+                    if (successful) {
+                        this.showNotification('📋 Stream URL copied to clipboard!', 'success');
+                    } else {
+                        throw new Error('execCommand returned false');
+                    }
+                } catch (error) {
+                    document.body.removeChild(textArea);
+                    console.error('Fallback copy failed:', error);
+                    this.showManualCopyFallback(url);
+                }
+            }
+
+            showManualCopyFallback(url) {
+                // Create a modal with the URL that users can manually copy
+                const modal = document.createElement('div');
+                modal.className = 'fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4';
+                modal.innerHTML = `
+                    <div class="bg-[var(--card-bg)] border border-[var(--border-color)] rounded-2xl p-6 max-w-md w-full shadow-2xl">
+                        <div class="flex items-center gap-3 mb-4">
+                            <span class="material-symbols-rounded text-2xl text-blue-400">content_copy</span>
+                            <h3 class="text-lg font-semibold text-white">Copy Stream URL</h3>
+                        </div>
+                        <p class="text-gray-400 text-sm mb-4">
+                            Your browser requires manual copying. Click the URL below to copy:
+                        </p>
+                        <div class="flex items-center gap-2 mb-4">
+                            <input type="text" value="${url}" readonly
+                                class="flex-1 bg-[#111111] border border-[var(--border-color)] rounded-lg px-4 py-3 text-white text-sm font-mono"
+                                onclick="this.select()">
+                            <button onclick="navigator.clipboard?.writeText('${url}').then(() => this.closest('.fixed').remove())"
+                                class="px-4 py-2 bg-[var(--primary-color)] hover:bg-[var(--primary-color)]/80 rounded-lg text-white text-sm font-medium transition-colors">
+                                Copy
+                            </button>
+                        </div>
+                        <p class="text-xs text-gray-500 mb-4">
+                            Stream URL for ${url}
+                        </p>
+                        <button onclick="this.closest('.fixed').remove()"
+                                class="w-full px-4 py-2 bg-[#2A2A2A] hover:bg-[#3A3A3A] border border-[var(--border-color)] rounded-lg text-white text-sm transition-colors">
+                            Close
+                        </button>
+                    </div>
+                `;
+
+                // Close on outside click
+                modal.addEventListener('click', (e) => {
+                    if (e.target === modal) {
+                        modal.remove();
+                    }
                 });
+
+                document.body.appendChild(modal);
             }
 
             showNoStreams() {
@@ -887,16 +1020,40 @@
             }
 
             updateLiveIndicator() {
-                const headerLiveIndicator = document.getElementById('header-live-indicator');
+                const onAirButton = document.getElementById('on-air-button');
+                const onAirIndicator = document.getElementById('on-air-indicator');
+                const onAirText = document.getElementById('on-air-text');
                 const hasActiveStreams = this.streams && this.streams.length > 0;
-                
-                if (headerLiveIndicator) {
-                    if (hasActiveStreams) {
-                        // Show green and glowing when streams are active
-                        headerLiveIndicator.className = 'w-2 h-2 rounded-full bg-[var(--live-color)] pulse-live';
-                    } else {
-                        // Show gray (inactive) when no streams
-                        headerLiveIndicator.className = 'w-2 h-2 rounded-full bg-gray-500';
+
+                if (hasActiveStreams) {
+                    // ON AIR - Red glowing button like radio studios
+                    if (onAirButton) {
+                        onAirButton.classList.remove('inactive');
+                        onAirButton.classList.add('active');
+                    }
+                    if (onAirIndicator) {
+                        onAirIndicator.classList.remove('inactive');
+                        onAirIndicator.classList.add('active');
+                    }
+                    if (onAirText) {
+                        onAirText.textContent = '🔴 ON AIR';
+                        onAirText.classList.remove('text-gray-400');
+                        onAirText.classList.add('text-white');
+                    }
+                } else {
+                    // OFF AIR - Grayed out button
+                    if (onAirButton) {
+                        onAirButton.classList.remove('active');
+                        onAirButton.classList.add('inactive');
+                    }
+                    if (onAirIndicator) {
+                        onAirIndicator.classList.remove('active');
+                        onAirIndicator.classList.add('inactive');
+                    }
+                    if (onAirText) {
+                        onAirText.textContent = 'OFF AIR';
+                        onAirText.classList.remove('text-white');
+                        onAirText.classList.add('text-gray-400');
                     }
                 }
             }

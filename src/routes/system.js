@@ -5,7 +5,7 @@ import IcecastService from '../services/IcecastService.js';
 import { ErrorHandler, errorMiddleware } from '../utils/errors.js';
 
 const router = express.Router();
-const icecastService = new IcecastService();
+const icecastService = IcecastService;
 
 // Initialize the service
 icecastService.initialize().catch(error => {
