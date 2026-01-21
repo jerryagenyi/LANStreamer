@@ -440,6 +440,21 @@ class StreamingService {
    * @returns {string|null} Real DirectShow device name or null if not found
    */
   validateAndGetDeviceName(deviceId) {
+    // FIRST: Try to look up the device in AudioDeviceService cache
+    // This is the most reliable way to get the exact DirectShow name
+    try {
+      const AudioDeviceService = require('./AudioDeviceService.js').default;
+      if (AudioDeviceService.cachedDevices && AudioDeviceService.cachedDevices.length > 0) {
+        const cachedDevice = AudioDeviceService.cachedDevices.find(d => d.id === deviceId);
+        if (cachedDevice && cachedDevice.name) {
+          logger.info(`Found device in cache: "${deviceId}" -> "${cachedDevice.name}"`);
+          return cachedDevice.name;
+        }
+      }
+    } catch (error) {
+      logger.warn('Could not look up device in AudioDeviceService cache:', error.message);
+    }
+
     // Map of common device IDs to actual DirectShow names
     const deviceMap = {
       'microphone-hd-pro-webcam-c910': 'Microphone (HD Pro Webcam C910)',
