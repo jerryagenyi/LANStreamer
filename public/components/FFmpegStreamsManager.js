@@ -1331,11 +1331,12 @@ class FFmpegStreamsManager {
 
             document.body.appendChild(toast);
 
-            // Auto remove after 8 seconds
+            // Auto remove after timeout - 60 seconds for errors (long messages), 8 seconds for success/info
+            const timeout = type === 'error' ? 60000 : 8000;
             setTimeout(() => {
                 toast.style.opacity = '0';
                 setTimeout(() => toast.remove(), 300);
-            }, 8000);
+            }, timeout);
         }
     }
 

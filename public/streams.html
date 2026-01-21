@@ -857,10 +857,11 @@
                 
                 document.body.appendChild(toast);
                 
-                // Remove after 8 seconds
+                // Remove after timeout - 60 seconds for errors (long messages), 8 seconds for success/info
+                const timeout = type === 'error' ? 60000 : 8000;
                 setTimeout(() => {
                     toast.remove();
-                }, 8000);
+                }, timeout);
             }
 
             /**

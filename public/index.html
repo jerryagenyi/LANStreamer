@@ -1103,7 +1103,8 @@
                     notification.classList.add('opacity-100');
                 }, 100);
                 
-                // Fade out and remove after 8 seconds
+                // Fade out and remove - 60 seconds for errors (long messages), 8 seconds for success/info
+                const timeout = type === 'error' ? 60000 : 8000;
                 setTimeout(() => {
                     notification.classList.remove('opacity-100');
                     notification.classList.add('opacity-0');
@@ -1112,7 +1113,7 @@
                             notification.parentNode.removeChild(notification);
                         }
                     }, 300);
-                }, 8000);
+                }, timeout);
             }
 
             // Development utilities
