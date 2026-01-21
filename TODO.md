@@ -32,6 +32,16 @@
 2. **Or manually start:** `C:\Program Files (x86)\Icecast\bin\icecast.exe -c "C:\Program Files (x86)\Icecast\icecast.xml"`
 3. Verify process is running: `Get-Process | Where-Object {$_.ProcessName -like "*icecast*"}`
 
+**Status Detection Fix:** ✅ **FIXED**
+- Improved backend status check to double-verify process after HTTP checks
+- Frontend verification less strict - trusts backend response more
+- Prevents false "Server reported stopped but is still running" errors
+
+**IMMEDIATE ACTION REQUIRED:**
+- [ ] **Start Icecast server** (click "Start Server" in dashboard)
+- [ ] Verify it's running: `Get-Process | Where-Object {$_.ProcessName -like "*icecast*"}`
+- [ ] Try creating a stream again after Icecast is running
+
 **Next Steps:**
 - [x] Check Icecast logs (old, no recent entries)
 - [x] Verify Icecast mountpoint configuration (no restrictions found)
@@ -39,8 +49,8 @@
 - [x] Test without `-content_type` header (still HTTP 500)
 - [x] Test OGG format (still HTTP 500)
 - [x] **Verify Icecast is actually running** ❌ **NOT RUNNING**
-- [ ] Restart Icecast server
-- [ ] Fix dashboard status check (shows "Online" when process is dead)
+- [x] Fix dashboard status check (improved reliability)
+- [ ] **START ICECAST SERVER** (root cause of all HTTP 500 errors)
 
 ---
 
