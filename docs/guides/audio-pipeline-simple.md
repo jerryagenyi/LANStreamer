@@ -110,6 +110,6 @@ Understanding the audio pipeline concept is crucial for successful LANStreamer d
 Think of each audio device as a "virtual microphone" that your streaming software can listen to, regardless of whether it's a physical microphone, a virtual cable, or a network audio interface.
 
 ## Need More Help?
-- **Detailed Technical Guide**: [LANStreamer Technical Specification](../LANStreamer-Technical-Specification.md)
-- **Installation Guides**: [Icecast](./icecast-installation-simple.md) | [FFmpeg](./ffmpeg-installation-simple.md)
+- **Comprehensive Documentation**: [LANStreamer Documentation](../LANStreamer-Documentation.md)
+- **Installation Guides**: [Icecast](./icecast-installation.md) | [FFmpeg](./ffmpeg-installation.md)
 - **LANStreamer Issues**: https://github.com/jerryagenyi/LANStreamer/issues

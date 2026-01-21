@@ -10,7 +10,7 @@ FFmpeg is the audio processing engine that captures sound from your devices and 
 ### Method 1: Automatic Installation (Recommended)
 1. **Press** `Windows Key + R`
 2. **Type**: `cmd` and press `Ctrl + Shift + Enter` (this opens as Administrator)
-3. **Copy and paste**: `winget install FFmpeg`
+3. **Copy and paste**: `winget install ffmpeg`
 4. **Press Enter** and wait for installation to complete
 5. **Close** the command prompt
 

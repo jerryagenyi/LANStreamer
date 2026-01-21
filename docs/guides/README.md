@@ -32,7 +32,8 @@ For comprehensive technical information, see:
 ## Additional Resources
 
 For more detailed technical information:
-- [LANStreamer-Audio-Pipeline-Concepts.md](./LANStreamer-Audio-Pipeline-Concepts.md) - Detailed audio concepts
+- [Audio Pipeline Concepts](./audio-pipeline-simple.md) - How audio flows from source to listeners
+- [Comprehensive Documentation](../LANStreamer-Documentation.md) - Complete technical reference
 
 ## Quick Links
 
