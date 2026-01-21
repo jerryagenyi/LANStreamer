@@ -8,8 +8,9 @@ Choose the documentation that best fits your needs:
 
 | Documentation | Description | Link |
 |--------------|-------------|------|
-| **Quick Start** | Get up and running quickly (non-technical & technical) | [README-backup.md](README-backup.md) |
-| **Comprehensive Docs** | Complete technical documentation with troubleshooting | [README-TLDR.md](README-TLDR.md) |
+| **Quick Start** | This README - get up and running quickly | You're here! |
+| **Comprehensive Docs** | Complete technical documentation with troubleshooting | [docs/LANStreamer-Documentation.md](docs/LANStreamer-Documentation.md) |
+| **Installation Guides** | FFmpeg, Icecast setup guides | [docs/guides/](docs/guides/README.md) |
 | **Developer Guide** | Architecture, code structure, and contribution guide | [CLAUDE.md](CLAUDE.md) |
 
 ---
@@ -54,7 +55,7 @@ npm start
 
 Then visit `http://localhost:3001` for the admin dashboard.
 
-> **Need more detail?** See [Quick Start Guide (README-backup.md)](README-backup.md) or [Comprehensive Documentation (README-TLDR.md)](README-TLDR.md)
+> **Need more detail?** See [Comprehensive Documentation](docs/LANStreamer-Documentation.md) or [Installation Guides](docs/guides/README.md)
 
 ---
 
@@ -165,7 +166,7 @@ npm install  # If dependencies changed
 | "No audio devices detected" | Ensure your audio device is connected and working |
 | "Icecast installation not found" | See [Icecast installation guide](docs/guides/icecast-installation.md) |
 
-> **Need more help?** See the [Installation Guides](docs/guides/README.md) or [Comprehensive Documentation](README-TLDR.md)
+> **Need more help?** See the [Installation Guides](docs/guides/README.md) or [Comprehensive Documentation](docs/LANStreamer-Documentation.md)
 
 ---
 
@@ -173,12 +174,12 @@ npm install  # If dependencies changed
 
 | Document | Description |
 |----------|-------------|
-| [Quick Start Guide](README-backup.md) | Essential setup steps for non-technical and technical users |
-| [Comprehensive Documentation](README-TLDR.md) | Complete technical documentation, troubleshooting, and advanced configuration |
+| [Comprehensive Documentation](docs/LANStreamer-Documentation.md) | Complete technical documentation, troubleshooting, and advanced configuration |
 | [Developer Guide](CLAUDE.md) | Architecture, code structure, and development workflow |
-| [Installation Guides](docs/guides/README.md) | Detailed setup and troubleshooting guides |
+| [Installation Guides](docs/guides/README.md) | FFmpeg and Icecast setup guides |
 | [Network Setup](docs/NETWORK-SETUP.md) | Static IP configuration for live events |
 | [Manual Setup](manual-setup/README.md) | Hardware-specific configuration guides |
+| [Changelog](docs/CHANGELOG.md) | Version history and release notes |
 
 ---
 

@@ -56,9 +56,9 @@ echo ⚠️  WARNING: This will update LANStreamer to the latest version
 echo.
 echo 📋 FILES THAT WILL BE PRESERVED:
 echo    • .env file (your environment settings)
-echo    • data/ folder (stream configurations, event settings)
+echo    • config/ folder (streams, device config, icecast settings)
+echo    • data/ folder (event settings, music files)
 echo    • logs/ folder (application logs and history)
-echo    • device-config.json (audio device preferences)
 echo.
 echo ⚠️  IMPORTANT: The update process will temporarily stop any running streams.
 echo    After the update, you'll need to manually restart the server.
@@ -83,10 +83,10 @@ if exist "%BACKUP_DIR%" rmdir /s /q "%BACKUP_DIR%"
 mkdir "%BACKUP_DIR%" 2>nul
 
 :: Backup important user data
+if exist "config" xcopy "config" "%BACKUP_DIR%\config\" /e /i /h /y >nul 2>&1
 if exist "data" xcopy "data" "%BACKUP_DIR%\data\" /e /i /h /y >nul 2>&1
 if exist "logs" xcopy "logs" "%BACKUP_DIR%\logs\" /e /i /h /y >nul 2>&1
 if exist ".env" copy ".env" "%BACKUP_DIR%\" >nul 2>&1
-if exist "device-config.json" copy "device-config.json" "%BACKUP_DIR%\" >nul 2>&1
 
 echo ✅ Backup created at: %BACKUP_DIR%
 echo.
@@ -221,14 +221,14 @@ echo    Preserving user data and configuration...
 
 :: Remove old files (except user data and this updater)
 for /d %%i in (*) do (
-    if /i not "%%i"=="data" if /i not "%%i"=="logs" if /i not "%%i"=="%BACKUP_DIR:~-20%" (
+    if /i not "%%i"=="config" if /i not "%%i"=="data" if /i not "%%i"=="logs" if /i not "%%i"=="%BACKUP_DIR:~-20%" (
         echo    🗑️  Removing old %%i...
         rmdir /s /q "%%i" 2>nul
     )
 )
 
 for %%i in (*) do (
-    if /i not "%%i"=="Update LANStreamer.bat" if /i not "%%i"==".env" if /i not "%%i"=="device-config.json" (
+    if /i not "%%i"=="Update LANStreamer.bat" if /i not "%%i"==".env" (
         echo    🗑️  Removing old %%i...
         del "%%i" 2>nul
     )
@@ -252,10 +252,10 @@ echo    ✅ Development files cleaned
 
 :: Step 7: Restore user data
 echo 🔄 Step 7/8: Restoring your data...
+if exist "%BACKUP_DIR%\config" xcopy "%BACKUP_DIR%\config" "config\" /e /i /h /y >nul 2>&1
 if exist "%BACKUP_DIR%\data" xcopy "%BACKUP_DIR%\data" "data\" /e /i /h /y >nul 2>&1
 if exist "%BACKUP_DIR%\logs" xcopy "%BACKUP_DIR%\logs" "logs\" /e /i /h /y >nul 2>&1
 if exist "%BACKUP_DIR%\.env" copy "%BACKUP_DIR%\.env" "." >nul 2>&1
-if exist "%BACKUP_DIR%\device-config.json" copy "%BACKUP_DIR%\device-config.json" "." >nul 2>&1
 
 echo ✅ Data restored
 echo.
