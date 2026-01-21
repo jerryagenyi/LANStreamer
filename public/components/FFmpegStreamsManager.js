@@ -1310,30 +1310,32 @@ class FFmpegStreamsManager {
         if (window.showNotification) {
             window.showNotification(message, type);
         } else {
-            // Create a centered toast notification
+            // Create a centered toast notification with close button
             const toast = document.createElement('div');
-            toast.className = `fixed top-4 left-1/2 -translate-x-1/2 z-50 px-6 py-3 rounded-lg shadow-lg transition-all duration-300 max-w-md ${
+            toast.className = `fixed top-4 left-1/2 -translate-x-1/2 z-50 px-4 py-3 rounded-lg shadow-lg transition-all duration-300 max-w-md ${
                 type === 'success' ? 'bg-green-600 text-white' :
                 type === 'error' ? 'bg-red-600 text-white' :
                 'bg-blue-600 text-white'
             }`;
             toast.innerHTML = `
-                <div class="flex items-center gap-2">
-                    <span class="material-symbols-rounded text-sm">
+                <div class="flex items-start gap-3">
+                    <span class="material-symbols-rounded text-sm mt-0.5">
                         ${type === 'success' ? 'check_circle' : type === 'error' ? 'error' : 'info'}
                     </span>
-                    ${message}
+                    <span class="flex-1">${message}</span>
+                    <button class="text-white/80 hover:text-white transition-colors" onclick="this.parentElement.parentElement.remove()">
+                        <span class="material-symbols-rounded text-lg">close</span>
+                    </button>
                 </div>
             `;
 
             document.body.appendChild(toast);
 
-            // Auto remove after 3 seconds
+            // Auto remove after 8 seconds
             setTimeout(() => {
                 toast.style.opacity = '0';
-                toast.style.transform = 'translateX(100%)';
                 setTimeout(() => toast.remove(), 300);
-            }, 3000);
+            }, 8000);
         }
     }
 

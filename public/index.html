@@ -1077,7 +1077,7 @@
 
             showNotification(message, type = 'info') {
                 const notification = document.createElement('div');
-                notification.className = `fixed top-4 left-1/2 -translate-x-1/2 z-50 px-6 py-3 rounded-lg shadow-lg transition-all duration-300 max-w-md opacity-0`;
+                notification.className = `fixed top-4 left-1/2 -translate-x-1/2 z-50 px-4 py-3 rounded-lg shadow-lg transition-all duration-300 max-w-md opacity-0`;
                 
                 const colors = {
                     'info': 'bg-blue-500',
@@ -1086,7 +1086,14 @@
                 };
                 
                 notification.className += ` ${colors[type] || colors.info} text-white`;
-                notification.textContent = message;
+                notification.innerHTML = `
+                    <div class="flex items-start gap-3">
+                        <span class="flex-1">${message}</span>
+                        <button class="text-white/80 hover:text-white transition-colors" onclick="this.parentElement.parentElement.remove()">
+                            <span class="material-symbols-rounded text-lg">close</span>
+                        </button>
+                    </div>
+                `;
                 
                 document.body.appendChild(notification);
                 
@@ -1096,7 +1103,7 @@
                     notification.classList.add('opacity-100');
                 }, 100);
                 
-                // Fade out and remove
+                // Fade out and remove after 8 seconds
                 setTimeout(() => {
                     notification.classList.remove('opacity-100');
                     notification.classList.add('opacity-0');
@@ -1105,7 +1112,7 @@
                             notification.parentNode.removeChild(notification);
                         }
                     }, 300);
-                }, 3000);
+                }, 8000);
             }
 
             // Development utilities
