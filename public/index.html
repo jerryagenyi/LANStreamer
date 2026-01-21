@@ -631,32 +631,14 @@
                             </div>
                         </div>
 
-                        <div class="space-y-3 max-h-96 overflow-y-auto">
+                        <div class="space-y-2">
                             ${finalInputDevices.map(device => `
-                                <div class="flex items-center justify-between p-4 bg-[#111111] rounded-xl border border-[var(--border-color)] hover:border-[var(--primary-color)]/30 transition-all duration-300">
-                                    <div class="flex items-center gap-3">
-                                        <span class="material-symbols-rounded text-2xl ${device.fallback ? (device.virtual ? 'text-purple-400' : 'text-gray-600') : 'text-[var(--live-color)]'}">
-                                            ${device.virtual ? 'cable' : (device.fallback ? 'mic_off' : 'mic')}
-                                        </span>
-                                        <div>
-                                            <p class="font-semibold text-white text-sm">${device.name}</p>
-                                            <p class="text-xs text-gray-400">
-                                                ${device.description || device.platform || 'System Device'}
-                                                ${device.virtual ? ' • Virtual Audio' : ''}
-                                                ${device.fallback ? ' • Fallback' : ''}
-                                            </p>
-                                        </div>
-                                    </div>
-                                    <div class="flex items-center gap-2">
-                                        ${device.virtual ? `
-                                            <span class="px-2 py-1 text-xs font-medium bg-purple-500/20 text-purple-300 rounded-full">Virtual</span>
-                                        ` : ''}
-                                        ${device.fallback ? `
-                                            <span class="px-2 py-1 text-xs font-medium bg-gray-500/20 text-gray-400 rounded-full">Fallback</span>
-                                        ` : `
-                                            <span class="px-2 py-1 text-xs font-medium bg-green-500/20 text-green-300 rounded-full">Available</span>
-                                        `}
-                                    </div>
+                                <div class="flex items-center gap-3 p-3 bg-[#111111] rounded-lg border border-[var(--border-color)] hover:border-[var(--primary-color)]/30 transition-all duration-300">
+                                    <span class="material-symbols-rounded text-xl ${device.fallback ? 'text-gray-500' : (device.virtual ? 'text-purple-400' : 'text-[var(--live-color)]')}">
+                                        ${device.virtual ? 'cable' : 'mic'}
+                                    </span>
+                                    <span class="font-medium text-white text-sm flex-1">${device.name}</span>
+                                    ${device.virtual ? `<span class="px-2 py-0.5 text-xs font-medium bg-purple-500/20 text-purple-300 rounded-full">Virtual</span>` : ''}
                                 </div>
                             `).join('')}
                         </div>
