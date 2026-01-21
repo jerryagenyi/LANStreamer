@@ -292,6 +292,11 @@
                 this.clientTimers = new Map(); // streamId -> { startTime, isRunning }
                 this.uptimeUpdateInterval = null;
 
+                // Track known stream IDs to detect new streams
+                this.knownStreamIds = new Set();
+                this.hadStreamsRecently = false; // Track if we had streams before they disappeared
+                this.isInitialLoad = true;
+
                 this.init();
             }
 
@@ -357,10 +362,28 @@
                         console.log('🎵 Running streams:', runningStreams.map(s => ({ id: s.id, name: s.name })));
 
                         if (runningStreams.length > 0) {
+                            // Check if stream came back after being gone
+                            const newStreamIds = runningStreams.map(s => s.id);
+                            const streamsReappeared = this.hadStreamsRecently && this.knownStreamIds.size === 0;
+                            const newStreamAppeared = newStreamIds.some(id => !this.knownStreamIds.has(id)) && this.knownStreamIds.size > 0;
+                            
+                            // Show notification if streams reappeared or new stream added (not on initial load)
+                            if (!this.isInitialLoad && (streamsReappeared || newStreamAppeared)) {
+                                this.showNewStreamNotification();
+                            }
+                            
+                            // Update tracking
+                            this.knownStreamIds = new Set(newStreamIds);
+                            this.hadStreamsRecently = true;
+                            this.isInitialLoad = false;
+                            
                             this.streams = runningStreams;
                             this.updateClientTimers(runningStreams);
                             this.renderStreams();
                         } else {
+                            // No running streams - keep hadStreamsRecently true so we detect when they come back
+                            this.knownStreamIds.clear();
+                            this.isInitialLoad = false;
                             this.showNoStreams();
                         }
                     } else {
@@ -758,9 +781,44 @@
                 const noStreamsState = document.getElementById('no-streams-state');
                 const streamsList = document.getElementById('streams-list');
 
+                // Clear the streams array so updateLiveIndicator knows there are no streams
+                this.streams = [];
+
                 loadingState.classList.add('hidden');
                 noStreamsState.classList.remove('hidden');
                 streamsList.classList.add('hidden');
+
+                // Update the ON AIR indicator to OFF AIR
+                this.updateLiveIndicator();
+            }
+
+            showNewStreamNotification() {
+                // Create a persistent notification banner at the top
+                const existingBanner = document.getElementById('new-stream-banner');
+                if (existingBanner) existingBanner.remove();
+                
+                const banner = document.createElement('div');
+                banner.id = 'new-stream-banner';
+                banner.className = 'fixed top-20 left-1/2 transform -translate-x-1/2 z-50 bg-gradient-to-r from-green-600 to-green-500 text-white px-6 py-3 rounded-xl shadow-2xl cursor-pointer hover:scale-105 transition-all duration-300 flex items-center gap-3';
+                banner.innerHTML = `
+                    <span class="material-symbols-rounded animate-pulse">podcasts</span>
+                    <span class="font-semibold">New stream available!</span>
+                    <span class="text-green-200 text-sm">Click to refresh</span>
+                `;
+                banner.onclick = () => {
+                    window.location.reload();
+                };
+                
+                document.body.appendChild(banner);
+                
+                // Auto-hide after 10 seconds
+                setTimeout(() => {
+                    if (banner.parentNode) {
+                        banner.style.opacity = '0';
+                        banner.style.transform = 'translate(-50%, -20px)';
+                        setTimeout(() => banner.remove(), 300);
+                    }
+                }, 10000);
             }
 
             showError(message) {
@@ -1036,7 +1094,7 @@
                         onAirIndicator.classList.add('active');
                     }
                     if (onAirText) {
-                        onAirText.textContent = '🔴 ON AIR';
+                        onAirText.textContent = 'ON AIR';
                         onAirText.classList.remove('text-gray-400');
                         onAirText.classList.add('text-white');
                     }
@@ -1059,10 +1117,10 @@
             }
 
             startAutoRefresh() {
-                // Refresh streams every 10 seconds
+                // Refresh streams every 5 seconds for responsive ON AIR updates
                 setInterval(() => {
                     this.loadStreams();
-                }, 10000);
+                }, 5000);
             }
 
             setVolume(value) {
