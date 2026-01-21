@@ -51,6 +51,24 @@ Common issues and solutions for LANStreamer.
 - LANStreamer auto-detects the first available IP
 - Clients are on a different subnet and can't reach it
 
+#### 1b. One PC Shows Two IPs (Dual-Adapter Confusion)
+
+**Symptoms:**
+- Server shows two LAN IPs (e.g., `192.168.8.x` and `192.168.100.x`)
+- Only one of them works for listeners
+
+**Fix:**
+1. On server, list IPs:
+   ```powershell
+   ipconfig | Select-String "IPv4"
+   ```
+2. Identify the IP that matches the router's subnet (e.g., router `192.168.100.1` → use `192.168.100.x`).
+3. Disable/remove the other adapter or extra IP:
+   - `ncpa.cpl` → right-click unused adapter → Disable; or
+   - Adapter Properties → IPv4 → Advanced → remove the secondary IP; or
+   - Switch IPv4 to DHCP if a leftover static `.8` address exists.
+4. Share only the subnet-matching URL (e.g., `http://192.168.100.x:3001/streams`).
+
 #### 2. Windows Firewall Blocking Connections
 
 **Solution:**
