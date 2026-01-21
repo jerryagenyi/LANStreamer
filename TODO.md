@@ -20,18 +20,27 @@
 - ✅ **Icecast config checked:** No mountpoint restrictions, passwords correct (`hackme`)
 - ⚠️ **Icecast logs:** Old (Aug 2025), no recent entries - logs may not be updating
 
-**Root Cause (Likely):**
-- HTTP 500 suggests Icecast is rejecting the mountpoint format
-- Test used `/test` but LANStreamer uses `/${streamId}` (no extension)
-- May need mountpoint to match format (e.g., `/test.mp3` for MP3)
+**Root Cause:** ✅ **FOUND - Icecast Not Running!**
+- ❌ **CRITICAL:** Icecast process is NOT running (checked with `Get-Process`)
+- Dashboard shows "Server Online" but process doesn't exist
+- Port 8000 responds (likely another service or cached connection)
+- All HTTP 500 errors are because Icecast isn't actually running
+- Tested: MP3, OGG formats both fail - confirms Icecast server issue
+
+**Fix:**
+1. **Restart Icecast from dashboard** (Stop → Start)
+2. **Or manually start:** `C:\Program Files (x86)\Icecast\bin\icecast.exe -c "C:\Program Files (x86)\Icecast\icecast.xml"`
+3. Verify process is running: `Get-Process | Where-Object {$_.ProcessName -like "*icecast*"}`
 
 **Next Steps:**
 - [x] Check Icecast logs (old, no recent entries)
 - [x] Verify Icecast mountpoint configuration (no restrictions found)
-- [ ] Test mountpoint with file extension: `icecast://source:hackme@localhost:8000/test.mp3`
-- [ ] Test without `-content_type` header (may be causing HTTP 500)
-- [ ] Check if Icecast needs mountpoint to be created first
-- [ ] Verify Icecast is actually running (restart may be needed)
+- [x] Test mountpoint with file extension (still HTTP 500)
+- [x] Test without `-content_type` header (still HTTP 500)
+- [x] Test OGG format (still HTTP 500)
+- [x] **Verify Icecast is actually running** ❌ **NOT RUNNING**
+- [ ] Restart Icecast server
+- [ ] Fix dashboard status check (shows "Online" when process is dead)
 
 ---
 
