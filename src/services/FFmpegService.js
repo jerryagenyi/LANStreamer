@@ -3,6 +3,8 @@ import { fileURLToPath } from 'url'
 import { dirname, join } from 'path'
 import fs from 'fs'
 import logger from '../utils/logger.js'
+import config from '../config/index.js'
+import IcecastService from './IcecastService.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
@@ -132,6 +134,16 @@ class FFmpegService {
     const formats = this.getAudioFormats();
     const format = formats[formatIndex] || formats[0]; // Fallback to first format
 
+    // Use configured Icecast credentials/host/port (fallback to defaults)
+    // Use a publish-safe host (avoid 0.0.0.0 / :: for outgoing connections)
+    const icecastHostRaw = config.icecast.host || 'localhost'
+    const icecastHost = ['0.0.0.0', '::', '', null, undefined].includes(icecastHostRaw)
+      ? 'localhost'
+      : icecastHostRaw
+    // Use actual port from icecast.xml if available
+    const icecastPort = IcecastService.getActualPort() || config.icecast.port || 8000
+    const icecastSourcePassword = config.icecast.sourcePassword || 'hackme'
+
     const args = [
       '-f', 'dshow',                    // DirectShow input format
       '-i', `audio="${streamConfig.deviceId}"`, // Audio input device
@@ -140,7 +152,7 @@ class FFmpegService {
       '-ar', '44100',                   // Sample rate
       '-ac', '2',                       // Audio channels
       '-f', format.format,              // Output format (with fallback support)
-      '-',                              // Output to stdout
+      `icecast://source:${icecastSourcePassword}@${icecastHost}:${icecastPort}/ffmpeg-service-test`, // Output to Icecast
       '-loglevel', 'error'              // Only show errors
     ]
 

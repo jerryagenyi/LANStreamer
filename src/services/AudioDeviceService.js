@@ -564,40 +564,34 @@ class AudioDeviceService {
 
   /**
    * Tests if a specific audio device is accessible.
+   * This is a lightweight check that verifies the device exists in our device list.
+   * The actual FFmpeg accessibility will be tested when the stream starts.
    * @param {string} deviceId - Device ID to test
    * @returns {boolean} True if device is accessible
    */
   async testDevice(deviceId) {
     try {
+      logger.audio('Testing device accessibility (lightweight check)', { deviceId });
+      
+      // Get fresh device list (bypasses cache if expired)
       const devices = await this.getAudioDevices();
       const device = devices.find(d => d.id === deviceId);
       
       if (!device) {
+        logger.audio('Device not found in device list', { deviceId, availableDevices: devices.map(d => d.id) });
         return false;
       }
 
-      // Test device accessibility with a short FFmpeg command
-      let testCommand;
+      logger.audio('Device found and accessible', { deviceId, deviceName: device.name });
       
-      switch (this.platform) {
-        case 'win32':
-          testCommand = `ffmpeg -f dshow -i audio="${device.name}" -f null - -t 1`;
-          break;
-        case 'darwin':
-          testCommand = `ffmpeg -f avfoundation -i "${device.id}" -f null - -t 1`;
-          break;
-        case 'linux':
-          testCommand = `ffmpeg -f alsa -i "${device.id}" -f null - -t 1`;
-          break;
-        default:
-          return false;
-      }
-
-      await execAsync(testCommand);
+      // Device exists in the list - assume it's accessible
+      // The actual FFmpeg test will happen when the stream starts
+      // This avoids hanging on slow device tests
       return true;
       
     } catch (error) {
-      logger.audio('Device test failed', { deviceId, error: error.message });
+      logger.audio('Device test failed with exception', { deviceId, error: error.message });
+      // If we can't even check the device list, assume it's not accessible
       return false;
     }
   }

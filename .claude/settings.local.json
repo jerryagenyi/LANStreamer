@@ -22,7 +22,10 @@
       "Bash(netstat:*)",
       "Bash(taskkill:*)",
       "Bash(powershell -Command \"Stop-Process -Id 57624 -Force\")",
-      "mcp__MCP_DOCKER__fetch"
+      "mcp__MCP_DOCKER__fetch",
+      "Bash(cmd.exe /c \"tasklist /FI \"\"IMAGENAME eq icecast.exe\"\"\")",
+      "Bash(cmd.exe /c \"netstat -ano | findstr :8000\")",
+      "Bash(cmd.exe /c \"ffmpeg -version\")"
     ]
   }
 }

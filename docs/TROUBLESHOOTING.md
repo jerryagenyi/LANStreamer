@@ -3,11 +3,139 @@
 Common issues and solutions for LANStreamer.
 
 ## Table of Contents
+- [Icecast Connection Issues](#icecast-connection-issues) ⭐ **Start Here**
 - [Network Connectivity Issues](#network-connectivity-issues)
 - [Stream Playback Issues](#stream-playback-issues)
 - [Firewall Issues](#firewall-issues)
 - [Audio Device Issues](#audio-device-issues)
 - [Installation Issues](#installation-issues)
+
+---
+
+## Icecast Connection Issues
+
+### Problem: "Failed to start stream - Connection refused" or "FFmpeg crashed"
+
+**Error Messages:**
+- `Failed to start stream: Stream failed to start with all audio formats (MP3, AAC, OGG)`
+- `FFmpeg crashed during startup (exit code: 4294967291)` (which is -5, connection refused)
+- `FFmpeg crashed during startup (exit code: 2812791304)` (Windows process crash)
+- Error output shows only FFmpeg version info with no actual error
+
+**This is the #1 most common issue!** It usually means FFmpeg cannot connect to Icecast.
+
+### Cause 1: Port 8000 Conflict (Most Common)
+
+Another application is using port 8000, preventing Icecast from working properly.
+
+**Common culprits:**
+- **Docker Desktop** - Uses port 8000 by default
+- **Other streaming servers** - Shoutcast, another Icecast instance
+- **Development servers** - Some frameworks use port 8000
+
+**How to diagnose:**
+```powershell
+# Check what's using port 8000
+netstat -ano | findstr ":8000" | findstr "LISTENING"
+```
+
+**Example output showing Docker conflict:**
+```
+TCP    0.0.0.0:8000    0.0.0.0:0    LISTENING    27320  ← Docker
+TCP    0.0.0.0:8000    0.0.0.0:0    LISTENING    46492  ← Icecast (can't bind properly)
+```
+
+**Solutions:**
+
+**Option A: Stop the conflicting application**
+- Close Docker Desktop
+- Stop other streaming servers
+- Kill the process: `taskkill /PID 27320 /F` (replace with actual PID)
+
+**Option B: Change Icecast to use a different port**
+
+1. Edit `icecast.xml` (requires admin/elevated PowerShell):
+   ```
+   Location: C:\Program Files (x86)\Icecast\icecast.xml
+   ```
+   
+2. Find and change:
+   ```xml
+   <port>8000</port>
+   ```
+   to:
+   ```xml
+   <port>8080</port>
+   ```
+
+3. Create `.env` file in LANStreamer folder:
+   ```
+   ICECAST_PORT=8080
+   STREAM_BASE_URL=http://localhost:8080
+   ```
+
+4. Restart both Icecast and LANStreamer
+
+5. Update firewall rules for the new port:
+   ```powershell
+   netsh advfirewall firewall add rule name="Icecast8080" dir=in action=allow protocol=TCP localport=8080
+   ```
+
+### Cause 2: Icecast Not Running
+
+**How to diagnose:**
+```powershell
+# Check if Icecast process exists
+tasklist | findstr "icecast"
+```
+
+**Solution:**
+1. Start Icecast from the LANStreamer dashboard (Icecast Server → Start Server)
+2. Or start manually:
+   ```powershell
+   & "C:\Program Files (x86)\Icecast\bin\icecast.exe" -c "C:\Program Files (x86)\Icecast\icecast.xml"
+   ```
+
+### Cause 3: Icecast Log Directory Missing
+
+**Symptoms:**
+- Icecast starts but immediately crashes
+- Dashboard shows Icecast as "Online" but HTTP requests fail with 500
+
+**Solution:**
+1. Create the log directory:
+   ```powershell
+   New-Item -ItemType Directory -Path "C:\Program Files (x86)\Icecast\log" -Force
+   ```
+2. Or edit `icecast.xml` to use full paths:
+   ```xml
+   <logdir>C:\Program Files (x86)\Icecast\log</logdir>
+   ```
+
+### Cause 4: Password Mismatch
+
+**Symptoms:**
+- FFmpeg error mentions "401 Unauthorized" or "authentication failed"
+
+**Solution:**
+1. Check `icecast.xml` for `<source-password>` (default: `hackme`)
+2. Ensure `.env` has matching `ICECAST_SOURCE_PASSWORD=hackme`
+3. Restart both Icecast and LANStreamer after changes
+
+### Cause 5: Stream Source Limit Reached
+
+**Symptoms:**
+- First stream works, second stream fails
+- Error mentions "too many sources"
+
+**Solution:**
+1. Edit `icecast.xml`:
+   ```xml
+   <limits>
+       <sources>10</sources>  <!-- Change from 2 to desired number -->
+   </limits>
+   ```
+2. Restart Icecast
 
 ---
 

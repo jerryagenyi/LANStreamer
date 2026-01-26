@@ -12,14 +12,18 @@ const router = express.Router();
 router.post('/start', async (req, res) => {
   try {
     const streamConfig = req.body;
+    logger.info('Received stream start request:', { streamConfig });
+    
     const stream = await streamingService.startStream(streamConfig);
+    logger.info('Stream started successfully:', { streamId: stream.id });
+    
     res.status(200).json({ 
       message: 'Stream started successfully', 
       streamId: stream.id,
       stream: stream
     });
   } catch (error) {
-    logger.error('Error starting stream:', error);
+    logger.error('Error starting stream:', { error: error.message, stack: error.stack });
     res.status(500).json({ message: 'Error starting stream', error: error.message });
   }
 });
@@ -63,14 +67,18 @@ router.post('/stop-all', async (req, res) => {
 router.post('/restart', async (req, res) => {
   try {
     const { id } = req.body;
+    logger.info('Received stream restart request:', { streamId: id });
+    
     const result = await streamingService.restartStream(id);
+    logger.info('Stream restarted successfully:', { streamId: id });
+    
     res.status(200).json({ 
       message: 'Stream restarted successfully', 
       streamId: id,
       result: result
     });
   } catch (error) {
-    logger.error('Error restarting stream:', error);
+    logger.error('Error restarting stream:', { error: error.message, stack: error.stack });
     res.status(500).json({ message: 'Error restarting stream', error: error.message });
   }
 });

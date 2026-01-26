@@ -3,9 +3,11 @@ import { fileURLToPath } from 'url'
 import { dirname, join } from 'path'
 import fs from 'fs'
 import logger from '../utils/logger.js'
+import errorDiagnostics from '../utils/errorDiagnostics.js'
 import FFmpegService from './FFmpegService.js'
 import IcecastService from './IcecastService.js'
 import AudioDeviceService from './AudioDeviceService.js'
+import config from '../config/index.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
@@ -135,6 +137,26 @@ class StreamingService {
       }
     }
 
+    // Validate device accessibility before attempting to start stream
+    if (streamConfig.deviceId && !streamConfig.inputFile) {
+      try {
+        logger.info(`Testing device accessibility for ${streamConfig.deviceId} before starting stream...`)
+        const isAccessible = await AudioDeviceService.testDevice(streamConfig.deviceId)
+        if (!isAccessible) {
+          const deviceName = this.validateAndGetDeviceName(streamConfig.deviceId)
+          throw new Error(`Audio device "${deviceName || streamConfig.deviceId}" is not accessible.\n\n🔧 TROUBLESHOOTING:\n\n1. DEVICE TEST FAILED:\n   • FFmpeg cannot access this audio device\n   • Device may be in use by another application\n   • Device driver may have issues\n\n2. SOLUTIONS:\n   • Close other applications using the microphone (Zoom, Teams, Discord, etc.)\n   • Try selecting a different audio device\n   • Restart the audio device or your computer\n   • Check Windows Sound settings to verify device is working\n\n3. COMMON CAUSES:\n   • Another application has exclusive access to the device\n   • Device driver needs updating\n   • Windows privacy settings blocking microphone access\n   • Virtual audio device (VB-Audio/VoiceMeeter) needs restarting`)
+        }
+        logger.info(`Device ${streamConfig.deviceId} passed accessibility test`)
+      } catch (deviceTestError) {
+        // If testDevice throws an error (not just returns false), use that error
+        if (deviceTestError.message && !deviceTestError.message.includes('Audio device')) {
+          throw deviceTestError
+        }
+        // Otherwise, re-throw the accessibility error we created
+        throw deviceTestError
+      }
+    }
+
     const formats = this.getAudioFormats()
     let lastError = null
 
@@ -246,9 +268,9 @@ class StreamingService {
     process.on('exit', (code, signal) => {
       logger.info(`FFmpeg process exited for stream ${streamId}: code=${code}, signal=${signal}`)
 
-      // Log stderr output if process failed
+      // Log stderr output if process failed (show more for debugging)
       if (code !== 0 && stderrData) {
-        logger.error(`FFmpeg stderr output for failed stream ${streamId}:`, stderrData.slice(0, 1000));
+        logger.error(`FFmpeg stderr output for failed stream ${streamId}:`, stderrData.slice(0, 3000));
       }
 
       this.handleProcessExit(streamId, code, signal, stderrData)
@@ -282,7 +304,19 @@ class StreamingService {
               resolve()
             } else {
               // Process exited during grace period - this is an immediate crash
-              const errorMsg = `FFmpeg crashed immediately after startup (exit code: ${process.exitCode || 'unknown'}).\n\nThis usually means:\n• Audio device driver issue\n• FFmpeg codec problem\n• DirectShow subsystem failure\n\nFFmpeg Error Output:\n${stderrData.slice(0, 500)}`;
+              // Use error diagnostics for user-friendly error messages
+              const errorOutput = stderrData.slice(0, 2000) || 'No error output available'
+              const exitCode = process.exitCode || 'unknown'
+              // Use actual port from icecast.xml
+              const actualPort = IcecastService.getActualPort() || config.icecast.port;
+              const diagnosis = errorDiagnostics.diagnose(stderrData, exitCode, {
+                deviceId: streamConfig.deviceId,
+                deviceName: streamConfig.deviceName,
+                icecastPort: actualPort,
+                streamId
+              })
+              
+              const errorMsg = `FFmpeg crashed immediately after startup (exit code: ${exitCode}).\n\n${diagnosis.title}\n\n${diagnosis.description}\n\n🔧 Quick fixes:\n${diagnosis.solutions.join('\n')}\n\nFFmpeg Error Output:\n${errorOutput}`;
               hasResolved = true
               reject(new Error(errorMsg))
             }
@@ -313,8 +347,21 @@ class StreamingService {
         if (hasSpawned && code !== 0) {
           clearTimeout(spawnTimeout)
           clearTimeout(graceTimeout)
-          // Only reject if we're still in the startup phase
-          const errorMsg = `FFmpeg crashed during startup (exit code: ${code}).\n\nFFmpeg Error Output:\n${stderrData.slice(0, 500)}`;
+          
+          // Use error diagnostics for user-friendly error messages
+          const errorOutput = stderrData.slice(0, 2000) || 'No error output available'
+          // Use actual port from icecast.xml
+          const actualPort = IcecastService.getActualPort() || config.icecast.port;
+          const diagnosis = errorDiagnostics.diagnose(stderrData, code, {
+            deviceId: streamConfig.deviceId,
+            deviceName: streamConfig.deviceName,
+            icecastPort: actualPort,
+            streamId
+          })
+          
+          // Format the error message with diagnosis
+          const errorMsg = `FFmpeg crashed during startup (exit code: ${code}).\n\n${diagnosis.title}\n\n${diagnosis.description}\n\n🔧 Quick fixes:\n${diagnosis.solutions.join('\n')}\n\nFFmpeg Error Output:\n${errorOutput}`;
+          
           hasResolved = true
           reject(new Error(errorMsg))
         }
@@ -363,7 +410,17 @@ class StreamingService {
    */
   buildFFmpegArgs(streamId, streamConfig, formatIndex = 0) {
     const bitrate = streamConfig.bitrate || 192;
-    const icecastUrl = `icecast://source:hackme@localhost:8000/${streamId}`;
+
+    // Use configured Icecast credentials/host/port (fallback to defaults)
+    // Use a publish-safe host (avoid 0.0.0.0 / :: for outgoing connections)
+    const icecastHostRaw = config.icecast.host || 'localhost';
+    const icecastHost = ['0.0.0.0', '::', '', null, undefined].includes(icecastHostRaw)
+      ? 'localhost'
+      : icecastHostRaw;
+    // Use actual port from icecast.xml if available
+    const icecastPort = IcecastService.getActualPort() || config.icecast.port || 8000;
+    const icecastSourcePassword = config.icecast.sourcePassword || 'hackme';
+    const icecastUrl = `icecast://source:${icecastSourcePassword}@${icecastHost}:${icecastPort}/${streamId}`;
     const formats = this.getAudioFormats();
     const format = formats[formatIndex] || formats[0]; // Fallback to first format
 
@@ -402,9 +459,10 @@ class StreamingService {
 
       // SIMPLIFIED: Use minimal FFmpeg command that works (based on manual setup scripts)
       // Don't add extra parameters that might cause crashes
+      // IMPORTANT: Use quotes around device name for DirectShow (handles spaces and special chars)
       args = [
         '-f', 'dshow',                    // DirectShow input format
-        '-i', `audio=${deviceName}`,       // Audio input device (real DirectShow name)
+        '-i', `audio="${deviceName}"`,     // Audio input device (real DirectShow name, quoted for safety)
         '-acodec', format.codec,           // Audio codec (with fallback support)
         '-b:a', `${bitrate}k`,            // Audio bitrate (use -b:a instead of -ab for compatibility)
         '-ar', '44100',                    // Sample rate
@@ -999,18 +1057,15 @@ class StreamingService {
 
   /**
    * Parse FFmpeg error from exit code and stderr
+   * Uses the centralized error diagnostics system for user-friendly messages
    * @param {number} exitCode - FFmpeg exit code
    * @param {string} stderrData - FFmpeg stderr output
    * @param {string} deviceName - Optional device name for better error messages
    * @returns {string} Human-readable error message
    */
   parseFFmpegError(exitCode, stderrData, deviceName = null) {
-    // Convert unsigned 32-bit to signed for Windows
-    const signedCode = exitCode > 2147483647 ? exitCode - 4294967296 : exitCode;
-
     // Analyze stderr for specific error patterns
     const safeStderrData = stderrData || '';
-    const stderrLower = safeStderrData.toLowerCase();
 
     // Get device info - use provided name or try to find it
     let deviceInfo = deviceName || 'Unknown device'
@@ -1022,200 +1077,17 @@ class StreamingService {
       }
     }
 
-    // 🎯 CRITICAL: Windows-specific crash detection (exit code 2812791304 = 0xA7F00008)
-    if (exitCode === 2812791304 || signedCode === -1482175992) {
+    // Use centralized error diagnostics
+    // Use actual port from icecast.xml
+    const actualPort = IcecastService.getActualPort() || config.icecast.port;
+    const diagnosis = errorDiagnostics.diagnose(safeStderrData, exitCode, {
+      deviceId: deviceInfo,
+      deviceName: deviceInfo,
+      icecastPort: actualPort
+    })
 
-      return `💥 CRITICAL: FFmpeg process crashed immediately after startup (exit code 0xA7F00008)
-
-📊 DEPENDENCY CHAIN:
-   ❌ Audio Device (${deviceInfo}) → ❌ FFmpeg (CRASHED) → ⚠️ Icecast → Listeners
-
-🔧 DIAGNOSTIC:
-   This exit code indicates a Windows process-level failure (DLL, codec, or driver issue).
-
-💡 POSSIBLE CAUSES:
-   1. Missing FFmpeg codecs (libmp3lame, aac, vorbis)
-   2. Audio device driver incompatibility
-   3. DirectShow subsystem failure
-   4. Corrupted FFmpeg installation
-
-✅ TROUBLESHOOTING STEPS:
-   1. Try a different audio device (physical mic vs virtual cable)
-   2. Reinstall FFmpeg with full codec support
-   3. Update audio drivers
-   4. Check Windows Event Viewer for crash details
-   5. Run 'ffmpeg -version' and 'ffmpeg -formats' to verify installation
-
-📋 FFMPEG STDERR:
-   ${safeStderrData.slice(0, 500) || 'No error output available'}`
-    }
-
-    // Device-specific error detection
-    if (stderrLower.includes('device not found') || stderrLower.includes('no such device')) {
-      return `🎤 Audio device not found - Device may have been disconnected or is no longer available
-
-📊 DEPENDENCY CHAIN:
-   ❌ Audio Device → FFmpeg → ⚠️ Icecast → Listeners
-
-💡 SOLUTION:
-   • Click "Refresh Devices" in the dashboard
-   • Check if the device is connected and recognized by Windows
-   • Try a different audio device`
-    }
-
-    if (stderrLower.includes('device busy') || stderrLower.includes('resource busy')) {
-      return `🔒 Audio device busy - Another application is using this device
-
-📊 DEPENDENCY CHAIN:
-   ❌ Audio Device (BUSY) → FFmpeg → ⚠️ Icecast → Listeners
-
-💡 SOLUTION:
-   • Close other applications using the microphone (Zoom, Teams, etc.)
-   • Wait a few seconds and try again
-   • Select a different audio device`
-    }
-
-    if (stderrLower.includes('permission denied') || stderrLower.includes('access denied')) {
-      return `🚫 Permission denied - Cannot access audio device
-
-📊 DEPENDENCY CHAIN:
-   ❌ Audio Device (ACCESS DENIED) → FFmpeg → ⚠️ Icecast → Listeners
-
-💡 SOLUTION:
-   • Run LANStreamer as Administrator
-   • Check Windows privacy settings for microphone access
-   • Ensure no security software is blocking access`
-    }
-
-    if (stderrLower.includes('voicemeeter') && (stderrLower.includes('not found') || stderrLower.includes('unavailable'))) {
-      return `🎛️ VoiceMeeter device unavailable
-
-📊 DEPENDENCY CHAIN:
-   ❌ VoiceMeeter (NOT FOUND) → FFmpeg → ⚠️ Icecast → Listeners
-
-💡 SOLUTION:
-   • Start the VoiceMeeter application
-   • Restart VoiceMeeter banana devices
-   • Or use a physical microphone instead`
-    }
-
-    if (stderrLower.includes('vb-audio') && (stderrLower.includes('not found') || stderrLower.includes('unavailable'))) {
-      return `🔗 VB-Audio Virtual Cable device unavailable
-
-📊 DEPENDENCY CHAIN:
-   ❌ VB-Audio Virtual Cable (NOT FOUND) → FFmpeg → ⚠️ Icecast → Listeners
-
-💡 SOLUTION:
-   • Restart the VB-Audio Virtual Cable driver
-   • Reinstall VB-Audio Virtual Cable from vb-audio.com
-   • Try a physical microphone instead
-   • Note: VB-Audio has no control panel - restart by reinstalling or rebooting`
-    }
-
-    if (stderrLower.includes('connection refused') || stderrLower.includes('connection failed') || stderrLower.includes('error number -138')) {
-      return `🌐 Cannot connect to Icecast server (Connection Refused)
-
-📊 DEPENDENCY CHAIN:
-   ⚠️ Audio Device → FFmpeg → ❌ Icecast (UNREACHABLE) → Listeners
-
-🔧 COMMON CAUSES:
-   1. Icecast not running - Start it from the dashboard
-   2. Port mismatch - LANStreamer uses port 8000 by default
-      • Check <port> in your icecast.xml matches 8000
-      • Or set ICECAST_PORT=xxxx in your .env file
-   3. Firewall blocking localhost connections
-
-💡 QUICK TEST (run in PowerShell):
-   Test-NetConnection localhost -Port 8000`
-    }
-
-    if (stderrLower.includes('invalid sample rate') || stderrLower.includes('unsupported sample rate')) {
-      return `📊 Invalid audio format - Device sample rate not supported
-
-📊 DEPENDENCY CHAIN:
-   ⚠️ Audio Device (INCOMPATIBLE FORMAT) → ❌ FFmpeg → Icecast → Listeners
-
-💡 SOLUTION:
-   • Try a different audio device
-   • The device may be outputting an unsupported sample rate
-   • FFmpeg will attempt format fallback (MP3 → AAC → OGG)`
-    }
-
-    // Common FFmpeg error codes with enhanced messages
-    const errorMessages = {
-      '-5': `🚫 Permission denied - Cannot access audio device
-
-📊 DEPENDENCY CHAIN:
-   ❌ Audio Device (PERMISSION DENIED) → FFmpeg → Icecast → Listeners
-
-💡 SOLUTION:
-   • Close other applications using the microphone
-   • Run as Administrator
-   • Check Windows privacy settings`,
-      '-22': `⚙️ Invalid device settings - Audio device name or parameters are incorrect
-
-📊 DEPENDENCY CHAIN:
-   ❌ Audio Device (INVALID) → FFmpeg → Icecast → Listeners
-
-💡 SOLUTION:
-   • Refresh the device list
-   • Select a different audio device
-   • Check device compatibility`,
-      '-2': `🎤 Audio device not found - Device may have been disconnected
-
-📊 DEPENDENCY CHAIN:
-   ❌ Audio Device (NOT FOUND) → FFmpeg → Icecast → Listeners
-
-💡 SOLUTION:
-   • Check if device is plugged in
-   • Refresh device list
-   • Try a different device`,
-      '1': `❌ Stream startup failed - Check device availability and try again
-
-📊 DEPENDENCY CHAIN:
-   ⚠️ Audio Device → ❌ FFmpeg (STARTUP FAILED) → Icecast → Listeners
-
-💡 SOLUTION:
-   • Verify device is working in Windows Sound settings
-   • Try restarting the stream
-   • Check system resources`
-    };
-
-    let errorMsg = errorMessages[signedCode.toString()] || `FFmpeg exited with code ${exitCode} (${signedCode})`;
-
-    // Add dependency chain context to all errors
-    const chainContext = `
-📊 DEPENDENCY CHAIN:
-   ⚠️ Audio Device → ❌ FFmpeg (exit code ${exitCode}) → Icecast → Listeners`
-
-    // Ensure stderrData is a string and add specific error details from stderr
-    if (safeStderrData) {
-      if (safeStderrData.includes('No such audio device') || safeStderrData.includes('Could not find audio only device')) {
-        errorMsg = 'Audio device not found. The selected microphone may be disconnected or in use by another application.';
-      } else if (safeStderrData.includes('Permission denied')) {
-        errorMsg = 'Permission denied accessing audio device. Close other applications using the microphone.';
-      } else if (safeStderrData.includes('Device or resource busy')) {
-        errorMsg = 'Audio device is busy. Another application may be using it.';
-      } else if (safeStderrData.includes('among source devices of type audio')) {
-        errorMsg = 'Audio device not recognized by DirectShow. Please check device name and ensure it\'s properly connected.';
-      }
-
-      // If we have stderr data but no specific match, include a snippet for debugging
-      if (errorMsg.startsWith('FFmpeg exited with code')) {
-        const stderrSnippet = safeStderrData.slice(0, 200).replace(/\n/g, ' ').trim();
-        if (stderrSnippet) {
-          errorMsg += `\n\n📋 FFMPEG OUTPUT:\n${stderrSnippet}\n\n${chainContext}`;
-        } else {
-          errorMsg += `\n\n${chainContext}`;
-        }
-      } else {
-        errorMsg += `\n\n${chainContext}`;
-      }
-    } else {
-      errorMsg += `\n\n${chainContext}`;
-    }
-
-    return errorMsg;
+    // Format the message
+    return errorDiagnostics.formatMessage(diagnosis)
   }
 
   /**

@@ -41,6 +41,12 @@ class IcecastService {
       connections: 0,
       sources: 0
     }
+
+    // Actual port from icecast.xml (parsed during initialization)
+    this.actualPort = null
+
+    // Manual stop flag - prevents auto-restart when user manually stops Icecast
+    this.manuallyStopped = false
   }
 
   /**
@@ -211,8 +217,9 @@ class IcecastService {
         await this.ensureConfigDirectory();
       }
 
-      // Step 2.5: Parse max listeners from config
+      // Step 2.5: Parse max listeners and port from config
       this.maxListeners = await this.parseMaxListeners();
+      this.actualPort = await this.parsePort();
 
       // Step 3: Check if already running
       await this.checkRunningStatus();
@@ -514,6 +521,90 @@ class IcecastService {
   /**
    * Parse max listeners from icecast.xml configuration
    */
+  /**
+   * Get the actual port from icecast.xml (synchronous getter)
+   * If not yet parsed, tries to parse it synchronously as a fallback
+   * @returns {number} Port number from icecast.xml, or default from config
+   */
+  getActualPort() {
+    // If already parsed, return it
+    if (this.actualPort) {
+      return this.actualPort;
+    }
+
+    // Try to parse synchronously as fallback (if paths are available)
+    if (this.paths && this.paths.config) {
+      try {
+        // Use fs-extra which extends fs and has sync methods
+        if (fs.existsSync && fs.existsSync(this.paths.config)) {
+          const configContent = fs.readFileSync(this.paths.config, 'utf8');
+          
+          // Try to parse port from XML (same pattern as async parsePort)
+          const portMatch = configContent.match(/<listen-socket>[\s\S]*?<port>(\d+)<\/port>[\s\S]*?<\/listen-socket>/);
+          if (portMatch) {
+            const port = parseInt(portMatch[1]);
+            this.actualPort = port; // Cache it
+            logger.icecast('Parsed port synchronously (fallback)', { port, configPath: this.paths.config });
+            return port;
+          }
+          
+          // Fallback: simple match
+          const simplePortMatch = configContent.match(/<port>(\d+)<\/port>/);
+          if (simplePortMatch) {
+            const port = parseInt(simplePortMatch[1]);
+            this.actualPort = port; // Cache it
+            logger.icecast('Found port synchronously (simple match fallback)', { port });
+            return port;
+          }
+        }
+      } catch (error) {
+        logger.debug('Could not parse port synchronously:', error.message);
+      }
+    }
+
+    // Final fallback to config default
+    logger.debug('Using default port from config (actualPort not set)', { defaultPort: config.icecast.port });
+    return config.icecast.port;
+  }
+
+  /**
+   * Parse port from icecast.xml
+   * @returns {Promise<number>} Port number from config, or default from config.icecast.port
+   */
+  async parsePort() {
+    try {
+      if (!this.paths.config || !await fs.pathExists(this.paths.config)) {
+        logger.warn('Icecast config file not found, using default port from config');
+        return config.icecast.port;
+      }
+
+      const configContent = await fs.readFile(this.paths.config, 'utf8');
+
+      // Parse XML to find <port> element inside <listen-socket>
+      // Match <port>8200</port> inside <listen-socket>...</listen-socket>
+      const portMatch = configContent.match(/<listen-socket>[\s\S]*?<port>(\d+)<\/port>[\s\S]*?<\/listen-socket>/);
+      if (portMatch) {
+        const port = parseInt(portMatch[1]);
+        logger.icecast('Parsed port from config', { port, configPath: this.paths.config });
+        return port;
+      }
+
+      // Fallback: look for any <port> tag (in case structure is different)
+      const simplePortMatch = configContent.match(/<port>(\d+)<\/port>/);
+      if (simplePortMatch) {
+        const port = parseInt(simplePortMatch[1]);
+        logger.icecast('Found port in config (simple match)', { port });
+        return port;
+      }
+
+      logger.warn('Could not parse port from config, using default from config.icecast.port');
+      return config.icecast.port;
+    } catch (error) {
+      logger.warn('Error parsing port from config:', error.message);
+      return config.icecast.port;
+    }
+  }
+
   async parseMaxListeners() {
     try {
       if (!this.paths.config || !await fs.pathExists(this.paths.config)) {
@@ -552,7 +643,9 @@ class IcecastService {
 
   async checkRunningStatus() {
     try {
-      const response = await fetch(`http://${config.icecast.host}:${config.icecast.port}/admin/stats.xml`, {
+      // Use actual port from icecast.xml if available
+      const port = this.actualPort || config.icecast.port;
+      const response = await fetch(`http://${config.icecast.host}:${port}/admin/stats.xml`, {
         timeout: 5000
       })
       
@@ -570,13 +663,16 @@ class IcecastService {
    * Create standardized status response
    */
   _createStatusResponse(installationCheck, running, status, stats = null) {
+    // Use actual port from icecast.xml if available, otherwise fall back to config
+    const actualPort = this.actualPort || config.icecast.port;
+    
     const baseResponse = {
       installed: true,
       running,
       status,
       uptime: 0,
       version: installationCheck.version,
-      port: config.icecast.port,
+      port: actualPort,
       host: config.icecast.host,
       maxListeners: this.maxListeners || 100 // Default fallback
     };
@@ -646,7 +742,9 @@ class IcecastService {
 
       // Try to get stats from admin interface (for additional info, but process check is authoritative)
       try {
-      const response = await fetch(`http://${config.icecast.host}:${config.icecast.port}/admin/stats.xml`, {
+      // Use actual port from icecast.xml if available
+      const port = this.actualPort || config.icecast.port;
+      const response = await fetch(`http://${config.icecast.host}:${port}/admin/stats.xml`, {
         timeout: 5000,
         headers: {
           'Authorization': `Basic ${Buffer.from(`admin:${config.icecast.adminPassword}`).toString('base64')}`
@@ -958,7 +1056,7 @@ class IcecastService {
           message: 'ICECAST: Default admin credentials (admin/hackme) are in use',
           description: 'Anyone can access the Icecast admin panel and control your server',
           fix: 'Change admin-user and admin-password in icecast.xml',
-          adminUrl: `http://${config.icecast.host}:${config.icecast.port}/admin/`
+          adminUrl: `http://${config.icecast.host}:${this.actualPort || config.icecast.port}/admin/`
         });
       }
 
@@ -1000,7 +1098,9 @@ class IcecastService {
 
   async getMountpoints() {
     try {
-      const response = await fetch(`http://${config.icecast.host}:${config.icecast.port}/admin/listmounts.xml`, {
+      // Use actual port from icecast.xml if available
+      const port = this.actualPort || config.icecast.port;
+      const response = await fetch(`http://${config.icecast.host}:${port}/admin/listmounts.xml`, {
         timeout: 5000,
         headers: {
           'Authorization': `Basic ${Buffer.from(`admin:${config.icecast.adminPassword}`).toString('base64')}`
@@ -1028,7 +1128,7 @@ class IcecastService {
             content_type: source.content_type || 'unknown',
             stream_start: source.stream_start || null,
             title: source.title || '',
-            url: `http://${config.icecast.host}:${config.icecast.port}${source.$.mount}`
+            url: `http://${config.icecast.host}:${this.actualPort || config.icecast.port}${source.$.mount}`
           })
         }
       }
@@ -1042,8 +1142,9 @@ class IcecastService {
 
   /**
    * Start the Icecast server
+   * @param {boolean} isManualStart - True if user manually clicked start (clears manual stop flag)
    */
-  async start() {
+  async start(isManualStart = true) {
     return ErrorHandler.handle(async () => {
       // Ensure service is properly initialized
       await this.ensureInitialized();
@@ -1057,7 +1158,13 @@ class IcecastService {
         };
       }
 
-      logger.icecast('Starting Icecast server');
+      // Clear manual stop flag when user manually starts
+      if (isManualStart) {
+        this.manuallyStopped = false;
+        logger.icecast('Manual start - clearing manual stop flag');
+      }
+
+      logger.icecast('Starting Icecast server', { isManualStart });
 
       // Ensure we have a valid config path
       if (!this.paths.config) {
@@ -1250,14 +1357,19 @@ class IcecastService {
 
   /**
    * Stop the Icecast server
+   * @param {boolean} isManualStop - True if user manually clicked stop (prevents auto-restart)
    */
-  async stop() {
+  async stop(isManualStop = true) {
     return ErrorHandler.handle(async () => {
       // Check if any icecast process is actually running
       const processRunning = await this.isIcecastRunning();
 
       if (!processRunning) {
         this.isRunning = false; // Sync our state
+        // Still mark as manually stopped if user clicked stop button
+        if (isManualStop) {
+          this.manuallyStopped = true;
+        }
         return {
           success: true,
           message: 'Icecast is not running',
@@ -1265,7 +1377,7 @@ class IcecastService {
         };
       }
 
-      logger.icecast('Stopping Icecast server');
+      logger.icecast('Stopping Icecast server', { isManualStop });
       
       if (this.process) {
         await this._stopDirectProcess();
@@ -1273,10 +1385,43 @@ class IcecastService {
         await this._stopExternalProcess();
       }
 
+      // Verify process is actually stopped (with retries)
+      let verifyAttempts = 0;
+      const maxVerifyAttempts = 10;
+      while (verifyAttempts < maxVerifyAttempts) {
+        const stillRunning = await this.isIcecastRunning();
+        if (!stillRunning) {
+          break;
+        }
+        verifyAttempts++;
+        if (verifyAttempts < maxVerifyAttempts) {
+          logger.warn(`Icecast still running after stop attempt ${verifyAttempts}, retrying...`);
+          // Try force kill again
+          await this._stopExternalProcess();
+          await new Promise(resolve => setTimeout(resolve, 500)); // Wait 500ms
+        }
+      }
+
+      // Final verification
+      const finalCheck = await this.isIcecastRunning();
+      if (finalCheck) {
+        logger.error('Icecast process still running after all stop attempts');
+        throw ErrorFactory.process(
+          'Failed to stop Icecast - process is still running',
+          ErrorCodes.ICECAST_STOP_FAILED
+        );
+      }
+
       // Update state
       this.isRunning = false;
       this.process = null;
       this.stats.startTime = null;
+      
+      // Mark as manually stopped to prevent auto-restart
+      if (isManualStop) {
+        this.manuallyStopped = true;
+        logger.icecast('Icecast manually stopped - auto-restart disabled');
+      }
 
       logger.icecast('Icecast server stopped successfully');
       return {
@@ -1344,19 +1489,43 @@ class IcecastService {
     try {
       await execAsync('net stop Icecast');
       logger.icecast('Icecast Windows service stopped');
-      return;
-        } catch (serviceError) {
+      // Wait a moment and verify it's actually stopped
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      const stillRunning = await this.isIcecastRunning();
+      if (!stillRunning) {
+        return;
+      }
+      logger.warn('Service reported stopped but process still running, forcing kill');
+    } catch (serviceError) {
       errors.push(`Service stop failed: ${serviceError.message}`);
       logger.debug('Windows service stop failed, trying process kill');
     }
 
-    // Force kill any remaining icecast.exe processes
+    // Force kill any remaining icecast.exe processes (more aggressive)
     try {
-      await execAsync('taskkill /IM icecast.exe /F');
+      // First try graceful termination
+      await execAsync('taskkill /IM icecast.exe');
+      await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2 seconds
+      
+      // Check if still running
+      const stillRunning = await this.isIcecastRunning();
+      if (stillRunning) {
+        // Force kill if still running
+        logger.warn('Process still running after graceful kill, forcing termination');
+        await execAsync('taskkill /IM icecast.exe /F');
+        await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second
+      }
+      
       logger.icecast('Force killed icecast.exe processes');
       return;
     } catch (killError) {
       errors.push(`Process kill failed: ${killError.message}`);
+      // Check if process is actually gone (might have exited between attempts)
+      const stillRunning = await this.isIcecastRunning();
+      if (!stillRunning) {
+        logger.icecast('Process stopped despite kill error');
+        return;
+      }
     }
 
     // If both methods failed, throw error
@@ -1413,14 +1582,15 @@ class IcecastService {
 
   /**
    * Restart the Icecast server
+   * @param {boolean} isManualRestart - True if user manually clicked restart
    */
-  async restart() {
+  async restart(isManualRestart = true) {
     return ErrorHandler.handle(async () => {
-      logger.icecast('Restarting Icecast server');
+      logger.icecast('Restarting Icecast server', { isManualRestart });
 
-      // Stop the server first
+      // Stop the server first (not a manual stop - it's part of restart)
       logger.icecast('Restart: Stopping server...');
-      await this.stop();
+      await this.stop(false); // false = not a manual stop, so it won't set manuallyStopped flag
 
       // Smart cleanup - wait for ACTUAL shutdown instead of guessing timing
       logger.icecast('Restart: Waiting for clean shutdown...');
@@ -1443,9 +1613,9 @@ class IcecastService {
       // Verify no processes are still running
       await this._ensureCleanShutdown();
 
-      // Start the server
+      // Start the server (manual restart clears the manual stop flag)
       logger.icecast('Restart: Starting server...');
-      const result = await this.start();
+      const result = await this.start(isManualRestart); // Pass through manual flag
 
       // Verify the server actually started - simplified check
       if (result.success) {
@@ -1599,7 +1769,7 @@ class IcecastService {
         if (health.checks.process.status === 'healthy') {
           try {
             const response = await fetch(
-              `http://${config.icecast.host}:${config.icecast.port}/admin/stats.xml`,
+              `http://${config.icecast.host}:${this.actualPort || config.icecast.port}/admin/stats.xml`,
               { timeout: 3000 }
             );
 
@@ -1951,9 +2121,13 @@ class IcecastService {
       // Regenerate config file
       await this.generateConfigFile()
 
-      // Restart if running
-      if (this.isRunning) {
+      // Restart if running AND not manually stopped
+      // Only auto-restart if user hasn't manually stopped Icecast
+      if (this.isRunning && !this.manuallyStopped) {
+        logger.icecast('Auto-restarting Icecast after config update');
         await this.restart()
+      } else if (this.manuallyStopped) {
+        logger.icecast('Skipping auto-restart - Icecast was manually stopped');
       }
 
       logger.icecast('Icecast configuration updated', newConfig)

@@ -215,6 +215,8 @@ class FFmpegStreamsManager {
                 return;
             }
 
+            console.log('Starting stream with config:', streamConfig);
+
             const response = await fetch('/api/streams/start', {
                 method: 'POST',
                 headers: {
@@ -224,6 +226,14 @@ class FFmpegStreamsManager {
             });
 
             const data = await response.json();
+            console.log('Stream start response:', { status: response.status, ok: response.ok, data });
+            
+            // Check if request was successful (2xx status)
+            if (!response.ok) {
+                // Server returned an error status (4xx or 5xx)
+                const errorMessage = data.error || data.message || 'Failed to start stream';
+                throw new Error(errorMessage);
+            }
             
             if (data.message === 'Stream started successfully') {
                 await this.loadStreams();
@@ -234,7 +244,7 @@ class FFmpegStreamsManager {
                 const streamUrl = `http://${currentHost}:${this.icecastPort}/${streamConfig.id || 'stream'}`;
                 this.showNotification(`Stream started successfully! Stream is now available in the list below.`, 'success');
             } else {
-                throw new Error(data.error || 'Failed to start stream');
+                throw new Error(data.error || data.message || 'Failed to start stream');
             }
         } catch (error) {
             console.error('Failed to start stream:', error);
@@ -289,6 +299,8 @@ class FFmpegStreamsManager {
      */
     async restartStream(streamId) {
         try {
+            console.log('Restarting stream:', streamId);
+
             const response = await fetch('/api/streams/restart', {
                 method: 'POST',
                 headers: {
@@ -298,13 +310,20 @@ class FFmpegStreamsManager {
             });
 
             const data = await response.json();
+            console.log('Stream restart response:', { status: response.status, ok: response.ok, data });
+
+            // Check if request was successful (2xx status)
+            if (!response.ok) {
+                const errorMessage = data.error || data.message || 'Failed to restart stream';
+                throw new Error(errorMessage);
+            }
 
             if (data.message === 'Stream restarted successfully') {
                 await this.loadStreams();
                 this.render();
                 this.showNotification('Stream started successfully', 'success');
             } else {
-                throw new Error(data.error || 'Failed to restart stream');
+                throw new Error(data.error || data.message || 'Failed to restart stream');
             }
         } catch (error) {
             console.error('Failed to start stream:', error);
@@ -1311,20 +1330,27 @@ class FFmpegStreamsManager {
             window.showNotification(message, type);
         } else {
             // Create a centered toast notification with close button
+            // Use much wider max-width for error messages (they contain troubleshooting info)
+            const maxWidth = type === 'error' ? 'max-w-3xl' : 'max-w-md';
             const toast = document.createElement('div');
-            toast.className = `fixed top-4 left-1/2 -translate-x-1/2 z-50 px-4 py-3 rounded-lg shadow-lg transition-all duration-300 max-w-md ${
+            toast.className = `fixed top-4 left-1/2 -translate-x-1/2 z-50 px-6 py-5 rounded-xl shadow-2xl transition-all duration-300 ${maxWidth} ${
                 type === 'success' ? 'bg-green-600 text-white' :
-                type === 'error' ? 'bg-red-600 text-white' :
+                type === 'error' ? 'bg-red-700 text-white' :
                 'bg-blue-600 text-white'
             }`;
+            // For error messages, preserve formatting (newlines, whitespace)
+            const formattedMessage = type === 'error' 
+                ? `<pre class="whitespace-pre-wrap font-sans text-sm leading-relaxed max-h-96 overflow-y-auto">${message}</pre>`
+                : `<span class="flex-1">${message}</span>`;
+            
             toast.innerHTML = `
                 <div class="flex items-start gap-3">
-                    <span class="material-symbols-rounded text-sm mt-0.5">
+                    <span class="material-symbols-rounded text-xl mt-0.5 flex-shrink-0">
                         ${type === 'success' ? 'check_circle' : type === 'error' ? 'error' : 'info'}
                     </span>
-                    <span class="flex-1">${message}</span>
-                    <button class="text-white/80 hover:text-white transition-colors" onclick="this.parentElement.parentElement.remove()">
-                        <span class="material-symbols-rounded text-lg">close</span>
+                    <div class="flex-1 min-w-0">${formattedMessage}</div>
+                    <button class="text-white/80 hover:text-white transition-colors flex-shrink-0 ml-2" onclick="this.parentElement.parentElement.remove()">
+                        <span class="material-symbols-rounded text-xl">close</span>
                     </button>
                 </div>
             `;

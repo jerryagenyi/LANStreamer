@@ -406,10 +406,25 @@ class IcecastManager {
         const statusText = this.getStatusText();
         const statusIcon = this.getStatusIcon();
 
+        // Build Icecast admin dashboard URL
+        // Use window.location.hostname to get the actual server IP/hostname
+        // This ensures the link works when accessing from remote machines
+        const icecastHost = window.location.hostname;
+        const icecastPort = this.status.port || '8000';
+        const icecastAdminUrl = `http://${icecastHost}:${icecastPort}/admin/`;
+
         container.innerHTML = `
             <div class="bg-[var(--card-bg)] border border-[var(--border-color)] rounded-2xl p-6 shadow-2xl shadow-black/30">
                 <div class="flex justify-between items-start mb-4">
-                    <h2 class="text-xl font-bold text-white">Icecast Server</h2>
+                    <div class="flex items-center gap-3">
+                        <h2 class="text-xl font-bold text-white">Icecast Server</h2>
+                        ${this.status.installed ? `
+                            <a href="${icecastAdminUrl}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium text-blue-400 hover:text-blue-300 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/30 hover:border-blue-500/50 rounded-lg transition-all duration-300" title="Open Icecast Admin Dashboard">
+                                <span class="material-symbols-rounded text-sm">open_in_new</span>
+                                Dashboard
+                            </a>
+                        ` : ''}
+                    </div>
                 </div>
                 
                 <!-- Installation Status -->
