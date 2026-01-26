@@ -1,0 +1,11 @@
+diff --git a/src/services/IcecastService.js b/src/services/IcecastService.js
+index cbb0e5d..e8ba838 100644
+--- a/src/services/IcecastService.js
++++ b/src/services/IcecastService.js
+@@ -2441,4 +2441,5 @@ class IcecastService {
+   }
+ }
+ 
+-export default IcecastService
++// Export a singleton instance (matches the service-layer pattern used elsewhere)
++export default new IcecastService()

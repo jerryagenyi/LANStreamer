@@ -1,0 +1,34 @@
+0dc9916|2026-01-21 17:30:56 +0000|fix: Revert to Icecast default port 8000, improve connection error message
+8547d0f|2026-01-21 17:15:37 +0000|fix: Add VB-Audio Cable Output variants including (2- VB-Audio...)
+0d9fcf8|2026-01-21 17:13:34 +0000|chore: Hide Lobby Music Player from UI (code preserved for sentimental reasons)
+8bd7338|2026-01-21 17:10:23 +0000|fix: Use ES module import for AudioDeviceService instead of require()
+0f951d9|2026-01-21 17:05:26 +0000|fix: Use AudioDeviceService cache to get exact device names
+ff0bab2|2026-01-21 16:53:36 +0000|fix: Extend notification timeout to 8s and add close button
+2dc6651|2026-01-21 16:49:39 +0000|style: Simplify audio devices list - remove redundant badges and scroll
+32a63c4|2026-01-21 16:36:42 +0000|chore: Remove unnecessary shortcut creator script
+a99be21|2026-01-21 16:31:40 +0000|fix: Replace .ps1 shortcut creator with user-friendly .bat
+b0bc8a9|2026-01-21 16:22:30 +0000|fix: Update script now preserves config folder correctly
+b0c2f51|2026-01-21 16:14:18 +0000|style: center notifications at top with max-width
+4edac28|2026-01-21 16:11:51 +0000|Release v1.2.3: Listener page improvements and UX enhancements
+5f322d1|2026-01-21 16:11:40 +0000|fix(listeners): dynamic version, remove admin link, improve footer
+67360a6|2026-01-21 16:08:06 +0000|feat(listeners): make new stream notification persistent and fullscreen
+79eb85f|2026-01-21 16:06:14 +0000|feat(listeners): auto-detect new streams and improve ON AIR indicator
+e786241|2026-01-21 15:54:50 +0000|chore: remove obsolete documentation and test files
+d3a9a5d|2026-01-21 15:44:43 +0000|Release v1.2.2: Critical fixes for port conflicts and streaming stability
+6c4db5e|2026-01-21 13:10:45 +0000|Merge pull request #2 from jerryagenyi/add-claude-github-actions-1769000993879
+5257a66|2026-01-21 13:09:56 +0000|"Claude Code Review workflow"
+8259677|2026-01-21 13:09:55 +0000|"Claude PR Assistant workflow"
+975a711|2025-12-26 17:23:33 +0000|Add KingMode prompt instructions for AI assistants
+30d46f2|2025-10-04 23:06:35 +0100|docs: Rename README-LDR.md to README-TLDR.md for clarity
+dcb8757|2025-10-04 23:06:05 +0100|docs: Create comprehensive README-LDR.md for developers and researchers
+6007da4|2025-10-04 22:56:41 +0100|docs: Major README overhaul with Icecast log directory fix and simplified structure
+958c3fc|2025-09-12 14:14:43 +0100|refactor: move dev-docs to dedicated branch
+c148efc|2025-09-12 14:09:36 +0100|docs: improve Icecast path configuration guidance in README
+bc2a8e7|2025-09-12 13:45:28 +0100|Update README.md
+5b3f919|2025-09-12 09:12:58 +0100|Remove Visual Concept Overview section from README
+e48ec69|2025-09-11 14:41:28 +0100|Update version to 1.2.1-dev to prevent update notifications during development
+cf3c111|2025-09-11 14:26:37 +0100|Fix stream URL generation to use stream name instead of random UUID
+019c387|2025-09-11 14:25:33 +0100|Resolve merge conflict in README.md - keep remote version without restore tool
+d70e460|2025-09-11 14:23:59 +0100|Update README.md
+595d7d4|2025-09-09 13:54:02 +0100|Add footer to streams.html page
+046ef41|2025-09-09 13:39:01 +0100|Update documentation with network setup guidance and mDNS future status

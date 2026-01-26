@@ -1,0 +1,8 @@
+=== v1.2.0 ===
+fatal: path 'src/utils/errorDiagnostics.js' exists on disk, but not in 'v1.2.0'
+
+=== v1.2.2 ===
+fatal: path 'src/utils/errorDiagnostics.js' exists on disk, but not in 'v1.2.2'
+
+=== v1.2.3 ===
+fatal: path 'src/utils/errorDiagnostics.js' exists on disk, but not in 'v1.2.3'

@@ -1,0 +1,683 @@
+diff --git a/src/services/StreamingService.js b/src/services/StreamingService.js
+index dba1302..6d466b6 100644
+--- a/src/services/StreamingService.js
++++ b/src/services/StreamingService.js
+@@ -4,6 +4,7 @@ import { dirname, join } from 'path'
+ import fs from 'fs'
+ import logger from '../utils/logger.js'
+ import FFmpegService from './FFmpegService.js'
++import IcecastService from './IcecastService.js'
+ 
+ const __filename = fileURLToPath(import.meta.url)
+ const __dirname = dirname(__filename)
+@@ -13,6 +14,9 @@ class StreamingService {
+     this.activeStreams = {}
+     this.ffmpegService = FFmpegService
+     this.streamsConfigPath = join(process.cwd(), 'config', 'streams.json')
++    this.lastIcecastStatus = 'unknown'
++    this.icecastDownSince = null // Track when Icecast went down
++    this.ICECAST_GRACE_PERIOD_SECONDS = 30 // Wait 30 seconds before stopping streams
+     this.loadPersistentStreams()
+ 
+     // Clean up old streams on startup
+@@ -22,6 +26,9 @@ class StreamingService {
+     this.cleanupInterval = setInterval(() => {
+       this.cleanupOldStreams()
+     }, 6 * 60 * 60 * 1000)
++
++    // DISABLED: Auto-monitoring that stops streams (too aggressive, causes false positives)
++    // this.startIcecastMonitoring()
+   }
+ 
+   /**
+@@ -93,6 +100,21 @@ class StreamingService {
+       throw new Error('Invalid stream configuration: deviceId or inputFile is required')
+     }
+ 
++    // SIMPLIFIED: Just check if Icecast process is running (don't require admin interface)
++    try {
++      const isRunning = await IcecastService.isIcecastRunning()
++      if (!isRunning) {
++        throw new Error(`🧊 Icecast server is not running - Cannot start stream without Icecast.
++
++✅ QUICK FIX:
++1. Start the Icecast server from the dashboard
++2. Then try starting the stream again`)
++      }
++    } catch (icecastError) {
++      // Re-throw with more context
++      throw new Error(`Icecast dependency check failed: ${icecastError.message}`)
++    }
++
+     const streamId = streamConfig.id || `stream_${Date.now()}`
+ 
+     if (this.activeStreams[streamId]) {
+@@ -140,7 +162,10 @@ class StreamingService {
+           audioFormat: currentFormat.name,
+           formatIndex: formatIndex,
+           needsRestart: false,
+-          intentionallyStopped: false  // Clear any previous intentional stop flag
++          intentionallyStopped: false,  // Clear any previous intentional stop flag
++          lastStderr: '',  // Store stderr for error diagnostics
++          exitCode: null,
++          exitSignal: null
+         }
+ 
+         // Save to persistent storage
+@@ -188,14 +213,21 @@ class StreamingService {
+       detached: false
+     })
+ 
+-    // Capture stderr for debugging
++    // Capture stderr for debugging and error diagnostics
+     let stderrData = '';
+     process.stderr.on('data', (data) => {
+       if (data) {
+-        stderrData += data.toString();
++        const chunk = data.toString();
++        stderrData += chunk;
++
++        // Store in stream object for later error diagnostics
++        if (this.activeStreams[streamId]) {
++          this.activeStreams[streamId].lastStderr = stderrData.slice(-2000); // Keep last 2000 chars
++        }
++
+         // Log FFmpeg output for debugging (but limit to avoid spam)
+         if (stderrData.length < 2000) {
+-          logger.info(`FFmpeg stderr for stream ${streamId}:`, data.toString().trim());
++          logger.info(`FFmpeg stderr for stream ${streamId}:`, chunk.trim());
+         }
+       }
+     });
+@@ -217,23 +249,71 @@ class StreamingService {
+       this.handleProcessExit(streamId, code, signal, stderrData)
+     })
+ 
+-    // Wait a moment to ensure process starts successfully
++    // Wait for process to spawn, then give it a grace period to actually start
+     await new Promise((resolve, reject) => {
+-      const timeout = setTimeout(() => {
+-        const errorMsg = `FFmpeg Startup Error: Process failed to start within 5 seconds.\n\nThis usually means:\n• The audio device is not available\n• Another application is using the device\n• The device name is incorrect\n\nFFmpeg Error Output:\n${stderrData.slice(0, 500)}\n\nTroubleshooting:\n• Try refreshing the device list\n• Close other applications using audio\n• Check if VB-Audio Virtual Cable is running`;
+-        reject(new Error(errorMsg))
+-      }, 5000)
++      let spawnTimeout = null
++      let graceTimeout = null
++      let hasSpawned = false
++      let hasResolved = false
++
++      // Timeout for spawn event (10 seconds)
++      spawnTimeout = setTimeout(() => {
++        if (!hasSpawned && !hasResolved) {
++          const errorMsg = `FFmpeg Startup Error: Process failed to spawn within 10 seconds.\n\nThis usually means:\n• FFmpeg executable not found\n• Permission issues\n• System configuration problem\n\nFFmpeg Error Output:\n${stderrData.slice(0, 500)}`;
++          reject(new Error(errorMsg))
++        }
++      }, 10000)
++
++      // Check if process exited immediately after spawn (crash detection)
++      const checkForImmediateCrash = () => {
++        if (hasSpawned && !hasResolved) {
++          // Give FFmpeg 2 seconds to connect to device and start streaming
++          graceTimeout = setTimeout(() => {
++            if (hasResolved) return // Already resolved, don't do anything
++            
++            // If process is still running after grace period, consider it started successfully
++            if (process.exitCode === null && !process.killed) {
++              hasResolved = true
++              resolve()
++            } else {
++              // Process exited during grace period - this is an immediate crash
++              const errorMsg = `FFmpeg crashed immediately after startup (exit code: ${process.exitCode || 'unknown'}).\n\nThis usually means:\n• Audio device driver issue\n• FFmpeg codec problem\n• DirectShow subsystem failure\n\nFFmpeg Error Output:\n${stderrData.slice(0, 500)}`;
++              hasResolved = true
++              reject(new Error(errorMsg))
++            }
++          }, 2000) // 2 second grace period
++        }
++      }
+ 
+       process.once('spawn', () => {
+-        clearTimeout(timeout)
+-        resolve()
++        hasSpawned = true
++        clearTimeout(spawnTimeout)
++        // Start grace period check
++        checkForImmediateCrash()
+       })
+ 
+       process.once('error', (error) => {
+-        clearTimeout(timeout)
+-        const errorMsg = `FFmpeg Process Error: ${error.message}\n\nFFmpeg Output:\n${stderrData.slice(0, 500)}\n\nThis error suggests:\n• FFmpeg executable not found\n• Permission issues\n• System configuration problem`;
++        if (hasResolved) return
++        clearTimeout(spawnTimeout)
++        clearTimeout(graceTimeout)
++        hasResolved = true
++        const errorMsg = `FFmpeg Process Error: ${error.message}\n\nThis error suggests:\n• FFmpeg executable not found\n• Permission issues\n• System configuration problem`;
+         reject(new Error(errorMsg))
+       })
++
++      // Track if process exits during startup (before grace period completes)
++      process.once('exit', (code) => {
++        if (hasResolved) return // Already resolved, don't do anything
++        
++        if (hasSpawned && code !== 0) {
++          clearTimeout(spawnTimeout)
++          clearTimeout(graceTimeout)
++          // Only reject if we're still in the startup phase
++          const errorMsg = `FFmpeg crashed during startup (exit code: ${code}).\n\nFFmpeg Error Output:\n${stderrData.slice(0, 500)}`;
++          hasResolved = true
++          reject(new Error(errorMsg))
++        }
++      })
+     })
+ 
+     return process
+@@ -278,7 +358,7 @@ class StreamingService {
+    */
+   buildFFmpegArgs(streamId, streamConfig, formatIndex = 0) {
+     const bitrate = streamConfig.bitrate || 192;
+-    const icecastUrl = `icecast://source:hackme@localhost:8000/${streamId}`;
++    const icecastUrl = `icecast://source:hackme@localhost:8001/${streamId}`;
+     const formats = this.getAudioFormats();
+     const format = formats[formatIndex] || formats[0]; // Fallback to first format
+ 
+@@ -286,19 +366,23 @@ class StreamingService {
+ 
+     // Check if we're streaming from a file or device
+     if (streamConfig.inputFile) {
+-      // File input mode
++      // File input mode - SIMPLIFIED
+       args = [
+         '-re',                          // Read input at native frame rate
+         '-i', streamConfig.inputFile,   // Input file
+         '-acodec', format.codec,        // Audio codec
+-        '-ab', `${bitrate}k`,           // Audio bitrate from config
++        '-b:a', `${bitrate}k`,          // Audio bitrate (use -b:a for compatibility)
+         '-ar', '44100',                 // Sample rate
+         '-ac', '2',                     // Audio channels
+         '-f', format.format,            // Output format
+-        '-content_type', format.contentType, // Set proper content type for browsers
+         icecastUrl,                     // Unique Icecast URL per stream
+         '-loglevel', 'info'             // Show info level logs
+       ]
++      
++      // Only add content_type for MP3
++      if (format.name === 'MP3') {
++        args.splice(-2, 0, '-content_type', format.contentType); // Insert before icecastUrl
++      }
+     } else {
+       // Device input mode - validate and use real device name
+       const deviceName = this.validateAndGetDeviceName(streamConfig.deviceId);
+@@ -311,35 +395,24 @@ class StreamingService {
+         }
+       }
+ 
+-      // Check if this is a virtual audio device (like Voicemeeter)
+-      const isVirtualDevice = deviceName.toLowerCase().includes('voicemeeter') ||
+-                             deviceName.toLowerCase().includes('vb-audio') ||
+-                             deviceName.toLowerCase().includes('virtual') ||
+-                             deviceName.toLowerCase().includes('cable');
+-
++      // SIMPLIFIED: Use minimal FFmpeg command that works (based on manual setup scripts)
++      // Don't add extra parameters that might cause crashes
+       args = [
+         '-f', 'dshow',                    // DirectShow input format
+-        '-i', `audio=${deviceName}`,      // Audio input device (real DirectShow name)
+-      ];
+-
+-      // Add virtual device specific parameters
+-      if (isVirtualDevice) {
+-        args.push(
+-          '-rtbufsize', '100M',           // Increase buffer for virtual devices
+-          '-thread_queue_size', '512'     // Increase thread queue for stability
+-        );
++        '-i', `audio=${deviceName}`,       // Audio input device (real DirectShow name)
++        '-acodec', format.codec,           // Audio codec (with fallback support)
++        '-b:a', `${bitrate}k`,            // Audio bitrate (use -b:a instead of -ab for compatibility)
++        '-ar', '44100',                    // Sample rate
++        '-ac', '2',                        // Audio channels
++        '-f', format.format,               // Output format (with fallback support)
++        icecastUrl,                        // Unique Icecast URL per stream
++        '-loglevel', 'info'                // Show info level logs
++      ]
++      
++      // Only add content_type for MP3 (it's not always supported for other formats)
++      if (format.name === 'MP3') {
++        args.splice(-2, 0, '-content_type', format.contentType); // Insert before icecastUrl
+       }
+-
+-      args.push(
+-        '-acodec', format.codec,          // Audio codec (with fallback support)
+-        '-ab', `${bitrate}k`,             // Audio bitrate from config
+-        '-ar', '44100',                   // Sample rate
+-        '-ac', '2',                       // Audio channels
+-        '-f', format.format,              // Output format (with fallback support)
+-        '-content_type', format.contentType, // Set proper content type for browsers
+-        icecastUrl,                       // Unique Icecast URL per stream
+-        '-loglevel', 'info'               // Show info level logs
+-      )
+     }
+ 
+     logger.info(`Built FFmpeg args for stream ${streamId}:`, {
+@@ -382,6 +455,10 @@ class StreamingService {
+       'immersed-virtual-audio': 'Microphone (Immersed Virtual Audio)', // Immersed audio device
+       'webcam-microphone': 'Microphone (Webcam)', // Generic webcam microphone
+       'usb-microphone': 'Microphone (USB Audio Device)', // Generic USB microphone
++      'microphone-usbaudio1-0': 'Microphone (USBAudio1.0)', // USB Audio 1.0 device
++      'microphone-usbaudio': 'Microphone (USBAudio1.0)', // USB Audio generic
++      'usbaudio1-0': 'Microphone (USBAudio1.0)', // USB Audio 1.0 short
++      'usbaudio1.0': 'Microphone (USBAudio1.0)', // USB Audio 1.0 with dot
+       'realtek-audio': 'Microphone (Realtek Audio)', // Realtek audio devices
+       'bluetooth-microphone': 'Microphone (Bluetooth Audio)', // Bluetooth devices
+       'amd-streaming-audio-device': 'AMD Streaming Audio Device', // AMD audio devices
+@@ -463,10 +540,20 @@ class StreamingService {
+ 
+     // Try to create a reasonable DirectShow name from the device ID
+     if (deviceId && typeof deviceId === 'string' && deviceId.length > 0) {
+-      // Convert kebab-case to title case and wrap in Microphone()
+-      const titleCase = deviceId
++      // Remove "microphone-" prefix if present
++      let cleanId = deviceId.replace(/^microphone-/, '');
++      
++      // Convert kebab-case to title case, preserving numbers and dots
++      const titleCase = cleanId
+         .split('-')
+-        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
++        .map((word, index) => {
++          // Preserve numbers and dots (like "1.0" or "1-0")
++          if (/^\d+\.?\d*$/.test(word)) {
++            return word.replace(/-/g, '.'); // Convert "1-0" to "1.0"
++          }
++          // Capitalize first letter
++          return word.charAt(0).toUpperCase() + word.slice(1);
++        })
+         .join(' ');
+ 
+       const directShowName = `Microphone (${titleCase})`;
+@@ -847,6 +934,11 @@ class StreamingService {
+     if (this.activeStreams[streamId]) {
+       const stream = this.activeStreams[streamId]
+ 
++      // Check if this is an immediate crash (within 3 seconds of start)
++      const startTime = stream.startedAt?.getTime() || Date.now()
++      const runTime = Date.now() - startTime
++      const isImmediateCrash = runTime < 3000 && code !== 0
++
+       // If stream was intentionally stopped, keep the 'stopped' status
+       // Otherwise, determine status based on exit code
+       if (!stream.intentionallyStopped) {
+@@ -861,6 +953,12 @@ class StreamingService {
+       if (code !== 0) {
+         // Ensure stderrData is a string to prevent null/undefined errors
+         const safeStderrData = stderrData || ''
++        
++        // Add context for immediate crashes
++        if (isImmediateCrash) {
++          logger.warn(`Stream ${streamId} crashed immediately after startup (${runTime}ms), likely a device/codec issue`)
++        }
++        
+         this.activeStreams[streamId].error = this.parseFFmpegError(code, safeStderrData)
+         logger.error(`Stream ${streamId} failed with exit code ${code}:`, this.activeStreams[streamId].error)
+       }
+@@ -881,47 +979,176 @@ class StreamingService {
+     const safeStderrData = stderrData || '';
+     const stderrLower = safeStderrData.toLowerCase();
+ 
++    // 🎯 CRITICAL: Windows-specific crash detection (exit code 2812791304 = 0xA7F00008)
++    if (exitCode === 2812791304 || signedCode === -1482175992) {
++      let deviceInfo = 'Unknown device'
++      if (this.activeStreams) {
++        const stream = Object.values(this.activeStreams).find(s => s.exitCode === exitCode)
++        if (stream) {
++          deviceInfo = stream.deviceId || stream.name || 'Unknown'
++        }
++      }
++
++      return `💥 CRITICAL: FFmpeg process crashed immediately after startup (exit code 0xA7F00008)
++
++📊 DEPENDENCY CHAIN:
++   ❌ Audio Device (${deviceInfo}) → ❌ FFmpeg (CRASHED) → ⚠️ Icecast → Listeners
++
++🔧 DIAGNOSTIC:
++   This exit code indicates a Windows process-level failure (DLL, codec, or driver issue).
++
++💡 POSSIBLE CAUSES:
++   1. Missing FFmpeg codecs (libmp3lame, aac, vorbis)
++   2. Audio device driver incompatibility
++   3. DirectShow subsystem failure
++   4. Corrupted FFmpeg installation
++
++✅ TROUBLESHOOTING STEPS:
++   1. Try a different audio device (physical mic vs virtual cable)
++   2. Reinstall FFmpeg with full codec support
++   3. Update audio drivers
++   4. Check Windows Event Viewer for crash details
++   5. Run 'ffmpeg -version' and 'ffmpeg -formats' to verify installation
++
++📋 FFMPEG STDERR:
++   ${safeStderrData.slice(0, 500) || 'No error output available'}`
++    }
++
+     // Device-specific error detection
+     if (stderrLower.includes('device not found') || stderrLower.includes('no such device')) {
+-      return '🎤 Audio device not found - Device may have been disconnected or is no longer available';
++      return `🎤 Audio device not found - Device may have been disconnected or is no longer available
++
++📊 DEPENDENCY CHAIN:
++   ❌ Audio Device → FFmpeg → ⚠️ Icecast → Listeners
++
++💡 SOLUTION:
++   • Click "Refresh Devices" in the dashboard
++   • Check if the device is connected and recognized by Windows
++   • Try a different audio device`
+     }
+ 
+     if (stderrLower.includes('device busy') || stderrLower.includes('resource busy')) {
+-      return '🔒 Audio device busy - Another application is using this device';
++      return `🔒 Audio device busy - Another application is using this device
++
++📊 DEPENDENCY CHAIN:
++   ❌ Audio Device (BUSY) → FFmpeg → ⚠️ Icecast → Listeners
++
++💡 SOLUTION:
++   • Close other applications using the microphone (Zoom, Teams, etc.)
++   • Wait a few seconds and try again
++   • Select a different audio device`
+     }
+ 
+     if (stderrLower.includes('permission denied') || stderrLower.includes('access denied')) {
+-      return '🚫 Permission denied - Cannot access audio device (check permissions)';
++      return `🚫 Permission denied - Cannot access audio device
++
++📊 DEPENDENCY CHAIN:
++   ❌ Audio Device (ACCESS DENIED) → FFmpeg → ⚠️ Icecast → Listeners
++
++💡 SOLUTION:
++   • Run LANStreamer as Administrator
++   • Check Windows privacy settings for microphone access
++   • Ensure no security software is blocking access`
+     }
+ 
+     if (stderrLower.includes('voicemeeter') && (stderrLower.includes('not found') || stderrLower.includes('unavailable'))) {
+-      return '🎛️ VoiceMeeter device unavailable - VoiceMeeter devices often disappear/reappear. Try: 1) Restart VoiceMeeter app 2) Restart Windows Audio service 3) Check if VoiceMeeter is running';
++      return `🎛️ VoiceMeeter device unavailable
++
++📊 DEPENDENCY CHAIN:
++   ❌ VoiceMeeter (NOT FOUND) → FFmpeg → ⚠️ Icecast → Listeners
++
++💡 SOLUTION:
++   • Start the VoiceMeeter application
++   • Restart VoiceMeeter banana devices
++   • Or use a physical microphone instead`
+     }
+ 
+     if (stderrLower.includes('vb-audio') && (stderrLower.includes('not found') || stderrLower.includes('unavailable'))) {
+-      return '🔗 VB-Audio device unavailable - Virtual audio devices can be unstable. Try restarting the VB-Audio Control Panel or use a physical microphone';
++      return `🔗 VB-Audio Virtual Cable device unavailable
++
++📊 DEPENDENCY CHAIN:
++   ❌ VB-Audio Virtual Cable (NOT FOUND) → FFmpeg → ⚠️ Icecast → Listeners
++
++💡 SOLUTION:
++   • Restart the VB-Audio Virtual Cable driver
++   • Reinstall VB-Audio Virtual Cable from vb-audio.com
++   • Try a physical microphone instead
++   • Note: VB-Audio has no control panel - restart by reinstalling or rebooting`
+     }
+ 
+     if (stderrLower.includes('connection refused') || stderrLower.includes('connection failed')) {
+-      return '🌐 Cannot connect to Icecast server - Check if Icecast is running';
++      return `🌐 Cannot connect to Icecast server
++
++📊 DEPENDENCY CHAIN:
++   ⚠️ Audio Device → FFmpeg → ❌ Icecast (UNREACHABLE) → Listeners
++
++💡 SOLUTION:
++   • Start the Icecast server from the dashboard
++   • Check if Icecast is running on port 8000
++   • Verify icecast.xml configuration
++   • Check firewall settings`
+     }
+ 
+     if (stderrLower.includes('invalid sample rate') || stderrLower.includes('unsupported sample rate')) {
+-      return '📊 Invalid audio format - Device sample rate not supported';
++      return `📊 Invalid audio format - Device sample rate not supported
++
++📊 DEPENDENCY CHAIN:
++   ⚠️ Audio Device (INCOMPATIBLE FORMAT) → ❌ FFmpeg → Icecast → Listeners
++
++💡 SOLUTION:
++   • Try a different audio device
++   • The device may be outputting an unsupported sample rate
++   • FFmpeg will attempt format fallback (MP3 → AAC → OGG)`
+     }
+ 
+     // Common FFmpeg error codes with enhanced messages
+     const errorMessages = {
+-      '-5': '🚫 Permission denied - Cannot access audio device (may be in use by another app)',
+-      '-22': '⚙️ Invalid device settings - Audio device name or parameters are incorrect',
+-      '-2': '🎤 Audio device not found - Device may have been disconnected',
+-      '1': '❌ Stream startup failed - Check device availability and try again'
++      '-5': `🚫 Permission denied - Cannot access audio device
++
++📊 DEPENDENCY CHAIN:
++   ❌ Audio Device (PERMISSION DENIED) → FFmpeg → Icecast → Listeners
++
++💡 SOLUTION:
++   • Close other applications using the microphone
++   • Run as Administrator
++   • Check Windows privacy settings`,
++      '-22': `⚙️ Invalid device settings - Audio device name or parameters are incorrect
++
++📊 DEPENDENCY CHAIN:
++   ❌ Audio Device (INVALID) → FFmpeg → Icecast → Listeners
++
++💡 SOLUTION:
++   • Refresh the device list
++   • Select a different audio device
++   • Check device compatibility`,
++      '-2': `🎤 Audio device not found - Device may have been disconnected
++
++📊 DEPENDENCY CHAIN:
++   ❌ Audio Device (NOT FOUND) → FFmpeg → Icecast → Listeners
++
++💡 SOLUTION:
++   • Check if device is plugged in
++   • Refresh device list
++   • Try a different device`,
++      '1': `❌ Stream startup failed - Check device availability and try again
++
++📊 DEPENDENCY CHAIN:
++   ⚠️ Audio Device → ❌ FFmpeg (STARTUP FAILED) → Icecast → Listeners
++
++💡 SOLUTION:
++   • Verify device is working in Windows Sound settings
++   • Try restarting the stream
++   • Check system resources`
+     };
+ 
+     let errorMsg = errorMessages[signedCode.toString()] || `FFmpeg exited with code ${exitCode} (${signedCode})`;
+ 
+-    // Ensure stderrData is a string and add specific error details from stderr
++    // Add dependency chain context to all errors
++    const chainContext = `
++📊 DEPENDENCY CHAIN:
++   ⚠️ Audio Device → ❌ FFmpeg (exit code ${exitCode}) → Icecast → Listeners`
+ 
++    // Ensure stderrData is a string and add specific error details from stderr
+     if (safeStderrData) {
+       if (safeStderrData.includes('No such audio device') || safeStderrData.includes('Could not find audio only device')) {
+         errorMsg = 'Audio device not found. The selected microphone may be disconnected or in use by another application.';
+@@ -934,12 +1161,18 @@ class StreamingService {
+       }
+ 
+       // If we have stderr data but no specific match, include a snippet for debugging
+-      if (errorMsg === (errorMessages[signedCode.toString()] || `FFmpeg exited with code ${exitCode} (${signedCode})`)) {
++      if (errorMsg.startsWith('FFmpeg exited with code')) {
+         const stderrSnippet = safeStderrData.slice(0, 200).replace(/\n/g, ' ').trim();
+         if (stderrSnippet) {
+-          errorMsg += ` Details: ${stderrSnippet}`;
++          errorMsg += `\n\n📋 FFMPEG OUTPUT:\n${stderrSnippet}\n\n${chainContext}`;
++        } else {
++          errorMsg += `\n\n${chainContext}`;
+         }
++      } else {
++        errorMsg += `\n\n${chainContext}`;
+       }
++    } else {
++      errorMsg += `\n\n${chainContext}`;
+     }
+ 
+     return errorMsg;
+@@ -966,20 +1199,149 @@ class StreamingService {
+     }
+   }
+ 
++  /**
++   * Monitor Icecast server status and stop streams if Icecast goes down
++   */
++  startIcecastMonitoring() {
++    // Check Icecast status every 10 seconds
++    this.icecastMonitorInterval = setInterval(async () => {
++      try {
++        const icecastStatus = await IcecastService.getStatus()
++        // Treat "starting" and "running" as operational (starting means Icecast is up but admin interface might not be fully ready)
++        const isOperational = icecastStatus.running || 
++                             icecastStatus.status === 'running' || 
++                             icecastStatus.status === 'starting'
++        const currentStatus = isOperational ? 'running' : 'stopped'
++
++        // Handle Icecast status changes
++        if (currentStatus === 'running') {
++          // Icecast is up - clear the down tracking
++          if (this.icecastDownSince !== null) {
++            const downDuration = Date.now() - this.icecastDownSince
++            logger.info(`✅ Icecast server is back up after being down for ${Math.floor(downDuration / 1000)} seconds`)
++            this.icecastDownSince = null
++          }
++          this.lastIcecastStatus = currentStatus
++        } else {
++          // Icecast is down
++          if (this.icecastDownSince === null) {
++            // First time we detect Icecast is down
++            this.icecastDownSince = Date.now()
++            logger.warn(`🧊 Icecast server went down at ${new Date(this.icecastDownSince).toLocaleTimeString()}`)
++            logger.info(`⏳ Waiting ${this.ICECAST_GRACE_PERIOD_SECONDS} seconds before stopping streams (in case Icecast is restarting)...`)
++          } else {
++            // Icecast has been down for a while - check if we should stop streams
++            const downDuration = Date.now() - this.icecastDownSince
++            const downDurationSeconds = Math.floor(downDuration / 1000)
++
++            if (downDurationSeconds >= this.ICECAST_GRACE_PERIOD_SECONDS) {
++              // Grace period exceeded - stop all streams
++              logger.warn(`⚠️ Icecast has been down for ${downDurationSeconds}s (exceeded ${this.ICECAST_GRACE_PERIOD_SECONDS}s grace period). Stopping all dependent streams.`)
++
++              // Stop all running streams
++              const runningStreams = Object.values(this.activeStreams).filter(s => s.status === 'running')
++              if (runningStreams.length > 0) {
++                logger.info(`Stopping ${runningStreams.length} streams due to prolonged Icecast downtime...`)
++
++                for (const stream of runningStreams) {
++                  try {
++                    await this.stopStream(stream.id)
++                    logger.info(`Stream ${stream.id} stopped due to Icecast being down for ${downDurationSeconds}s`)
++
++                    // Update stream with dependency error info
++                    this.activeStreams[stream.id].error = `⚠️ Stream stopped: Icecast server has been down for ${downDurationSeconds}s
++
++📊 DEPENDENCY CHAIN BROKEN:
++   Audio Device → FFmpeg → ❌ Icecast (DOWN for ${downDurationSeconds}s) → Listeners
++
++💡 TO RESUME:
++1. Start Icecast server
++2. Restart this stream from the dashboard`
++                  } catch (err) {
++                    logger.error(`Failed to stop stream ${stream.id} after Icecast shutdown:`, err)
++                  }
++                }
++              }
++            } else {
++              // Within grace period - just log a reminder
++              if (downDurationSeconds % 10 === 0) { // Log every 10 seconds
++                logger.info(`⏳ Icecast still down (${downDurationSeconds}s/${this.ICECAST_GRACE_PERIOD_SECONDS}s grace period remaining). Streams still running, waiting for Icecast to recover...`)
++              }
++            }
++          }
++
++          this.lastIcecastStatus = currentStatus
++        }
++      } catch (error) {
++        logger.warn('Failed to check Icecast status during monitoring:', error.message)
++      }
++    }, 10000) // Check every 10 seconds
++
++    logger.info(`Icecast monitoring started - streams will auto-stop if Icecast is down for more than ${this.ICECAST_GRACE_PERIOD_SECONDS} seconds`)
++  }
++
+   /**
+    * Get stream statistics
+    * @returns {object} Stream statistics
+    */
+   getStats() {
+     const activeStreams = Object.values(this.activeStreams)
+-    const runningStreams = activeStreams.filter(s => s.status === 'running')
+-    const errorStreams = activeStreams.filter(s => s.status === 'error')
++
++    // Verify actual process status - detect dead processes that show as 'running'
++    const verifiedStreams = activeStreams.map(s => {
++      // If status is 'running' but process has died or exited, update to 'error'
++      if (s.status === 'running' && s.ffmpegProcess) {
++        const isActuallyRunning = s.ffmpegProcess.exitCode === null &&
++                                   !s.ffmpegProcess.killed
++
++        if (!isActuallyRunning) {
++          // Process died but status wasn't updated
++          const exitCode = s.ffmpegProcess.exitCode
++          const signal = s.ffmpegProcess.signalCode
++          
++          // Check if this was an immediate crash (within 3 seconds of start)
++          const startTime = s.startedAt?.getTime() || Date.now()
++          const runTime = Date.now() - startTime
++          const isImmediateCrash = runTime < 3000
++
++          // Only update status if process has been running for more than 1 second
++          // This prevents false positives during startup
++          if (runTime > 1000 || exitCode !== null) {
++            logger.warn(`Stream ${s.id} shows 'running' but FFmpeg process is dead (exitCode=${exitCode}, signal=${signal}, runtime=${runTime}ms). Updating status to 'error'.`)
++
++            s.status = 'error'
++            s.exitedAt = s.ffmpegProcess.exitAt || new Date()
++            s.exitCode = exitCode
++            s.exitSignal = signal
++
++            // Generate error message
++            if (exitCode !== null) {
++              s.error = this.parseFFmpegError(exitCode, s.lastStderr || 'FFmpeg process exited without error output')
++            } else {
++              s.error = 'FFmpeg process terminated unexpectedly (no exit code). This may indicate a system-level issue.'
++            }
++
++            // Clear the dead process reference
++            s.ffmpegProcess = null
++          } else {
++            // Process died very quickly - might still be starting, give it more time
++            logger.debug(`Stream ${s.id} process exited very quickly (${runTime}ms), may still be starting up`)
++          }
++        }
++      }
++
++      return s
++    })
++
++    // Count based on verified status
++    const runningStreams = verifiedStreams.filter(s => s.status === 'running')
++    const errorStreams = verifiedStreams.filter(s => s.status === 'error')
+ 
+     return {
+-      total: activeStreams.length,
++      total: verifiedStreams.length,
+       running: runningStreams.length,
+       errors: errorStreams.length,
+-      streams: activeStreams.map(s => ({
++      streams: verifiedStreams.map(s => ({
+         id: s.id,
+         name: s.name,
+         status: s.status,

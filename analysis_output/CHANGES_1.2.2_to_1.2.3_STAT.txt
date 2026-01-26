@@ -1,0 +1,20 @@
+ .github/workflows/claude-code-review.yml     |  44 ++
+ .github/workflows/claude.yml                 |  50 +++
+ .gitkeep                                     |   2 -
+ Create-Desktop-Shortcut.ps1                  |  93 ----
+ README-TLDR.md                               | 620 ---------------------------
+ README-backup.md                             | 577 -------------------------
+ README.md                                    |  15 +-
+ Update LANStreamer.bat                       |  12 +-
+ ai-translation-plan.md                       |  16 -
+ package.json                                 |   2 +-
+ public/components/FFmpegStreamsManager.js    |  20 +-
+ public/index.html                            |  59 ++-
+ public/streams.html                          | 120 +++++-
+ screenshots/Screenshot 2026-01-21 140549.png | Bin 376009 -> 0 bytes
+ screenshots/Screenshot 2026-01-21 141002.png | Bin 316784 -> 0 bytes
+ screenshots/Screenshot 2026-01-21 142953.png | Bin 395622 -> 0 bytes
+ src/config/index.js                          |   4 +-
+ src/services/StreamingService.js             |  46 +-
+ translation-agent.md                         |  54 ---
+ 19 files changed, 286 insertions(+), 1448 deletions(-)

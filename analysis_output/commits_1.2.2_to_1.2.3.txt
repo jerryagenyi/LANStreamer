@@ -1,0 +1,20 @@
+0dc9916 fix: Revert to Icecast default port 8000, improve connection error message
+8547d0f fix: Add VB-Audio Cable Output variants including (2- VB-Audio...)
+0d9fcf8 chore: Hide Lobby Music Player from UI (code preserved for sentimental reasons)
+8bd7338 fix: Use ES module import for AudioDeviceService instead of require()
+0f951d9 fix: Use AudioDeviceService cache to get exact device names
+ff0bab2 fix: Extend notification timeout to 8s and add close button
+2dc6651 style: Simplify audio devices list - remove redundant badges and scroll
+32a63c4 chore: Remove unnecessary shortcut creator script
+a99be21 fix: Replace .ps1 shortcut creator with user-friendly .bat
+b0bc8a9 fix: Update script now preserves config folder correctly
+b0c2f51 style: center notifications at top with max-width
+4edac28 Release v1.2.3: Listener page improvements and UX enhancements
+5f322d1 fix(listeners): dynamic version, remove admin link, improve footer
+67360a6 feat(listeners): make new stream notification persistent and fullscreen
+79eb85f feat(listeners): auto-detect new streams and improve ON AIR indicator
+e786241 chore: remove obsolete documentation and test files
+d3a9a5d Release v1.2.2: Critical fixes for port conflicts and streaming stability
+6c4db5e Merge pull request #2 from jerryagenyi/add-claude-github-actions-1769000993879
+5257a66 "Claude Code Review workflow"
+8259677 "Claude PR Assistant workflow"

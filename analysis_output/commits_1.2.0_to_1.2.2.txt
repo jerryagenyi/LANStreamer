@@ -1,0 +1,15 @@
+d3ddd9b Release v1.2.2: Critical fixes for port conflicts and streaming stability
+975a711 Add KingMode prompt instructions for AI assistants
+30d46f2 docs: Rename README-LDR.md to README-TLDR.md for clarity
+dcb8757 docs: Create comprehensive README-LDR.md for developers and researchers
+6007da4 docs: Major README overhaul with Icecast log directory fix and simplified structure
+958c3fc refactor: move dev-docs to dedicated branch
+c148efc docs: improve Icecast path configuration guidance in README
+bc2a8e7 Update README.md
+5b3f919 Remove Visual Concept Overview section from README
+e48ec69 Update version to 1.2.1-dev to prevent update notifications during development
+cf3c111 Fix stream URL generation to use stream name instead of random UUID
+019c387 Resolve merge conflict in README.md - keep remote version without restore tool
+d70e460 Update README.md
+595d7d4 Add footer to streams.html page
+046ef41 Update documentation with network setup guidance and mDNS future status
