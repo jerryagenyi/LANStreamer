@@ -267,7 +267,7 @@ class ErrorDiagnostics {
         `2. Check for port conflicts: Open PowerShell and run: netstat -ano | findstr ":${port}"`,
         `3. If another app is using port ${port} (like Docker), either:`,
         '   • Stop that application, OR',
-        `   • Change Icecast port to a different port in icecast.xml and .env file`,
+        `   • Change Icecast port to a different port in icecast.xml`,
         '4. Restart Icecast from the dashboard (Stop → Start)',
         `5. Check Windows Firewall settings for port ${port}`,
       ],
