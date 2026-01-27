@@ -37,7 +37,8 @@
       "Bash(if not exist \"C:\\\\Users\\\\Username\\\\.claude\\\\skills\" mkdir \"C:\\\\Users\\\\Username\\\\.claude\\\\skills\")",
       "Bash(powershell:*)",
       "Bash(more:*)",
-      "Bash(type:*)"
+      "Bash(type:*)",
+      "Bash(del \"C:\\\\Users\\\\Username\\\\Documents\\\\github\\\\LANStreamer\\\\docs\\\\ICECAST_CONFIG_ARCHITECTURE.md\")"
     ]
   }
 }
