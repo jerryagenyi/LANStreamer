@@ -25,7 +25,17 @@
       "mcp__MCP_DOCKER__fetch",
       "Bash(cmd.exe /c \"tasklist /FI \"\"IMAGENAME eq icecast.exe\"\"\")",
       "Bash(cmd.exe /c \"netstat -ano | findstr :8000\")",
-      "Bash(cmd.exe /c \"ffmpeg -version\")"
+      "Bash(cmd.exe /c \"ffmpeg -version\")",
+      "Bash(git checkout:*)",
+      "Bash(git log:*)",
+      "Bash(for version in v1.2.0 v1.2.2 v1.2.3)",
+      "Bash(do echo \"== $version ==\")",
+      "Bash(done)",
+      "Bash(dir:*)",
+      "Bash(powershell \"Select-Object -Last 5\")",
+      "Bash(npm update:*)",
+      "Bash(if not exist \"C:\\\\Users\\\\Username\\\\.claude\\\\skills\" mkdir \"C:\\\\Users\\\\Username\\\\.claude\\\\skills\")",
+      "Bash(powershell:*)"
     ]
   }
 }
