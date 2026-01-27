@@ -308,7 +308,7 @@ class StreamingService {
               const errorOutput = stderrData.slice(0, 2000) || 'No error output available'
               const exitCode = process.exitCode || 'unknown'
               // Use actual port from icecast.xml
-              const actualPort = IcecastService.getActualPort() || config.icecast.port;
+              const actualPort = IcecastService.getActualPort() || 8000;
               const diagnosis = errorDiagnostics.diagnose(stderrData, exitCode, {
                 deviceId: streamConfig.deviceId,
                 deviceName: streamConfig.deviceName,
@@ -351,7 +351,7 @@ class StreamingService {
           // Use error diagnostics for user-friendly error messages
           const errorOutput = stderrData.slice(0, 2000) || 'No error output available'
           // Use actual port from icecast.xml
-          const actualPort = IcecastService.getActualPort() || config.icecast.port;
+          const actualPort = IcecastService.getActualPort() || 8000;
           const diagnosis = errorDiagnostics.diagnose(stderrData, code, {
             deviceId: streamConfig.deviceId,
             deviceName: streamConfig.deviceName,
@@ -411,15 +411,10 @@ class StreamingService {
   buildFFmpegArgs(streamId, streamConfig, formatIndex = 0) {
     const bitrate = streamConfig.bitrate || 192;
 
-    // Use configured Icecast credentials/host/port (fallback to defaults)
-    // Use a publish-safe host (avoid 0.0.0.0 / :: for outgoing connections)
-    const icecastHostRaw = config.icecast.host || 'localhost';
-    const icecastHost = ['0.0.0.0', '::', '', null, undefined].includes(icecastHostRaw)
-      ? 'localhost'
-      : icecastHostRaw;
-    // Use actual port from icecast.xml if available
-    const icecastPort = IcecastService.getActualPort() || config.icecast.port || 8000;
-    const icecastSourcePassword = config.icecast.sourcePassword || 'hackme';
+    // Read Icecast config from icecast.xml at runtime (source of truth)
+    const icecastHost = IcecastService.getHostname();
+    const icecastPort = IcecastService.getActualPort();
+    const icecastSourcePassword = IcecastService.getSourcePassword();
     const icecastUrl = `icecast://source:${icecastSourcePassword}@${icecastHost}:${icecastPort}/${streamId}`;
     const formats = this.getAudioFormats();
     const format = formats[formatIndex] || formats[0]; // Fallback to first format

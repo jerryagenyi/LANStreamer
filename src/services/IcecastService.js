@@ -5,6 +5,7 @@ import path from 'path'
 import os from 'os'
 import xml2js from 'xml2js'
 import fetch from 'node-fetch'
+import { watch, existsSync } from 'fs'
 
 import config from '../config/index.js'
 import logger from '../utils/logger.js'
@@ -45,6 +46,14 @@ class IcecastService {
     // Actual port from icecast.xml (parsed during initialization)
     this.actualPort = null
 
+    // Passwords from icecast.xml (parsed at runtime, never cached to disk)
+    this.sourcePassword = null
+    this.adminPassword = null
+    this.hostname = null
+
+    // File watcher for icecast.xml changes
+    this.configWatcher = null
+
     // Manual stop flag - prevents auto-restart when user manually stops Icecast
     this.manuallyStopped = false
   }
@@ -76,6 +85,7 @@ class IcecastService {
       const configData = await fs.readJson(configPath)
       logger.icecast('Loaded device config', { 
         path: configData.icecastPath,
+        port: configData.port,
         source: configData.source 
       })
       
@@ -87,6 +97,7 @@ class IcecastService {
           accessLog: configData.accessLogPath,
           errorLog: configData.errorLogPath
         },
+        port: configData.port || null,
         version: configData.version,
         source: configData.source || 'saved'
       }
@@ -107,12 +118,32 @@ class IcecastService {
     // Ensure config directory exists
       await fs.ensureDir(configDir)
       
+      // Parse port from icecast.xml if config path is available
+      let port = installation.port || null
+      if (!port && installation.paths?.config && await fs.pathExists(installation.paths.config)) {
+        try {
+          const configContent = await fs.readFile(installation.paths.config, 'utf8')
+          const portMatch = configContent.match(/<listen-socket>[\s\S]*?<port>(\d+)<\/port>[\s\S]*?<\/listen-socket>/)
+          if (portMatch) {
+            port = parseInt(portMatch[1])
+          } else {
+            const simplePortMatch = configContent.match(/<port>(\d+)<\/port>/)
+            if (simplePortMatch) {
+              port = parseInt(simplePortMatch[1])
+            }
+          }
+        } catch (error) {
+          logger.warn('Could not parse port from icecast.xml when saving device config:', error.message)
+        }
+      }
+      
       const configData = {
         icecastPath: installation.paths.exe,
         configPath: installation.paths.config,
         accessLogPath: installation.paths.accessLog,
         errorLogPath: installation.paths.errorLog,
         rootPath: path.dirname(installation.paths.exe),
+        port: port,
         source: installation.source,
         lastValidated: new Date().toISOString(),
         version: installation.version
@@ -121,6 +152,7 @@ class IcecastService {
       await fs.writeJson(configPath, configData, { spaces: 2 })
       logger.icecast('Saved device config', { 
         path: configData.icecastPath,
+        port: configData.port,
         configFile: configPath 
       })
     } catch (error) {
@@ -217,9 +249,14 @@ class IcecastService {
         await this.ensureConfigDirectory();
       }
 
-      // Step 2.5: Parse max listeners and port from config
+      // Step 2.5: Parse max listeners, port, and passwords from icecast.xml
       this.maxListeners = await this.parseMaxListeners();
       this.actualPort = await this.parsePort();
+      await this.parsePasswords();
+      await this.parseHostname();
+
+      // Step 2.6: Watch for icecast.xml changes
+      this.startConfigWatcher();
 
       // Step 3: Check if already running
       await this.checkRunningStatus();
@@ -562,46 +599,97 @@ class IcecastService {
       }
     }
 
-    // Final fallback to config default
-    logger.debug('Using default port from config (actualPort not set)', { defaultPort: config.icecast.port });
-    return config.icecast.port;
+    // Final fallback (only if icecast.xml can't be read and device-config.json doesn't exist)
+    logger.debug('Using fallback port (icecast.xml not yet parsed)', { defaultPort: config.icecast?.port || 8000 });
+    return config.icecast?.port || 8000;
   }
 
   /**
-   * Parse port from icecast.xml
-   * @returns {Promise<number>} Port number from config, or default from config.icecast.port
+   * Parse port from icecast.xml (source of truth) and sync to device-config.json
+   * Architecture: icecast.xml is the source of truth, device-config.json is a cache
+   * @returns {Promise<number>} Port number from icecast.xml, synced to device-config.json
    */
   async parsePort() {
     try {
+      // Always read from icecast.xml first (source of truth)
       if (!this.paths.config || !await fs.pathExists(this.paths.config)) {
         logger.warn('Icecast config file not found, using default port from config');
-        return config.icecast.port;
+        // Try to save default to device-config.json if it exists
+        const fallbackPort = 8000;
+        await this._saveDeviceConfigPort(fallbackPort);
+        return fallbackPort;
       }
 
       const configContent = await fs.readFile(this.paths.config, 'utf8');
 
       // Parse XML to find <port> element inside <listen-socket>
       // Match <port>8200</port> inside <listen-socket>...</listen-socket>
+      let port = null;
       const portMatch = configContent.match(/<listen-socket>[\s\S]*?<port>(\d+)<\/port>[\s\S]*?<\/listen-socket>/);
       if (portMatch) {
-        const port = parseInt(portMatch[1]);
-        logger.icecast('Parsed port from config', { port, configPath: this.paths.config });
+        port = parseInt(portMatch[1]);
+        logger.icecast('Parsed port from icecast.xml', { port, configPath: this.paths.config });
+      } else {
+        // Fallback: look for any <port> tag (in case structure is different)
+        const simplePortMatch = configContent.match(/<port>(\d+)<\/port>/);
+        if (simplePortMatch) {
+          port = parseInt(simplePortMatch[1]);
+          logger.icecast('Found port in config (simple match)', { port });
+        }
+      }
+
+      // If we found a port, sync it to device-config.json (always update cache)
+      if (port) {
+        await this._saveDeviceConfigPort(port);
         return port;
       }
 
-      // Fallback: look for any <port> tag (in case structure is different)
-      const simplePortMatch = configContent.match(/<port>(\d+)<\/port>/);
-      if (simplePortMatch) {
-        const port = parseInt(simplePortMatch[1]);
-        logger.icecast('Found port in config (simple match)', { port });
-        return port;
-      }
-
-      logger.warn('Could not parse port from config, using default from config.icecast.port');
-      return config.icecast.port;
+      // No port found in icecast.xml, use default
+      logger.warn('Could not parse port from icecast.xml, using fallback port 8000');
+      const fallbackPort = 8000;
+      await this._saveDeviceConfigPort(fallbackPort);
+      return fallbackPort;
     } catch (error) {
-      logger.warn('Error parsing port from config:', error.message);
-      return config.icecast.port;
+      logger.warn('Error parsing port from icecast.xml:', error.message);
+      return 8000;
+    }
+  }
+
+  /**
+   * Helper to update port in device-config.json (creates file if it doesn't exist)
+   * This syncs the port from icecast.xml (source of truth) to device-config.json (cache)
+   */
+  async _saveDeviceConfigPort(port) {
+    try {
+      const configPath = this.getDeviceConfigPath();
+      const configDir = path.dirname(configPath);
+      await fs.ensureDir(configDir);
+
+      let configData = {};
+      if (await fs.pathExists(configPath)) {
+        configData = await fs.readJson(configPath);
+      } else {
+        // Create minimal structure if file doesn't exist
+        configData = {
+          icecastPath: this.paths?.exe || null,
+          configPath: this.paths?.config || null,
+          accessLogPath: this.paths?.accessLog || null,
+          errorLogPath: this.paths?.errorLog || null,
+          rootPath: this.paths?.exe ? path.dirname(this.paths.exe) : null,
+          source: 'auto-synced',
+          lastValidated: new Date().toISOString(),
+          version: null
+        };
+      }
+
+      // Update port and timestamp
+      configData.port = port;
+      configData.lastValidated = new Date().toISOString();
+      
+      await fs.writeJson(configPath, configData, { spaces: 2 });
+      logger.icecast('Synced port to device-config.json', { port, source: 'icecast.xml' });
+    } catch (error) {
+      logger.warn('Failed to sync port to device-config.json:', error.message);
     }
   }
 
@@ -618,7 +706,7 @@ class IcecastService {
       const clientsMatch = configContent.match(/<clients>(\d+)<\/clients>/);
       if (clientsMatch) {
         const maxListeners = parseInt(clientsMatch[1]);
-        logger.icecast('Parsed max listeners from config', { maxListeners, configPath: this.paths.config });
+        logger.icecast('Parsed max listeners from icecast.xml', { maxListeners, configPath: this.paths.config });
         return maxListeners;
       }
 
@@ -633,19 +721,162 @@ class IcecastService {
         }
       }
 
-      logger.warn('Could not parse max listeners from config, using default');
+      logger.warn('Could not parse max listeners from icecast.xml, using default');
       return 100;
     } catch (error) {
-      logger.error('Error parsing max listeners from config:', error);
+      logger.error('Error parsing max listeners from icecast.xml:', error);
       return 100;
+    }
+  }
+
+  /**
+   * Parse passwords from icecast.xml (source of truth)
+   * Never cached to disk for security
+   */
+  async parsePasswords() {
+    try {
+      if (!this.paths.config || !await fs.pathExists(this.paths.config)) {
+        logger.warn('Icecast config file not found, using default passwords');
+        this.sourcePassword = 'hackme';
+        this.adminPassword = 'hackme';
+        return;
+      }
+
+      const configContent = await fs.readFile(this.paths.config, 'utf8');
+
+      // Parse source-password
+      const sourcePasswordMatch = configContent.match(/<source-password>([^<]+)<\/source-password>/);
+      if (sourcePasswordMatch) {
+        this.sourcePassword = sourcePasswordMatch[1].trim();
+        logger.icecast('Parsed source-password from icecast.xml');
+      } else {
+        this.sourcePassword = 'hackme';
+        logger.warn('Could not parse source-password from icecast.xml, using default');
+      }
+
+      // Parse admin-password
+      const adminPasswordMatch = configContent.match(/<admin-password>([^<]+)<\/admin-password>/);
+      if (adminPasswordMatch) {
+        this.adminPassword = adminPasswordMatch[1].trim();
+        logger.icecast('Parsed admin-password from icecast.xml');
+      } else {
+        this.adminPassword = 'hackme';
+        logger.warn('Could not parse admin-password from icecast.xml, using default');
+      }
+    } catch (error) {
+      logger.warn('Error parsing passwords from icecast.xml:', error.message);
+      this.sourcePassword = 'hackme';
+      this.adminPassword = 'hackme';
+    }
+  }
+
+  /**
+   * Parse hostname from icecast.xml
+   */
+  async parseHostname() {
+    try {
+      if (!this.paths.config || !await fs.pathExists(this.paths.config)) {
+        this.hostname = 'localhost';
+        return;
+      }
+
+      const configContent = await fs.readFile(this.paths.config, 'utf8');
+      const hostnameMatch = configContent.match(/<hostname>([^<]+)<\/hostname>/);
+      if (hostnameMatch) {
+        this.hostname = hostnameMatch[1].trim();
+        logger.icecast('Parsed hostname from icecast.xml', { hostname: this.hostname });
+      } else {
+        this.hostname = 'localhost';
+        logger.warn('Could not parse hostname from icecast.xml, using localhost');
+      }
+    } catch (error) {
+      logger.warn('Error parsing hostname from icecast.xml:', error.message);
+      this.hostname = 'localhost';
+    }
+  }
+
+  /**
+   * Get source password (read from icecast.xml at runtime)
+   */
+  getSourcePassword() {
+    return this.sourcePassword || 'hackme';
+  }
+
+  /**
+   * Get admin password (read from icecast.xml at runtime)
+   */
+  getAdminPassword() {
+    return this.adminPassword || 'hackme';
+  }
+
+  /**
+   * Get hostname (read from icecast.xml at runtime)
+   */
+  getHostname() {
+    return this.hostname || 'localhost';
+  }
+
+  /**
+   * Watch for changes to icecast.xml and re-parse config
+   */
+  startConfigWatcher() {
+    if (!this.paths.config || !existsSync(this.paths.config)) {
+      return;
+    }
+
+    try {
+      // Stop existing watcher if any
+      if (this.configWatcher) {
+        this.configWatcher.close();
+      }
+
+      this.configWatcher = watch(this.paths.config, async (eventType, filename) => {
+        if (eventType === 'change') {
+          logger.icecast('icecast.xml changed, re-parsing configuration...');
+          
+          // Re-parse all config values
+          try {
+            this.actualPort = await this.parsePort();
+            await this.parsePasswords();
+            await this.parseHostname();
+            this.maxListeners = await this.parseMaxListeners();
+            logger.icecast('Configuration re-parsed successfully', {
+              port: this.actualPort,
+              hostname: this.hostname
+            });
+          } catch (error) {
+            logger.error('Error re-parsing icecast.xml:', error.message);
+          }
+        }
+      });
+
+      logger.icecast('Started watching icecast.xml for changes', { path: this.paths.config });
+    } catch (error) {
+      logger.warn('Could not start file watcher for icecast.xml:', error.message);
+    }
+  }
+
+  /**
+   * Stop watching icecast.xml
+   */
+  stopConfigWatcher() {
+    if (this.configWatcher) {
+      this.configWatcher.close();
+      this.configWatcher = null;
+      logger.icecast('Stopped watching icecast.xml');
     }
   }
 
   async checkRunningStatus() {
     try {
       // Use actual port from icecast.xml if available
-      const port = this.actualPort || config.icecast.port;
-      const response = await fetch(`http://${config.icecast.host}:${port}/admin/stats.xml`, {
+      const port = this.actualPort;
+      if (!port) {
+        logger.warn('Port not yet parsed from icecast.xml in checkRunningStatus');
+        return;
+      }
+      const host = this.getHostname();
+      const response = await fetch(`http://${host}:${port}/admin/stats.xml`, {
         timeout: 5000
       })
       
@@ -664,7 +895,7 @@ class IcecastService {
    */
   _createStatusResponse(installationCheck, running, status, stats = null) {
     // Use actual port from icecast.xml if available, otherwise fall back to config
-    const actualPort = this.actualPort || config.icecast.port;
+    const actualPort = this.actualPort || 8000;
     
     const baseResponse = {
       installed: true,
@@ -673,7 +904,7 @@ class IcecastService {
       uptime: 0,
       version: installationCheck.version,
       port: actualPort,
-      host: config.icecast.host,
+      host: this.getHostname(),
       maxListeners: this.maxListeners || 100 // Default fallback
     };
 
@@ -705,7 +936,7 @@ class IcecastService {
         status: 'not-installed',
         uptime: 0,
         version: null,
-        port: config.icecast.port
+        port: this.actualPort || 8000
       };
       } catch (installError) {
       logger.warn('Icecast installation check failed:', installError.message);
@@ -715,7 +946,7 @@ class IcecastService {
           status: 'not-installed',
           uptime: 0,
           version: null,
-          port: config.icecast.port,
+          port: this.actualPort || 8000,
           error: installError.message
       };
         }
@@ -743,11 +974,16 @@ class IcecastService {
       // Try to get stats from admin interface (for additional info, but process check is authoritative)
       try {
       // Use actual port from icecast.xml if available
-      const port = this.actualPort || config.icecast.port;
-      const response = await fetch(`http://${config.icecast.host}:${port}/admin/stats.xml`, {
+      const port = this.actualPort;
+      if (!port) {
+        logger.warn('Port not yet parsed from icecast.xml in checkRunningStatus');
+        return;
+      }
+      const host = this.getHostname();
+      const response = await fetch(`http://${host}:${port}/admin/stats.xml`, {
         timeout: 5000,
         headers: {
-          'Authorization': `Basic ${Buffer.from(`admin:${config.icecast.adminPassword}`).toString('base64')}`
+          'Authorization': `Basic ${Buffer.from(`admin:${this.getAdminPassword()}`).toString('base64')}`
         }
         });
 
@@ -992,8 +1228,8 @@ class IcecastService {
         mountpoints,
         security: securityCheck,
         config: {
-          host: config.icecast.host,
-          port: config.icecast.port,
+          host: this.getHostname(),
+          port: this.actualPort || 8000,
           configPath: this.configPath
         }
       }
@@ -1056,7 +1292,7 @@ class IcecastService {
           message: 'ICECAST: Default admin credentials (admin/hackme) are in use',
           description: 'Anyone can access the Icecast admin panel and control your server',
           fix: 'Change admin-user and admin-password in icecast.xml',
-          adminUrl: `http://${config.icecast.host}:${this.actualPort || config.icecast.port}/admin/`
+          adminUrl: `http://${this.getHostname()}:${this.actualPort}/admin/`
         });
       }
 
@@ -1099,11 +1335,16 @@ class IcecastService {
   async getMountpoints() {
     try {
       // Use actual port from icecast.xml if available
-      const port = this.actualPort || config.icecast.port;
-      const response = await fetch(`http://${config.icecast.host}:${port}/admin/listmounts.xml`, {
+      const port = this.actualPort;
+      if (!port) {
+        logger.warn('Port not yet parsed from icecast.xml in checkRunningStatus');
+        return;
+      }
+      const host = this.getHostname();
+      const response = await fetch(`http://${host}:${port}/admin/listmounts.xml`, {
         timeout: 5000,
         headers: {
-          'Authorization': `Basic ${Buffer.from(`admin:${config.icecast.adminPassword}`).toString('base64')}`
+          'Authorization': `Basic ${Buffer.from(`admin:${this.getAdminPassword()}`).toString('base64')}`
         }
       })
 
@@ -1128,7 +1369,7 @@ class IcecastService {
             content_type: source.content_type || 'unknown',
             stream_start: source.stream_start || null,
             title: source.title || '',
-            url: `http://${config.icecast.host}:${this.actualPort || config.icecast.port}${source.$.mount}`
+            url: `http://${this.getHostname()}:${this.actualPort}${source.$.mount}`
           })
         }
       }
@@ -1769,7 +2010,7 @@ class IcecastService {
         if (health.checks.process.status === 'healthy') {
           try {
             const response = await fetch(
-              `http://${config.icecast.host}:${this.actualPort || config.icecast.port}/admin/stats.xml`,
+              `http://${this.getHostname()}:${this.actualPort}/admin/stats.xml`,
               { timeout: 3000 }
             );
 
@@ -1778,8 +2019,8 @@ class IcecastService {
                 status: 'healthy',
                 message: 'Admin interface accessible',
                 details: {
-                  host: config.icecast.host,
-                  port: config.icecast.port,
+                  host: this.getHostname(),
+                  port: this.actualPort || 8000,
                   responseStatus: response.status
                 }
               };
@@ -1788,8 +2029,8 @@ class IcecastService {
                 status: 'degraded',
                 message: `Admin interface returned ${response.status}`,
                 details: {
-                  host: config.icecast.host,
-                  port: config.icecast.port,
+                  host: this.getHostname(),
+                  port: this.actualPort || 8000,
                   responseStatus: response.status
                 }
               };
@@ -1799,8 +2040,8 @@ class IcecastService {
               status: 'unhealthy',
               message: 'Admin interface not accessible',
               details: {
-                host: config.icecast.host,
-                port: config.icecast.port,
+                host: this.getHostname(),
+                port: this.actualPort || 8000,
                 error: error.message
               }
             };
@@ -2067,14 +2308,14 @@ class IcecastService {
         <burst-size>65535</burst-size>
     </limits>
     <authentication>
-        <source-password>${config.icecast.sourcePassword}</source-password>
-        <relay-password>${config.icecast.sourcePassword}</relay-password>
+        <source-password>${this.getSourcePassword()}</source-password>
+        <relay-password>${this.getSourcePassword()}</relay-password>
         <admin-user>admin</admin-user>
-        <admin-password>${config.icecast.adminPassword}</admin-password>
+        <admin-password>${this.getAdminPassword()}</admin-password>
     </authentication>
-    <hostname>${config.icecast.host}</hostname>
+    <hostname>${this.getHostname()}</hostname>
     <listen-socket>
-        <port>${config.icecast.port}</port>
+        <port>${this.actualPort || 8000}</port>
     </listen-socket>
     <http-headers>
         <header name="Access-Control-Allow-Origin" value="*" />
@@ -2107,19 +2348,47 @@ class IcecastService {
 
   async configure(newConfig) {
     try {
-      // Update configuration
-      if (newConfig.adminPassword) {
-        config.icecast.adminPassword = newConfig.adminPassword
-      }
-      if (newConfig.sourcePassword) {
-        config.icecast.sourcePassword = newConfig.sourcePassword
-      }
-      if (newConfig.port) {
-        config.icecast.port = newConfig.port
+      // Update icecast.xml directly (source of truth)
+      // We'll write the new values to icecast.xml, then re-parse
+      if (!this.paths.config || !await fs.pathExists(this.paths.config)) {
+        throw new Error('Icecast config file not found');
       }
 
-      // Regenerate config file
-      await this.generateConfigFile()
+      let configContent = await fs.readFile(this.paths.config, 'utf8');
+
+      // Update passwords in icecast.xml
+      if (newConfig.adminPassword) {
+        configContent = configContent.replace(
+          /<admin-password>[^<]*<\/admin-password>/,
+          `<admin-password>${newConfig.adminPassword}</admin-password>`
+        );
+      }
+      if (newConfig.sourcePassword) {
+        configContent = configContent.replace(
+          /<source-password>[^<]*<\/source-password>/,
+          `<source-password>${newConfig.sourcePassword}</source-password>`
+        );
+        configContent = configContent.replace(
+          /<relay-password>[^<]*<\/relay-password>/,
+          `<relay-password>${newConfig.sourcePassword}</relay-password>`
+        );
+      }
+      if (newConfig.port) {
+        configContent = configContent.replace(
+          /<listen-socket>[\s\S]*?<port>\d+<\/port>[\s\S]*?<\/listen-socket>/,
+          `<listen-socket>\n        <port>${newConfig.port}</port>\n    </listen-socket>`
+        );
+      }
+
+      // Write updated config back to icecast.xml
+      await fs.writeFile(this.paths.config, configContent, 'utf8');
+      logger.icecast('Updated icecast.xml with new configuration');
+
+      // Re-parse all values from icecast.xml
+      this.actualPort = await this.parsePort();
+      await this.parsePasswords();
+      await this.parseHostname();
+      this.maxListeners = await this.parseMaxListeners();
 
       // Restart if running AND not manually stopped
       // Only auto-restart if user hasn't manually stopped Icecast
@@ -2136,8 +2405,8 @@ class IcecastService {
         success: true,
         message: 'Icecast configuration updated successfully',
         config: {
-          host: config.icecast.host,
-          port: config.icecast.port,
+          host: this.getHostname(),
+          port: this.actualPort || 8000,
           configPath: this.configPath
         }
       }

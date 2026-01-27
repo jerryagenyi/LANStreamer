@@ -10,6 +10,7 @@ const portfinder = require('portfinder')
 const config = require('../config')
 const logger = require('../utils/logger')
 const { AppError } = require('../middleware/errorHandler')
+const IcecastService = require('./IcecastService.js')
 
 const execAsync = promisify(exec)
 
@@ -316,7 +317,8 @@ class SystemService {
       }
 
       // Check port availability
-      const requiredPorts = [config.server.port, config.icecast.port, config.network.clientPort]
+      const icecastPort = IcecastService.getActualPort() || 8000;
+      const requiredPorts = [config.server.port, icecastPort, config.network.clientPort]
       validation.requirements.ports = {
         required: requiredPorts,
         available: [],

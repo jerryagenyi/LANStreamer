@@ -15,9 +15,31 @@
 
 import dotenv from 'dotenv'
 import path from 'path'
+import fs from 'fs'
 
-// Load environment variables
+// Load environment variables (only for non-Icecast configs)
 dotenv.config()
+
+/**
+ * Get Icecast port from device-config.json (synced from icecast.xml)
+ * This is the single source of truth - reads from cache, not env vars
+ */
+function getIcecastPortFromDeviceConfig() {
+  try {
+    const deviceConfigPath = path.join(process.cwd(), 'config', 'device-config.json')
+    if (fs.existsSync(deviceConfigPath)) {
+      const deviceConfig = JSON.parse(fs.readFileSync(deviceConfigPath, 'utf8'))
+      if (deviceConfig.port) {
+        return deviceConfig.port
+      }
+    }
+  } catch (error) {
+    // Silently fail - will use default
+  }
+  // Fallback default (only used if device-config.json doesn't exist yet)
+  // This default is overwritten once IcecastService initializes and reads icecast.xml
+  return 8000
+}
 
 const config = {
   // Server Configuration
@@ -37,22 +59,13 @@ const config = {
     enableCompression: process.env.ENABLE_COMPRESSION === 'true'
   },
 
-  // Icecast Configuration
+  // Icecast Configuration - MINIMAL FALLBACK ONLY
+  // All Icecast config is read from icecast.xml at runtime via IcecastService
+  // These defaults are ONLY used if IcecastService hasn't initialized yet (rare edge case)
+  // Use IcecastService.getActualPort(), getSourcePassword(), getAdminPassword(), getHostname()
   icecast: {
-    host: process.env.ICECAST_HOST || 'localhost',
-    port: parseInt(process.env.ICECAST_PORT) || 8000,
-    adminPassword: process.env.ICECAST_ADMIN_PASSWORD || 'hackme',
-    sourcePassword: process.env.ICECAST_SOURCE_PASSWORD || 'hackme',
-    // Manual path configuration (prioritized over automatic detection)
-    paths: {
-      exePath: process.env.ICECAST_EXE_PATH || null,
-      configPath: process.env.ICECAST_CONFIG_PATH || null,
-      accessLogPath: process.env.ICECAST_ACCESS_LOG || null,
-      errorLogPath: process.env.ICECAST_ERROR_LOG || null
-    },
-    // Legacy support
-    configPath: process.env.ICECAST_CONFIG_PATH || null,
-    customPath: process.env.ICECAST_CUSTOM_PATH || null
+    port: getIcecastPortFromDeviceConfig(), // Fallback only - use IcecastService.getActualPort() instead
+    // Passwords and hostname are NOT stored here - always read from icecast.xml at runtime
   },
 
   // FFmpeg Configuration
@@ -72,7 +85,9 @@ const config = {
 
   // Network Configuration
   network: {
-    streamBaseUrl: process.env.STREAM_BASE_URL || 'http://localhost:8000',
+    // streamBaseUrl is built dynamically at runtime using IcecastService.getActualPort()
+    // Cannot set here as IcecastService may not be initialized yet
+    streamBaseUrl: null, // Set at runtime via IcecastService
     clientPort: parseInt(process.env.CLIENT_PORT) || 8080,
     websocketPort: parseInt(process.env.WEBSOCKET_PORT) || 3001,
     enableCors: process.env.ENABLE_CORS === 'true',
@@ -131,9 +146,8 @@ const config = {
 // Validate required configuration
 const validateConfig = () => {
   const required = [
-    'security.jwtSecret',
-    'icecast.adminPassword',
-    'icecast.sourcePassword'
+    'security.jwtSecret'
+    // Note: Icecast passwords are read from icecast.xml at runtime, not validated here
   ]
 
   for (const key of required) {

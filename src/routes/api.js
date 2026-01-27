@@ -17,7 +17,7 @@ router.get('/health', asyncHandler(async (req, res) => {
     timestamp: new Date().toISOString(),
     uptime: process.uptime(),
     version: require('../../package.json').version,
-    environment: process.env.NODE_ENV || 'development',
+    environment: 'development',
     services: {}
   }
 
@@ -163,6 +163,10 @@ router.get('/stats', authenticate, authorize('admin', 'operator'), asyncHandler(
  */
 router.get('/config', authenticate, authorize('admin'), asyncHandler(async (req, res) => {
   const config = require('../config')
+  const { icecast: icecastService } = req.services
+  
+  // Get actual port from device-config.json (synced from icecast.xml)
+  const actualPort = icecastService?.getActualPort() || 8000
   
   // Remove sensitive information
   const safeConfig = {
@@ -172,8 +176,8 @@ router.get('/config', authenticate, authorize('admin'), asyncHandler(async (req,
       env: config.server.env
     },
     icecast: {
-      host: config.icecast.host,
-      port: config.icecast.port
+      host: icecastService?.getHostname() || 'localhost',
+      port: actualPort
     },
     ffmpeg: {
       logLevel: config.ffmpeg.logLevel,

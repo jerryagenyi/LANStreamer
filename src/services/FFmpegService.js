@@ -134,15 +134,10 @@ class FFmpegService {
     const formats = this.getAudioFormats();
     const format = formats[formatIndex] || formats[0]; // Fallback to first format
 
-    // Use configured Icecast credentials/host/port (fallback to defaults)
-    // Use a publish-safe host (avoid 0.0.0.0 / :: for outgoing connections)
-    const icecastHostRaw = config.icecast.host || 'localhost'
-    const icecastHost = ['0.0.0.0', '::', '', null, undefined].includes(icecastHostRaw)
-      ? 'localhost'
-      : icecastHostRaw
-    // Use actual port from icecast.xml if available
-    const icecastPort = IcecastService.getActualPort() || config.icecast.port || 8000
-    const icecastSourcePassword = config.icecast.sourcePassword || 'hackme'
+    // Read Icecast config from icecast.xml at runtime (source of truth)
+    const icecastHost = IcecastService.getHostname()
+    const icecastPort = IcecastService.getActualPort()
+    const icecastSourcePassword = IcecastService.getSourcePassword()
 
     const args = [
       '-f', 'dshow',                    // DirectShow input format

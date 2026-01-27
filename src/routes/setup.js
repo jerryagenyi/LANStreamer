@@ -126,10 +126,12 @@ router.post('/configure-icecast',
     const { icecast } = req.services
     const { adminPassword, sourcePassword, port, maxClients } = req.body
     
+    // Use provided port, or get actual port from device-config.json, or fallback to config default
+    const actualPort = port || icecast.getActualPort() || 8000;
     const config = {
       adminPassword,
       sourcePassword,
-      port: port || 8000,
+      port: actualPort,
       maxClients: maxClients || 100
     }
     

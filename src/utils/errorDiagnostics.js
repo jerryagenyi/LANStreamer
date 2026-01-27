@@ -14,6 +14,7 @@
  */
 
 import logger from './logger.js';
+import config from '../config/index.js';
 
 /**
  * Error diagnostic result structure
@@ -248,30 +249,50 @@ class ErrorDiagnostics {
    * Diagnose connection errors (Icecast unreachable)
    */
   diagnoseConnectionError(stderr, exitCode, context) {
+    // Get port from context (which comes from IcecastService.getActualPort())
     const port = context.icecastPort || context.port || 8000;
+    const host = context.icecastHost || 'localhost';
+
+    // Determine likely cause based on error details
+    let likelyCause = 'Unknown';
+    let specificSolution = '';
+    
+    if (stderr && stderr.includes('ECONNREFUSED')) {
+      likelyCause = 'Connection Refused - Icecast is not running or not listening on this port';
+      specificSolution = '1. Check if Icecast is running: Look for "Server Online" in the dashboard\n2. If not running, start Icecast from the dashboard';
+    } else if (stderr && stderr.includes('timeout')) {
+      likelyCause = 'Connection Timeout - Icecast may be running but not responding';
+      specificSolution = '1. Check if Icecast process exists: tasklist | findstr icecast\n2. Restart Icecast from the dashboard';
+    } else if (exitCode === -5 || exitCode === 4294967291) {
+      likelyCause = 'Connection Refused (Exit Code -5) - Icecast server is not accessible';
+      specificSolution = '1. Verify Icecast is running and listening on port ' + port + '\n2. Check: netstat -ano | findstr ":' + port + '"';
+    }
 
     return {
       category: 'connection',
       severity: 'critical',
       title: '🔌 Cannot Connect to Icecast Server',
-      description: `FFmpeg cannot establish a connection to the Icecast server on port ${port}.`,
+      description: `FFmpeg cannot establish a connection to the Icecast server at ${host}:${port}.\n\n**Likely Cause:** ${likelyCause}`,
       causes: [
-        'Icecast server is not running',
-        `Port ${port} is blocked or in use by another application (e.g., Docker, another server)`,
+        'Icecast server is not running (most common)',
+        `Port ${port} is blocked or in use by another application (e.g., Docker Desktop)`,
         'Firewall is blocking the connection',
         'Icecast crashed or failed to start properly',
-        'Wrong Icecast host or port configured',
+        `Port mismatch: LANStreamer is using port ${port} but Icecast may be configured differently`,
+        'Wrong Icecast hostname configured in icecast.xml',
       ],
       solutions: [
-        '1. Check if Icecast is running: Look for "Server Online" in the dashboard',
-        `2. Check for port conflicts: Open PowerShell and run: netstat -ano | findstr ":${port}"`,
-        `3. If another app is using port ${port} (like Docker), either:`,
+        specificSolution || '1. Check if Icecast is running: Look for "Server Online" in the dashboard',
+        `2. Verify port ${port} is correct: Check icecast.xml for <port>${port}</port>`,
+        `3. Check for port conflicts: Open PowerShell and run: netstat -ano | findstr ":${port}"`,
+        `4. If another app is using port ${port} (like Docker), either:`,
         '   • Stop that application, OR',
-        `   • Change Icecast port to a different port in icecast.xml`,
-        '4. Restart Icecast from the dashboard (Stop → Start)',
-        `5. Check Windows Firewall settings for port ${port}`,
+        `   • Change Icecast port in icecast.xml (LANStreamer will auto-detect the change)`,
+        '5. Restart Icecast from the dashboard (Stop → Start)',
+        `6. Check Windows Firewall settings for port ${port}`,
+        '7. Verify icecast.xml hostname matches: Check <hostname> in icecast.xml',
       ],
-      technicalDetails: `Exit code: ${exitCode}\nTarget: icecast://source:***@localhost:${port}/\nError: Connection refused or timeout`,
+      technicalDetails: `Exit code: ${exitCode} (${exitCode === -5 ? 'Connection Refused' : 'Unknown'})\nTarget: icecast://source:***@${host}:${port}/\nError: Connection refused or timeout\n\n**What this means:** FFmpeg tried to connect to Icecast but the connection was rejected. This usually means:\n- Icecast is not running, OR\n- Icecast is running on a different port, OR\n- Another application is blocking the port`,
     };
   }
 
@@ -299,8 +320,8 @@ class ErrorDiagnostics {
         '   • Previous Icecast instance - kill it with: taskkill /IM icecast.exe /F',
         '3. To change Icecast port:',
         '   • Edit icecast.xml: change <port>8000</port> to <port>8080</port>',
-        '   • Create .env file with: ICECAST_PORT=8080',
-        '4. Restart LANStreamer and Icecast after changes',
+        '   • LANStreamer will automatically detect the change (no restart needed)',
+        '4. Restart Icecast after changing port in icecast.xml',
       ],
       technicalDetails: `Port: ${port}\nError: EADDRINUSE - Address already in use`,
     };

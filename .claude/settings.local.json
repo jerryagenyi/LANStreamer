@@ -35,7 +35,9 @@
       "Bash(powershell \"Select-Object -Last 5\")",
       "Bash(npm update:*)",
       "Bash(if not exist \"C:\\\\Users\\\\Username\\\\.claude\\\\skills\" mkdir \"C:\\\\Users\\\\Username\\\\.claude\\\\skills\")",
-      "Bash(powershell:*)"
+      "Bash(powershell:*)",
+      "Bash(more:*)",
+      "Bash(type:*)"
     ]
   }
 }
