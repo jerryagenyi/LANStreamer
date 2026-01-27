@@ -8,9 +8,9 @@ A comprehensive solution that turns a standard PC into a multi-channel audio str
 |--------------|-------------|
 | **Quick Start** | This README - get up and running quickly |
 | **[Troubleshooting](docs/TROUBLESHOOTING.md)** | Common issues: network, firewall, playback problems |
+| **[System Architecture](docs/LANSTREAMER_SYSTEM_ARCHITECTURE.md)** | ⭐ Complete technical documentation - all services, flows, and architecture |
 | [Installation Guides](docs/guides/README.md) | FFmpeg, Icecast setup guides |
 | [Network Setup](docs/NETWORK-SETUP.md) | Static IP configuration for events |
-| [Comprehensive Docs](docs/LANStreamer-Documentation.md) | Complete technical documentation |
 | [Developer Guide](CLAUDE.md) | Architecture and contribution guide |
 
 ---
@@ -55,7 +55,7 @@ npm start
 
 Then visit `http://localhost:3001` for the admin dashboard.
 
-> **Need more detail?** See [Comprehensive Documentation](docs/LANStreamer-Documentation.md) or [Installation Guides](docs/guides/README.md)
+> **Need more detail?** See [System Architecture](docs/LANSTREAMER_SYSTEM_ARCHITECTURE.md) or [Installation Guides](docs/guides/README.md)
 
 ---
 

@@ -358,9 +358,9 @@ When troubleshooting, check these in order:
 
 ## Still Having Issues?
 
-1. Check the [Comprehensive Documentation](LANStreamer-Documentation.md)
-2. Review [Network Setup Guide](NETWORK-SETUP.md)
-3. Check [Installation Guides](guides/README.md)
+1. Check the [System Architecture Documentation](LANSTREAMER_SYSTEM_ARCHITECTURE.md) for detailed technical information
+2. Review [Network Setup Guide](NETWORK-SETUP.md) for network configuration
+3. Check [Installation Guides](guides/README.md) for component setup
 4. Create an issue on GitHub with:
    - Your OS and Node.js version
    - Error messages (full output)
