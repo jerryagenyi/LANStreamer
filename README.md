@@ -7,6 +7,7 @@ A comprehensive solution that turns a standard PC into a multi-channel audio str
 | Documentation | Description |
 |--------------|-------------|
 | **Quick Start** | This README - get up and running quickly |
+| **[Startup sequence](docs/STARTUP-SEQUENCE.md)** | Step-by-step process order for `npm run dev`; troubleshoot each step |
 | **[Troubleshooting](docs/TROUBLESHOOTING.md)** | Common issues: network, firewall, playback problems |
 | **[System Architecture](docs/LANSTREAMER_SYSTEM_ARCHITECTURE.md)** | ⭐ Complete technical documentation - all services, flows, and architecture |
 | [Installation Guides](docs/guides/README.md) | FFmpeg, Icecast setup guides |
@@ -163,6 +164,7 @@ npm install  # If dependencies changed
 
 | Document | Description |
 |----------|-------------|
+| **[Startup sequence](docs/STARTUP-SEQUENCE.md)** | Process order for `npm run dev`; troubleshoot step-by-step |
 | **[Troubleshooting Guide](docs/TROUBLESHOOTING.md)** | Common issues and solutions (subnet, firewall, playback) |
 | [Network Setup](docs/NETWORK-SETUP.md) | Static IP configuration for live events |
 | [Installation Guides](docs/guides/README.md) | FFmpeg and Icecast setup guides |

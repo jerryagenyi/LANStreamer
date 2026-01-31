@@ -1,5 +1,7 @@
 import express from 'express';
+import http from 'http';
 import streamingService from '../services/StreamingService.js';
+import IcecastService from '../services/IcecastService.js';
 import logger from '../utils/logger.js';
 
 const router = express.Router();
@@ -81,6 +83,25 @@ router.post('/restart', async (req, res) => {
     logger.error('Error restarting stream:', { error: error.message, stack: error.stack });
     res.status(500).json({ message: 'Error restarting stream', error: error.message });
   }
+});
+
+/**
+ * @route GET /api/streams/play/:streamId
+ * @description Proxy Icecast stream for same-origin playback (avoids CORS and firewall on Icecast port).
+ * @access Public
+ */
+router.get('/play/:streamId', (req, res) => {
+  const { streamId } = req.params;
+  const port = IcecastService.getActualPort() || 8000;
+  const url = `http://127.0.0.1:${port}/${encodeURIComponent(streamId)}`;
+  http.get(url, (upstream) => {
+    const contentType = upstream.headers['content-type'] || 'audio/mpeg';
+    res.setHeader('Content-Type', contentType);
+    upstream.pipe(res);
+  }).on('error', (err) => {
+    logger.warn('Stream proxy error:', { streamId, message: err.message });
+    res.status(502).json({ error: 'Stream unavailable', message: err.message });
+  });
 });
 
 /**

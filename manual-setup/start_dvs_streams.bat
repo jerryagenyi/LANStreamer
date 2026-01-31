@@ -41,9 +41,10 @@ if defined MANUAL_IP (
     )
 )
 
+:: If you start Icecast from the LANStreamer dashboard, it may use port 8200 - set ICECAST_PORT=8200 to match your icecast.xml
 set "ICECAST_PORT=8000"
 set "ICECAST_USER=source"
-set "ICECAST_PASSWORD=your-source-password"
+set "ICECAST_PASSWORD=hackme"
 
 :: === DVS AUDIO DEVICES ===
 :: Update these with your exact DVS device names from: ffmpeg -list_devices true -f dshow -i dummy

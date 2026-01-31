@@ -27,7 +27,7 @@ This guide will help you create a professional audio streaming system for confer
 - **FFmpeg**: Audio encoding and streaming software
 - **Web Interface**: Simple webpage for users to select language streams
 
-> 📖 **Understanding the Concept**: Before starting, read [LANStreamer Audio Pipeline Concepts](LANStreamer-Audio-Pipeline-Concepts.md) to understand how audio flows from sources to listeners. This will help you troubleshoot issues and adapt the setup for your specific needs.
+> 📖 **Understanding the concept**: For architecture and audio flow, see the main project [docs](../docs/README.md) and [README](../README.md).
 
 ### System Architecture
 ```
@@ -198,6 +198,8 @@ sudo apt install icecast2
 ```
 
 ### 3.2 Configure Icecast
+
+**Note:** If you start Icecast from the **LANStreamer web app**, it uses port **8200** and source password **hackme** by default. The examples below use port 8000 and placeholder passwords for a standalone Icecast install.
 
 Edit the Icecast configuration file (`icecast.xml`):
 

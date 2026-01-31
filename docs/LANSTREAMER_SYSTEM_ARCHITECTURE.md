@@ -1218,8 +1218,10 @@ LISTENER CAN'T HEAR STREAM
 |------|---------|
 | `README.md` | Main project readme |
 | `CLAUDE.md` | Claude Code project instructions |
+| [**STARTUP-SEQUENCE.md**](STARTUP-SEQUENCE.md) | Step-by-step process order for `npm run dev` and troubleshooting each step |
+| [**TROUBLESHOOTING.md**](TROUBLESHOOTING.md) | Common issues: Icecast, network, playback, firewall, devices |
+| [**NETWORK-SETUP.md**](NETWORK-SETUP.md) | Static IP, DHCP reservation, sharing URLs with listeners |
 | `ERROR_DIAGNOSTICS_ANALYSIS_REPORT.md` | Error system analysis |
-| `TROUBLESHOOTING_GUIDE.md` | User-facing troubleshooting |
 | `LANSTREAMER_SYSTEM_ARCHITECTURE.md` | This document |
 
 ---
@@ -1310,6 +1312,14 @@ errorDiagnostics.formatMessage(diagnosis)
 | Socket.io | Inherits Express | Yes |
 
 **Important:** Icecast port is read from `icecast.xml` at runtime. The default 8000 in `config/index.js` is only a fallback.
+
+---
+
+## Related documentation
+
+- **[Startup sequence](STARTUP-SEQUENCE.md)** — Process order when running `npm run dev`; use it to troubleshoot step-by-step.
+- **[Troubleshooting guide](TROUBLESHOOTING.md)** — Icecast connection, network/subnet, playback, firewall, audio devices.
+- **[Network setup](NETWORK-SETUP.md)** — Static IP and DHCP reservation for events; sharing listener URLs.
 
 ---
 

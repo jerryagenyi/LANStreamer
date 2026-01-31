@@ -2,6 +2,8 @@
 
 This folder contains comprehensive guides and working scripts for setting up LANStreamer manually using batch scripts and FFmpeg.
 
+**Port note:** Scripts and guides here use Icecast port **8000** (common default for a standalone Icecast install). If you use the **LANStreamer web app** to start Icecast, it may use port **8200** (or whatever is in your `icecast.xml`). In that case set `ICECAST_PORT=8200` (or your port) in the batch files.
+
 ## 📋 **Setup Guides**
 
 ### 🎯 **Recommended: DVS (Dante Virtual Soundcard) Setup**

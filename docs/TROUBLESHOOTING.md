@@ -128,6 +128,8 @@ tasklist | findstr "icecast"
 - First stream works, second stream fails
 - Error mentions "too many sources"
 
+**Note:** When you **start Icecast from the LANStreamer dashboard**, the app generates `icecast.xml` with `<sources>32</sources>`. If only 2 streams work, you are likely using an existing `icecast.xml` (e.g. from a manual Icecast install) that still has the default `<sources>2</sources>`. Edit it as below and restart Icecast.
+
 **Solution:**
 1. Edit `icecast.xml`:
    ```xml
@@ -205,7 +207,9 @@ tasklist | findstr "icecast"
    ```powershell
    netsh advfirewall firewall add rule name="LANStreamer" dir=in action=allow protocol=TCP localport=3001
    netsh advfirewall firewall add rule name="Icecast" dir=in action=allow protocol=TCP localport=8000
+   netsh advfirewall firewall add rule name="Icecast8200" dir=in action=allow protocol=TCP localport=8200
    ```
+   (Use 8000 and/or 8200 depending on your Icecast port in icecast.xml.)
 3. Restart LANStreamer server
 
 **Alternative (GUI method):**
@@ -231,6 +235,25 @@ tasklist | findstr "icecast"
 ---
 
 ## Stream Playback Issues
+
+### Problem: Listening page Play button or direct stream URL doesn't work
+
+**Symptoms:**
+- Play on `/streams` does nothing or shows "Stream not available"
+- Opening the direct stream URL (e.g. `http://localhost:8200/streamId`) in a new tab doesn't play
+- Works when testing with manual FFmpeg + curl, but not in the browser
+
+**Cause:** The browser loads the stream from Icecast (port 8200). That can fail due to CORS (different origin), firewall blocking port 8200, or Icecast not being reachable from the browser.
+
+**Solution (built-in):** The listening page uses a **same-origin proxy**. Playback goes through `GET /api/streams/play/:streamId` on the LANStreamer server (port 3001), which proxies to Icecast. So you only need port 3001 open to the browser; no need to open 8200 for listeners.
+
+- **Play button:** Uses the proxy (same origin). If it still fails, ensure Icecast is running and the stream is active; check server logs for "Stream proxy error".
+- **Copy URL:** Copies the direct Icecast URL (e.g. `http://192.168.1.244:8200/streamId`) for use in VLC or other players. For that to work from another device, allow Icecast port (8200) in the firewall on the server.
+
+**If playback still fails:**
+1. Confirm the stream is running (dashboard shows "Running").
+2. Check Icecast is up: `curl -I http://localhost:8200/` should return 200.
+3. Check LANStreamer logs for errors when you press Play.
 
 ### Problem: "Stream format not supported by your browser"
 
@@ -276,8 +299,9 @@ tasklist | findstr "icecast"
 # Allow LANStreamer web server (port 3001)
 netsh advfirewall firewall add rule name="LANStreamer" dir=in action=allow protocol=TCP localport=3001
 
-# Allow Icecast server (port 8000)
+# Allow Icecast server (port 8000 and/or 8200 - match your icecast.xml)
 netsh advfirewall firewall add rule name="Icecast" dir=in action=allow protocol=TCP localport=8000
+netsh advfirewall firewall add rule name="Icecast8200" dir=in action=allow protocol=TCP localport=8200
 ```
 
 **Verify rules are active:**

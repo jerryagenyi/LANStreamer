@@ -135,7 +135,8 @@ class FFmpegService {
     const format = formats[formatIndex] || formats[0]; // Fallback to first format
 
     // Read Icecast config from icecast.xml at runtime (source of truth)
-    const icecastHost = IcecastService.getHostname()
+    // Source connections (FFmpeg → Icecast) must use localhost; getHostname() is for public URLs only
+    const icecastHost = 'localhost'
     const icecastPort = IcecastService.getActualPort()
     const icecastSourcePassword = IcecastService.getSourcePassword()
 

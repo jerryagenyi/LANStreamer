@@ -36,12 +36,12 @@ This guide provides an alternative to the FFmpeg-based LANStreamer setup, design
 - **Other options**: 🔄 **Available but not extensively tested**
 
 ### 🎯 **Recommended Focus Based on Testing**
-Based on what I have personlally tested - For reliable production deployment, focus on:
+Based on what I have personally tested - For reliable production deployment, focus on:
 1. **Option A (Single Stream Testing)** - Working and tested
 2. **Option B (Multi-Stream Production)** - Working and tested
 3. **Skip Option C (Ezstream)** initially due to known complexity issues
 
-> 📖 **Understanding the Concept**: Before starting, read [LANStreamer Audio Pipeline Concepts](LANStreamer-Audio-Pipeline-Concepts.md) to understand how audio flows from sources to listeners. This is especially important for Dante setups where network audio routing can be complex.
+> 📖 **Understanding the concept**: For architecture and audio flow, see the main project [docs](../docs/README.md) and [README](../README.md). Dante setups need special attention to network audio routing.
 
 **⚠️ Important**: Dante Virtual Soundcard (DVS) and Dante Via **cannot run simultaneously** on the same system. This guide uses DVS only, which is simpler and more reliable for streaming applications.
 
@@ -155,6 +155,8 @@ Based on what I have personlally tested - For reliable production deployment, fo
 
 ## Step 2: Icecast Streaming Server Setup
 
+**Note:** If you start Icecast from the **LANStreamer web app** (dashboard), it uses port **8200** and source password **hackme** by default. The batch files in this folder (`stream.bat`, `start_dvs_streams.bat`) use port 8000 and password `hackme`; set `ICECAST_PORT=8200` in those scripts if you use the app’s Icecast.
+
 ### 2.1 Install Icecast
 
 Follow the same installation process as the standard LANStreamer guide:
@@ -169,7 +171,7 @@ Follow the same installation process as the standard LANStreamer guide:
    - Location: `C:\Program Files\Icecast2\etc\icecast.xml`
    - Open with text editor (run as administrator)
 
-2. **Update Security Settings**:
+2. **Update Security Settings** (use strong passwords for production; the app’s default is `hackme`):
    ```xml
    <authentication>
        <source-password>your-secure-source-password</source-password>
@@ -179,7 +181,7 @@ Follow the same installation process as the standard LANStreamer guide:
    </authentication>
    ```
 
-3. **Set Network Configuration**:
+3. **Set Network Configuration** (use port 8200 if you want to match the LANStreamer app):
    ```xml
    <hostname>localhost</hostname>
    <listen-socket>
@@ -189,7 +191,7 @@ Follow the same installation process as the standard LANStreamer guide:
 
 4. **Start Icecast**
    - Launch Icecast from Start Menu
-   - Verify at `http://localhost:8000/` - you should see the Icecast status page
+   - Verify at `http://localhost:8000/` (or `http://localhost:8200/` if using the app’s config) — you should see the Icecast status page
 
 ---
 

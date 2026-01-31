@@ -144,6 +144,27 @@ router.get('/audio-devices/diagnose', async (req, res) => {
 });
 
 /**
+ * @route GET /api/system/config
+ * @description Get system config for frontend (Icecast port, host). Used for building listener/copy URLs.
+ * @access Public
+ */
+router.get('/config', async (req, res, next) => {
+  try {
+    await icecastService.ensureInitialized();
+    const actualPort = icecastService.getActualPort() || 8000;
+    const host = icecastService.getHostname() || 'localhost';
+    res.json({
+      icecast: {
+        port: actualPort,
+        host
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
  * @route GET /api/system/icecast-status
  * @description Check Icecast server status
  * @access Public

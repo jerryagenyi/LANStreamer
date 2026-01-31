@@ -539,7 +539,9 @@
 
             async playStream(streamId, streamUrl) {
                 try {
-                    console.log(`🎵 Playing stream: ${streamId} from ${streamUrl}`);
+                    // Use same-origin proxy so playback works regardless of CORS/firewall on Icecast port
+                    const playUrl = `/api/streams/play/${encodeURIComponent(streamId)}`;
+                    console.log(`🎵 Playing stream: ${streamId} via proxy ${playUrl} (direct: ${streamUrl})`);
 
                     // Stop current stream if playing
                     if (this.currentStream) {
@@ -574,8 +576,8 @@
                     // Skip HEAD request validation on mobile - it often fails even when stream works
                     // Let the audio element's error handler catch real issues
 
-                    // Set up audio player with error handling
-                    this.audioPlayer.src = streamUrl;
+                    // Set up audio player with error handling (proxy = same origin, no CORS)
+                    this.audioPlayer.src = playUrl;
                     this.audioPlayer.volume = this.volume / 100; // Set initial volume (0-1 range)
 
                     // Let browser auto-detect format from server Content-Type header

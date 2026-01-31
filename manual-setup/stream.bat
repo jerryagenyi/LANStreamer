@@ -19,6 +19,7 @@ set "AUDIO_DEVICE=Microphone Array (Intel® Smart Sound Technology for Digital M
 :: set "AUDIO_DEVICE=DVS Receive 1-2 (Dante Virtual Soundcard)"
 
 :: Set your Icecast server details (change 'localhost' to your server IP if needed or planning to access from other devices)
+:: If you start Icecast from the LANStreamer dashboard, it may use port 8200 - set ICECAST_PORT=8200 to match your icecast.xml
 set "ICECAST_HOST=localhost"
 set "ICECAST_PORT=8000"
 set "ICECAST_USER=source"

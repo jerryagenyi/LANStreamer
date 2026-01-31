@@ -237,7 +237,8 @@ class StreamingService {
 
     const process = spawn(ffmpegPath, args, {
       stdio: ['ignore', 'pipe', 'pipe'],
-      detached: false
+      detached: false,
+      shell: true  // Required on Windows to resolve 'ffmpeg' from PATH
     })
 
     // Capture stderr for debugging and error diagnostics
@@ -412,7 +413,8 @@ class StreamingService {
     const bitrate = streamConfig.bitrate || 192;
 
     // Read Icecast config from icecast.xml at runtime (source of truth)
-    const icecastHost = IcecastService.getHostname();
+    // Source connections (FFmpeg → Icecast) must use localhost; getHostname() is for public URLs only
+    const icecastHost = 'localhost';
     const icecastPort = IcecastService.getActualPort();
     const icecastSourcePassword = IcecastService.getSourcePassword();
     const icecastUrl = `icecast://source:${icecastSourcePassword}@${icecastHost}:${icecastPort}/${streamId}`;

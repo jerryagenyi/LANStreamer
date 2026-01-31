@@ -164,8 +164,9 @@ process.on('SIGTERM', async () => {
   }
 });
 
-// Always start the server when this file is run
-server = app.listen(PORT, HOST, () => {
+// Start the server when this file is run (skip in test so supertest can use app)
+if (process.env.NODE_ENV !== 'test') {
+  server = app.listen(PORT, HOST, () => {
   console.log(`Server is listening on http://${HOST}:${PORT}`);
   
   // Get local IPv4 address for network access (prioritize local network, exclude VPN)
@@ -223,7 +224,8 @@ server = app.listen(PORT, HOST, () => {
   console.log('');
   console.log('⚠️  DO NOT CLOSE THIS TERMINAL TO KEEP LANStreamer SERVER RUNNING!');
   console.log('');
-});
+  });
+}
 
 // console.log('[SERVER] Script finished. Exporting app.');
 export default app; // Export the app for testing
