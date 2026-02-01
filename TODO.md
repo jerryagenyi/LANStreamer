@@ -29,7 +29,41 @@
 
 ---
 
+## To do / verify (priority order)
+
+1. **More than 4 streams fails:** Icecast was edited to `<sources>10</sources>` and restarted, but creating the 5th stream still errors. Investigate and fix so 5+ streams can be created (check Icecast limit, credentials, connection).
+2. **Start All button:** Streams persist after shutdown/restart; we have “Stop All” but no “Start All”. Add a “Start All” button to start all persisted (stopped) streams at once.
+3. **Lock admin to localhost:** Bind the app so the admin UI is only reachable via localhost (not on the LAN IP). Listeners use the listener page via IP; admin stays on the server machine.
+4. **Streams/listener page must use IP (not localhost):** The listener page (`/streams`) cannot use `localhost:3001` because external users/listeners are on different devices. Ensure the listener page and all Copy URLs use the server's LAN IP (from config) so listeners can access streams from their devices. Verify that `localhost:3001` references in listener-facing code are replaced with dynamic host detection.
+5. **Duplicate stream names:** Disallow using the same stream name for streams that are already live. We have protection for sources (devices) but not for stream names — add validation so live streams must have unique names.
+6. **Error alert (FFmpeg output):** For the stream-error alert (e.g. "Verify icecast.xml hostname…"): make the FFmpeg output section **collapsible**; make the alert **wider** and **taller**; **centre** the alert on the page.
+7. **Multiple streams (stability):** Confirm that 3+ streams can be created and stay stable (backend + Icecast source limit; see "Max 2 streams" above).
+8. **Mobile playback:** Verify the listener page and Play/Copy URL work on mobile phones. Consider adding tests or checks for mobile browsers if feasible (e.g. CI with mobile viewport or real-device testing).
+9. **Update LANStreamer.bat:** Script references `update_exclude.txt` (missing); deletes TODO.md and assumes old layout (e.g. dev-docs\tests). Review: add or fix exclude list, align preserved/cleaned files with current project (TODO.md, tests/, jest), ensure updater doesn't break dev installs.
+10. **CLAUDE.md:** Update troubleshooting reference — `ERROR_DIAGNOSTICS_ANALYSIS_REPORT.md` was removed; point to [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) and ensure workflow mentions `npm test`.
+11. **Claude hooks (.claude/hooks):** Hooks are outdated (post hook says "no tests" but we have `npm test`). Either update hooks to match current workflow and ensure they're used in dev, or remove the hooks folder if not supported by the environment.
+12. **.claude/custom-instructions.md:** Content is generic frontend-architect (React/Vue, ULTRATHINK); project is Node + simple HTML. Review: align with LANStreamer (e.g. when editing public/streams.html) or keep as optional frontend guidelines.
+13. **.claude/settings.local.json (optional):** Local permissions only; add/remove tool permissions as needed for your dev setup.
+
+---
+
 ## Related
 
 - **Regression analysis (historical):** The long regression checklist was completed or superseded by the fixes above. Details were in `ERROR_DIAGNOSTICS_ANALYSIS_REPORT.md` if needed for reference.
 - **Next steps:** Run `npm test` before releases; use [docs/STARTUP-SEQUENCE.md](docs/STARTUP-SEQUENCE.md) for step-by-step troubleshooting.
+
+---
+
+## Refactor (Future) - Code Quality Improvements
+
+*These items are for future code quality improvements. Focus on stability items above first.*
+
+| Priority | Area | Issue | Suggested Fix |
+|----------|------|--------|---------------|
+| **HIGH** | FFmpegService.js | Duplicate of StreamingService, unused, wrong mount point | Remove FFmpegService.js or fix to be a thin wrapper |
+| **HIGH** | Device mapping | 50+ hardcoded device mappings in StreamingService.js:522-566 | Extract to dynamic detection service or config file |
+| **MEDIUM** | startFFmpegProcess | 145-line function with complex timeout/promise logic | Extract spawn wrapper, simplify error handling |
+| **MEDIUM** | Inline HTML/JS | index.html & streams.html are 1240+ lines with inline scripts | Extract JS to separate files, use components |
+| **MEDIUM** | IP detection | Server.js:172-211 has 50-line IP detection block inline | Extract to `src/utils/network.js` |
+| **LOW** | Console logs | Debug console.log statements throughout | Remove or condition with debug flag |
+| **LOW** | Duplicate formats | getAudioFormats() in both services (AAC format differs) | Consolidate to shared module |

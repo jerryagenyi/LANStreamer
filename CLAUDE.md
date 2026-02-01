@@ -19,15 +19,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 3. **Test stream:** Login → Create stream → Verify playback on `/streams`
 4. **Check logs:** `logs/combined.log`
 
-## Auto-Skill Selection
+## Agent selection
 
-| Situation | Use |
-|-----------|-----|
-| FFmpeg errors or device issues | `@ffmpeg-expert` |
-| Node.js process/spawn issues | `@nodejs-streaming` |
-| Icecast connection/mount issues | `@icecast-expert` |
-| Code needs review | `@code-reviewer` agent |
-| Complex multi-step tasks | `@task-manager` agent |
+Use **AGENTS.md** for expert roles: when to use `@ffmpeg-expert`, `@icecast-expert`, `@nodejs-streaming`, `@task-manager`, `@code-reviewer`. Prefer domain experts for FFmpeg/Icecast/Node issues.
 
 ## Critical Patterns
 
@@ -57,4 +51,4 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Troubleshooting
 
-For detailed error diagnostics and patterns, reference: `ERROR_DIAGNOSTICS_ANALYSIS_REPORT.md`
+See [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) for error diagnostics and patterns. Run `npm test` before releases.
