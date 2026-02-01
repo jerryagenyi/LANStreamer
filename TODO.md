@@ -1,5 +1,7 @@
 # LANStreamer – TODO (working checklist)
 
+**Latest session (2026-02-01):** Capacity NaN fix in StreamingService + TODO pre-reboot update.
+
 Context: [CLAUDE.md](CLAUDE.md), [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) (incl. Icecast source limit). Delete this file when done.
 
 ---
@@ -26,6 +28,7 @@ Context: [CLAUDE.md](CLAUDE.md), [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.
 - ✅ Enhanced TROUBLESHOOTING.md with exit code -5, empty stderr, 5th stream scenarios
 - ✅ Added `err.shortMessage` to error objects for clean UI display
 - ✅ Added TROUBLESHOOTING_GUIDE_URL constant in FFmpegStreamsManager.js
+- ✅ **Capacity NaN fix (this session):** In `StreamingService.js`, call `await IcecastService.ensureInitialized()` before capacity check in `startStream()`; coerce `getSourceLimit()` to a safe number (fallback 2) and use `Math.max(0, sourceLimit - activeCount)` for `remaining` in all three places (startStream + two mount_point error blocks). Ensures `err.capacity` and API never send NaN.
 
 #### What's In Progress (Cursor was working on):
 - Frontend changes to show `shortMessage + troubleshooting guide link` in error toasts
@@ -51,16 +54,16 @@ Context: [CLAUDE.md](CLAUDE.md), [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.
 
 #### Key Files Modified Recently:
 - `src/services/IcecastService.js` - added parseSourceLimit(), getSourceLimit()
-- `src/services/StreamingService.js` - added capacity check, err.shortMessage
+- `src/services/StreamingService.js` - capacity check, err.shortMessage, **ensureInitialized + safe sourceLimit/remaining (no NaN)**
 - `src/routes/system.js` - enhanced /config endpoint with capacity info
 - `src/routes/streams.js` - send shortMessage to client
 - `docs/TROUBLESHOOTING.md` - added exit code -5, empty stderr diagnostics
 - `public/components/FFmpegStreamsManager.js` - added TROUBLESHOOTING_GUIDE_URL constant (partial)
 
-#### Current Server State:
-- Background task `b01f2ac` is running the server on port 3001
-- Icecast is running on port 8200 with 4 sources connected
-- 4 streams are active and running
+#### Current Server State (pre-reboot):
+- You are about to reboot to finalise **VB-CABLE A+B (package 45)** installation (more virtual audio devices).
+- After reboot: run `npm start`, then test 5+ streams with VB-Cable A/B or other real devices.
+- Optional: commit the capacity NaN fix if not already committed (`StreamingService.js` ensureInitialized + safe remaining).
 
 #### Commands to Reference:
 ```bash

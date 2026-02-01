@@ -118,10 +118,12 @@ class StreamingService {
       throw new Error(`Icecast dependency check failed: ${icecastError.message}`)
     }
 
-    // Capacity check: fail fast with clear message and capacity info for error handling
-    const sourceLimit = IcecastService.getSourceLimit()
+    // Capacity check: ensure config is loaded so sourceLimit is valid; avoid NaN in remaining
+    await IcecastService.ensureInitialized()
+    const rawLimit = IcecastService.getSourceLimit()
+    const sourceLimit = (typeof rawLimit === 'number' && !Number.isNaN(rawLimit)) ? rawLimit : 2
     const activeCount = Object.values(this.activeStreams).filter(s => s.status === 'running').length
-    const remaining = sourceLimit - activeCount
+    const remaining = Math.max(0, sourceLimit - activeCount)
     const configPath = IcecastService.paths?.config
     // Log message includes values so grep / log scans show capacity in one place (no need to read next-line JSON)
     logger.info(
@@ -344,9 +346,10 @@ class StreamingService {
               const err = new Error(errorMsg);
               err.shortMessage = diagnosis.title;
               if (diagnosis.category === 'mount_point') {
-                const sourceLimit = IcecastService.getSourceLimit()
+                const rawLimit = IcecastService.getSourceLimit()
+                const sourceLimit = (typeof rawLimit === 'number' && !Number.isNaN(rawLimit)) ? rawLimit : 2
                 const activeCount = Object.values(this.activeStreams).filter(s => s.status === 'running').length
-                err.capacity = { sourceLimit, activeCount, remaining: sourceLimit - activeCount, configPath: IcecastService.paths?.config }
+                err.capacity = { sourceLimit, activeCount, remaining: Math.max(0, sourceLimit - activeCount), configPath: IcecastService.paths?.config }
               }
               hasResolved = true
               reject(err)
@@ -395,9 +398,10 @@ class StreamingService {
           const err = new Error(errorMsg);
           err.shortMessage = diagnosis.title;
           if (diagnosis.category === 'mount_point') {
-            const sourceLimit = IcecastService.getSourceLimit()
+            const rawLimit = IcecastService.getSourceLimit()
+            const sourceLimit = (typeof rawLimit === 'number' && !Number.isNaN(rawLimit)) ? rawLimit : 2
             const activeCount = Object.values(this.activeStreams).filter(s => s.status === 'running').length
-            err.capacity = { sourceLimit, activeCount, remaining: sourceLimit - activeCount, configPath: IcecastService.paths?.config }
+            err.capacity = { sourceLimit, activeCount, remaining: Math.max(0, sourceLimit - activeCount), configPath: IcecastService.paths?.config }
           }
           hasResolved = true
           reject(err)
