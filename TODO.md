@@ -40,10 +40,9 @@
 7. **Multiple streams (stability):** Confirm that 3+ streams can be created and stay stable (backend + Icecast source limit; see "Max 2 streams" above).
 8. **Mobile playback:** Verify the listener page and Play/Copy URL work on mobile phones. Consider adding tests or checks for mobile browsers if feasible (e.g. CI with mobile viewport or real-device testing).
 9. **Update LANStreamer.bat:** Script references `update_exclude.txt` (missing); deletes TODO.md and assumes old layout (e.g. dev-docs\tests). Review: add or fix exclude list, align preserved/cleaned files with current project (TODO.md, tests/, jest), ensure updater doesn't break dev installs.
-10. **CLAUDE.md:** Update troubleshooting reference — `ERROR_DIAGNOSTICS_ANALYSIS_REPORT.md` was removed; point to [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) and ensure workflow mentions `npm test`.
-11. **Claude hooks (.claude/hooks):** Hooks are outdated (post hook says "no tests" but we have `npm test`). Either update hooks to match current workflow and ensure they're used in dev, or remove the hooks folder if not supported by the environment.
-12. **.claude/custom-instructions.md:** Content is generic frontend-architect (React/Vue, ULTRATHINK); project is Node + simple HTML. Review: align with LANStreamer (e.g. when editing public/streams.html) or keep as optional frontend guidelines.
-13. **.claude/settings.local.json (optional):** Local permissions only; add/remove tool permissions as needed for your dev setup.
+10. **Claude hooks (.claude/hooks):** Hooks are outdated (post hook says "no tests" but we have `npm test`). Either update hooks to match current workflow and ensure they're used in dev, or remove the hooks folder if not supported by the environment.
+11. **.claude/custom-instructions.md:** Content is generic frontend-architect (React/Vue, ULTRATHINK); project is Node + simple HTML. Review: align with LANStreamer (e.g. when editing public/streams.html) or keep as optional frontend guidelines.
+12. **.claude/settings.local.json (optional):** Local permissions only; add/remove tool permissions as needed for your dev setup.
 
 ---
 
