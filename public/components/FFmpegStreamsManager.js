@@ -2,6 +2,9 @@
  * FFmpeg Streams Manager Component
  * Manages FFmpeg audio streams with real-time status updates
  */
+
+const TROUBLESHOOTING_GUIDE_URL = 'https://github.com/jerryagenyi/LANStreamer/blob/main/docs/TROUBLESHOOTING.md';
+
 class FFmpegStreamsManager {
     constructor(containerId = 'ffmpeg-streams') {
         this.activeStreams = [];
@@ -20,6 +23,16 @@ class FFmpegStreamsManager {
 
         // Don't auto-initialize - let ComponentManager handle it
         // this.init() will be called by ComponentManager when DOM is ready
+    }
+
+    /**
+     * Run a callback after the next paint so the UI (e.g. list update) is visible before we show a notification.
+     * Use for success notifications that follow state-changing actions (delete, stop, start, etc.).
+     */
+    afterNextPaint(callback) {
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => callback());
+        });
     }
 
     /**
@@ -252,17 +265,20 @@ class FFmpegStreamsManager {
             if (data.message === 'Stream started successfully') {
                 await this.loadStreams();
                 this.render();
-                
-                // Generate stream URL and show success message
+
+                // Generate stream URL and show success message after UI has painted
                 const currentHost = window.location.hostname;
                 const streamUrl = `http://${currentHost}:${this.icecastPort}/${streamConfig.id || 'stream'}`;
-                this.showNotification(`Stream started successfully! Stream is now available in the list below.`, 'success');
+                this.afterNextPaint(() => this.showNotification(`Stream started successfully! Stream is now available in the list below.`, 'success'));
             } else {
                 throw new Error(this.formatStreamError(data, 'Failed to start stream'));
             }
         } catch (error) {
             console.error('Failed to start stream:', error);
-            this.showNotification(error.message || 'Failed to start stream', 'error');
+            this.showNotification(error.message || 'Failed to start stream', 'error', {
+                linkUrl: TROUBLESHOOTING_GUIDE_URL,
+                linkText: 'troubleshooting guide'
+            });
         }
     }
 
@@ -298,7 +314,7 @@ class FFmpegStreamsManager {
             if (data.message === 'Stream stopped successfully') {
                 await this.loadStreams();
                 this.render();
-                this.showNotification('Stream stopped successfully', 'success');
+                this.afterNextPaint(() => this.showNotification('Stream stopped successfully', 'success'));
             } else {
                 throw new Error(data.error || 'Failed to stop stream');
             }
@@ -334,13 +350,16 @@ class FFmpegStreamsManager {
             if (data.message === 'Stream restarted successfully') {
                 await this.loadStreams();
                 this.render();
-                this.showNotification('Stream started successfully', 'success');
+                this.afterNextPaint(() => this.showNotification('Stream started successfully', 'success'));
             } else {
                 throw new Error(this.formatStreamError(data, 'Failed to restart stream'));
             }
         } catch (error) {
             console.error('Failed to start stream:', error);
-            this.showNotification(error.message || 'Failed to restart stream', 'error');
+            this.showNotification(error.message || 'Failed to restart stream', 'error', {
+                linkUrl: TROUBLESHOOTING_GUIDE_URL,
+                linkText: 'troubleshooting guide'
+            });
         }
     }
 
@@ -382,7 +401,7 @@ class FFmpegStreamsManager {
             if (data && data.success) {
                 await this.loadStreams();
                 this.render();
-                this.showNotification(data.message || 'All streams stopped successfully', 'success');
+                this.afterNextPaint(() => this.showNotification(data.message || 'All streams stopped successfully', 'success'));
             } else {
                 throw new Error(data?.message || data?.error || 'Failed to stop all streams');
             }
@@ -411,7 +430,7 @@ class FFmpegStreamsManager {
                 // Remove from local array
                 this.activeStreams = this.activeStreams.filter(s => s.id !== streamId);
                 this.renderStreams();
-                this.showNotification('Stream deleted successfully', 'success');
+                this.afterNextPaint(() => this.showNotification('Stream deleted successfully', 'success'));
             } else {
                 throw new Error(result.error || 'Failed to delete stream');
             }
@@ -589,9 +608,9 @@ class FFmpegStreamsManager {
 
                     // Check if stream ID changed (name was updated)
                     if (result.newStreamId && result.newStreamId !== result.oldStreamId) {
-                        this.showNotification('Stream updated with new URL. Device reset — click Start to begin streaming.', 'success');
+                        this.afterNextPaint(() => this.showNotification('Stream updated with new URL. Device reset — click Start to begin streaming.', 'success'));
                     } else {
-                        this.showNotification('Stream updated. Device reset — click Start to begin streaming.', 'success');
+                        this.afterNextPaint(() => this.showNotification('Stream updated. Device reset — click Start to begin streaming.', 'success'));
                     }
                 } else {
                     throw new Error(result.error || 'Failed to update stream');
@@ -1286,7 +1305,10 @@ class FFmpegStreamsManager {
                 // Restore button state on error
                 submitBtn.innerHTML = originalText;
                 submitBtn.disabled = false;
-                this.showNotification(`Failed to start stream: ${error.message}`, 'error');
+                this.showNotification(error.message || 'Failed to start stream', 'error', {
+                    linkUrl: TROUBLESHOOTING_GUIDE_URL,
+                    linkText: 'troubleshooting guide'
+                });
             }
         });
 
@@ -1335,15 +1357,40 @@ class FFmpegStreamsManager {
     }
 
     /**
-     * Show notification
+     * Show notification. For stream errors, pass options.linkUrl to show a short message + link to the troubleshooting guide.
+     * @param {string} message - Message text
+     * @param {string} type - 'info' | 'success' | 'error'
+     * @param {{ linkUrl?: string, linkText?: string }} options - Optional; linkUrl + linkText show "See the [link] for steps."
      */
-    showNotification(message, type = 'info') {
-        // Use the existing notification system if available
+    showNotification(message, type = 'info', options = {}) {
+        const { linkUrl, linkText = 'troubleshooting guide' } = options;
+        const useErrorWithLink = type === 'error' && linkUrl;
+
+        // For stream errors with link, always use our own toast (short message + link)
+        if (useErrorWithLink) {
+            const escaped = String(message).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+            const linkHtml = `<a href="${linkUrl}" target="_blank" rel="noopener noreferrer" class="underline font-medium hover:opacity-90">${linkText}</a>`;
+            const content = `${escaped}<br><br>See the ${linkHtml} for steps.`;
+            const toast = document.createElement('div');
+            toast.className = 'fixed top-4 left-1/2 -translate-x-1/2 z-50 px-6 py-5 rounded-xl shadow-2xl transition-all duration-300 max-w-md bg-red-700 text-white';
+            toast.innerHTML = `
+                <div class="flex items-start gap-3">
+                    <span class="material-symbols-rounded text-xl mt-0.5 flex-shrink-0">error</span>
+                    <div class="flex-1 min-w-0 text-sm leading-relaxed">${content}</div>
+                    <button class="text-white/80 hover:text-white transition-colors flex-shrink-0 ml-2" onclick="this.closest('.fixed').remove()">
+                        <span class="material-symbols-rounded text-xl">close</span>
+                    </button>
+                </div>
+            `;
+            document.body.appendChild(toast);
+            const timeout = 60000;
+            setTimeout(() => { toast.style.opacity = '0'; setTimeout(() => toast.remove(), 300); }, timeout);
+            return;
+        }
+
         if (window.showNotification) {
             window.showNotification(message, type);
         } else {
-            // Create a centered toast notification with close button
-            // Use much wider max-width for error messages (they contain troubleshooting info)
             const maxWidth = type === 'error' ? 'max-w-3xl' : 'max-w-md';
             const toast = document.createElement('div');
             toast.className = `fixed top-4 left-1/2 -translate-x-1/2 z-50 px-6 py-5 rounded-xl shadow-2xl transition-all duration-300 ${maxWidth} ${
@@ -1351,11 +1398,9 @@ class FFmpegStreamsManager {
                 type === 'error' ? 'bg-red-700 text-white' :
                 'bg-blue-600 text-white'
             }`;
-            // For error messages, preserve formatting (newlines, whitespace)
-            const formattedMessage = type === 'error' 
-                ? `<pre class="whitespace-pre-wrap font-sans text-sm leading-relaxed max-h-96 overflow-y-auto">${message}</pre>`
-                : `<span class="flex-1">${message}</span>`;
-            
+            const formattedMessage = type === 'error'
+                ? `<pre class="whitespace-pre-wrap font-sans text-sm leading-relaxed max-h-96 overflow-y-auto">${String(message).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</pre>`
+                : `<span class="flex-1">${String(message).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</span>`;
             toast.innerHTML = `
                 <div class="flex items-start gap-3">
                     <span class="material-symbols-rounded text-xl mt-0.5 flex-shrink-0">
@@ -1367,15 +1412,9 @@ class FFmpegStreamsManager {
                     </button>
                 </div>
             `;
-
             document.body.appendChild(toast);
-
-            // Auto remove after timeout - 60 seconds for errors (long messages), 8 seconds for success/info
-            const timeout = type === 'error' ? 60000 : 8000;
-            setTimeout(() => {
-                toast.style.opacity = '0';
-                setTimeout(() => toast.remove(), 300);
-            }, timeout);
+            const timeout = type === 'error' ? 60000 : 4000;
+            setTimeout(() => { toast.style.opacity = '0'; setTimeout(() => toast.remove(), 300); }, timeout);
         }
     }
 

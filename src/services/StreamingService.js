@@ -237,6 +237,7 @@ class StreamingService {
     logger.error(`Failed to start stream ${streamId} with all available formats:`, lastError)
     const err = new Error(`Stream failed to start with all audio formats (MP3, AAC, OGG). Last error: ${lastError?.message || 'Unknown error'}`)
     if (lastError?.capacity) err.capacity = lastError.capacity
+    if (lastError?.shortMessage) err.shortMessage = lastError.shortMessage
     throw err
   }
 
@@ -340,7 +341,8 @@ class StreamingService {
               })
               
               const errorMsg = `FFmpeg crashed immediately after startup (exit code: ${exitCode}).\n\n${diagnosis.title}\n\n${diagnosis.description}\n\n🔧 Quick fixes:\n${diagnosis.solutions.join('\n')}\n\nFFmpeg Error Output:\n${errorOutput}`;
-              const err = new Error(errorMsg)
+              const err = new Error(errorMsg);
+              err.shortMessage = diagnosis.title;
               if (diagnosis.category === 'mount_point') {
                 const sourceLimit = IcecastService.getSourceLimit()
                 const activeCount = Object.values(this.activeStreams).filter(s => s.status === 'running').length
@@ -390,7 +392,8 @@ class StreamingService {
           
           // Format the error message with diagnosis
           const errorMsg = `FFmpeg crashed during startup (exit code: ${code}).\n\n${diagnosis.title}\n\n${diagnosis.description}\n\n🔧 Quick fixes:\n${diagnosis.solutions.join('\n')}\n\nFFmpeg Error Output:\n${errorOutput}`;
-          const err = new Error(errorMsg)
+          const err = new Error(errorMsg);
+          err.shortMessage = diagnosis.title;
           if (diagnosis.category === 'mount_point') {
             const sourceLimit = IcecastService.getSourceLimit()
             const activeCount = Object.values(this.activeStreams).filter(s => s.status === 'running').length

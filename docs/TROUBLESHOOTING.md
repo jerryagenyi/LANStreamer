@@ -18,11 +18,14 @@ Common issues and solutions for LANStreamer.
 
 **Error Messages:**
 - `Failed to start stream: Stream failed to start with all audio formats (MP3, AAC, OGG)`
-- `FFmpeg crashed during startup (exit code: 4294967291)` (which is -5, connection refused)
+- `FFmpeg crashed during startup (exit code: 4294967291)` (Windows unsigned; signed = **-5**, connection refused / access denied)
 - `FFmpeg crashed during startup (exit code: 2812791304)` (Windows process crash)
-- Error output shows only FFmpeg version info with no actual error
+- Error output shows only FFmpeg version info, or **no error output at all** (FFmpeg stderr empty)
 
-**This is the #1 most common issue!** It usually means FFmpeg cannot connect to Icecast.
+**This is the #1 most common issue!** It usually means FFmpeg cannot connect to Icecast. On Windows, exit code **4294967291** (unsigned) = **-5** (signed) = connection refused; FFmpeg often produces **no stderr** in this case, so "empty error output" does **not** mean the problem is elsewhere—treat it as a connection issue and follow the steps below.
+
+**Special case: 4 streams work, 5th fails**  
+If 4 streams are already live and the 5th fails with exit -5 or "Cannot connect to Icecast", the cause is often **not** the source limit (Icecast may show exactly 4 sources). Check: `GET http://localhost:3001/api/system/config` → if `remaining` > 0, the app thinks there is capacity; the failure is then likely Icecast unreachable, wrong host/port, or auth. Verify Icecast is listening on the port the app uses (dashboard shows Host/Port), run `netstat -ano | findstr ":PORT"` for that port, and see "Cause 2" and "Cause 4" below.
 
 ### Cause 1: Port 8000 Conflict (Most Common)
 
@@ -81,20 +84,26 @@ TCP    0.0.0.0:8000    0.0.0.0:0    LISTENING    46492  ← Icecast (can't bind 
    netsh advfirewall firewall add rule name="Icecast8080" dir=in action=allow protocol=TCP localport=8080
    ```
 
-### Cause 2: Icecast Not Running
+### Cause 2: Icecast Not Running or Not Reachable
 
 **How to diagnose:**
 ```powershell
 # Check if Icecast process exists
 tasklist | findstr "icecast"
+
+# Check what port Icecast is actually using (replace 8000 with your port, e.g. 8200)
+netstat -ano | findstr ":8000"
 ```
+
+Use the **same port** the dashboard shows (e.g. Host: 192.168.1.244, Port: **8200**). If Icecast is on 8200, run `netstat -ano | findstr ":8200"` to confirm something is listening.
 
 **Solution:**
 1. Start Icecast from the LANStreamer dashboard (Icecast Server → Start Server)
-2. Or start manually:
+2. Or start manually (use the config path your dashboard uses):
    ```powershell
    & "C:\Program Files (x86)\Icecast\bin\icecast.exe" -c "C:\Program Files (x86)\Icecast\icecast.xml"
    ```
+3. If the 5th stream fails while 4 are already live: Icecast may be running but FFmpeg is connecting to the wrong host/port, or the connection is refused for another reason. Check Icecast logs and that the port in the dashboard matches `icecast.xml`.
 
 ### Cause 3: Icecast Log Directory Missing
 
@@ -339,7 +348,9 @@ netsh advfirewall firewall show rule name="Icecast"
 
 **Error:** `exit code: 4294967291` or `exit code: -5`
 
-**Solution:**
+**Important:** On Windows, exit **4294967291** (unsigned) = **-5** (signed) usually means **connection refused** to Icecast, not a device problem. If FFmpeg produces **no error output** (stderr empty), treat it as an Icecast connection issue first—see [Icecast Connection Issues](#icecast-connection-issues) above (port, Icecast running, netstat for your Icecast port).
+
+If you have confirmed Icecast is reachable and the failure persists:
 1. Device may be in use by another app - close other audio apps
 2. Try a different audio device
 3. Restart the audio device (unplug/replug USB devices)
