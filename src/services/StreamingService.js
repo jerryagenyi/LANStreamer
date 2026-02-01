@@ -123,13 +123,11 @@ class StreamingService {
     const activeCount = Object.values(this.activeStreams).filter(s => s.status === 'running').length
     const remaining = sourceLimit - activeCount
     const configPath = IcecastService.paths?.config
-    logger.info('Stream capacity check', {
-      sourceLimit,
-      activeCount,
-      remaining,
-      configPath,
-      aboutToStart: streamConfig.name || streamConfig.id
-    })
+    // Log message includes values so grep / log scans show capacity in one place (no need to read next-line JSON)
+    logger.info(
+      `Stream capacity check: sourceLimit=${sourceLimit} activeCount=${activeCount} remaining=${remaining} configPath=${configPath ?? 'n/a'} aboutToStart=${streamConfig.name || streamConfig.id}`,
+      { sourceLimit, activeCount, remaining, configPath, aboutToStart: streamConfig.name || streamConfig.id }
+    )
 
     if (remaining <= 0) {
       const err = new Error(

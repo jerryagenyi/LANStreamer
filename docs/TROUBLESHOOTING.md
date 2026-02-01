@@ -143,7 +143,7 @@ tasklist | findstr "icecast"
 
 The app logs and exposes capacity so you can see which limit is hit:
 
-1. **Logs:** Before each stream start you should see `Stream capacity check` with `sourceLimit`, `activeCount`, `remaining`, `configPath`, `aboutToStart`. Check that `sourceLimit` is 10 (or 32) and that `configPath` is the `icecast.xml` you edited.
+1. **Logs:** Before each stream start you should see a line like `Stream capacity check: sourceLimit=10 activeCount=4 remaining=6 configPath=... aboutToStart=...`. Grep for `Stream capacity check` — the values are on the same line so you can see capacity in one place. Check that `sourceLimit` is 10 (or 32) and that `configPath` is the `icecast.xml` you edited.
 2. **API:** `GET http://localhost:3001/api/system/config` returns `icecast.sourceLimit`, `icecast.activeStreams`, `icecast.remaining`, `icecast.configPath`. Use this to confirm which config file is used and how many slots the app thinks are free.
 3. **If `remaining` is 0 before the 5th stream:** The app is reading a different `icecast.xml` (e.g. dashboard-generated vs system Icecast). Align by either starting Icecast from the dashboard (so the app writes the config) or ensuring `configPath` points at the file you edited.
 4. **If `remaining` &gt; 0 but the 5th stream still fails:** Likely Icecast itself (wrong process, different config, or auth). Check Icecast logs and that the Icecast process was restarted after editing the config.
