@@ -4,6 +4,82 @@ Context: [CLAUDE.md](CLAUDE.md), [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.
 
 ---
 
+## 🚨 CURRENT INVESTIGATION (2026-02-01) - Resume Point
+
+### Issue: "5th stream fails" - ROOT CAUSE FOUND
+
+**NOT an Icecast source limit problem!** The issue was a **device selection error**, not a source limit.
+
+#### What We Discovered:
+
+1. **Icecast config is correct:** `<sources>10</sources>` in `C:\Program Files (x86)\Icecast\icecast.xml`
+2. **Diagnostics working:** `Stream capacity check: sourceLimit=10 activeCount=X remaining=Y` logs correctly
+3. **Real problem:** User selected "OBS Virtual Camera (Audio)" device which **doesn't exist** on their system
+4. **FFmpeg error:** `Could not find audio only device with name [OBS Virtual Camera (Audio)]` → Exit code 4294967291 (-5 = Access Denied/I/O error)
+5. **Why error handling failed:** FFmpeg stderr was empty, so diagnostics couldn't provide specific guidance
+
+#### What Was Completed:
+- ✅ Added `parseSourceLimit()` to IcecastService - reads `<sources>` from icecast.xml
+- ✅ Added capacity check logging: `Stream capacity check: sourceLimit=X activeCount=Y remaining=Z`
+- ✅ Enhanced `/api/system/config` with `sourceLimit`, `activeStreams`, `remaining`, `configPath`
+- ✅ Simplified error messages (by Cursor) - backend sends `shortMessage` (diagnosis title), frontend shows link to troubleshooting guide
+- ✅ Enhanced TROUBLESHOOTING.md with exit code -5, empty stderr, 5th stream scenarios
+- ✅ Added `err.shortMessage` to error objects for clean UI display
+- ✅ Added TROUBLESHOOTING_GUIDE_URL constant in FFmpegStreamsManager.js
+
+#### What's In Progress (Cursor was working on):
+- Frontend changes to show `shortMessage + troubleshooting guide link` in error toasts
+- FFmpegStreamsManager.js partially updated (TROUBLESHOOTING_GUIDE_URL constant added)
+- streams.js updated to send `shortMessage` if available
+
+#### Next Steps When You Return:
+
+1. **After reboot with VB-Cable installed:**
+   - You'll have more virtual audio devices (VB-Cable A, VB-Cable B) to test with
+   - Test creating 5+ streams with actual working devices
+   - The capacity check will now correctly track active streams
+
+2. **Complete frontend error message simplification:**
+   - FFmpegStreamsManager.js needs to be updated to use `shortMessage` + show troubleshooting link
+   - The notification system should show: `[diagnosis.title] See the [troubleshooting guide] for steps.`
+   - Make FFmpeg output section collapsible (TODO #6)
+
+3. **Verify the 5+ streams actually work:**
+   - Start 4 streams with working devices
+   - Create 5th stream
+   - Confirm all 5 stream successfully
+
+#### Key Files Modified Recently:
+- `src/services/IcecastService.js` - added parseSourceLimit(), getSourceLimit()
+- `src/services/StreamingService.js` - added capacity check, err.shortMessage
+- `src/routes/system.js` - enhanced /config endpoint with capacity info
+- `src/routes/streams.js` - send shortMessage to client
+- `docs/TROUBLESHOOTING.md` - added exit code -5, empty stderr diagnostics
+- `public/components/FFmpegStreamsManager.js` - added TROUBLESHOOTING_GUIDE_URL constant (partial)
+
+#### Current Server State:
+- Background task `b01f2ac` is running the server on port 3001
+- Icecast is running on port 8200 with 4 sources connected
+- 4 streams are active and running
+
+#### Commands to Reference:
+```bash
+# Check capacity/status
+curl http://127.0.0.1:3001/api/system/config
+curl http://127.0.0.1:3001/api/streams/status
+
+# Check Icecast stats (with auth)
+curl http://127.0.0.1:8200/admin/stats.xml -u admin:hackme
+
+# Run tests
+npm test
+
+# Start server (after stopping any existing instance)
+npm start
+```
+
+---
+
 ## To do / verify (priority order)
 
 - [ ] 1. **More than 4 streams fails:** Icecast was edited to `<sources>10</sources>` and restarted, but creating the 5th stream still errors. Investigate and fix so 5+ streams can be created (check Icecast limit, credentials, connection).
