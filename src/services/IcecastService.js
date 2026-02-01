@@ -51,6 +51,9 @@ class IcecastService {
     this.adminPassword = null
     this.hostname = null
 
+    // Source limit from icecast.xml (parsed during initialization)
+    this.sourceLimit = null
+
     // File watcher for icecast.xml changes
     this.configWatcher = null
 
@@ -249,11 +252,12 @@ class IcecastService {
         await this.ensureConfigDirectory();
       }
 
-      // Step 2.5: Parse max listeners, port, and passwords from icecast.xml
+      // Step 2.5: Parse max listeners, port, passwords, and source limit from icecast.xml
       this.maxListeners = await this.parseMaxListeners();
       this.actualPort = await this.parsePort();
       await this.parsePasswords();
       await this.parseHostname();
+      await this.parseSourceLimit();
 
       // Step 2.6: Watch for icecast.xml changes
       this.startConfigWatcher();
@@ -817,6 +821,50 @@ class IcecastService {
   }
 
   /**
+   * Parse source limit from icecast.xml
+   * This is critical for understanding how many concurrent streams are allowed
+   */
+  async parseSourceLimit() {
+    try {
+      if (!this.paths.config || !await fs.pathExists(this.paths.config)) {
+        this.sourceLimit = 2; // Icecast default
+        logger.warn('Icecast config file not found, using default source limit (2)');
+        return this.sourceLimit;
+      }
+
+      const configContent = await fs.readFile(this.paths.config, 'utf8');
+
+      // Parse <sources> limit inside <limits>
+      const sourcesMatch = configContent.match(/<limits>[\s\S]*?<sources>(\d+)<\/sources>[\s\S]*?<\/limits>/);
+      if (sourcesMatch) {
+        this.sourceLimit = parseInt(sourcesMatch[1]);
+        logger.icecast('Parsed source limit from icecast.xml', {
+          sourceLimit: this.sourceLimit,
+          configPath: this.paths.config
+        });
+      } else {
+        this.sourceLimit = 2; // Icecast default
+        logger.warn('Could not parse <sources> from icecast.xml, using default (2)', {
+          configPath: this.paths.config
+        });
+      }
+      return this.sourceLimit;
+    } catch (error) {
+      logger.warn('Error parsing source limit from icecast.xml:', error.message);
+      this.sourceLimit = 2; // Icecast default
+      return this.sourceLimit;
+    }
+  }
+
+  /**
+   * Get source limit (read from icecast.xml at runtime)
+   * Returns the maximum number of concurrent streams allowed
+   */
+  getSourceLimit() {
+    return this.sourceLimit || 2; // Icecast default
+  }
+
+  /**
    * Watch for changes to icecast.xml and re-parse config
    */
   startConfigWatcher() {
@@ -840,9 +888,11 @@ class IcecastService {
             await this.parsePasswords();
             await this.parseHostname();
             this.maxListeners = await this.parseMaxListeners();
+            await this.parseSourceLimit();
             logger.icecast('Configuration re-parsed successfully', {
               port: this.actualPort,
-              hostname: this.hostname
+              hostname: this.hostname,
+              sourceLimit: this.sourceLimit
             });
           } catch (error) {
             logger.error('Error re-parsing icecast.xml:', error.message);
@@ -2389,6 +2439,7 @@ class IcecastService {
       await this.parsePasswords();
       await this.parseHostname();
       this.maxListeners = await this.parseMaxListeners();
+      await this.parseSourceLimit();
 
       // Restart if running AND not manually stopped
       // Only auto-restart if user hasn't manually stopped Icecast

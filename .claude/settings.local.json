@@ -39,7 +39,9 @@
       "Bash(more:*)",
       "Bash(type:*)",
       "Bash(del \"C:\\\\Users\\\\Username\\\\Documents\\\\github\\\\LANStreamer\\\\docs\\\\ICECAST_CONFIG_ARCHITECTURE.md\")",
-      "Bash(npm test:*)"
+      "Bash(npm test:*)",
+      "Bash(gh run list:*)",
+      "Bash(gh run view:*)"
     ]
   }
 }

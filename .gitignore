@@ -131,5 +131,5 @@ Thumbs.db
 ehthumbs.db
 Desktop.ini
 
-# Development notes and planning
-TODO.md
+# Windows reserved name (can appear as accidental file)
+nul

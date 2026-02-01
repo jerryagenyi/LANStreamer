@@ -23,6 +23,22 @@ class FFmpegStreamsManager {
     }
 
     /**
+     * Format a stream start/restart error message, appending capacity info when present from the API.
+     * @param {Object} data - API response body
+     * @param {string} defaultMsg - Fallback message
+     * @returns {string}
+     */
+    formatStreamError(data, defaultMsg) {
+        let msg = (data && (data.error || data.message)) || defaultMsg;
+        if (data && data.capacity) {
+            const c = data.capacity;
+            msg += ` — ${c.activeStreams ?? '?'}/${c.sourceLimit ?? '?'} streams in use`;
+            if (c.configPath) msg += ` (config: ${c.configPath})`;
+        }
+        return msg;
+    }
+
+    /**
      * Initialize the FFmpeg Streams Manager
      */
     async init() {
@@ -230,9 +246,7 @@ class FFmpegStreamsManager {
             
             // Check if request was successful (2xx status)
             if (!response.ok) {
-                // Server returned an error status (4xx or 5xx)
-                const errorMessage = data.error || data.message || 'Failed to start stream';
-                throw new Error(errorMessage);
+                throw new Error(this.formatStreamError(data, 'Failed to start stream'));
             }
             
             if (data.message === 'Stream started successfully') {
@@ -244,11 +258,11 @@ class FFmpegStreamsManager {
                 const streamUrl = `http://${currentHost}:${this.icecastPort}/${streamConfig.id || 'stream'}`;
                 this.showNotification(`Stream started successfully! Stream is now available in the list below.`, 'success');
             } else {
-                throw new Error(data.error || data.message || 'Failed to start stream');
+                throw new Error(this.formatStreamError(data, 'Failed to start stream'));
             }
         } catch (error) {
             console.error('Failed to start stream:', error);
-            this.showNotification(`Failed to start stream: ${error.message}`, 'error');
+            this.showNotification(error.message || 'Failed to start stream', 'error');
         }
     }
 
@@ -314,8 +328,7 @@ class FFmpegStreamsManager {
 
             // Check if request was successful (2xx status)
             if (!response.ok) {
-                const errorMessage = data.error || data.message || 'Failed to restart stream';
-                throw new Error(errorMessage);
+                throw new Error(this.formatStreamError(data, 'Failed to restart stream'));
             }
 
             if (data.message === 'Stream restarted successfully') {
@@ -323,11 +336,11 @@ class FFmpegStreamsManager {
                 this.render();
                 this.showNotification('Stream started successfully', 'success');
             } else {
-                throw new Error(data.error || data.message || 'Failed to restart stream');
+                throw new Error(this.formatStreamError(data, 'Failed to restart stream'));
             }
         } catch (error) {
             console.error('Failed to start stream:', error);
-            this.showNotification(`Failed to start stream: ${error.message}`, 'error');
+            this.showNotification(error.message || 'Failed to restart stream', 'error');
         }
     }
 

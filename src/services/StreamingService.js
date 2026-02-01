@@ -118,6 +118,28 @@ class StreamingService {
       throw new Error(`Icecast dependency check failed: ${icecastError.message}`)
     }
 
+    // Capacity check: fail fast with clear message and capacity info for error handling
+    const sourceLimit = IcecastService.getSourceLimit()
+    const activeCount = Object.values(this.activeStreams).filter(s => s.status === 'running').length
+    const remaining = sourceLimit - activeCount
+    const configPath = IcecastService.paths?.config
+    logger.info('Stream capacity check', {
+      sourceLimit,
+      activeCount,
+      remaining,
+      configPath,
+      aboutToStart: streamConfig.name || streamConfig.id
+    })
+
+    if (remaining <= 0) {
+      const err = new Error(
+        `Stream limit reached. Icecast allows ${sourceLimit} concurrent stream(s); ${activeCount} already running. ` +
+        `Edit <sources> in icecast.xml and restart Icecast, or stop a stream first. Config: ${configPath || 'unknown'}`
+      )
+      err.capacity = { sourceLimit, activeCount, remaining: 0, configPath }
+      throw err
+    }
+
     const streamId = streamConfig.id || `stream_${Date.now()}`
 
     if (this.activeStreams[streamId]) {
@@ -215,7 +237,9 @@ class StreamingService {
 
     // If we get here, all formats failed
     logger.error(`Failed to start stream ${streamId} with all available formats:`, lastError)
-    throw new Error(`Stream failed to start with all audio formats (MP3, AAC, OGG). Last error: ${lastError?.message || 'Unknown error'}`)
+    const err = new Error(`Stream failed to start with all audio formats (MP3, AAC, OGG). Last error: ${lastError?.message || 'Unknown error'}`)
+    if (lastError?.capacity) err.capacity = lastError.capacity
+    throw err
   }
 
   /**
@@ -318,8 +342,14 @@ class StreamingService {
               })
               
               const errorMsg = `FFmpeg crashed immediately after startup (exit code: ${exitCode}).\n\n${diagnosis.title}\n\n${diagnosis.description}\n\n🔧 Quick fixes:\n${diagnosis.solutions.join('\n')}\n\nFFmpeg Error Output:\n${errorOutput}`;
+              const err = new Error(errorMsg)
+              if (diagnosis.category === 'mount_point') {
+                const sourceLimit = IcecastService.getSourceLimit()
+                const activeCount = Object.values(this.activeStreams).filter(s => s.status === 'running').length
+                err.capacity = { sourceLimit, activeCount, remaining: sourceLimit - activeCount, configPath: IcecastService.paths?.config }
+              }
               hasResolved = true
-              reject(new Error(errorMsg))
+              reject(err)
             }
           }, 2000) // 2 second grace period
         }
@@ -362,9 +392,14 @@ class StreamingService {
           
           // Format the error message with diagnosis
           const errorMsg = `FFmpeg crashed during startup (exit code: ${code}).\n\n${diagnosis.title}\n\n${diagnosis.description}\n\n🔧 Quick fixes:\n${diagnosis.solutions.join('\n')}\n\nFFmpeg Error Output:\n${errorOutput}`;
-          
+          const err = new Error(errorMsg)
+          if (diagnosis.category === 'mount_point') {
+            const sourceLimit = IcecastService.getSourceLimit()
+            const activeCount = Object.values(this.activeStreams).filter(s => s.status === 'running').length
+            err.capacity = { sourceLimit, activeCount, remaining: sourceLimit - activeCount, configPath: IcecastService.paths?.config }
+          }
           hasResolved = true
-          reject(new Error(errorMsg))
+          reject(err)
         }
       })
     })

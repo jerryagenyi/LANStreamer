@@ -1,4 +1,12 @@
-# Branch protection (GitHub Settings)
+# .github
+
+GitHub workflows and setup for this repo.
+
+## Workflows
+
+- **workflows/ci.yml** — Runs `npm test` on push and pull requests to `main` and `dev`. Use with branch protection so `main` only accepts PRs that pass.
+
+## Branch protection (GitHub Settings)
 
 To enforce **PR-only merges to main** and require CI to pass:
 

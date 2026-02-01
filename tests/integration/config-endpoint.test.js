@@ -25,4 +25,18 @@ describe('GET /api/system/config', () => {
     expect(res.body.icecast).toHaveProperty('host');
     expect(typeof res.body.icecast.host).toBe('string');
   });
+
+  it('returns source capacity fields (sourceLimit, activeStreams, remaining, configPath)', async () => {
+    const res = await request(app).get('/api/system/config');
+    expect(res.body.icecast).toHaveProperty('sourceLimit');
+    expect(res.body.icecast).toHaveProperty('activeStreams');
+    expect(res.body.icecast).toHaveProperty('remaining');
+    expect(res.body.icecast).toHaveProperty('configPath');
+    expect(typeof res.body.icecast.sourceLimit).toBe('number');
+    expect(typeof res.body.icecast.activeStreams).toBe('number');
+    expect(typeof res.body.icecast.remaining).toBe('number');
+    expect(res.body.icecast.sourceLimit).toBeGreaterThanOrEqual(0);
+    expect(res.body.icecast.activeStreams).toBeGreaterThanOrEqual(0);
+    expect(res.body.icecast.remaining).toBe(res.body.icecast.sourceLimit - res.body.icecast.activeStreams);
+  });
 });

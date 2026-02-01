@@ -240,14 +240,16 @@ xcopy "%CONTENT_PATH%\*" "%INSTALL_DIR%\" /e /i /h /y /exclude:update_exclude.tx
 
 :: Clean up development and test files that shouldn't be in public release
 echo    🧹 Cleaning up development files...
-if exist "dev-docs\tests" rmdir /s /q "dev-docs\tests" 2>nul
+if exist ".augment" rmdir /s /q ".augment" 2>nul
+if exist "analysis_output" rmdir /s /q "analysis_output" 2>nul
 if exist "debug-console.html" del "debug-console.html" 2>nul
 if exist ".eslintrc.js" del ".eslintrc.js" 2>nul
-if exist "TODO.md" del "TODO.md" 2>nul
+if exist ".eslintrc.json" del ".eslintrc.json" 2>nul
 if exist "console-log.txt" del "console-log.txt" 2>nul
 if exist "test-results" rmdir /s /q "test-results" 2>nul
 if exist "playwright-report" rmdir /s /q "playwright-report" 2>nul
 if exist "coverage" rmdir /s /q "coverage" 2>nul
+if exist ".nyc_output" rmdir /s /q ".nyc_output" 2>nul
 echo    ✅ Development files cleaned
 
 :: Step 7: Restore user data
