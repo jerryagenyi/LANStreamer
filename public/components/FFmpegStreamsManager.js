@@ -15,8 +15,9 @@ class FFmpegStreamsManager {
         this.containerId = containerId;
         this.container = null;
 
-        // Dynamic Icecast port (fetched from config)
+        // Dynamic Icecast config (fetched from /api/system/config)
         this.icecastPort = 8000; // Default fallback (Icecast standard port)
+        this.serverHost = null; // Will be loaded from config - uses getPreferredLANHost() for correct network IP
 
         // Client-side timer tracking
         this.clientTimers = new Map(); // streamId -> { startTime, isRunning }
@@ -97,6 +98,10 @@ class FFmpegStreamsManager {
                 if (config.icecast?.port) {
                     this.icecastPort = config.icecast.port;
                     console.log('📡 Icecast port loaded from config:', this.icecastPort);
+                }
+                if (config.host) {
+                    this.serverHost = config.host;
+                    console.log('🌐 Server host loaded from config:', this.serverHost);
                 }
             }
         } catch (error) {
@@ -267,8 +272,8 @@ class FFmpegStreamsManager {
                 this.render();
 
                 // Generate stream URL and show success message after UI has painted
-                const currentHost = window.location.hostname;
-                const streamUrl = `http://${currentHost}:${this.icecastPort}/${streamConfig.id || 'stream'}`;
+                const displayHost = this.serverHost || window.location.hostname;
+                const streamUrl = `http://${displayHost}:${this.icecastPort}/${streamConfig.id || 'stream'}`;
                 this.afterNextPaint(() => this.showNotification(`Stream started successfully! Stream is now available in the list below.`, 'success'));
             } else {
                 throw new Error(this.formatStreamError(data, 'Failed to start stream'));
@@ -934,8 +939,8 @@ class FFmpegStreamsManager {
                 uptime = '0s';
             }
 
-            const currentHost = window.location.hostname;
-            const streamUrl = `http://${currentHost}:${this.icecastPort}/${stream.id}`;
+            const displayHost = this.serverHost || window.location.hostname;
+            const streamUrl = `http://${displayHost}:${this.icecastPort}/${stream.id}`;
 
             // Determine status styling and icon
             let statusColor, statusIcon, statusText, statusBg, errorMessage = '';
