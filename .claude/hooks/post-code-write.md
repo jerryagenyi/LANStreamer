@@ -33,7 +33,7 @@ Test organization:
 - **Start server**: `npm start` to verify changes
 - **Test stream**: Login → Create stream → Verify playback on `/streams`
 - **Check logs**: `logs/combined.log` for errors
-- **Use domain skills**: See AGENTS.md for `@ffmpeg-expert`, `@nodejs-streaming`, `@icecast-expert`, etc.
+- **Patterns**: See CLAUDE.md for workflow and critical patterns.
 
 ## When to Run Specific Tests
 

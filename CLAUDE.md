@@ -41,10 +41,6 @@ Example: `git merge feature/start-all-and-unique-names`. After pushing dev, you 
 3. **Test stream:** Login → Create stream → Verify playback on `/streams`
 4. **Check logs:** `logs/combined.log`
 
-## Agent selection
-
-Use **AGENTS.md** for expert roles: when to use `@ffmpeg-expert`, `@icecast-expert`, `@nodejs-streaming`, `@task-manager`, `@code-reviewer`. Prefer domain experts for FFmpeg/Icecast/Node issues.
-
 ## Critical Patterns
 
 **Port Detection:** `StreamingService.js` lines 312, 355, 1083
