@@ -1,0 +1,1005 @@
+﻿node.exe : npm warn invalid config cache=false set in command line options
+At C:\Program Files\nodejs\npm.ps1:29 char:3
++   & $NODE_EXE $NPM_CLI_JS $args
++   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (npm warn invali...nd line options:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+npm warn invalid config Must be valid filesystem path
+
+> lanstreamer-server@1.2.3 test
+> node --experimental-vm-modules node_modules/jest/bin/jest.js
+
+(node:17328) ExperimentalWarning: VM Modules is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+  console.log
+    [dotenv@17.2.1] injecting env (0) from .env -- tip: ­ƒöÉ encrypt with Dotenvx: https://dotenvx.com
+
+      at _log (node_modules/dotenv/lib/main.js:139:11)
+
+  console.log
+    [dotenv@17.2.1] injecting env (0) from .env -- tip: ­ƒôí auto-backup env with Radar: https://dotenvx.com/radar
+
+      at _log (node_modules/dotenv/lib/main.js:139:11)
+
+  console.log
+    [dotenv@17.2.1] injecting env (0) from .env -- tip: ­ƒøá´©Å  run anywhere with `dotenvx run -- yourcommand`
+
+      at _log (node_modules/dotenv/lib/main.js:139:11)
+
+2026-02-02 12:19:26 [INFO]: Error diagnostics starting
+{
+  "exitCode": 4294967291,
+  "stderrLength": 284,
+  "context": {
+    "icecastPort": 8000
+  }
+}
+2026-02-02 12:19:26 [INFO]: Error diagnostics starting
+{
+  "exitCode": 4294967291,
+  "stderrLength": 284,
+  "context": {
+    "icecastPort": 8000
+  }
+}
+2026-02-02 12:19:26 [INFO]: Error diagnostics starting
+{
+  "exitCode": 1,
+  "stderrLength": 143,
+  "context": {
+    "port": 8000
+  }
+}
+2026-02-02 12:19:26 [INFO]: Error diagnostics starting
+{
+  "exitCode": 4294967291,
+  "stderrLength": 0,
+  "context": {
+    "icecastPort": 8200
+  }
+}
+2026-02-02 12:19:26 [INFO]: Error matched category: port_conflict
+2026-02-02 12:19:26 [INFO]: Error diagnostics starting
+{
+  "exitCode": 1,
+  "stderrLength": 143,
+  "context": {
+    "port": 8000
+  }
+}
+  console.log
+    [dotenv@17.2.1] injecting env (0) from .env -- tip: ­ƒöÉ encrypt with Dotenvx: https://dotenvx.com
+
+      at _log (node_modules/dotenv/lib/main.js:139:11)
+
+2026-02-02 12:19:26 [INFO]: Error matched category: port_conflict
+2026-02-02 12:19:26 [INFO]: Error diagnostics starting
+{
+  "exitCode": 4294967291,
+  "stderrLength": 0,
+  "context": {
+    "icecastPort": 8000
+  }
+}
+2026-02-02 12:19:26 [INFO]: Error diagnostics starting
+{
+  "exitCode": 1,
+  "stderrLength": 183,
+  "context": {}
+}
+2026-02-02 12:19:26 [INFO]: Error matched category: authentication
+2026-02-02 12:19:26 [INFO]: Error diagnostics starting
+{
+  "exitCode": 1,
+  "stderrLength": 18,
+  "context": {
+    "icecastPort": 8200
+  }
+}
+2026-02-02 12:19:26 [INFO]: Error matched category: connection
+2026-02-02 12:19:26 [INFO]: Error diagnostics starting
+{
+  "exitCode": 1,
+  "stderrLength": 183,
+  "context": {}
+}
+2026-02-02 12:19:26 [INFO]: Error matched category: authentication
+2026-02-02 12:19:26 [INFO]: Error diagnostics starting
+{
+  "exitCode": 1,
+  "stderrLength": 12,
+  "context": {}
+}
+2026-02-02 12:19:26 [INFO]: Error matched category: connection
+2026-02-02 12:19:26 [INFO]: Error diagnostics starting
+{
+  "exitCode": 1,
+  "stderrLength": 124,
+  "context": {}
+}
+2026-02-02 12:19:26 [INFO]: Error diagnostics starting
+{
+  "exitCode": 4294967291,
+  "stderrLength": 0,
+  "context": {
+    "port": 9000
+  }
+}
+2026-02-02 12:19:26 [INFO]: Error matched category: mount_point
+2026-02-02 12:19:26 [INFO]: Error diagnostics starting
+{
+  "exitCode": 99,
+  "stderrLength": 0,
+  "context": {}
+}
+2026-02-02 12:19:26 [INFO]: Error diagnostics starting
+{
+  "exitCode": 1,
+  "stderrLength": 124,
+  "context": {}
+}
+2026-02-02 12:19:26 [INFO]: Error matched category: mount_point
+2026-02-02 12:19:26 [INFO]: Error diagnostics starting
+{
+  "exitCode": 4294967291,
+  "stderrLength": 0,
+  "context": {
+    "icecastPort": 8200
+  }
+}
+2026-02-02 12:19:26 [INFO]: Error diagnostics starting
+{
+  "exitCode": 1,
+  "stderrLength": 211,
+  "context": {
+    "deviceId": "microphone-hd-pro-webcam-c910",
+    "deviceName": "Microphone (HD Pro Webcam C910)"
+  }
+}
+2026-02-02 12:19:26 [INFO]: Error matched category: device_not_found
+2026-02-02 12:19:26 [INFO]: Error diagnostics starting
+{
+  "exitCode": 1,
+  "stderrLength": 66,
+  "context": {
+    "deviceId": "OBS Virtual Camera (Audio)",
+    "deviceName": "OBS Virtual Camera (Audio)"
+  }
+}
+2026-02-02 12:19:26 [INFO]: Error diagnostics starting
+{
+  "exitCode": 1,
+  "stderrLength": 211,
+  "context": {
+    "deviceId": "microphone-hd-pro-webcam-c910",
+    "deviceName": "Microphone (HD Pro Webcam C910)"
+  }
+}
+2026-02-02 12:19:26 [INFO]: Error matched category: device_not_found
+2026-02-02 12:19:26 [INFO]: Error matched category: device_not_found
+(node:27612) ExperimentalWarning: VM Modules is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+2026-02-02 12:19:26 [INFO]: Error diagnostics starting
+{
+  "exitCode": 1,
+  "stderrLength": 158,
+  "context": {
+    "deviceName": "Microphone (Realtek Audio)"
+  }
+}
+2026-02-02 12:19:26 [INFO]: Error matched category: authentication
+2026-02-02 12:19:26 [INFO]: Error diagnostics starting
+{
+  "exitCode": 1,
+  "stderrLength": 158,
+  "context": {
+    "deviceName": "Microphone (Realtek Audio)"
+  }
+}
+2026-02-02 12:19:26 [INFO]: Error matched category: authentication
+(node:37904) ExperimentalWarning: VM Modules is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+2026-02-02 12:19:26 [INFO]: Error diagnostics starting
+{
+  "exitCode": 1,
+  "stderrLength": 153,
+  "context": {
+    "deviceId": "vb-audio-virtual-cable",
+    "deviceName": "CABLE Output (VB-Audio Virtual Cable)"
+  }
+}
+2026-02-02 12:19:26 [INFO]: Error matched category: device_not_found
+2026-02-02 12:19:26 [INFO]: Error diagnostics starting
+{
+  "exitCode": 1,
+  "stderrLength": 133,
+  "context": {}
+}
+2026-02-02 12:19:26 [INFO]: Error matched category: directshow
+2026-02-02 12:19:26 [INFO]: Error diagnostics starting
+{
+  "exitCode": 1,
+  "stderrLength": 107,
+  "context": {}
+}
+2026-02-02 12:19:26 [INFO]: Error matched category: codec
+2026-02-02 12:19:26 [INFO]: Error diagnostics starting
+{
+  "exitCode": 1,
+  "stderrLength": 107,
+  "context": {}
+}
+2026-02-02 12:19:26 [INFO]: Error matched category: codec
+2026-02-02 12:19:26 [INFO]: Error diagnostics starting
+{
+  "exitCode": 1,
+  "stderrLength": 120,
+  "context": {
+    "icecastPort": 8000
+  }
+}
+2026-02-02 12:19:26 [INFO]: Error matched category: timeout
+2026-02-02 12:19:26 [INFO]: Error diagnostics starting
+{
+  "exitCode": 4294967291,
+  "stderrLength": 0,
+  "context": {
+    "icecastPort": 8200
+  }
+}
+2026-02-02 12:19:26 [INFO]: Error diagnostics starting
+{
+  "exitCode": 4294967291,
+  "stderrLength": 0,
+  "context": {
+    "icecastPort": 8200
+  }
+}
+2026-02-02 12:19:26 [INFO]: Error diagnostics starting
+{
+  "exitCode": 999,
+  "stderrLength": 85,
+  "context": {}
+}
+2026-02-02 12:19:26 [INFO]: Error diagnostics starting
+{
+  "exitCode": 999,
+  "stderrLength": 85,
+  "context": {}
+}
+2026-02-02 12:19:26 [INFO]: Error diagnostics starting
+{
+  "exitCode": 1,
+  "stderrLength": 26,
+  "context": {}
+}
+(node:29144) ExperimentalWarning: VM Modules is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+2026-02-02 12:19:26 [INFO]: Loaded 7 persistent streams
+2026-02-02 12:19:26 [INFO]: Built FFmpeg args for stream my_stream_id:
+{
+  "streamId": "my_stream_id",
+  "audioFormat": "MP3",
+  "codec": "libmp3lame",
+  "formatDescription": "MP3 - Universal browser support (BEST)",
+  "bitrate": "192k",
+  "icecastUrl": "icecast://source:hackme@localhost:8200/my_stream_id",
+  "inputType": "file",
+  "inputSource": "test.ogg",
+  "actualDeviceName": null,
+  "fullArgs": [
+    "-re",
+    "-i",
+    "test.ogg",
+    "-acodec",
+    "libmp3lame",
+    "-b:a",
+    "192k",
+    "-ar",
+    "44100",
+    "-ac",
+    "2",
+    "-f",
+    "mp3",
+    "icecast://source:hackme@localhost:8200/my_stream_id",
+    "-content_type",
+    "audio/mpeg",
+    "-loglevel",
+    "info"
+  ]
+}
+2026-02-02 12:19:26 [INFO]: Full FFmpeg command for stream my_stream_id (MP3): ffmpeg -re -i test.ogg -acodec libmp3lame -b:a 192k -ar 44100 -ac 2 -f mp3 icecast://source:hackme@localhost:8200/my_stream_id -content_type audio/mpeg -loglevel info
+2026-02-02 12:19:26 [INFO]: Built FFmpeg args for stream stream_1:
+{
+  "streamId": "stream_1",
+  "audioFormat": "MP3",
+  "codec": "libmp3lame",
+  "formatDescription": "MP3 - Universal browser support (BEST)",
+  "bitrate": "192k",
+  "icecastUrl": "icecast://source:hackme@localhost:8200/stream_1",
+  "inputType": "file",
+  "inputSource": "x.ogg",
+  "actualDeviceName": null,
+  "fullArgs": [
+    "-re",
+    "-i",
+    "x.ogg",
+    "-acodec",
+    "libmp3lame",
+    "-b:a",
+    "192k",
+    "-ar",
+    "44100",
+    "-ac",
+    "2",
+    "-f",
+    "mp3",
+    "icecast://source:hackme@localhost:8200/stream_1",
+    "-content_type",
+    "audio/mpeg",
+    "-loglevel",
+    "info"
+  ]
+}
+2026-02-02 12:19:26 [INFO]: Full FFmpeg command for stream stream_1 (MP3): ffmpeg -re -i x.ogg -acodec libmp3lame -b:a 192k -ar 44100 -ac 2 -f mp3 icecast://source:hackme@localhost:8200/stream_1 -content_type audio/mpeg -loglevel info
+2026-02-02 12:19:26 [INFO]: Built FFmpeg args for stream test_2026_v3_1769900463252:
+{
+  "streamId": "test_2026_v3_1769900463252",
+  "audioFormat": "MP3",
+  "codec": "libmp3lame",
+  "formatDescription": "MP3 - Universal browser support (BEST)",
+  "bitrate": "192k",
+  "icecastUrl": "icecast://source:hackme@localhost:8200/test_2026_v3_1769900463252",
+  "inputType": "file",
+  "inputSource": "f.ogg",
+  "actualDeviceName": null,
+  "fullArgs": [
+    "-re",
+    "-i",
+    "f.ogg",
+    "-acodec",
+    "libmp3lame",
+    "-b:a",
+    "192k",
+    "-ar",
+    "44100",
+    "-ac",
+    "2",
+    "-f",
+    "mp3",
+    "icecast://source:hackme@localhost:8200/test_2026_v3_1769900463252",
+    "-content_type",
+    "audio/mpeg",
+    "-loglevel",
+    "info"
+  ]
+}
+2026-02-02 12:19:26 [INFO]: Full FFmpeg command for stream test_2026_v3_1769900463252 (MP3): ffmpeg -re -i f.ogg -acodec libmp3lame -b:a 192k -ar 44100 -ac 2 -f mp3 icecast://source:hackme@localhost:8200/test_2026_v3_1769900463252 -content_type audio/mpeg -loglevel info
+2026-02-02 12:19:26 [INFO]: Built FFmpeg args for stream id:
+{
+  "streamId": "id",
+  "audioFormat": "MP3",
+  "codec": "libmp3lame",
+  "formatDescription": "MP3 - Universal browser support (BEST)",
+  "bitrate": "192k",
+  "icecastUrl": "icecast://source:hackme@localhost:8200/id",
+  "inputType": "file",
+  "inputSource": "f.ogg",
+  "actualDeviceName": null,
+  "fullArgs": [
+    "-re",
+    "-i",
+    "f.ogg",
+    "-acodec",
+    "libmp3lame",
+    "-b:a",
+    "192k",
+    "-ar",
+    "44100",
+    "-ac",
+    "2",
+    "-f",
+    "mp3",
+    "icecast://source:hackme@localhost:8200/id",
+    "-content_type",
+    "audio/mpeg",
+    "-loglevel",
+    "info"
+  ]
+}
+2026-02-02 12:19:26 [INFO]: Full FFmpeg command for stream id (MP3): ffmpeg -re -i f.ogg -acodec libmp3lame -b:a 192k -ar 44100 -ac 2 -f mp3 icecast://source:hackme@localhost:8200/id -content_type audio/mpeg -loglevel info
+2026-02-02 12:19:26 [WARN]: AudioDeviceService cache is empty
+2026-02-02 12:19:26 [INFO]: Generated DirectShow name "Microphone (SomeDevice)" from device ID "SomeDevice"
+2026-02-02 12:19:26 [WARN]: AudioDeviceService cache is empty
+2026-02-02 12:19:26 [INFO]: Generated DirectShow name "Microphone (SomeDevice)" from device ID "SomeDevice"
+2026-02-02 12:19:26 [INFO]: Built FFmpeg args for stream id:
+{
+  "streamId": "id",
+  "audioFormat": "MP3",
+  "codec": "libmp3lame",
+  "formatDescription": "MP3 - Universal browser support (BEST)",
+  "bitrate": "192k",
+  "icecastUrl": "icecast://source:hackme@localhost:8200/id",
+  "inputType": "device",
+  "inputSource": "SomeDevice",
+  "actualDeviceName": "Microphone (SomeDevice)",
+  "fullArgs": [
+    "-f",
+    "dshow",
+    "-i",
+    "audio=\"Microphone (SomeDevice)\"",
+    "-acodec",
+    "libmp3lame",
+    "-b:a",
+    "192k",
+    "-ar",
+    "44100",
+    "-ac",
+    "2",
+    "-f",
+    "mp3",
+    "icecast://source:hackme@localhost:8200/id",
+    "-content_type",
+    "audio/mpeg",
+    "-loglevel",
+    "info"
+  ]
+}
+2026-02-02 12:19:26 [INFO]: Full FFmpeg command for stream id (MP3): ffmpeg -f dshow -i audio="Microphone (SomeDevice)" -acodec libmp3lame -b:a 192k -ar 44100 -ac 2 -f mp3 icecast://source:hackme@localhost:8200/id -content_type audio/mpeg -loglevel info
+(node:35872) ExperimentalWarning: VM Modules is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+PASS tests/integration/ffmpeg-spawn.test.js
+  FFmpeg spawn options (Windows)
+    ÔêÜ StreamingService spawn call includes shell: true in options (7 ms)
+
+  console.log
+    [dotenv@17.2.1] injecting env (0) from .env -- tip: ÔÜÖ´©Å  load multiple .env files with { path: ['.env.local', '.env'] }
+
+      at _log (node_modules/dotenv/lib/main.js:139:11)
+
+  console.log
+    [dotenv@17.2.1] injecting env (0) from .env -- tip: ­ƒôí auto-backup env with Radar: https://dotenvx.com/radar
+
+      at _log (node_modules/dotenv/lib/main.js:139:11)
+
+  console.log
+    [dotenv@17.2.1] injecting env (0) from .env -- tip: ÔÜÖ´©Å  load multiple .env files with { path: ['.env.local', '.env'] }
+
+      at _log (node_modules/dotenv/lib/main.js:139:11)
+
+  console.log
+    [dotenv@17.2.1] injecting env (0) from .env -- tip: ÔÜÖ´©Å  write to custom object with { processEnv: myObject }
+
+      at _log (node_modules/dotenv/lib/main.js:139:11)
+
+2026-02-02 12:19:26 [INFO]: Initializing Icecast Service
+{
+  "service": "icecast"
+}
+  console.log
+    Ô£à Settings system initialized
+
+      at log (src/routes/settings.js:85:17)
+
+(node:32632) ExperimentalWarning: VM Modules is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+PASS tests/unit/errorDiagnostics.test.js
+  errorDiagnostics
+    diagnose
+      ÔêÜ returns connection category for Windows unsigned exit code 4294967291 (-5) (13 ms)
+      ÔêÜ returns connection category for Windows unsigned 4294967291 with port 8000 (2 ms)
+      ÔêÜ returns connection category when stderr contains "connection refused" (3 ms)
+      ÔêÜ returns connection category when stderr contains ECONNREFUSED (2 ms)
+      ÔêÜ uses context.port fallback when icecastPort not provided (4294967291) (1 ms)
+      ÔêÜ returns generic diagnosis for unknown exit code when no pattern matches (6 ms)
+      ÔêÜ handles empty stderr with 4294967291 (connection refused) (4 ms)
+      ÔêÜ returns device_not_found when stderr contains "could not find audio device" and context has deviceId (20 ms)
+
+2026-02-02 12:19:26 [INFO]: Received stream start request:
+{
+  "streamConfig": {
+    "deviceId": "d1",
+    "id": "stream1",
+    "name": "Test"
+  }
+}
+2026-02-02 12:19:26 [INFO]: Loaded 7 persistent streams
+2026-02-02 12:19:26 [INFO]: Initializing Icecast Service
+{
+  "service": "icecast"
+}
+2026-02-02 12:19:26 [ERROR]: Error starting stream:
+Error: Stream failed
+    at C:\Users\Username\Documents\github\LANStreamer\tests\integration\stream-start-error.test.js:8:28
+    at SourceTextModule.evaluate (node:internal/vm/module:227:23)
+    at Runtime.linkAndEvaluateModule (C:\Users\Username\Documents\github\LANStreamer\node_modules\jest-runtime\build\index.js:686:20)
+    at jestAdapter (C:\Users\Username\Documents\github\LANStreamer\node_modules\jest-circus\build\runner.js:93:5)
+    at runTestInternal (C:\Users\Username\Documents\github\LANStreamer\node_modules\jest-runner\build\testWorker.js:275:16)
+    at runTest (C:\Users\Username\Documents\github\LANStreamer\node_modules\jest-runner\build\testWorker.js:343:7)
+    at Object.worker (C:\Users\Username\Documents\github\LANStreamer\node_modules\jest-runner\build\testWorker.js:497:12)
+{
+  "error": "Stream failed"
+}
+2026-02-02 12:19:26 [INFO]: Stream start failed
+{
+  "cause": "device_not_found",
+  "streamId": "stream1"
+}
+2026-02-02 12:19:26 [INFO]: Loaded 7 persistent streams
+2026-02-02 12:19:26 [INFO]: Initializing Icecast Service
+{
+  "service": "icecast"
+}
+  console.log
+    Ô£à Settings system initialized
+
+      at log (src/routes/settings.js:85:17)
+
+2026-02-02 12:19:26 [INFO]: Loaded device config
+{
+  "path": "C:\\Program Files (x86)\\Icecast\\bin\\icecast.exe",
+  "port": 8200,
+  "source": "project-config",
+  "service": "icecast"
+}
+  console.log
+    Ô£à Settings system initialized
+
+      at log (src/routes/settings.js:85:17)
+
+(node:32836) ExperimentalWarning: VM Modules is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+PASS tests/unit/IcecastService.test.js
+  IcecastService
+    getActualPort
+      ÔêÜ returns a number (16 ms)
+      ÔêÜ returns 8000 or 8200 when not yet initialised (fallback) (1 ms)
+    getHostname
+      ÔêÜ returns a string (1 ms)
+      ÔêÜ returns localhost when hostname not yet parsed (1 ms)
+
+(node:5312) ExperimentalWarning: VM Modules is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+2026-02-02 12:19:26 [INFO]: Loaded device config
+{
+  "path": "C:\\Program Files (x86)\\Icecast\\bin\\icecast.exe",
+  "port": 8200,
+  "source": "project-config",
+  "service": "icecast"
+}
+2026-02-02 12:19:26 [INFO]: Loaded 7 persistent streams
+2026-02-02 12:19:26 [INFO]: Initializing Icecast Service
+{
+  "service": "icecast"
+}
+FAIL tests/scenarios/errorScenarios.test.js
+  console.log
+    Ô£à Settings system initialized
+
+      at log (src/routes/settings.js:85:17)
+
+  Error Scenarios (real stderr samples)
+    Scenario: Icecast not running (connection refused)
+      ÔêÜ diagnoses as connection error with port 8000 (12 ms)
+      ÔêÜ provides actionable solutions (1 ms)
+    Scenario: Port conflict (Docker using port 8000)
+      ÔêÜ diagnoses as port_conflict (3 ms)
+      ÔêÜ mentions Docker as a common cause (2 ms)
+    Scenario: Wrong Icecast source password
+      ÔêÜ diagnoses as authentication error (5 ms)
+      ÔêÜ mentions icecast.xml password configuration (2 ms)
+    Scenario: Mount point limit reached (2 streams max)
+      ÔêÜ diagnoses as mount_point error (5 ms)
+      ÔêÜ mentions the default 2-stream limit (3 ms)
+    Scenario: Audio device not found (disconnected)
+      ÔêÜ diagnoses as device_not_found when deviceId in context (16 ms)
+      ÔêÜ includes the device name in the error message (9 ms)
+    Scenario: Device busy (another app using microphone)
+      ├ù diagnoses as device_busy (16 ms)
+      ├ù mentions common apps that lock the microphone (3 ms)
+    Scenario: VB-Audio Virtual Cable not working
+      ├ù diagnoses as virtual_audio when vb-audio pattern detected (2 ms)
+    Scenario: DirectShow error (Windows audio subsystem)
+      ÔêÜ diagnoses as directshow error (2 ms)
+    Scenario: Codec not found (minimal FFmpeg build)
+      ÔêÜ diagnoses as codec error (2 ms)
+      ÔêÜ mentions MP3/libmp3lame specifically (2 ms)
+    Scenario: Connection timeout (Icecast not responding)
+      ÔêÜ diagnoses as timeout error (2 ms)
+    Scenario: Empty stderr with Windows exit code 4294967291
+      ÔêÜ diagnoses as connection error (exit code implies connection refused) (1 ms)
+      ÔêÜ includes the port in solutions (1 ms)
+    Scenario: Unknown/generic error (no pattern match)
+      ÔêÜ returns a diagnosis anyway (no crash) (2 ms)
+      ÔêÜ provides generic troubleshooting steps (1 ms)
+    Scenario: [Your error here]
+      ÔêÜ diagnoses correctly (1 ms)
+
+  ÔùÅ Error Scenarios (real stderr samples) ÔÇ║ Scenario: Device busy (another app using microphone) ÔÇ║ diagnoses as 
+device_busy
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: "device_busy"
+    Received: "authentication"
+
+      135 |         deviceName: 'Microphone (Realtek Audio)'
+      136 |       });
+    > 137 |       expect(result.category).toBe('device_busy');
+          |                               ^
+      138 |       expect(result.title).toMatch(/busy|in use/i);
+      139 |     });
+      140 |
+
+      at Object.toBe (tests/scenarios/errorScenarios.test.js:137:31)
+
+  ÔùÅ Error Scenarios (real stderr samples) ÔÇ║ Scenario: Device busy (another app using microphone) ÔÇ║ mentions 
+common apps that lock the microphone
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: true
+    Received: false
+
+      147 |         result.solutions.some(s => s.toLowerCase().includes(app))
+      148 |       );
+    > 149 |       expect(hasAppMention).toBe(true);
+          |                             ^
+      150 |     });
+      151 |   });
+      152 |
+
+      at Object.toBe (tests/scenarios/errorScenarios.test.js:149:29)
+
+  ÔùÅ Error Scenarios (real stderr samples) ÔÇ║ Scenario: VB-Audio Virtual Cable not working ÔÇ║ diagnoses as 
+virtual_audio when vb-audio pattern detected
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: "virtual_audio"
+    Received: "device_not_found"
+
+      163 |         deviceName: 'CABLE Output (VB-Audio Virtual Cable)'
+      164 |       });
+    > 165 |       expect(result.category).toBe('virtual_audio');
+          |                               ^
+      166 |       expect(result.title).toMatch(/vb-audio|virtual cable/i);
+      167 |     });
+      168 |   });
+
+      at Object.toBe (tests/scenarios/errorScenarios.test.js:165:31)
+
+2026-02-02 12:19:26 [INFO]: Loaded device config
+{
+  "path": "C:\\Program Files (x86)\\Icecast\\bin\\icecast.exe",
+  "port": 8200,
+  "source": "project-config",
+  "service": "icecast"
+}
+2026-02-02 12:19:26 [INFO]: Saved path validation successful
+{
+  "path": "C:\\Program Files (x86)\\Icecast\\bin\\icecast.exe",
+  "version": "2.4.4",
+  "service": "icecast"
+}
+2026-02-02 12:19:26 [INFO]: Using validated device config
+{
+  "path": "C:\\Program Files (x86)\\Icecast\\bin\\icecast.exe",
+  "source": "project-config",
+  "service": "icecast"
+}
+2026-02-02 12:19:26 [INFO]: Ensuring config directory exists
+{
+  "configDir": "C:\\Program Files (x86)\\Icecast",
+  "service": "icecast"
+}
+2026-02-02 12:19:26 [INFO]: Config directory ready
+{
+  "configDir": "C:\\Program Files (x86)\\Icecast",
+  "service": "icecast"
+}
+2026-02-02 12:19:26 [INFO]: Parsed max listeners from icecast.xml
+{
+  "maxListeners": 200,
+  "configPath": "C:\\Program Files (x86)\\Icecast\\icecast.xml",
+  "service": "icecast"
+}
+2026-02-02 12:19:26 [INFO]: Parsed port from icecast.xml
+{
+  "port": 8200,
+  "configPath": "C:\\Program Files (x86)\\Icecast\\icecast.xml",
+  "service": "icecast"
+}
+2026-02-02 12:19:26 [INFO]: Synced port to device-config.json
+{
+  "port": 8200,
+  "source": "icecast.xml",
+  "service": "icecast"
+}
+2026-02-02 12:19:27 [INFO]: Parsed source-password from icecast.xml
+{
+  "service": "icecast"
+}
+2026-02-02 12:19:27 [INFO]: Parsed admin-password from icecast.xml
+{
+  "service": "icecast"
+}
+2026-02-02 12:19:27 [INFO]: Parsed hostname from icecast.xml
+{
+  "hostname": "192.168.1.244",
+  "service": "icecast"
+}
+2026-02-02 12:19:27 [INFO]: Parsed source limit from icecast.xml
+{
+  "sourceLimit": 10,
+  "configPath": "C:\\Program Files (x86)\\Icecast\\icecast.xml",
+  "service": "icecast"
+}
+2026-02-02 12:19:27 [INFO]: Started watching icecast.xml for changes
+{
+  "path": "C:\\Program Files (x86)\\Icecast\\icecast.xml",
+  "service": "icecast"
+}
+(node:9532) ExperimentalWarning: VM Modules is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+2026-02-02 12:19:27 [INFO]: Saved path validation successful
+{
+  "path": "C:\\Program Files (x86)\\Icecast\\bin\\icecast.exe",
+  "version": "2.4.4",
+  "service": "icecast"
+}
+2026-02-02 12:19:27 [INFO]: Using validated device config
+{
+  "path": "C:\\Program Files (x86)\\Icecast\\bin\\icecast.exe",
+  "source": "project-config",
+  "service": "icecast"
+}
+2026-02-02 12:19:27 [INFO]: Ensuring config directory exists
+{
+  "configDir": "C:\\Program Files (x86)\\Icecast",
+  "service": "icecast"
+}
+2026-02-02 12:19:27 [INFO]: Parsed port synchronously (fallback)
+{
+  "port": 8200,
+  "configPath": "C:\\Program Files (x86)\\Icecast\\icecast.xml",
+  "service": "icecast"
+}
+2026-02-02 12:19:27 [INFO]: Loaded device config
+{
+  "path": "C:\\Program Files (x86)\\Icecast\\bin\\icecast.exe",
+  "port": 8200,
+  "source": "project-config",
+  "service": "icecast"
+}
+2026-02-02 12:19:27 [INFO]: Config directory ready
+{
+  "configDir": "C:\\Program Files (x86)\\Icecast",
+  "service": "icecast"
+}
+2026-02-02 12:19:27 [INFO]: Parsed max listeners from icecast.xml
+{
+  "maxListeners": 200,
+  "configPath": "C:\\Program Files (x86)\\Icecast\\icecast.xml",
+  "service": "icecast"
+}
+2026-02-02 12:19:27 [INFO]: Parsed port from icecast.xml
+{
+  "port": 8200,
+  "configPath": "C:\\Program Files (x86)\\Icecast\\icecast.xml",
+  "service": "icecast"
+}
+2026-02-02 12:19:27 [INFO]: Synced port to device-config.json
+{
+  "port": 8200,
+  "source": "icecast.xml",
+  "service": "icecast"
+}
+2026-02-02 12:19:27 [INFO]: Icecast Service initialized successfully
+{
+  "service": "icecast"
+}
+2026-02-02 12:19:27 [INFO]: Parsed source-password from icecast.xml
+{
+  "service": "icecast"
+}
+2026-02-02 12:19:27 [INFO]: Parsed admin-password from icecast.xml
+{
+  "service": "icecast"
+}
+2026-02-02 12:19:27 [INFO]: Parsed hostname from icecast.xml
+{
+  "hostname": "192.168.1.244",
+  "service": "icecast"
+}
+2026-02-02 12:19:27 [INFO]: Parsed source limit from icecast.xml
+{
+  "sourceLimit": 10,
+  "configPath": "C:\\Program Files (x86)\\Icecast\\icecast.xml",
+  "service": "icecast"
+}
+2026-02-02 12:19:27 [INFO]: Started watching icecast.xml for changes
+{
+  "path": "C:\\Program Files (x86)\\Icecast\\icecast.xml",
+  "service": "icecast"
+}
+2026-02-02 12:19:27 [INFO]: Saved path validation successful
+{
+  "path": "C:\\Program Files (x86)\\Icecast\\bin\\icecast.exe",
+  "version": "2.4.4",
+  "service": "icecast"
+}
+2026-02-02 12:19:27 [INFO]: Using validated device config
+{
+  "path": "C:\\Program Files (x86)\\Icecast\\bin\\icecast.exe",
+  "source": "project-config",
+  "service": "icecast"
+}
+2026-02-02 12:19:27 [INFO]: Ensuring config directory exists
+{
+  "configDir": "C:\\Program Files (x86)\\Icecast",
+  "service": "icecast"
+}
+2026-02-02 12:19:27 [INFO]: Config directory ready
+{
+  "configDir": "C:\\Program Files (x86)\\Icecast",
+  "service": "icecast"
+}
+2026-02-02 12:19:27 [INFO]: Icecast Service initialized successfully
+{
+  "service": "icecast"
+}
+2026-02-02 12:19:27 [INFO]: Parsed max listeners from icecast.xml
+{
+  "maxListeners": 200,
+  "configPath": "C:\\Program Files (x86)\\Icecast\\icecast.xml",
+  "service": "icecast"
+}
+2026-02-02 12:19:27 [INFO]: Parsed port from icecast.xml
+{
+  "port": 8200,
+  "configPath": "C:\\Program Files (x86)\\Icecast\\icecast.xml",
+  "service": "icecast"
+}
+2026-02-02 12:19:27 [INFO]: Synced port to device-config.json
+{
+  "port": 8200,
+  "source": "icecast.xml",
+  "service": "icecast"
+}
+2026-02-02 12:19:27 [INFO]: Parsed source-password from icecast.xml
+{
+  "service": "icecast"
+}
+2026-02-02 12:19:27 [INFO]: Parsed admin-password from icecast.xml
+{
+  "service": "icecast"
+}
+2026-02-02 12:19:27 [INFO]: Parsed hostname from icecast.xml
+{
+  "hostname": "192.168.1.244",
+  "service": "icecast"
+}
+2026-02-02 12:19:27 [INFO]: Parsed source limit from icecast.xml
+{
+  "sourceLimit": 10,
+  "configPath": "C:\\Program Files (x86)\\Icecast\\icecast.xml",
+  "service": "icecast"
+}
+PASS tests/unit/StreamingService.test.js
+  StreamingService
+    buildFFmpegArgs
+      ÔêÜ builds Icecast URL with localhost (not getHostname()) (9 ms)
+      ÔêÜ builds Icecast URL with port from IcecastService (8200) (2 ms)
+      ÔêÜ includes streamId in Icecast URL (2 ms)
+      ÔêÜ uses format fallback when formatIndex out of range (1 ms)
+      ÔêÜ builds device-mode args and Icecast URL still uses localhost (3 ms)
+
+2026-02-02 12:19:27 [INFO]: Started watching icecast.xml for changes
+{
+  "path": "C:\\Program Files (x86)\\Icecast\\icecast.xml",
+  "service": "icecast"
+}
+2026-02-02 12:19:27 [INFO]: Saved path validation successful
+{
+  "path": "C:\\Program Files (x86)\\Icecast\\bin\\icecast.exe",
+  "version": "2.4.4",
+  "service": "icecast"
+}
+2026-02-02 12:19:27 [INFO]: Using validated device config
+{
+  "path": "C:\\Program Files (x86)\\Icecast\\bin\\icecast.exe",
+  "source": "project-config",
+  "service": "icecast"
+}
+2026-02-02 12:19:27 [INFO]: Ensuring config directory exists
+{
+  "configDir": "C:\\Program Files (x86)\\Icecast",
+  "service": "icecast"
+}
+2026-02-02 12:19:27 [INFO]: Config directory ready
+{
+  "configDir": "C:\\Program Files (x86)\\Icecast",
+  "service": "icecast"
+}
+2026-02-02 12:19:27 [INFO]: Parsed max listeners from icecast.xml
+{
+  "maxListeners": 200,
+  "configPath": "C:\\Program Files (x86)\\Icecast\\icecast.xml",
+  "service": "icecast"
+}
+2026-02-02 12:19:27 [INFO]: Parsed port from icecast.xml
+{
+  "port": 8200,
+  "configPath": "C:\\Program Files (x86)\\Icecast\\icecast.xml",
+  "service": "icecast"
+}
+2026-02-02 12:19:27 [INFO]: Synced port to device-config.json
+{
+  "port": 8200,
+  "source": "icecast.xml",
+  "service": "icecast"
+}
+2026-02-02 12:19:27 [INFO]: Parsed source-password from icecast.xml
+{
+  "service": "icecast"
+}
+2026-02-02 12:19:27 [INFO]: Parsed admin-password from icecast.xml
+{
+  "service": "icecast"
+}
+2026-02-02 12:19:27 [INFO]: Parsed hostname from icecast.xml
+{
+  "hostname": "192.168.1.244",
+  "service": "icecast"
+}
+2026-02-02 12:19:27 [INFO]: Parsed source limit from icecast.xml
+{
+  "sourceLimit": 10,
+  "configPath": "C:\\Program Files (x86)\\Icecast\\icecast.xml",
+  "service": "icecast"
+}
+2026-02-02 12:19:27 [INFO]: Started watching icecast.xml for changes
+{
+  "path": "C:\\Program Files (x86)\\Icecast\\icecast.xml",
+  "service": "icecast"
+}
+2026-02-02 12:19:27 [INFO]: Icecast Service initialized successfully
+{
+  "service": "icecast"
+}
+2026-02-02 12:19:27 [INFO]: Icecast Service initialized successfully
+{
+  "service": "icecast"
+}
+PASS tests/integration/stream-start-error.test.js
+  POST /api/streams/start (error response)
+    ÔêÜ returns 500 with cause and diagnosis when start fails (37 ms)
+
+PASS tests/integration/server.startup.test.js
+  Server startup
+    ÔêÜ app loads without throwing (4 ms)
+    ÔêÜ GET /api/health returns 200 (22 ms)
+
+PASS tests/integration/stream-proxy.test.js
+  GET /api/streams/play/:streamId
+    ÔêÜ returns 502 or 200 (proxy to Icecast) (38 ms)
+    ÔêÜ does not return 500 (route exists and handles errors) (16 ms)
+    ÔêÜ when 200 and content-type set, is stream or html (proxy forwards or Icecast page) (25 ms)
+
+PASS tests/integration/config-endpoint.test.js
+  GET /api/system/config
+    ÔêÜ returns 200 (111 ms)
+    ÔêÜ returns body with icecast.port as number (6 ms)
+    ÔêÜ returns body with icecast.host (11 ms)
+    ÔêÜ returns source capacity fields (sourceLimit, activeStreams, remaining, configPath) (6 ms)
+
+A worker process has failed to exit gracefully and has been force exited. This is likely caused by tests leaking due 
+to improper teardown. Try running with --detectOpenHandles to find leaks. Active timers can also cause this, ensure 
+that .unref() was called on them.
+Test Suites: 1 failed, 8 passed, 9 total
+Tests:       3 failed, 47 passed, 50 total
+Snapshots:   0 total
+Time:        2.886 s, estimated 3 s
+Ran all test suites.

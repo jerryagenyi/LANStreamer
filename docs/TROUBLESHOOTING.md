@@ -15,9 +15,17 @@ Common issues and solutions for LANStreamer.
 
 ## Admin only on localhost
 
-Admin (login, dashboard, stream management) is **only available from this computer** (localhost). If you open `http://YOUR-LAN-IP:3001/login` or `http://YOUR-LAN-IP:3001/dashboard` from another device, you will see **403 Admin access restricted**.
+Admin (login, dashboard, stream management) is **only available from this computer** (localhost).
 
-**What to do:** Use **http://127.0.0.1:3001** or **http://localhost:3001** on the server PC to log in and manage streams. The **listener page** (`/streams`) and playback remain available from the LAN so mobile and other devices can listen.
+### From the server PC
+- If you open `http://localhost:3001/login` or `http://127.0.0.1:3001/dashboard`, it works.
+- If you accidentally use the LAN IP from the server PC (e.g., `http://192.168.1.244:3001/dashboard`), it will **automatically redirect to localhost** so the page loads.
+
+### From other devices (mobile, another PC)
+- Opening `http://YOUR-LAN-IP:3001/login` or `http://YOUR-LAN-IP:3001/dashboard` will show **403 Admin access restricted**. This is intentional — admin is not meant for remote access.
+- The **listener page** (`/streams`) and playback remain available from the LAN so mobile and other devices can listen.
+
+**Why?** Admin access requires being on the server machine for security. Listener access from LAN is intentionally allowed.
 
 ---
 

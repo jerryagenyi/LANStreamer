@@ -30,6 +30,8 @@ Context: [CLAUDE.md](CLAUDE.md), [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.
 
 12. [ ] **UI/UX polish (optional)** — [docs/UI-UX-RECOMMENDATIONS.md](docs/UI-UX-RECOMMENDATIONS.md).
 
+13. [ ] **Update notification UX** — Show notification bell icon when update available; click to open modal with update info and link to latest release. Current: button shows "Updates" and runs manual check on click; should auto-check on load and show bell when updateAvailable=true.
+
 ---
 
 ## Done

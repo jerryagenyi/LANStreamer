@@ -76,7 +76,7 @@ class HeaderComponent {
                         <a href="${streamsUrl}"
                            target="_blank"
                            class="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-300 hover:text-white bg-gray-800/50 hover:bg-gray-700/50 border border-gray-600/30 hover:border-gray-500/50 rounded-lg transition-all duration-300"
-                           title="Open Streams Page (for listeners) - uses correct LAN IP (${this.serverHost || 'same host'})">
+                           title="Open Streams Page (for listeners)">
                             <span class="material-symbols-rounded text-sm">radio</span>
                             <span class="hidden sm:inline">Listen to Streams</span>
                         </a>
