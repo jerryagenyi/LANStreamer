@@ -845,13 +845,15 @@ class StreamingService {
         throw new Error(`A stream named "${updates.name}" already exists. Use a unique name.`)
       }
       // Generate clean stream ID from new name (same logic as creating new stream)
-      const cleanId = updates.name
+      // Use trimmed name for ID generation to match validation
+      const cleanId = newName
         .toLowerCase()
         .replace(/[^a-z0-9\s]/g, '') // Remove special characters
         .replace(/\s+/g, '_') // Replace spaces with underscores
         .substring(0, 20); // Limit length
 
-      newStreamId = `${cleanId}_${Date.now()}`
+      // If trimming yields empty string, use a timestamp-based ID instead
+      newStreamId = cleanId ? `${cleanId}_${Date.now()}` : `stream_${Date.now()}`
 
       // If stream is running, we need to stop it first
       if (stream.status === 'running' && stream.ffmpegProcess) {
@@ -866,8 +868,8 @@ class StreamingService {
       this.activeStreams[newStreamId] = {
         ...stream,
         id: newStreamId,
-        name: updates.name,
-        config: { ...stream.config, name: updates.name }
+        name: newName || updates.name,  // Store trimmed value (or original if trim is empty)
+        config: { ...stream.config, name: newName || updates.name }
       }
 
       // Remove old stream entry
@@ -881,8 +883,9 @@ class StreamingService {
 
     // Update stream properties
     if (updates.name !== undefined) {
-      currentStream.name = updates.name
-      currentStream.config.name = updates.name
+      const nameToStore = (updates.name || '').trim()
+      currentStream.name = nameToStore
+      currentStream.config.name = nameToStore
     }
 
     if (updates.deviceId !== undefined) {
