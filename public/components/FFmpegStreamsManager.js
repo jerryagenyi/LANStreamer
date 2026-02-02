@@ -274,7 +274,7 @@ class FFmpegStreamsManager {
                 // Generate stream URL and show success message after UI has painted
                 const displayHost = this.serverHost || window.location.hostname;
                 const streamUrl = `http://${displayHost}:${this.icecastPort}/${streamConfig.id || 'stream'}`;
-                this.afterNextPaint(() => this.showNotification(`Stream started successfully! Stream is now available in the list below.`, 'success'));
+                setTimeout(() => this.showNotification(`Stream started successfully! Stream is now available in the list below.`, 'success'), 1000);
             } else {
                 throw new Error(this.formatStreamError(data, 'Failed to start stream'));
             }
@@ -319,7 +319,7 @@ class FFmpegStreamsManager {
             if (data.message === 'Stream stopped successfully') {
                 await this.loadStreams();
                 this.render();
-                this.afterNextPaint(() => this.showNotification('Stream stopped successfully', 'success'));
+                setTimeout(() => this.showNotification('Stream stopped successfully', 'success'), 1000);
             } else {
                 throw new Error(data.error || 'Failed to stop stream');
             }
@@ -355,7 +355,7 @@ class FFmpegStreamsManager {
             if (data.message === 'Stream restarted successfully') {
                 await this.loadStreams();
                 this.render();
-                this.afterNextPaint(() => this.showNotification('Stream started successfully', 'success'));
+                setTimeout(() => this.showNotification('Stream started successfully', 'success'), 1000);
             } else {
                 throw new Error(this.formatStreamError(data, 'Failed to restart stream'));
             }
@@ -406,7 +406,7 @@ class FFmpegStreamsManager {
             if (data && data.success) {
                 await this.loadStreams();
                 this.render();
-                this.afterNextPaint(() => this.showNotification(data.message || 'All streams stopped successfully', 'success'));
+                setTimeout(() => this.showNotification(data.message || 'All streams stopped successfully', 'success'), 1000);
             } else {
                 throw new Error(data?.message || data?.error || 'Failed to stop all streams');
             }
@@ -498,8 +498,9 @@ class FFmpegStreamsManager {
             if (response.ok) {
                 // Remove from local array
                 this.activeStreams = this.activeStreams.filter(s => s.id !== streamId);
-                this.renderStreams();
-                this.afterNextPaint(() => this.showNotification('Stream deleted successfully', 'success'));
+                this.render();
+                // Wait 1 second after row disappears before showing notification
+                setTimeout(() => this.showNotification('Stream deleted successfully', 'success'), 1000);
             } else {
                 throw new Error(result.error || 'Failed to delete stream');
             }
@@ -677,9 +678,9 @@ class FFmpegStreamsManager {
 
                     // Check if stream ID changed (name was updated)
                     if (result.newStreamId && result.newStreamId !== result.oldStreamId) {
-                        this.afterNextPaint(() => this.showNotification('Stream updated with new URL. Device reset — click Start to begin streaming.', 'success'));
+                        setTimeout(() => this.showNotification('Stream updated with new URL. Device reset — click Start to begin streaming.', 'success'), 1000);
                     } else {
-                        this.afterNextPaint(() => this.showNotification('Stream updated. Device reset — click Start to begin streaming.', 'success'));
+                        setTimeout(() => this.showNotification('Stream updated. Device reset — click Start to begin streaming.', 'success'), 1000);
                     }
                 } else {
                     throw new Error(result.error || 'Failed to update stream');
