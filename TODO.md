@@ -7,7 +7,7 @@ Context: [CLAUDE.md](CLAUDE.md), [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.
 ## To do (priority order)
 
 - [x] **Verify 5+ streams** — Confirmed 6/6 live (VB-Cable A/B, mics). Root cause of "5th fails" was bad device choice, not Icecast limit.
-- [ ] **Notification types** — different types of notification is needed. if it is information about a duplicate stream name or duplicate source selected when creating a stream, it should just be a simple modal that says the stream already exists. no need to add the link to troubleshoot - its not a troubleshooting isseu, its just a notification. If its a troubleshooting issue, then the error handling logic should come into play.
+- [ ] **Notification types** — different types of notification is needed. if it is information about a duplicate stream name or duplicate source selected when creating a stream, it should just be a simple modal that says the stream already exists. no need to add the link to troubleshoot - it's not a troubleshooting issue, it's just a notification. If its a troubleshooting issue, then the error handling logic should come into play.
 - [ ] **Source validation & clear errors** — On stream failure, check if source (device/file) is viable and say so in the error. Optional: "Test source" button per source. _Note: Test source button + Show test tools toggle and structured errors implemented; QA pending._
 - [ ] **Timing of Modals** — Alert modals appear even before the action is performed - they should only appear after the action is performed.
 - [ ] **Listener: dismiss without reload** — New-stream notification dismisses overlay without full reload (don't stop playback).
