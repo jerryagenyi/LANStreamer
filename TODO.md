@@ -4,7 +4,7 @@ Context: [CLAUDE.md](CLAUDE.md), [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.
 
 ---
 
-## To do (priority order, numbered)
+## Tasks
 
 1. [ ] **Notification types** — Different types of notification: for duplicate stream name or duplicate source, use a simple modal ("stream already exists") without troubleshooting link; for real failures, use existing error handling with diagnosis/link.
 
@@ -30,19 +30,19 @@ Context: [CLAUDE.md](CLAUDE.md), [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.
 
 12. [ ] **Update notification UX** — Show notification bell icon when update available; click to open modal with update info and link to latest release. Current: button shows "Updates" and runs manual check on click; should auto-check on load and show bell when updateAvailable=true.
 
----
+13. [x] **Lock admin to localhost** — Middleware blocks admin pages and admin APIs from non-localhost; listener page and listener APIs allowed from LAN; 403 HTML/JSON; TROUBLESHOOTING.md "Admin only on localhost".
 
-## Done
+14. [x] **Verify 5+ streams** — Confirmed 6/6 live; root cause of "5th fails" was bad device choice, not Icecast limit.
 
-1. **Lock admin to localhost** — Middleware blocks admin pages and admin APIs from non-localhost; listener page and listener APIs allowed from LAN; 403 HTML/JSON; TROUBLESHOOTING.md "Admin only on localhost".
-2. **Verify 5+ streams** — Confirmed 6/6 live; root cause of "5th fails" was bad device choice, not Icecast limit.
-3. **Unique stream names** — No duplicate display names (create/update); case-insensitive, trimmed.
-4. **Start/Stop All button** — Start all stopped/error streams; Stop all running; API `POST /api/streams/start-all`; partial-failure toast with names + first error; 150ms delay between success/error toasts.
-5. **Listener page uses LAN IP** — Copy URLs and listener page use `config.host` from getPreferredLANHost / icecast.xml. Docs: "Which IP is my LAN / WiFi?" in TROUBLESHOOTING.md.
-6. **Mobile** — Listener page, "Listen to Streams" header link, and Copy URL use correct LAN IP. HeaderComponent fetches config.host; TROUBLESHOOTING.md "Action Required: Mobile Listener Setup". _QA: Test with real device on same WiFi._
-7. **Workflow/docs** — Branch workflow: feature → merge into dev locally → push dev → PR dev→main (remote only). Local branches: dev + features only; `main` deleted locally (remote-only). AGENTS.md removed; refs point to CLAUDE.md. PR #6 updated with lock-admin-localhost changes.
+15. [x] **Unique stream names** — No duplicate display names (create/update); case-insensitive, trimmed.
 
-**Earlier:** Notification timing, LANStreamer.bat updater, Claude hooks, custom-instructions, capacity NaN fix, config capacity fields, shortMessage + troubleshooting link.
+16. [x] **Start/Stop All button** — Start all stopped/error streams; Stop all running; API `POST /api/streams/start-all`; partial-failure toast with names + first error; 150ms delay between success/error toasts.
+
+17. [x] **Listener page uses LAN IP** — Copy URLs and listener page use `config.host` from getPreferredLANHost / icecast.xml. Docs: "Which IP is my LAN / WiFi?" in TROUBLESHOOTING.md.
+
+18. [x] **Mobile** — Listener page, "Listen to Streams" header link, and Copy URL use correct LAN IP. HeaderComponent fetches config.host; TROUBLESHOOTING.md "Action Required: Mobile Listener Setup". _QA: Test with real device on same WiFi._
+
+19. [x] **Workflow/docs** — Branch workflow: feature → merge into dev locally → push dev → PR dev→main (remote only). Local branches: dev + features only; `main` deleted locally (remote-only). AGENTS.md removed; refs point to CLAUDE.md. PR #6 updated with lock-admin-localhost changes.
 
 ---
 
@@ -50,3 +50,9 @@ Context: [CLAUDE.md](CLAUDE.md), [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.
 
 - Run `npm test` before releases; [STARTUP-SEQUENCE.md](docs/STARTUP-SEQUENCE.md) for troubleshooting.
 - **Future refactor:** ErrorFactory consistency, remove/trim FFmpegService.js, device mapping extraction, split large HTML/JS — see inline notes in codebase.
+
+---
+
+## Earlier (historical)
+
+Notification timing, LANStreamer.bat updater, Claude hooks, custom-instructions, capacity NaN fix, config capacity fields, shortMessage + troubleshooting link.
