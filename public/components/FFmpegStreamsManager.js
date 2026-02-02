@@ -53,6 +53,44 @@ class FFmpegStreamsManager {
     }
 
     /**
+     * True if the error is a duplicate name or duplicate source (simple modal, no troubleshooting link).
+     */
+    isDuplicateError(message) {
+        if (!message || typeof message !== 'string') return false;
+        const m = message.toLowerCase();
+        return /already exists/i.test(m) ||
+            /streams in use|source limit|already in use|too many sources|mount.*busy/i.test(m);
+    }
+
+    /**
+     * Show a simple modal for duplicate name/source errors (no troubleshooting link).
+     */
+    showDuplicateModal(title, message) {
+        const modal = document.createElement('div');
+        modal.className = 'fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm';
+        const safeTitle = title.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c] || c);
+        modal.innerHTML = `
+            <div class="bg-[var(--card-bg)] border border-[var(--border-color)] rounded-xl p-6 max-w-md mx-4 shadow-xl">
+                <div class="flex items-center gap-3 mb-4">
+                    <span class="material-symbols-rounded text-amber-500 text-2xl">info</span>
+                    <h3 class="text-lg font-semibold text-white">${safeTitle}</h3>
+                </div>
+                <p id="duplicate-modal-message" class="text-gray-300 text-sm mb-6"></p>
+                <div class="flex justify-end">
+                    <button id="duplicate-modal-ok" class="px-4 py-2 bg-[var(--primary-color)] hover:opacity-90 text-white rounded-lg transition-colors">OK</button>
+                </div>
+            </div>
+        `;
+        const msgEl = modal.querySelector('#duplicate-modal-message');
+        if (msgEl) msgEl.textContent = message || '';
+        document.body.appendChild(modal);
+        const ok = document.getElementById('duplicate-modal-ok');
+        const close = () => modal.remove();
+        ok.addEventListener('click', close);
+        modal.addEventListener('click', (e) => { if (e.target === modal) close(); });
+    }
+
+    /**
      * Initialize the FFmpeg Streams Manager
      */
     async init() {
@@ -280,10 +318,15 @@ class FFmpegStreamsManager {
             }
         } catch (error) {
             console.error('Failed to start stream:', error);
-            this.showNotification(error.message || 'Failed to start stream', 'error', {
-                linkUrl: TROUBLESHOOTING_GUIDE_URL,
-                linkText: 'troubleshooting guide'
-            });
+            const msg = error.message || 'Failed to start stream';
+            if (this.isDuplicateError(msg)) {
+                this.showDuplicateModal('Stream already exists', msg);
+            } else {
+                this.showNotification(msg, 'error', {
+                    linkUrl: TROUBLESHOOTING_GUIDE_URL,
+                    linkText: 'troubleshooting guide'
+                });
+            }
         }
     }
 
@@ -361,10 +404,15 @@ class FFmpegStreamsManager {
             }
         } catch (error) {
             console.error('Failed to start stream:', error);
-            this.showNotification(error.message || 'Failed to restart stream', 'error', {
-                linkUrl: TROUBLESHOOTING_GUIDE_URL,
-                linkText: 'troubleshooting guide'
-            });
+            const msg = error.message || 'Failed to restart stream';
+            if (this.isDuplicateError(msg)) {
+                this.showDuplicateModal('Stream already exists', msg);
+            } else {
+                this.showNotification(msg, 'error', {
+                    linkUrl: TROUBLESHOOTING_GUIDE_URL,
+                    linkText: 'troubleshooting guide'
+                });
+            }
         }
     }
 
@@ -455,8 +503,10 @@ class FFmpegStreamsManager {
             const hasSuccess = data.started > 0;
             const hasFailure = data.failed > 0 && data.results && data.results.length > 0;
             let errorMsg = '';
+            let firstErrorRaw = '';
             if (hasFailure) {
                 const failed = data.results.filter(r => !r.success);
+                firstErrorRaw = failed[0]?.error ? String(failed[0].error) : '';
                 const names = failed.map(r => r.name || r.id).slice(0, 5);
                 const namesText = failed.length > 5 ? `${names.join(', ')} and ${failed.length - 5} more` : names.join(', ');
                 const firstError = failed[0].error ? String(failed[0].error).slice(0, 120) : '';
@@ -468,10 +518,18 @@ class FFmpegStreamsManager {
                 if (hasSuccess) {
                     this.showNotification(data.message || `Started ${data.started} streams`, 'success');
                     if (hasFailure) {
-                        setTimeout(() => this.showNotification(errorMsg, 'error'), 150);
+                        if (this.isDuplicateError(firstErrorRaw)) {
+                            setTimeout(() => this.showDuplicateModal('Some streams already exist', errorMsg), 150);
+                        } else {
+                            setTimeout(() => this.showNotification(errorMsg, 'error'), 150);
+                        }
                     }
                 } else if (hasFailure) {
-                    this.showNotification(errorMsg, 'error');
+                    if (this.isDuplicateError(firstErrorRaw)) {
+                        this.showDuplicateModal('Some streams already exist', errorMsg);
+                    } else {
+                        this.showNotification(errorMsg, 'error');
+                    }
                 }
             });
         } catch (error) {
@@ -725,7 +783,12 @@ class FFmpegStreamsManager {
                 // Restore button state on error
                 submitBtn.innerHTML = originalText;
                 submitBtn.disabled = false;
-                this.showNotification(`Failed to update stream: ${error.message}`, 'error');
+                const msg = error.message || 'Failed to update stream';
+                if (this.isDuplicateError(msg)) {
+                    this.showDuplicateModal('Stream already exists', msg);
+                } else {
+                    this.showNotification(`Failed to update stream: ${msg}`, 'error');
+                }
             }
         });
 
@@ -1037,7 +1100,7 @@ class FFmpegStreamsManager {
                         </div>
                         <div class="flex-1 min-w-0">
                             <div class="flex items-start justify-between gap-2 mb-1">
-                                <h3 class="font-semibold text-white text-lg truncate flex-1">${stream.label ? stream.label + ' — ' : ''}${stream.name || stream.id}</h3>
+                                <h3 class="font-semibold text-white text-lg truncate flex-1">${stream.label ? stream.label + ' - ' : ''}${stream.name || stream.id}</h3>
                             </div>
                             <div class="flex flex-wrap items-center gap-3 text-sm text-gray-400">
                                 <span class="flex items-center gap-1">

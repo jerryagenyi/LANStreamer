@@ -6,10 +6,14 @@ class ContactManager {
             whatsapp: '',
             showEmail: false,
             showPhone: false,
-            showWhatsapp: false
+            showWhatsapp: false,
+            // Event details (preserve when saving contact info)
+            eventTitle: '',
+            eventSubtitle: '',
+            eventImage: '',
+            aboutDescription: ''
         };
         this.isLoading = false;
-        this.isCollapsed = true; // Collapsed by default
 
         // Rate limiting for saves
         this.saveTimeout = null;
@@ -87,16 +91,21 @@ class ContactManager {
             console.log('📞 Loading contact details...');
             const response = await fetch('/api/contact-details');
             const data = await response.json();
-            
+
             this.contactDetails = {
                 email: data.email || '',
                 phone: data.phone || '',
                 whatsapp: data.whatsapp || '',
                 showEmail: Boolean(data.showEmail),
                 showPhone: Boolean(data.showPhone),
-                showWhatsapp: Boolean(data.showWhatsapp)
+                showWhatsapp: Boolean(data.showWhatsapp),
+                // Store event details to preserve when saving contact info
+                eventTitle: data.eventTitle || '',
+                eventSubtitle: data.eventSubtitle || '',
+                eventImage: data.eventImage || '',
+                aboutDescription: data.aboutDescription || ''
             };
-            
+
             console.log('📞 Contact details loaded:', {
                 hasEmail: !!this.contactDetails.email,
                 hasPhone: !!this.contactDetails.phone,
@@ -108,32 +117,74 @@ class ContactManager {
         }
     }
 
+    /**
+     * Validate single field at time of entry. Returns error message or null if valid/empty.
+     */
+    validateEmailField(value) {
+        const v = (value || '').trim();
+        if (!v) return null;
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        return emailRegex.test(v) ? null : 'Please enter a valid email address';
+    }
+
+    validatePhoneField(value) {
+        const v = (value || '').trim();
+        if (!v) return null;
+        const cleaned = v.replace(/[^\d+]/g, '');
+        if (!/^\+?[1-9]\d{6,14}$/.test(cleaned)) {
+            return 'Valid phone (e.g. +1234567890), 7–15 digits';
+        }
+        return null;
+    }
+
+    validateWhatsAppField(value) {
+        const v = (value || '').trim();
+        if (!v) return null;
+        const digits = v.replace(/\D/g, '');
+        if (digits.length < 10 || digits.length > 15 || digits.startsWith('0')) {
+            return 'Include country code (e.g. +44 7123 456789), no leading zero';
+        }
+        return null;
+    }
+
+    /**
+     * Update inline validation state for one field (border + error message).
+     */
+    setFieldValidationState(inputId, errorId, message) {
+        const input = document.getElementById(inputId);
+        const errorEl = document.getElementById(errorId);
+        if (!input) return;
+        if (message) {
+            input.classList.add('border-red-500');
+            input.classList.remove('border-[var(--border-color)]');
+            if (errorEl) {
+                errorEl.textContent = message;
+                errorEl.classList.remove('hidden');
+            }
+        } else {
+            input.classList.remove('border-red-500');
+            input.classList.add('border-[var(--border-color)]');
+            if (errorEl) {
+                errorEl.textContent = '';
+                errorEl.classList.add('hidden');
+            }
+        }
+    }
+
     validateForm() {
         const errors = [];
-        
-        // Validate email if showEmail is enabled
-        if (this.contactDetails.showEmail && this.contactDetails.email) {
-            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-            if (!emailRegex.test(this.contactDetails.email)) {
-                errors.push('Please enter a valid email address');
-            }
-        }
-        
-        // Validate phone if showPhone is enabled
-        if (this.contactDetails.showPhone && this.contactDetails.phone) {
-            const phoneRegex = /^\+?[1-9]\d{6,14}$/;
-            const cleanedPhone = this.contactDetails.phone.replace(/[^\d+]/g, '');
-            if (!phoneRegex.test(cleanedPhone)) {
-                errors.push('Please enter a valid phone number (e.g., +1234567890 or 1234567890)');
-            }
-        }
 
-        // Validate WhatsApp if showWhatsapp is enabled (country code required for wa.me)
-        if (this.contactDetails.showWhatsapp && this.contactDetails.whatsapp) {
-            const digits = this.contactDetails.whatsapp.replace(/\D/g, '');
-            if (digits.length < 10 || digits.length > 15 || digits.startsWith('0')) {
-                errors.push('WhatsApp: include country code (e.g. +44 7123 456789), no leading zero');
-            }
+        if (this.contactDetails.email) {
+            const msg = this.validateEmailField(this.contactDetails.email);
+            if (msg) errors.push(msg);
+        }
+        if (this.contactDetails.phone) {
+            const msg = this.validatePhoneField(this.contactDetails.phone);
+            if (msg) errors.push(msg);
+        }
+        if (this.contactDetails.whatsapp) {
+            const msg = this.validateWhatsAppField(this.contactDetails.whatsapp);
+            if (msg) errors.push(msg);
         }
 
         return errors;
@@ -176,7 +227,21 @@ class ContactManager {
         }
 
         this.lastSaveTime = now;
-        
+
+        // Sync form values from DOM so validation sees current input
+        const emailEl = document.getElementById('contact-email');
+        const phoneEl = document.getElementById('contact-phone');
+        const whatsappEl = document.getElementById('contact-whatsapp');
+        const showEmailEl = document.getElementById('show-email');
+        const showPhoneEl = document.getElementById('show-phone');
+        const showWhatsappEl = document.getElementById('show-whatsapp');
+        if (emailEl) this.contactDetails.email = emailEl.value.trim();
+        if (phoneEl) this.contactDetails.phone = phoneEl.value.trim();
+        if (whatsappEl) this.contactDetails.whatsapp = whatsappEl.value.trim();
+        if (showEmailEl) this.contactDetails.showEmail = showEmailEl.checked;
+        if (showPhoneEl) this.contactDetails.showPhone = showPhoneEl.checked;
+        if (showWhatsappEl) this.contactDetails.showWhatsapp = showWhatsappEl.checked;
+
         // Basic form validation for contact fields only
         const validationErrors = this.validateForm();
         if (validationErrors.length > 0) {
@@ -194,15 +259,27 @@ class ContactManager {
 
             // Sanitize all inputs before sending to API
             const contactData = {
+                // Contact fields
                 email: this.sanitizeEmail(this.contactDetails.email),
                 phone: this.sanitizePhone(this.contactDetails.phone),
                 whatsapp: this.sanitizePhone(this.contactDetails.whatsapp),
                 showEmail: Boolean(this.contactDetails.showEmail),
                 showPhone: Boolean(this.contactDetails.showPhone),
-                showWhatsapp: Boolean(this.contactDetails.showWhatsapp)
+                showWhatsapp: Boolean(this.contactDetails.showWhatsapp),
+                // Event fields (preserve existing values)
+                eventTitle: this.contactDetails.eventTitle || '',
+                eventSubtitle: this.contactDetails.eventSubtitle || '',
+                eventImage: this.contactDetails.eventImage || '',
+                aboutDescription: this.contactDetails.aboutDescription || '',
+                aboutSubtitle: '' // For future use, keeping empty for now
             };
 
-            console.log('📞 Sanitized contact data:', contactData);
+            console.log('📞 Sanitized contact data:', {
+                email: contactData.email ? '***@***' : 'empty',
+                phone: contactData.phone ? '***-***' : 'empty',
+                whatsapp: contactData.whatsapp ? '***-***' : 'empty',
+                hasEventTitle: !!contactData.eventTitle
+            });
 
             const response = await fetch('/api/contact-details', {
                 method: 'POST',
@@ -248,14 +325,11 @@ class ContactManager {
 
         container.innerHTML = `
             <div class="bg-[var(--card-bg)] border border-[var(--border-color)] rounded-2xl p-6 shadow-2xl shadow-black/30">
-                <div class="flex items-center justify-between mb-4">
+                <div class="mb-4">
                     <h2 class="text-lg font-bold text-white">📞 Your Feedback Contact</h2>
-                    <button id="toggle-contact-section" class="text-gray-400 hover:text-white transition-colors">
-                        <span class="material-symbols-rounded text-xl">${this.isCollapsed ? 'expand_more' : 'expand_less'}</span>
-                    </button>
                 </div>
 
-                <div class="space-y-3 ${this.isCollapsed ? 'hidden' : ''}">
+                <div class="space-y-3">
                     <!-- Email -->
                     <div class="space-y-1">
                         <div class="flex items-center justify-between">
@@ -273,6 +347,7 @@ class ContactManager {
                                class="w-full px-3 py-2 bg-[#111111] border border-[var(--border-color)] rounded-lg text-sm text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)]/50 focus:border-[var(--primary-color)]" 
                                placeholder="admin@example.com" 
                                value="${this.contactDetails.email}">
+                        <p id="contact-email-error" class="text-red-400 text-xs hidden" role="alert"></p>
                     </div>
 
                     <!-- Phone -->
@@ -292,6 +367,7 @@ class ContactManager {
                                class="w-full px-3 py-2 bg-[#111111] border border-[var(--border-color)] rounded-lg text-sm text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)]/50 focus:border-[var(--primary-color)]" 
                                placeholder="+1 (234) 567-8900" 
                                value="${this.contactDetails.phone}">
+                        <p id="contact-phone-error" class="text-red-400 text-xs hidden" role="alert"></p>
                     </div>
 
                     <!-- WhatsApp -->
@@ -311,6 +387,7 @@ class ContactManager {
                                class="w-full px-3 py-2 bg-[#111111] border border-[var(--border-color)] rounded-lg text-sm text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)]/50 focus:border-[var(--primary-color)]" 
                                placeholder="e.g. +44 7123 456789 (country code required)" 
                                value="${this.contactDetails.whatsapp}">
+                        <p id="contact-whatsapp-error" class="text-red-400 text-xs hidden" role="alert"></p>
                     </div>
 
                     <!-- Save Button -->
@@ -368,38 +445,46 @@ class ContactManager {
         return previews.join('');
     }
 
-    toggleCollapse() {
-        this.isCollapsed = !this.isCollapsed;
-        this.render();
-    }
-
     setupEventListeners() {
-        // Toggle collapse button
-        document.getElementById('toggle-contact-section')?.addEventListener('click', () => {
-            this.toggleCollapse();
-        });
-
-        // Email field
+        // Email field: validate on input
         const emailInput = document.getElementById('contact-email');
         if (emailInput) {
             emailInput.addEventListener('input', (e) => {
                 this.updateContactField('email', e.target.value);
+                const msg = this.validateEmailField(e.target.value);
+                this.setFieldValidationState('contact-email', 'contact-email-error', msg);
+            });
+            emailInput.addEventListener('blur', (e) => {
+                const msg = this.validateEmailField(e.target.value);
+                this.setFieldValidationState('contact-email', 'contact-email-error', msg);
             });
         }
 
-        // Phone field
+        // Phone field: validate on input
         const phoneInput = document.getElementById('contact-phone');
         if (phoneInput) {
             phoneInput.addEventListener('input', (e) => {
                 this.updateContactField('phone', e.target.value);
+                const msg = this.validatePhoneField(e.target.value);
+                this.setFieldValidationState('contact-phone', 'contact-phone-error', msg);
+            });
+            phoneInput.addEventListener('blur', (e) => {
+                const msg = this.validatePhoneField(e.target.value);
+                this.setFieldValidationState('contact-phone', 'contact-phone-error', msg);
             });
         }
 
-        // WhatsApp field
+        // WhatsApp field: validate on input
         const whatsappInput = document.getElementById('contact-whatsapp');
         if (whatsappInput) {
             whatsappInput.addEventListener('input', (e) => {
                 this.updateContactField('whatsapp', e.target.value);
+                const msg = this.validateWhatsAppField(e.target.value);
+                this.setFieldValidationState('contact-whatsapp', 'contact-whatsapp-error', msg);
+            });
+            whatsappInput.addEventListener('blur', (e) => {
+                const msg = this.validateWhatsAppField(e.target.value);
+                this.setFieldValidationState('contact-whatsapp', 'contact-whatsapp-error', msg);
             });
         }
 
@@ -439,6 +524,17 @@ class ContactManager {
             });
         } else {
             console.error('❌ Contact save button not found!');
+        }
+
+        // Initial validation so invalid saved values show errors on load
+        if (emailInput) {
+            this.setFieldValidationState('contact-email', 'contact-email-error', this.validateEmailField(this.contactDetails.email));
+        }
+        if (phoneInput) {
+            this.setFieldValidationState('contact-phone', 'contact-phone-error', this.validatePhoneField(this.contactDetails.phone));
+        }
+        if (whatsappInput) {
+            this.setFieldValidationState('contact-whatsapp', 'contact-whatsapp-error', this.validateWhatsAppField(this.contactDetails.whatsapp));
         }
     }
 

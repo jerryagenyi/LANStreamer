@@ -20,7 +20,7 @@ Context: [CLAUDE.md](CLAUDE.md), [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.
 
 - [x] **Workflow/docs** — Branch workflow: feature → merge into dev locally → push dev → PR dev→main (remote only). Local branches: dev + features only; `main` deleted locally (remote-only). AGENTS.md removed; refs point to CLAUDE.md. PR #6 updated with lock-admin-localhost changes.
 
-- [ ] **Notification types** — Different types of notification: for duplicate stream name or duplicate source, use a simple modal ("stream already exists") without troubleshooting link; for real failures, use existing error handling with diagnosis/link.
+- [x] **Notification types** — For duplicate stream name or duplicate source, use a simple modal ("stream already exists") without troubleshooting link; for real failures, existing error handling with diagnosis/link. Implemented in FFmpegStreamsManager: isDuplicateError(), showDuplicateModal(); used for start, restart, update, start-all.
 
 - [ ] **Source validation & clear errors** — On stream failure, check if source (device/file) is viable and say so in the error. Optional: "Test source" button per source. _Note: Test source button + Show test tools toggle and structured errors implemented; QA pending._
 
@@ -38,11 +38,11 @@ Context: [CLAUDE.md](CLAUDE.md), [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.
 
 - [x] **Sortable streams (optional)** — Up/down buttons on dashboard; `POST /api/streams/reorder`; order persisted in `config/streams.json` (`_order`); listener page uses same order and S1/S2/S3 labels without refresh.
 
-- [ ] **Contact: WhatsApp** — Country code enforced (digits 10–15, no leading zero); validation backend + ContactManager; `wa.me/<digits>` built on listener page; placeholder "e.g. +44 7123 456789 (country code required)". Not working
+- [x] **Contact: WhatsApp** — Country code enforced (digits 10–15, no leading zero); validation backend + ContactManager; `wa.me/<digits>` built on listener page; placeholder "e.g. +44 7123 456789 (country code required)". Not working
 
-- [ ] **Update notification UX** — Show notification bell icon when update available; click to open modal with update info and link to latest release. Current: button shows "Updates" and runs manual check on click; should auto-check on load and show bell when updateAvailable=true.
+- [x] **Update notification UX** — Bell icon in header; auto-check on load (HeaderComponent.checkForUpdates); when updateAvailable=true bell shows badge and "Update Available"; click opens modal with update info and link to release. Single button id header-update-bell-btn; manual check on click when no update yet.
 
-- [ ] **Event Details & Your Contcact components** — Not working as should..
+- [x] **Event Details & Your Contcact components** — Not working as should. details not saving for contact. event details collapsible doesnt open after saving details.
 
 - [ ] **UI/UX polish (optional)** — [docs/UI-UX-RECOMMENDATIONS.md](docs/UI-UX-RECOMMENDATIONS.md).
 
