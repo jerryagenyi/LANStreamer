@@ -257,21 +257,52 @@ class ContactManager {
         try {
             console.log('📞 Saving contact details...');
 
-            // Sanitize all inputs before sending to API
+            // Fetch latest server state so we don't overwrite newer event fields saved by EventManager
+            let eventFields = {
+                eventTitle: '',
+                eventSubtitle: '',
+                eventImage: '',
+                aboutDescription: '',
+                aboutSubtitle: ''
+            };
+            try {
+                const latestRes = await fetch('/api/contact-details');
+                if (latestRes.ok) {
+                    const latest = await latestRes.json();
+                    eventFields = {
+                        eventTitle: latest.eventTitle || '',
+                        eventSubtitle: latest.eventSubtitle || '',
+                        eventImage: latest.eventImage || '',
+                        aboutDescription: latest.aboutDescription || '',
+                        aboutSubtitle: latest.aboutSubtitle || ''
+                    };
+                }
+            } catch (e) {
+                console.warn('📞 Could not refresh event fields before save, using current state:', e);
+                eventFields = {
+                    eventTitle: this.contactDetails.eventTitle || '',
+                    eventSubtitle: this.contactDetails.eventSubtitle || '',
+                    eventImage: this.contactDetails.eventImage || '',
+                    aboutDescription: this.contactDetails.aboutDescription || '',
+                    aboutSubtitle: ''
+                };
+            }
+
+            // Sanitize contact inputs; merge with canonical event fields from server
             const contactData = {
-                // Contact fields
+                // Contact fields from form
                 email: this.sanitizeEmail(this.contactDetails.email),
                 phone: this.sanitizePhone(this.contactDetails.phone),
                 whatsapp: this.sanitizePhone(this.contactDetails.whatsapp),
                 showEmail: Boolean(this.contactDetails.showEmail),
                 showPhone: Boolean(this.contactDetails.showPhone),
                 showWhatsapp: Boolean(this.contactDetails.showWhatsapp),
-                // Event fields (preserve existing values)
-                eventTitle: this.contactDetails.eventTitle || '',
-                eventSubtitle: this.contactDetails.eventSubtitle || '',
-                eventImage: this.contactDetails.eventImage || '',
-                aboutDescription: this.contactDetails.aboutDescription || '',
-                aboutSubtitle: '' // For future use, keeping empty for now
+                // Event fields from latest server state (do not overwrite newer event edits)
+                eventTitle: eventFields.eventTitle,
+                eventSubtitle: eventFields.eventSubtitle,
+                eventImage: eventFields.eventImage,
+                aboutDescription: eventFields.aboutDescription,
+                aboutSubtitle: eventFields.aboutSubtitle
             };
 
             console.log('📞 Sanitized contact data:', {

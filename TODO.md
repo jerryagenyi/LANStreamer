@@ -42,7 +42,7 @@ Context: [CLAUDE.md](CLAUDE.md), [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.
 
 - [x] **Update notification UX** — Bell icon in header; auto-check on load (HeaderComponent.checkForUpdates); when updateAvailable=true bell shows badge and "Update Available"; click opens modal with update info and link to release. Single button id header-update-bell-btn; manual check on click when no update yet.
 
-- [x] **Event Details & Your Contcact components** — Not working as should. details not saving for contact. event details collapsible doesnt open after saving details.
+- [x] **Event Details & Your Contact components** — Not working as they should; details not saving for contact, and the event details collapsible doesn't open after saving details.
 
 - [ ] **UI/UX polish (optional)** — [docs/UI-UX-RECOMMENDATIONS.md](docs/UI-UX-RECOMMENDATIONS.md).
 

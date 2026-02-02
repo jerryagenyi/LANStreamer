@@ -75,18 +75,18 @@ class FFmpegStreamsManager {
                     <span class="material-symbols-rounded text-amber-500 text-2xl">info</span>
                     <h3 class="text-lg font-semibold text-white">${safeTitle}</h3>
                 </div>
-                <p id="duplicate-modal-message" class="text-gray-300 text-sm mb-6"></p>
+                <p data-duplicate-message class="text-gray-300 text-sm mb-6"></p>
                 <div class="flex justify-end">
-                    <button id="duplicate-modal-ok" class="px-4 py-2 bg-[var(--primary-color)] hover:opacity-90 text-white rounded-lg transition-colors">OK</button>
+                    <button data-duplicate-ok class="px-4 py-2 bg-[var(--primary-color)] hover:opacity-90 text-white rounded-lg transition-colors">OK</button>
                 </div>
             </div>
         `;
-        const msgEl = modal.querySelector('#duplicate-modal-message');
+        const msgEl = modal.querySelector('[data-duplicate-message]');
         if (msgEl) msgEl.textContent = message || '';
         document.body.appendChild(modal);
-        const ok = document.getElementById('duplicate-modal-ok');
+        const ok = modal.querySelector('[data-duplicate-ok]');
         const close = () => modal.remove();
-        ok.addEventListener('click', close);
+        if (ok) ok.addEventListener('click', close);
         modal.addEventListener('click', (e) => { if (e.target === modal) close(); });
     }
 
