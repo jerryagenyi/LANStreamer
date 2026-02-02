@@ -2,6 +2,23 @@
 
 Instructions for AI coding agents. Use the **expert agents** below for domain-specific work; prefer **context7** or official docs (FFmpeg, Icecast, Node) for current APIs and behaviour.
 
+**Note:** This file is optional. If you don't use agent roles (@ffmpeg-expert, etc.), rely on [CLAUDE.md](CLAUDE.md) for workflow and patterns; you can remove or ignore AGENTS.md.
+
+---
+
+## Merge feature into dev locally
+
+Before pushing, merge your feature into **dev** locally, run tests, then push dev:
+
+```bash
+git checkout dev
+git pull origin dev
+git merge feature/<your-feature-branch>
+# Fix conflicts if any, then:
+npm test
+git push origin dev
+```
+
 ---
 
 ## When to use which agent
