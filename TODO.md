@@ -14,10 +14,11 @@ Context: [CLAUDE.md](CLAUDE.md), [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.
 - [ ] **Start All button** — Start all persisted (stopped) streams at once.
 - [ ] **Lock admin to localhost** — Admin UI only on localhost; listeners use LAN IP.
 - [ ] **Listener page uses LAN IP** — Copy URLs and listener page use server LAN IP, not localhost.
-- [ ] **Error alert UX** — Show structured error from API (cause + diagnosis: title, solutions); optional collapsible Details and FFmpeg output; centred modal or large toast when stream fails; link to troubleshooting guide. _Note: Implemented (structured modal, diagnosis, stderr in Technical details, scenario tests); QA pending._
+- [ ] **Error alert UX** — Show structured error from API (cause + diagnosis: title, solutions); optional collapsible Details and FFmpeg output; centred modal or large toast when stream fails; link to troubleshooting guide. _Note: Implemented (structured modal, diagnosis, stderr in Technical details, scenario tests); QA pending._ _Edge cases to test: Start All partial failure — toast lists failed stream names (up to 5 + “and N more”) and first error reason; write test for API response `{ failed, results: [{ name, success, error }] }` and frontend message construction._
 - [ ] **Stability** — Confirm 3+ streams stay stable (see TROUBLESHOOTING.md).
 - [ ] **Mobile** — Verify listener page and Play URL on mobile.
 - [ ] **Stream labels (optional)** — e.g. prefix streams S1, S2, S3; or better naming idea.
+- [ ] **Sortable streams (optional)** — Drag-and-drop or up/down to reorder stream list on admin dashboard; persist order (e.g. in config). Works with Stream labels (S1, S2, S3): labels can follow display order so reordering updates which stream is S1, S2, etc. Also this affects frontend for listeners without refreshing the page.
 - [ ] **Contact: WhatsApp** — Enforce country code, build `wa.me/<digits>` link.
 - [ ] **UI/UX polish (optional)** — [docs/UI-UX-RECOMMENDATIONS.md](docs/UI-UX-RECOMMENDATIONS.md).
 

@@ -412,6 +412,61 @@ class FFmpegStreamsManager {
     }
 
     /**
+     * Start all stopped (or error) streams
+     */
+    async startAllStreams() {
+        try {
+            const stoppedStreams = (this.activeStreams || []).filter(stream =>
+                stream && (stream.status === 'stopped' || stream.status === 'error')
+            );
+
+            if (stoppedStreams.length === 0) {
+                this.showNotification('No stopped streams to start', 'info');
+                return;
+            }
+
+            const confirmMessage = `Start all ${stoppedStreams.length} stopped streams?`;
+            if (!confirm(confirmMessage)) {
+                return;
+            }
+
+            this.showNotification('Starting all streams...', 'info');
+
+            const response = await fetch('/api/streams/start-all', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+
+            const data = await response.json();
+
+            await this.loadStreams();
+            this.render();
+            if (data.started > 0) {
+                this.afterNextPaint(() => this.showNotification(data.message || `Started ${data.started} streams`, 'success'));
+            }
+            if (data.failed > 0 && data.results && data.results.length > 0) {
+                const failed = data.results.filter(r => !r.success);
+                const names = failed.map(r => r.name || r.id).slice(0, 5);
+                const namesText = failed.length > 5 ? `${names.join(', ')} and ${failed.length - 5} more` : names.join(', ');
+                const firstError = failed[0].error ? String(failed[0].error).slice(0, 120) : '';
+                const msg = firstError
+                    ? `${data.failed} failed: ${namesText}. First error: ${firstError}${failed[0].error && failed[0].error.length > 120 ? '…' : ''}`
+                    : `${data.failed} failed: ${namesText}. Check stream list.`;
+                this.afterNextPaint(() => this.showNotification(msg, 'error'), 150);
+            }
+        } catch (error) {
+            console.error('Failed to start all streams:', error);
+            this.showNotification(`Failed to start all streams: ${error.message}`, 'error');
+        }
+    }
+
+    /**
      * Delete a stream (remove from persistent storage)
      */
     async deleteStream(streamId) {
@@ -799,14 +854,10 @@ class FFmpegStreamsManager {
                             <span class="text-xs font-medium text-green-400">${this.getStreamCountStatus()}</span>
                         </div>
                         <div class="flex items-center gap-2">
-                            <button id="refresh-devices-btn" class="inline-flex items-center justify-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-gray-300 bg-gray-700/50 hover:bg-gray-600/50 transition-all duration-300 border border-gray-600/50" title="Refresh Audio Devices">
-                                <span class="material-symbols-rounded text-sm">refresh</span>
-                                Refresh Devices
-                            </button>
-                            ${this.getRunningStreamsCount() > 0 ? `
-                                <button id="stop-all-streams-btn" class="inline-flex items-center justify-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-red-300 bg-red-900/30 hover:bg-red-800/40 transition-all duration-300 border border-red-700/50" title="Stop All Running Streams">
-                                    <span class="material-symbols-rounded text-sm">stop</span>
-                                    Stop All
+                            ${this.getRunningStreamsCount() > 0 || this.getStoppedStreamsCount() > 0 ? `
+                                <button id="start-stop-all-btn" class="inline-flex items-center justify-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-all duration-300 border ${this.getRunningStreamsCount() > 0 ? 'text-red-300 bg-red-900/30 hover:bg-red-800/40 border-red-700/50' : 'text-green-300 bg-green-900/30 hover:bg-green-800/40 border-green-700/50'}" title="${this.getRunningStreamsCount() > 0 ? 'Stop All Running Streams' : 'Start All Stopped Streams'}">
+                                    <span class="material-symbols-rounded text-sm">${this.getRunningStreamsCount() > 0 ? 'stop' : 'play_arrow'}</span>
+                                    ${this.getRunningStreamsCount() > 0 ? 'Stop All' : 'Start All'}
                                 </button>
                             ` : ''}
                             <button id="add-stream-btn" class="inline-flex items-center justify-center gap-2 rounded-md px-4 py-2.5 text-sm font-semibold text-white bg-[var(--live-color)] hover:bg-[var(--live-color)]/80 transition-all duration-300 shadow-lg">
@@ -1125,17 +1176,14 @@ class FFmpegStreamsManager {
             });
         }
 
-        const refreshDevicesBtn = document.getElementById('refresh-devices-btn');
-        if (refreshDevicesBtn) {
-            refreshDevicesBtn.addEventListener('click', () => {
-                this.refreshAudioDevices();
-            });
-        }
-
-        const stopAllStreamsBtn = document.getElementById('stop-all-streams-btn');
-        if (stopAllStreamsBtn) {
-            stopAllStreamsBtn.addEventListener('click', () => {
-                this.stopAllStreams();
+        const startStopAllBtn = document.getElementById('start-stop-all-btn');
+        if (startStopAllBtn) {
+            startStopAllBtn.addEventListener('click', () => {
+                if (this.getRunningStreamsCount() > 0) {
+                    this.stopAllStreams();
+                } else {
+                    this.startAllStreams();
+                }
             });
         }
     }
@@ -1440,6 +1488,10 @@ class FFmpegStreamsManager {
         return this.activeStreams.filter(stream => stream.status === 'running').length;
     }
 
+    getStoppedStreamsCount() {
+        if (!this.activeStreams) return 0;
+        return this.activeStreams.filter(stream => stream.status === 'stopped' || stream.status === 'error').length;
+    }
 
     /**
      * Generate unique stream ID using crypto API for better uniqueness
