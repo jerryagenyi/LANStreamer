@@ -24,9 +24,9 @@ Context: [CLAUDE.md](CLAUDE.md), [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.
 
 - [ ] **Source validation & clear errors** — On stream failure, check if source (device/file) is viable and say so in the error. Optional: "Test source" button per source. _Note: Test source button + Show test tools toggle and structured errors implemented; QA pending._
 
-- [ ] **Timing of Modals** — Alert modals should appear only after the action is performed, not before.
+- [x] **Timing of Modals** — Alert modals should appear only after the action is performed, not before. All success modals now have 1-second delay after UI updates.
 
-- [ ] **Listener: dismiss without reload** — New-stream notification dismisses overlay without full reload (don't stop playback). Hot reload only for the affected stream.
+- [x] **Listener: dismiss without reload** — New-stream notification dismisses overlay without full reload (don't stop playback). Hot reload only for the affected stream. Implemented: `dismissNewStreamNotification()` calls `loadStreams()` to refresh without page reload.
 
 - [ ] **Error alert UX** — Show structured error from API (cause + diagnosis: title, solutions); optional collapsible Details and FFmpeg output; centred modal or large toast when stream fails; link to troubleshooting guide. _Note: Implemented (structured modal, diagnosis, stderr in Technical details, scenario tests); QA pending._ _Edge cases: Start All partial failure — toast lists failed stream names (up to 5 + "and N more") and first error reason; test API response shape and frontend message._
 
@@ -42,7 +42,7 @@ Context: [CLAUDE.md](CLAUDE.md), [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.
 
 - [ ] **UI/UX polish (optional)** — [docs/UI-UX-RECOMMENDATIONS.md](docs/UI-UX-RECOMMENDATIONS.md).
 
-- [ ] **Update notification UX** — Show notification bell icon when update available; click to open modal with update info and link to latest release. Current: button shows "Updates" and runs manual check on click; should auto-check on load and show bell when updateAvailable=true.
+- [x] **Update notification UX** — Show notification bell icon when update available; click to open modal with update info and link to latest release. Current: button shows "Updates" and runs manual check on click; should auto-check on load and show bell when updateAvailable=true. Implemented: HeaderComponent auto-checks on load, shows bell with animated red badge, modal with current/latest versions and "View Release" link.
 
 ---
 
