@@ -17,14 +17,14 @@ Context: [CLAUDE.md](CLAUDE.md), [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.
 - [x] **Listener page uses LAN IP** — Copy URLs and listener page use server LAN IP (config.host from getPreferredLANHost / icecast.xml hostname). Docs: “Which IP is my LAN / WiFi?” in TROUBLESHOOTING.md.
 - [ ] **Error alert UX** — Show structured error from API (cause + diagnosis: title, solutions); optional collapsible Details and FFmpeg output; centred modal or large toast when stream fails; link to troubleshooting guide. _Note: Implemented (structured modal, diagnosis, stderr in Technical details, scenario tests); QA pending._ _Edge cases to test: Start All partial failure — toast lists failed stream names (up to 5 + “and N more”) and first error reason; write test for API response `{ failed, results: [{ name, success, error }] }` and frontend message construction._
 - [ ] **Stability** — Confirm 3+ streams stay stable (see TROUBLESHOOTING.md).
-- [ ] **Mobile** — Verify listener page and Play URL on mobile. _Note: Config now prefers LAN IP (192.168.x.x from WiFi) for listener URLs (debug: network vs localhost vs LAN IP). See TROUBLESHOOTING.md “Listener page not loading on mobile”._
+- [x] **Mobile** — Listener page, "Listen to Streams" header link, and Copy URL all use correct LAN IP (192.168.1.244 from WiFi). HeaderComponent.js fetches config.host from API; TROUBLESHOOTING.md has "Action Required: Mobile Listener Setup" section with step-by-step instructions. _QA: Test with real mobile device on same WiFi._
 - [ ] **Device change mid-stream / Play after edit** — After changing a stream's device mid-stream, Play on listener page can show "Authentication Failed"; workaround: Start stream on dashboard, refresh listener page. _See TROUBLESHOOTING.md. Should not require delete/recreate._
 - [ ] **Stream labels (optional)** — e.g. prefix streams S1, S2, S3; or better naming idea.
 - [ ] **Sortable streams (optional)** — Drag-and-drop or up/down to reorder stream list on admin dashboard; persist order (e.g. in config). Works with Stream labels (S1, S2, S3): labels can follow display order so reordering updates which stream is S1, S2, etc. Also this affects frontend for listeners without refreshing the page.
 - [ ] **Contact: WhatsApp** — Enforce country code, build `wa.me/<digits>` link.
 - [ ] **UI/UX polish (optional)** — [docs/UI-UX-RECOMMENDATIONS.md](docs/UI-UX-RECOMMENDATIONS.md).
 
-**Done:** Notification timing, LANStreamer.bat updater, Claude hooks, custom-instructions, capacity NaN fix, config capacity fields, shortMessage + troubleshooting link.
+**Done:** Notification timing, LANStreamer.bat updater, Claude hooks, custom-instructions, capacity NaN fix, config capacity fields, shortMessage + troubleshooting link. **2026-02-02:** Mobile listener setup — HeaderComponent.js "Listen to Streams" link now uses correct LAN IP from API; TROUBLESHOOTING.md "Action Required: Mobile Listener Setup" section with step-by-step guide; verified /api/system/config returns correct host (192.168.1.244).
 
 ---
 

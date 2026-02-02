@@ -192,6 +192,50 @@ When you run `ipconfig` you see several IPv4 addresses. They look similar; use t
 - **192.168.x.x** is usually your home/router LAN; **172.16.x.x–172.31.x.x** is often virtual (e.g. WSL).
 - **Default Gateway** filled in (e.g. `192.168.1.1`) = that adapter is your route to the internet/LAN; use its IPv4 for listener URLs.
 
+---
+
+## Action Required: Mobile Listener Setup
+
+For mobile devices and other listeners on your LAN to access streams, **use your WiFi/LAN IP address** (e.g., `192.168.1.244`), **NOT** virtual adapter IPs (e.g., `172.29.16.1`).
+
+### Step 1: Find your correct LAN IP
+Run `ipconfig` (Windows) or `ifconfig` (macOS/Linux) and identify your WiFi/Ethernet adapter's IPv4 address (see "Which IP is my LAN / WiFi?" above).
+
+**Example from your ipconfig:**
+- ✅ **USE:** `192.168.1.244` (under "Wireless LAN adapter WiFi 2")
+- ❌ **IGNORE:** `172.29.16.1` (under "vEthernet (Default Switch)") - only works on same PC
+
+### Step 2: Access the listener page using your LAN IP
+**From your PC:**
+```
+http://192.168.1.244:3001/streams
+```
+
+**From mobile devices:**
+```
+http://192.168.1.244:3001/streams
+```
+
+### Step 3: "Copy URL" for external players (VLC, etc.)
+The "Copy URL" button on the listener page copies the **direct Icecast URL** for use in VLC, Audacious, or other media players:
+```
+http://192.168.1.244:8200/streamId
+```
+
+**Note:** The port is `8200` (Icecast), not `3001` (LANStreamer web UI).
+
+### Step 4: Verify `/api/system/config` returns correct host
+The API endpoint should return your LAN IP:
+```bash
+curl http://localhost:3001/api/system/config
+# Response should include: "host":"192.168.1.244"
+```
+
+### Common Mistake
+If you access the dashboard using a virtual adapter IP (e.g., `http://172.29.16.1:3001/dashboard`), the "Listen to Streams" button will inherit that wrong IP. **Always access using your WiFi/LAN IP** for mobile listeners to work.
+
+---
+
 **Common Causes:**
 
 #### 1. Subnet Mismatch (Most Common)
