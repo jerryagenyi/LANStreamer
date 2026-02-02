@@ -14,6 +14,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Development Workflow
 
+### Branch workflow (do not bypass)
+
+- **main** is the stable release branch. **Never add anything to main directly** without going through a feature branch and **dev** first.
+- **dev** is the integration branch. All changes land here (via merge or PR) before they can go to main.
+- **Feature branches** are created from **main** when starting new work. Pull from main into your feature branch if you need latest changes: `git checkout main && git pull && git checkout <feature-branch> && git merge main`.
+- **Flow:** `main` → create `feature/xyz` from main → work → merge/PR into **dev** → test on dev → merge dev into main (release).
+
 1. **Check hooks** in `.claude/hooks/` before any modification
 2. **Start server:** `npm start`
 3. **Test stream:** Login → Create stream → Verify playback on `/streams`
