@@ -499,7 +499,8 @@ class FFmpegStreamsManager {
                 // Remove from local array
                 this.activeStreams = this.activeStreams.filter(s => s.id !== streamId);
                 this.render();
-                this.afterNextPaint(() => this.showNotification('Stream deleted successfully', 'success'));
+                // Wait 1 second after row disappears before showing notification
+                setTimeout(() => this.showNotification('Stream deleted successfully', 'success'), 1000);
             } else {
                 throw new Error(result.error || 'Failed to delete stream');
             }
