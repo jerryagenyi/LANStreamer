@@ -511,6 +511,42 @@ class FFmpegStreamsManager {
     }
 
     /**
+     * Reorder streams (move up/down). Persists order; listener page uses same order and S1/S2/S3 labels.
+     */
+    async moveStreamUp(index) {
+        if (index <= 0) return;
+        await this.reorderStreams(index, index - 1);
+    }
+
+    async moveStreamDown(index) {
+        if (index >= this.activeStreams.length - 1) return;
+        await this.reorderStreams(index, index + 1);
+    }
+
+    async reorderStreams(fromIndex, toIndex) {
+        try {
+            const ids = this.activeStreams.map(s => s.id);
+            const [moved] = ids.splice(fromIndex, 1);
+            ids.splice(toIndex, 0, moved);
+            const response = await fetch('/api/streams/reorder', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ streamIds: ids })
+            });
+            if (!response.ok) {
+                const data = await response.json().catch(() => ({}));
+                throw new Error(data.message || 'Failed to reorder');
+            }
+            await this.loadStreams();
+            this.render();
+            this.showNotification('Stream order updated', 'success');
+        } catch (error) {
+            console.error('Failed to reorder streams:', error);
+            this.showNotification(`Failed to reorder: ${error.message}`, 'error');
+        }
+    }
+
+    /**
      * Edit a stream (show edit modal)
      */
     async editStream(streamId) {
@@ -936,7 +972,7 @@ class FFmpegStreamsManager {
             `;
         }
 
-        return this.activeStreams.map(stream => {
+        return this.activeStreams.map((stream, index) => {
             // Use client-side timer for uptime calculation
             const clientTimer = this.clientTimers.get(stream.id);
             let uptime = '0s';
@@ -984,15 +1020,24 @@ class FFmpegStreamsManager {
             return `
             <div class="bg-[#111111] border border-[var(--border-color)] rounded-xl p-5 hover:border-[var(--primary-color)]/30 transition-all duration-300">
                 <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                    <!-- Stream Info -->
+                    <!-- Stream Info (label S1, S2, S3 + reorder) -->
                     <div class="flex items-center gap-4 flex-1">
+                        <div class="flex flex-col items-center gap-0.5 flex-shrink-0">
+                            <button type="button" onclick="ffmpegStreamsManager.moveStreamUp(${index})" title="Move up" class="p-1 rounded hover:bg-[var(--primary-color)]/20 text-gray-400 hover:text-white disabled:opacity-30 disabled:pointer-events-none" ${index === 0 ? 'disabled' : ''}>
+                                <span class="material-symbols-rounded text-lg">arrow_upward</span>
+                            </button>
+                            <span class="text-xs font-medium text-[var(--primary-color)]">${stream.label || 'S' + (index + 1)}</span>
+                            <button type="button" onclick="ffmpegStreamsManager.moveStreamDown(${index})" title="Move down" class="p-1 rounded hover:bg-[var(--primary-color)]/20 text-gray-400 hover:text-white disabled:opacity-30 disabled:pointer-events-none" ${index === this.activeStreams.length - 1 ? 'disabled' : ''}>
+                                <span class="material-symbols-rounded text-lg">arrow_downward</span>
+                            </button>
+                        </div>
                         <div class="relative">
                             <div class="w-3 h-3 rounded-full ${stream.status === 'running' ? 'bg-[var(--live-color)] pulse-live' : stream.status === 'error' ? 'bg-red-500' : 'bg-gray-500'}"></div>
                             ${stream.status === 'running' ? '<div class="absolute inset-0 w-3 h-3 rounded-full bg-[var(--live-color)] animate-ping opacity-75"></div>' : ''}
                         </div>
                         <div class="flex-1 min-w-0">
                             <div class="flex items-start justify-between gap-2 mb-1">
-                                <h3 class="font-semibold text-white text-lg truncate flex-1">${stream.name || stream.id}</h3>
+                                <h3 class="font-semibold text-white text-lg truncate flex-1">${stream.label ? stream.label + ' — ' : ''}${stream.name || stream.id}</h3>
                             </div>
                             <div class="flex flex-wrap items-center gap-3 text-sm text-gray-400">
                                 <span class="flex items-center gap-1">

@@ -107,19 +107,49 @@ router.post('/restart', async (req, res) => {
 /**
  * @route GET /api/streams/play/:streamId
  * @description Proxy Icecast stream for same-origin playback (avoids CORS and firewall on Icecast port).
+ * When Icecast returns 4xx (e.g. 401/404 for no source), respond with 502 and a clear message so the
+ * listener page does not show "Authentication Failed" (e.g. after device change mid-stream).
  * @access Public
  */
+const PLAY_PROXY_TIMEOUT_MS = 10000;
+
 router.get('/play/:streamId', (req, res) => {
   const { streamId } = req.params;
   const port = IcecastService.getActualPort() || 8000;
   const url = `http://127.0.0.1:${port}/${encodeURIComponent(streamId)}`;
-  http.get(url, (upstream) => {
+  const clientRequest = http.get(url, { timeout: PLAY_PROXY_TIMEOUT_MS }, (upstream) => {
+    const status = upstream.statusCode || 0;
+    if (status !== 200) {
+      try {
+        upstream.resume();
+      } catch (e) {
+        logger.warn('Stream proxy: failed to consume upstream body', { streamId, error: e.message });
+      }
+      logger.warn('Stream proxy: Icecast returned non-200', { streamId, status });
+      if (!res.headersSent) {
+        res.status(502).json({
+          error: 'Stream not available',
+          message: 'Stream is not running or mount not ready. Start the stream on the dashboard, then try Play again.'
+        });
+      }
+      return;
+    }
     const contentType = upstream.headers['content-type'] || 'audio/mpeg';
     res.setHeader('Content-Type', contentType);
     upstream.pipe(res);
-  }).on('error', (err) => {
+  });
+  clientRequest.on('timeout', () => {
+    clientRequest.destroy();
+    if (!res.headersSent) {
+      logger.warn('Stream proxy: timeout', { streamId });
+      res.status(502).json({ error: 'Stream unavailable', message: 'Stream connection timed out.' });
+    }
+  });
+  clientRequest.on('error', (err) => {
     logger.warn('Stream proxy error:', { streamId, message: err.message });
-    res.status(502).json({ error: 'Stream unavailable', message: err.message });
+    if (!res.headersSent) {
+      res.status(502).json({ error: 'Stream unavailable', message: err.message });
+    }
   });
 });
 
@@ -154,6 +184,25 @@ router.post('/cleanup', (req, res) => {
   } catch (error) {
     logger.error('Error cleaning up streams:', error);
     res.status(500).json({ message: 'Error cleaning up streams', error: error.message });
+  }
+});
+
+/**
+ * @route POST /api/streams/reorder
+ * @description Set display order of streams (S1, S2, S3). Persists to config; affects dashboard and listener page.
+ * @access Public
+ */
+router.post('/reorder', async (req, res) => {
+  try {
+    const { streamIds } = req.body;
+    if (!Array.isArray(streamIds)) {
+      return res.status(400).json({ message: 'streamIds must be an array' });
+    }
+    streamingService.setStreamOrder(streamIds);
+    res.status(200).json({ message: 'Stream order updated', streamIds });
+  } catch (error) {
+    logger.error('Error reordering streams:', error);
+    res.status(500).json({ message: 'Error reordering streams', error: error.message });
   }
 });
 

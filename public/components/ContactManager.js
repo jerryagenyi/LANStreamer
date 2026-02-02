@@ -128,24 +128,14 @@ class ContactManager {
             }
         }
 
-        // Validate WhatsApp if showWhatsapp is enabled
+        // Validate WhatsApp if showWhatsapp is enabled (country code required for wa.me)
         if (this.contactDetails.showWhatsapp && this.contactDetails.whatsapp) {
-            const whatsappRegex = /^\+?[1-9]\d{6,14}$/;
-            const cleanedWhatsapp = this.contactDetails.whatsapp.replace(/[^\d+]/g, '');
-            if (!whatsappRegex.test(cleanedWhatsapp)) {
-                errors.push('Please enter a valid WhatsApp number (e.g., +1234567890 or 1234567890)');
+            const digits = this.contactDetails.whatsapp.replace(/\D/g, '');
+            if (digits.length < 10 || digits.length > 15 || digits.startsWith('0')) {
+                errors.push('WhatsApp: include country code (e.g. +44 7123 456789), no leading zero');
             }
         }
-        
-        // Validate WhatsApp if showWhatsapp is enabled
-        if (this.contactDetails.showWhatsapp && this.contactDetails.whatsapp) {
-            const phoneRegex = /^\+?[1-9]\d{6,14}$/;
-            const cleanedWhatsapp = this.contactDetails.whatsapp.replace(/[^\d+]/g, '');
-            if (!phoneRegex.test(cleanedWhatsapp)) {
-                errors.push('Please enter a valid WhatsApp number');
-            }
-        }
-        
+
         return errors;
     }
 
@@ -319,7 +309,7 @@ class ContactManager {
                         <input type="tel" 
                                id="contact-whatsapp" 
                                class="w-full px-3 py-2 bg-[#111111] border border-[var(--border-color)] rounded-lg text-sm text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)]/50 focus:border-[var(--primary-color)]" 
-                               placeholder="+1 (234) 567-8900" 
+                               placeholder="e.g. +44 7123 456789 (country code required)" 
                                value="${this.contactDetails.whatsapp}">
                     </div>
 
