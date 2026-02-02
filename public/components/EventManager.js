@@ -7,10 +7,16 @@ class EventManager {
             eventSubtitle: '',
             eventImage: '',
             // About section configuration
-            aboutDescription: ''
+            aboutDescription: '',
+            // Contact details (preserve when saving event info)
+            email: '',
+            phone: '',
+            whatsapp: '',
+            showEmail: false,
+            showPhone: false,
+            showWhatsapp: false
         };
         this.isLoading = false;
-        this.isCollapsed = true; // Collapsed by default
         this.isInitialized = false;
 
         // Rate limiting for saves
@@ -102,16 +108,23 @@ class EventManager {
             console.log('🎯 Loading event details...');
             const response = await fetch('/api/contact-details');
             const data = await response.json();
-            
+
             this.eventDetails = {
                 // Event configuration
                 eventTitle: data.eventTitle || '',
                 eventSubtitle: data.eventSubtitle || '',
                 eventImage: data.eventImage || '',
                 // About section configuration
-                aboutDescription: data.aboutDescription || ''
+                aboutDescription: data.aboutDescription || '',
+                // Contact details (preserve when saving event info)
+                email: data.email || '',
+                phone: data.phone || '',
+                whatsapp: data.whatsapp || '',
+                showEmail: Boolean(data.showEmail),
+                showPhone: Boolean(data.showPhone),
+                showWhatsapp: Boolean(data.showWhatsapp)
             };
-            
+
             console.log('🎯 Event details loaded:', {
                 hasEventTitle: !!this.eventDetails.eventTitle,
                 hasEventSubtitle: !!this.eventDetails.eventSubtitle,
@@ -169,11 +182,25 @@ class EventManager {
         try {
             console.log('🎯 Saving event settings...');
             const eventData = {
+                // Event fields
                 eventTitle: this.eventDetails.eventTitle,
                 eventSubtitle: this.eventDetails.eventSubtitle,
                 eventImage: this.eventDetails.eventImage,
-                aboutDescription: this.eventDetails.aboutDescription
+                aboutDescription: this.eventDetails.aboutDescription,
+                aboutSubtitle: '', // For future use, keeping empty for now
+                // Contact fields (preserve existing values)
+                email: this.eventDetails.email,
+                phone: this.eventDetails.phone,
+                whatsapp: this.eventDetails.whatsapp,
+                showEmail: Boolean(this.eventDetails.showEmail),
+                showPhone: Boolean(this.eventDetails.showPhone),
+                showWhatsapp: Boolean(this.eventDetails.showWhatsapp)
             };
+
+            console.log('🎯 Saving event data with contact details preserved:', {
+                hasEventTitle: !!eventData.eventTitle,
+                hasEmail: !!eventData.email
+            });
 
             const response = await fetch('/api/contact-details', {
                 method: 'POST',
@@ -188,25 +215,6 @@ class EventManager {
             if (response.ok) {
                 console.log('✅ Event settings saved successfully');
                 this.showNotification('Event settings saved successfully', 'success');
-
-                // Collapse the form after successful save to provide visual feedback
-                setTimeout(() => {
-                    const formContent = document.querySelector(`#${this.containerId} .space-y-3:not(.hidden)`);
-                    if (formContent) {
-                        // Add smooth closing animation
-                        formContent.style.transition = 'all 0.3s ease-out';
-                        formContent.style.opacity = '0';
-                        formContent.style.transform = 'translateY(-10px)';
-
-                        setTimeout(() => {
-                            this.isCollapsed = true;
-                            this.render();
-                        }, 300); // Wait for animation to complete
-                    } else {
-                        this.isCollapsed = true;
-                        this.render();
-                    }
-                }, 1000); // Small delay to let user see the success message
             } else {
                 throw new Error(data.error || 'Failed to save event settings');
             }
@@ -278,14 +286,11 @@ class EventManager {
 
         container.innerHTML = `
             <div class="bg-[var(--card-bg)] border border-[var(--border-color)] rounded-2xl p-6 shadow-2xl shadow-black/30">
-                <div class="flex items-center justify-between mb-4">
+                <div class="mb-4">
                     <h2 class="text-lg font-bold text-white">🎯 Edit Event Details</h2>
-                    <button id="toggle-event-section" class="text-gray-400 hover:text-white transition-colors">
-                        <span class="material-symbols-rounded text-xl">${this.isCollapsed ? 'expand_more' : 'expand_less'}</span>
-                    </button>
                 </div>
 
-                <div class="space-y-3 ${this.isCollapsed ? 'hidden' : ''}">
+                <div class="space-y-3">
                     <!-- Event Configuration -->
                     <div class="space-y-3">
                         <h3 class="text-base font-semibold text-white mb-3">📅 Event Details</h3>
@@ -518,18 +523,8 @@ class EventManager {
         return previews.join('');
     }
 
-    toggleCollapse() {
-        this.isCollapsed = !this.isCollapsed;
-        this.render();
-    }
-
     setupEventListeners() {
         console.log('🔧 Setting up initial event listeners...');
-
-        // Toggle collapse button
-        document.getElementById('toggle-event-section')?.addEventListener('click', () => {
-            this.toggleCollapse();
-        });
 
         // Event configuration fields
         const eventTitleInput = document.getElementById('event-title');

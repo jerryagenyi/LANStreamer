@@ -18,6 +18,7 @@ class HeaderComponent {
         await this.loadConfig(); // Load config first to get correct LAN IP
         this.render();
         this.setupEventListeners();
+        this.updateBellIcon(); // Sync bell state (default until check completes)
         this.checkForUpdates(); // Auto-check for updates on load
         this.isInitialized = true;
         console.log('✅ HeaderComponent initialization complete');
@@ -60,26 +61,27 @@ class HeaderComponent {
         if (!bellBtn) return;
 
         if (this.updateAvailable) {
-            // Show bell with notification badge
+            // Show update icon with notification badge
             bellBtn.innerHTML = `
                 <span class="material-symbols-rounded text-sm relative">
-                    notifications
+                    system_update
                     <span class="absolute -top-1 -right-1 flex h-2 w-2">
                         <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
                         <span class="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
                     </span>
                 </span>
-                <span class="hidden sm:inline">Update Available</span>
             `;
-            bellBtn.classList.add('bg-green-900/30', 'border-green-600/50');
-            bellBtn.classList.remove('bg-gray-800/50', 'border-gray-600/30');
+            bellBtn.classList.add('bg-green-900/30', 'border-green-600/50', 'text-green-400');
+            bellBtn.classList.remove('bg-gray-800/50', 'border-gray-600/30', 'text-gray-300');
             bellBtn.title = `Update available: ${this.updateInfo?.latest || ''}`;
         } else {
-            // Show bell without badge
+            // Show update icon without badge
             bellBtn.innerHTML = `
-                <span class="material-symbols-rounded text-sm">notifications</span>
-                <span class="hidden sm:inline">Updates</span>
+                <span class="material-symbols-rounded text-sm">system_update</span>
             `;
+            bellBtn.classList.remove('bg-green-900/30', 'border-green-600/50', 'text-green-400');
+            bellBtn.classList.add('bg-gray-800/50', 'border-gray-600/30', 'text-gray-300');
+            bellBtn.title = 'Check for Updates';
         }
     }
 
@@ -127,7 +129,10 @@ class HeaderComponent {
         const viewReleaseBtn = document.getElementById('update-view-release');
         if (viewReleaseBtn && this.updateInfo.releaseUrl) {
             viewReleaseBtn.addEventListener('click', () => {
-                window.open(this.updateInfo.releaseUrl, '_blank');
+                const url = this.updateInfo.releaseUrl;
+                if (url && (url.startsWith('https://github.com') || url.startsWith('https://api.github.com'))) {
+                    window.open(url, '_blank');
+                }
             });
         }
 
@@ -171,14 +176,12 @@ class HeaderComponent {
 
                 <!-- Navigation and Actions -->
                 <div class="flex items-center gap-3">
-                    <!-- Update Bell Button -->
+                    <!-- Update Icon: shows badge when update available; click opens modal or runs check -->
                     <button id="header-update-bell-btn"
-                    <!-- Update Check Button -->
-                    <button id="header-check-updates-btn"
-                            class="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-300 hover:text-white bg-gray-800/50 hover:bg-gray-700/50 border border-gray-600/30 hover:border-gray-500/50 rounded-lg transition-all duration-300"
-                            title="Check for Updates">
-                        <span class="material-symbols-rounded text-sm">notifications</span>
-                        <span class="hidden sm:inline">Updates</span>
+                            class="inline-flex items-center justify-center w-10 h-10 text-gray-300 hover:text-white bg-gray-800/50 hover:bg-gray-700/50 border border-gray-600/30 hover:border-gray-500/50 rounded-lg transition-all duration-300"
+                            title="Check for Updates"
+                            aria-label="Check for Updates">
+                        <span class="material-symbols-rounded text-sm">system_update</span>
                     </button>
 
                     <!-- Admin Navigation Links -->
@@ -220,10 +223,8 @@ class HeaderComponent {
                     console.log('🔄 Header update check requested');
 
                     // Show loading state
-                    const originalContent = bellBtn.innerHTML;
                     bellBtn.innerHTML = `
                         <span class="material-symbols-rounded text-sm animate-spin">refresh</span>
-                        <span class="hidden sm:inline">Checking...</span>
                     `;
                     bellBtn.disabled = true;
 
