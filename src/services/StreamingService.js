@@ -1399,7 +1399,7 @@ class StreamingService {
    */
   setStreamOrder(streamIds) {
     const valid = streamIds.filter(id => this.activeStreams[id])
-    this.streamOrder = valid.length ? valid : Object.keys(this.activeStreams)
+    this.streamOrder = valid.length ? [...new Set(valid)] : Object.keys(this.activeStreams)
     this.savePersistentStreams()
     logger.info('Stream order updated', { order: this.streamOrder })
   }

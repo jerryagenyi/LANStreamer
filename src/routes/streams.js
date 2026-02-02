@@ -111,27 +111,45 @@ router.post('/restart', async (req, res) => {
  * listener page does not show "Authentication Failed" (e.g. after device change mid-stream).
  * @access Public
  */
+const PLAY_PROXY_TIMEOUT_MS = 10000;
+
 router.get('/play/:streamId', (req, res) => {
   const { streamId } = req.params;
   const port = IcecastService.getActualPort() || 8000;
   const url = `http://127.0.0.1:${port}/${encodeURIComponent(streamId)}`;
-  http.get(url, (upstream) => {
+  const clientRequest = http.get(url, { timeout: PLAY_PROXY_TIMEOUT_MS }, (upstream) => {
     const status = upstream.statusCode || 0;
     if (status !== 200) {
-      upstream.resume(); // consume body so the connection can close
+      try {
+        upstream.resume();
+      } catch (e) {
+        logger.warn('Stream proxy: failed to consume upstream body', { streamId, error: e.message });
+      }
       logger.warn('Stream proxy: Icecast returned non-200', { streamId, status });
-      res.status(502).json({
-        error: 'Stream not available',
-        message: 'Stream is not running or mount not ready. Start the stream on the dashboard, then try Play again.'
-      });
+      if (!res.headersSent) {
+        res.status(502).json({
+          error: 'Stream not available',
+          message: 'Stream is not running or mount not ready. Start the stream on the dashboard, then try Play again.'
+        });
+      }
       return;
     }
     const contentType = upstream.headers['content-type'] || 'audio/mpeg';
     res.setHeader('Content-Type', contentType);
     upstream.pipe(res);
-  }).on('error', (err) => {
+  });
+  clientRequest.on('timeout', () => {
+    clientRequest.destroy();
+    if (!res.headersSent) {
+      logger.warn('Stream proxy: timeout', { streamId });
+      res.status(502).json({ error: 'Stream unavailable', message: 'Stream connection timed out.' });
+    }
+  });
+  clientRequest.on('error', (err) => {
     logger.warn('Stream proxy error:', { streamId, message: err.message });
-    res.status(502).json({ error: 'Stream unavailable', message: err.message });
+    if (!res.headersSent) {
+      res.status(502).json({ error: 'Stream unavailable', message: err.message });
+    }
   });
 });
 
