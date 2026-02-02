@@ -4,7 +4,7 @@ Common issues and solutions for LANStreamer.
 
 ## Table of Contents
 - [Icecast Connection Issues](#icecast-connection-issues) ⭐ **Start Here**
-- [Network Connectivity Issues](#network-connectivity-issues)
+- [Network Connectivity Issues](#network-connectivity-issues) (includes [Which IP is my LAN / WiFi?](#which-ip-is-my-lan--wifi))
 - [Stream Playback Issues](#stream-playback-issues)
 - [Firewall Issues](#firewall-issues)
 - [Audio Device Issues](#audio-device-issues)
@@ -168,6 +168,74 @@ The app logs and exposes capacity so you can see which limit is hit:
 - Works on host PC (`localhost:3001`) but not on other devices
 - Mobile devices can't access the stream page
 
+**Listener page not loading on mobile — quick checks:**
+1. **Use the server's LAN IP, not localhost.** On the phone, open `http://YOUR-PC-IP:3001/streams` (e.g. `http://192.168.1.244:3001/streams`). If you use `localhost` or `127.0.0.1`, the phone will try to reach itself, not the server.
+2. **Same network.** Phone and server PC must be on the same LAN (same Wi‑Fi or phone tethered to same subnet).
+3. **Firewall.** Windows may block port 3001 from the LAN. See [Firewall Issues](#firewall-issues) — allow Node/LANStreamer for private networks.
+4. **Server binding.** By default the server binds to `0.0.0.0` (all interfaces). If you set `HOST=127.0.0.1` in `.env`, the server is localhost-only and won't accept LAN connections; remove or set `HOST=0.0.0.0` for mobile access.
+
+**Listener page shows wrong IP (e.g. 172.29.16.1 or 192.168.1.10 instead of your WiFi 192.168.1.244):**  
+The app uses the host from `icecast.xml` (`<hostname>`) or your Wi‑Fi adapter for listener URLs. If you still see a wrong IP, set `<hostname>YOUR-LAN-IP</hostname>` in `icecast.xml` (see [Which IP is my LAN / WiFi?](#which-ip-is-my-lan--wifi) below) and restart Icecast. You can also open the listener page directly: `http://YOUR-LAN-IP:3001/streams`.
+
+#### Which IP is my LAN / WiFi?
+
+When you run `ipconfig` you see several IPv4 addresses. They look similar; use the **adapter name** (the line *above* each block) to pick the right one.
+
+| What you want | What to look for in `ipconfig` |
+|---------------|---------------------------------|
+| **Your real LAN / WiFi IP** (for listeners and `icecast.xml`) | **"Wireless LAN adapter WiFi …"** or **"Ethernet adapter Ethernet"** — the IPv4 under that heading. Often `192.168.x.x`. Usually has a **Default Gateway** (e.g. `192.168.1.1`). |
+| **Ignore (virtual)** | **"vEthernet (Default Switch)"**, **"vEthernet (WSL …)"**, **"Ethernet adapter vEthernet …"** — these are Hyper-V/WSL. Their IPs (e.g. `172.29.16.1`, `172.20.144.1`) only work on the same PC, not on other devices. Often **no Default Gateway**. |
+| **Ignore (VPN)** | **"Tailscale"**, **"TAP-Windows"** — VPN adapters. Use your physical WiFi/Ethernet IP for LAN listeners. |
+
+**Quick rules:**
+- **Adapter name** matters: "Wireless LAN adapter" / "Ethernet adapter Ethernet" = real network. "vEthernet" = virtual (WSL/Hyper-V).
+- **192.168.x.x** is usually your home/router LAN; **172.16.x.x–172.31.x.x** is often virtual (e.g. WSL).
+- **Default Gateway** filled in (e.g. `192.168.1.1`) = that adapter is your route to the internet/LAN; use its IPv4 for listener URLs.
+
+---
+
+## Action Required: Mobile Listener Setup
+
+For mobile devices and other listeners on your LAN to access streams, **use your WiFi/LAN IP address** (e.g., `192.168.1.244`), **NOT** virtual adapter IPs (e.g., `172.29.16.1`).
+
+### Step 1: Find your correct LAN IP
+Run `ipconfig` (Windows) or `ifconfig` (macOS/Linux) and identify your WiFi/Ethernet adapter's IPv4 address (see "Which IP is my LAN / WiFi?" above).
+
+**Example from your ipconfig:**
+- ✅ **USE:** `192.168.1.244` (under "Wireless LAN adapter WiFi 2")
+- ❌ **IGNORE:** `172.29.16.1` (under "vEthernet (Default Switch)") - only works on same PC
+
+### Step 2: Access the listener page using your LAN IP
+**From your PC:**
+```
+http://192.168.1.244:3001/streams
+```
+
+**From mobile devices:**
+```
+http://192.168.1.244:3001/streams
+```
+
+### Step 3: "Copy URL" for external players (VLC, etc.)
+The "Copy URL" button on the listener page copies the **direct Icecast URL** for use in VLC, Audacious, or other media players:
+```
+http://192.168.1.244:8200/streamId
+```
+
+**Note:** The port is `8200` (Icecast), not `3001` (LANStreamer web UI).
+
+### Step 4: Verify `/api/system/config` returns correct host
+The API endpoint should return your LAN IP:
+```bash
+curl http://localhost:3001/api/system/config
+# Response should include: "host":"192.168.1.244"
+```
+
+### Common Mistake
+If you access the dashboard using a virtual adapter IP (e.g., `http://172.29.16.1:3001/dashboard`), the "Listen to Streams" button will inherit that wrong IP. **Always access using your WiFi/LAN IP** for mobile listeners to work.
+
+---
+
 **Common Causes:**
 
 #### 1. Subnet Mismatch (Most Common)
@@ -216,6 +284,20 @@ The app logs and exposes capacity so you can see which limit is hit:
    - Adapter Properties → IPv4 → Advanced → remove the secondary IP; or
    - Switch IPv4 to DHCP if a leftover static `.8` address exists.
 4. Share only the subnet-matching URL (e.g., `http://192.168.100.x:3001/streams`).
+
+#### 1c. "Authentication Failed" after changing device mid-stream
+
+**Symptoms:** You edit a stream (change the audio device) while it was playing, then click Play on the listener page and see "Authentication Failed". Play only works again after removing and recreating the stream.
+
+**Likely cause:** After an edit (device change), the stream is stopped and must be started again. The listener page may still be pointing at the old mount or the stream may be in an error state so the proxy or Icecast returns an error that appears as "Authentication Failed".
+
+**What to do:**
+1. On the **admin dashboard**, open the stream and click **Start** (or use Start All) so the stream is running again with the new device.
+2. On the **listener page**, refresh the stream list (reload the page or wait for the next poll), then click Play again.
+3. If it still fails, check that the stream shows "LIVE" on the dashboard and that Icecast is running. If the stream is in "ERROR" state, fix the device (e.g. select a working source) and click Start again.
+4. Only remove and recreate the stream if the mount is stuck (e.g. Icecast still thinks the old source is connected). Restarting Icecast from the dashboard can clear stuck mounts.
+
+**Note:** This behaviour is under review; the app should not require deleting and recreating the stream when only the device is changed.
 
 #### 2. Windows Firewall Blocking Connections
 

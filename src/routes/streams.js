@@ -64,6 +64,21 @@ router.post('/stop-all', async (req, res) => {
 });
 
 /**
+ * @route POST /api/streams/start-all
+ * @description Start all persisted (stopped or error) streams.
+ * @access Public
+ */
+router.post('/start-all', async (req, res) => {
+  try {
+    const result = await streamingService.startAllStoppedStreams();
+    res.status(200).json(result);
+  } catch (error) {
+    logger.error('Error starting all streams:', error);
+    res.status(500).json({ message: 'Error starting all streams', error: error.message });
+  }
+});
+
+/**
  * @route POST /api/streams/restart
  * @description Restart a stopped stream.
  * @access Public

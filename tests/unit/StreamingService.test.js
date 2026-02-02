@@ -52,4 +52,33 @@ describe('StreamingService', () => {
       expect(icecastUrl).toMatch(/@localhost:8200\/id/);
     });
   });
+
+  describe('streamNameExists', () => {
+    it('returns false when no stream has the name', () => {
+      const prev = streamingService.activeStreams;
+      streamingService.activeStreams = { id1: { id: 'id1', name: 'Stream A' } };
+      expect(streamingService.streamNameExists('Other Name', null)).toBe(false);
+      streamingService.activeStreams = prev;
+    });
+
+    it('returns true when another stream has the same name (case-insensitive)', () => {
+      const prev = streamingService.activeStreams;
+      streamingService.activeStreams = {
+        id1: { id: 'id1', name: 'Stream A' },
+        id2: { id: 'id2', name: 'Stream B' }
+      };
+      expect(streamingService.streamNameExists('Stream B', null)).toBe(true);
+      expect(streamingService.streamNameExists('stream b', null)).toBe(true);
+      streamingService.activeStreams = prev;
+    });
+
+    it('returns false when only the excluded stream has the name', () => {
+      const prev = streamingService.activeStreams;
+      streamingService.activeStreams = {
+        id1: { id: 'id1', name: 'Stream A' }
+      };
+      expect(streamingService.streamNameExists('Stream A', 'id1')).toBe(false);
+      streamingService.activeStreams = prev;
+    });
+  });
 });
