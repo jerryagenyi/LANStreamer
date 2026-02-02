@@ -12,6 +12,31 @@ import config from '../config/index.js'
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
 
+/**
+ * Attach diagnosis to an error for structured API response and logging.
+ * Sets cause, diagnosis (category, title, description, solutions), shortMessage, capacity when mount_point, and stderrSnippet.
+ * @param {Error} err - Error instance
+ * @param {Object} diagnosis - Result from errorDiagnostics.diagnose()
+ * @param {Object} context - Optional { capacity, stderrSnippet } for mount_point/technical details
+ */
+function attachDiagnosis(err, diagnosis, context = {}) {
+  err.cause = diagnosis.category || 'unknown'
+  err.shortMessage = diagnosis.title
+  err.diagnosis = {
+    category: diagnosis.category,
+    title: diagnosis.title,
+    description: diagnosis.description,
+    solutions: diagnosis.solutions || []
+  }
+  if (diagnosis.category === 'mount_point' && context.capacity) {
+    err.capacity = context.capacity
+  }
+  // Include stderr snippet for technical debugging (max 1000 chars for UI)
+  if (context.stderrSnippet) {
+    err.stderrSnippet = context.stderrSnippet.slice(0, 1000)
+  }
+}
+
 class StreamingService {
   constructor() {
     this.activeStreams = {}
@@ -344,13 +369,23 @@ class StreamingService {
               
               const errorMsg = `FFmpeg crashed immediately after startup (exit code: ${exitCode}).\n\n${diagnosis.title}\n\n${diagnosis.description}\n\n🔧 Quick fixes:\n${diagnosis.solutions.join('\n')}\n\nFFmpeg Error Output:\n${errorOutput}`;
               const err = new Error(errorMsg);
-              err.shortMessage = diagnosis.title;
+              let context = { stderrSnippet: stderrData || '' };
               if (diagnosis.category === 'mount_point') {
-                const rawLimit = IcecastService.getSourceLimit()
-                const sourceLimit = (typeof rawLimit === 'number' && !Number.isNaN(rawLimit)) ? rawLimit : 2
-                const activeCount = Object.values(this.activeStreams).filter(s => s.status === 'running').length
-                err.capacity = { sourceLimit, activeCount, remaining: Math.max(0, sourceLimit - activeCount), configPath: IcecastService.paths?.config }
+                const rawLimit = IcecastService.getSourceLimit();
+                const sourceLimit = (typeof rawLimit === 'number' && !Number.isNaN(rawLimit)) ? rawLimit : 2;
+                const activeCount = Object.values(this.activeStreams).filter(s => s.status === 'running').length;
+                context.capacity = { sourceLimit, activeCount, remaining: Math.max(0, sourceLimit - activeCount), configPath: IcecastService.paths?.config };
               }
+              attachDiagnosis(err, diagnosis, context);
+              logger.info('Stream start failed (grace period)', {
+                streamId,
+                deviceId: streamConfig.deviceId,
+                exitCode,
+                cause: err.cause,
+                category: diagnosis.category,
+                message: err.shortMessage,
+                stderrSnippet: (stderrData || '').slice(0, 500)
+              });
               hasResolved = true
               reject(err)
             }
@@ -396,13 +431,23 @@ class StreamingService {
           // Format the error message with diagnosis
           const errorMsg = `FFmpeg crashed during startup (exit code: ${code}).\n\n${diagnosis.title}\n\n${diagnosis.description}\n\n🔧 Quick fixes:\n${diagnosis.solutions.join('\n')}\n\nFFmpeg Error Output:\n${errorOutput}`;
           const err = new Error(errorMsg);
-          err.shortMessage = diagnosis.title;
+          let context = { stderrSnippet: stderrData || '' };
           if (diagnosis.category === 'mount_point') {
-            const rawLimit = IcecastService.getSourceLimit()
-            const sourceLimit = (typeof rawLimit === 'number' && !Number.isNaN(rawLimit)) ? rawLimit : 2
-            const activeCount = Object.values(this.activeStreams).filter(s => s.status === 'running').length
-            err.capacity = { sourceLimit, activeCount, remaining: Math.max(0, sourceLimit - activeCount), configPath: IcecastService.paths?.config }
+            const rawLimit = IcecastService.getSourceLimit();
+            const sourceLimit = (typeof rawLimit === 'number' && !Number.isNaN(rawLimit)) ? rawLimit : 2;
+            const activeCount = Object.values(this.activeStreams).filter(s => s.status === 'running').length;
+            context.capacity = { sourceLimit, activeCount, remaining: Math.max(0, sourceLimit - activeCount), configPath: IcecastService.paths?.config };
           }
+          attachDiagnosis(err, diagnosis, context);
+          logger.info('Stream start failed (exit handler)', {
+            streamId,
+            deviceId: streamConfig.deviceId,
+            exitCode: code,
+            cause: err.cause,
+            category: diagnosis.category,
+            message: err.shortMessage,
+            stderrSnippet: (stderrData || '').slice(0, 500)
+          });
           hasResolved = true
           reject(err)
         }

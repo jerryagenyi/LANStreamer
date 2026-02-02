@@ -55,5 +55,15 @@ describe('errorDiagnostics', () => {
       expect(result).toBeDefined();
       expect(result.category).toBe('connection');
     });
+
+    it('returns device_not_found when stderr contains "could not find audio device" and context has deviceId', () => {
+      const stderr = 'Could not find audio device with name [OBS Virtual Camera (Audio)]';
+      const result = errorDiagnostics.diagnose(stderr, 1, { deviceId: 'OBS Virtual Camera (Audio)', deviceName: 'OBS Virtual Camera (Audio)' });
+      expect(result).toBeDefined();
+      expect(result.category).toBe('device_not_found');
+      expect(result.title).toBeDefined();
+      expect(result.solutions).toBeDefined();
+      expect(result.solutions.length).toBeGreaterThan(0);
+    });
   });
 });

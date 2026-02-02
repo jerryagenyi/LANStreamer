@@ -69,19 +69,16 @@ class ErrorDiagnostics {
         diagnose: (stderr, exitCode, context) => this.diagnosePortConflict(stderr, exitCode, context)
       },
 
-      // Authentication Errors
+      // Device In Use Errors (must come before authentication to catch "exclusive access denied")
       {
-        category: 'authentication',
+        category: 'device_busy',
         patterns: [
-          /401 unauthorized/i,
-          /authentication failed/i,
-          /invalid password/i,
-          /access denied/i,
-          /permission denied/i,
-          /wrong password/i,
-          /source client not accepted/i,
+          /device or resource busy/i,
+          /device is being used/i,
+          /exclusive access/i,
+          /cannot open.*device/i,
         ],
-        diagnose: (stderr, exitCode, context) => this.diagnoseAuthError(stderr, exitCode, context)
+        diagnose: (stderr, exitCode, context) => this.diagnoseDeviceBusy(stderr, exitCode, context)
       },
 
       // Mount Point Errors
@@ -97,6 +94,32 @@ class ErrorDiagnostics {
         diagnose: (stderr, exitCode, context) => this.diagnoseMountPointError(stderr, exitCode, context)
       },
 
+      // Authentication Errors (specific to Icecast password/auth)
+      {
+        category: 'authentication',
+        patterns: [
+          /401 unauthorized/i,
+          /authentication failed/i,
+          /invalid password/i,
+          /permission denied(?!.*exclusive)/i,
+          /wrong password/i,
+          /source client not accepted/i,
+        ],
+        diagnose: (stderr, exitCode, context) => this.diagnoseAuthError(stderr, exitCode, context)
+      },
+
+      // Virtual Audio Device Errors (must come before generic device_not_found)
+      {
+        category: 'virtual_audio',
+        patterns: [
+          /vb-audio/i,
+          /virtual cable/i,
+          /voicemeeter/i,
+          /cable output/i,
+        ],
+        diagnose: (stderr, exitCode, context) => this.diagnoseVirtualAudioError(stderr, exitCode, context)
+      },
+
       // Audio Device Errors
       {
         category: 'device_not_found',
@@ -108,31 +131,6 @@ class ErrorDiagnostics {
           /immediate exit requested/i,
         ],
         diagnose: (stderr, exitCode, context) => this.diagnoseDeviceNotFound(stderr, exitCode, context)
-      },
-
-      // Device In Use Errors
-      {
-        category: 'device_busy',
-        patterns: [
-          /device or resource busy/i,
-          /device is being used/i,
-          /exclusive access/i,
-          /cannot open.*device/i,
-          /access to.*denied/i,
-        ],
-        diagnose: (stderr, exitCode, context) => this.diagnoseDeviceBusy(stderr, exitCode, context)
-      },
-
-      // Virtual Audio Device Errors
-      {
-        category: 'virtual_audio',
-        patterns: [
-          /vb-audio/i,
-          /virtual cable/i,
-          /voicemeeter/i,
-          /cable output/i,
-        ],
-        diagnose: (stderr, exitCode, context) => this.diagnoseVirtualAudioError(stderr, exitCode, context)
       },
 
       // DirectShow Errors (Windows)

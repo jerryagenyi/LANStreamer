@@ -75,12 +75,14 @@ router.post('/audio-devices/test', async (req, res) => {
       return res.status(400).json({ message: 'Device ID is required' });
     }
 
-    const isAccessible = await audioDeviceService.testDevice(deviceId);
+    const result = await audioDeviceService.testDevice(deviceId);
 
     res.json({
       success: true,
       deviceId,
-      accessible: isAccessible
+      accessible: result.ok,
+      reason: result.reason,
+      deviceName: result.deviceName
     });
   } catch (error) {
     res.status(500).json({ message: 'Error testing audio device', error: error.message });

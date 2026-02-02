@@ -3,8 +3,29 @@ import http from 'http';
 import streamingService from '../services/StreamingService.js';
 import IcecastService from '../services/IcecastService.js';
 import logger from '../utils/logger.js';
+import { ErrorCodes } from '../utils/errors.js';
 
 const router = express.Router();
+
+/**
+ * Build structured stream error payload for start/restart failures.
+ * @param {Error} error - Caught error (may have cause, diagnosis, capacity, shortMessage, stderrSnippet)
+ * @param {string} message - Generic message e.g. "Error starting stream"
+ * @param {string} code - ErrorCodes.STREAM_START_FAILED or STREAM_RESTART_FAILED
+ * @returns {Object} Payload for res.status(500).json()
+ */
+function streamErrorPayload(error, message, code) {
+  const payload = {
+    message,
+    error: error.shortMessage || error.message,
+    code
+  };
+  if (error.cause) payload.cause = error.cause;
+  if (error.diagnosis) payload.diagnosis = error.diagnosis;
+  if (error.capacity) payload.capacity = error.capacity;
+  if (error.stderrSnippet) payload.stderrSnippet = error.stderrSnippet;
+  return payload;
+}
 
 /**
  * @route POST /api/streams/start
@@ -26,9 +47,8 @@ router.post('/start', async (req, res) => {
     });
   } catch (error) {
     logger.error('Error starting stream:', { error: error.message, stack: error.stack });
-    const payload = { message: 'Error starting stream', error: error.shortMessage || error.message };
-    if (error.capacity) payload.capacity = error.capacity;
-    res.status(500).json(payload);
+    logger.info('Stream start failed', { cause: error.cause, streamId: req.body?.id || req.body?.streamId });
+    res.status(500).json(streamErrorPayload(error, 'Error starting stream', ErrorCodes.STREAM_START_FAILED));
   }
 });
 
@@ -83,9 +103,8 @@ router.post('/restart', async (req, res) => {
     });
   } catch (error) {
     logger.error('Error restarting stream:', { error: error.message, stack: error.stack });
-    const payload = { message: 'Error restarting stream', error: error.shortMessage || error.message };
-    if (error.capacity) payload.capacity = error.capacity;
-    res.status(500).json(payload);
+    logger.info('Stream restart failed', { cause: error.cause, streamId: id });
+    res.status(500).json(streamErrorPayload(error, 'Error restarting stream', ErrorCodes.STREAM_RESTART_FAILED));
   }
 });
 
