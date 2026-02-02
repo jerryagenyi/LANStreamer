@@ -4,45 +4,22 @@ Context: [CLAUDE.md](CLAUDE.md), [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.
 
 ---
 
-## To do (priority order, numbered)
+## To do (priority order)
 
-1. [ ] **Notification types** — Different types of notification: for duplicate stream name or duplicate source, use a simple modal ("stream already exists") without troubleshooting link; for real failures, use existing error handling with diagnosis/link.
+- [x] **Verify 5+ streams** — Confirmed 6/6 live (VB-Cable A/B, mics). Root cause of “5th fails” was bad device choice, not Icecast limit).
+- [ ] **Listener: dismiss without reload** — New-stream notification dismisses overlay without full reload (don’t stop playback).
+- [ ] **Source validation & clear errors** — On stream failure, check if source (device/file) is viable and say so in the error. Optional: “Test source” button per source.
+- [ ] **Lock admin to localhost** — Admin UI only on localhost; listeners use LAN IP.
+- [ ] **Listener page uses LAN IP** — Copy URLs and listener page use server LAN IP, not localhost.
+- [ ] **Unique stream names** — No duplicate names for live streams.
+- [ ] **Error alert UX** — Collapsible FFmpeg output, clearer quick fixes, alert bigger/centred.
+- [ ] **Stability** — Confirm 3+ streams stay stable (see TROUBLESHOOTING.md).
+- [ ] **Mobile** — Verify listener page and Play URL on mobile.
+- [ ] **Stream labels (optional)** — e.g. prefix streams S1, S2, S3; or better naming idea.
+- [ ] **Contact: WhatsApp** — Enforce country code, build `wa.me/<digits>` link.
+- [ ] **UI/UX polish (optional)** — [docs/UI-UX-RECOMMENDATIONS.md](docs/UI-UX-RECOMMENDATIONS.md).
 
-2. [ ] **Source validation & clear errors** — On stream failure, check if source (device/file) is viable and say so in the error. Optional: "Test source" button per source. _Note: Test source button + Show test tools toggle and structured errors implemented; QA pending._
-
-3. [ ] **Timing of Modals** — Alert modals should appear only after the action is performed, not before.
-
-4. [ ] **Listener: dismiss without reload** — New-stream notification dismisses overlay without full reload (don't stop playback). Hot reload only for the affected stream.
-
-5. [ ] **Error alert UX** — Show structured error from API (cause + diagnosis: title, solutions); optional collapsible Details and FFmpeg output; centred modal or large toast when stream fails; link to troubleshooting guide. _Note: Implemented (structured modal, diagnosis, stderr in Technical details, scenario tests); QA pending._ _Edge cases: Start All partial failure — toast lists failed stream names (up to 5 + "and N more") and first error reason; test API response shape and frontend message._
-
-6. [ ] **Stability** — Confirm 3+ streams stay stable (see TROUBLESHOOTING.md).
-
-7. [ ] **Device change mid-stream / Play after edit** — After changing a stream's device mid-stream, Play on listener page can show "Authentication Failed"; workaround: Start stream on dashboard, refresh listener page. _See TROUBLESHOOTING.md. Should not require delete/recreate._
-
-8. [ ] **Stream labels (optional)** — e.g. prefix streams S1, S2, S3; or better naming idea.
-
-9. [ ] **Sortable streams (optional)** — Drag-and-drop or up/down to reorder stream list on admin dashboard; persist order (e.g. in config). Works with Stream labels; affects frontend for listeners without refresh.
-
-10. [ ] **Contact: WhatsApp** — Enforce country code, build `wa.me/<digits>` link.
-
-11. [ ] **UI/UX polish (optional)** — [docs/UI-UX-RECOMMENDATIONS.md](docs/UI-UX-RECOMMENDATIONS.md).
-
-12. [ ] **Update notification UX** — Show notification bell icon when update available; click to open modal with update info and link to latest release. Current: button shows "Updates" and runs manual check on click; should auto-check on load and show bell when updateAvailable=true.
-
----
-
-## Done
-
-1. **Lock admin to localhost** — Middleware blocks admin pages and admin APIs from non-localhost; listener page and listener APIs allowed from LAN; 403 HTML/JSON; TROUBLESHOOTING.md "Admin only on localhost".
-2. **Verify 5+ streams** — Confirmed 6/6 live; root cause of "5th fails" was bad device choice, not Icecast limit.
-3. **Unique stream names** — No duplicate display names (create/update); case-insensitive, trimmed.
-4. **Start/Stop All button** — Start all stopped/error streams; Stop all running; API `POST /api/streams/start-all`; partial-failure toast with names + first error; 150ms delay between success/error toasts.
-5. **Listener page uses LAN IP** — Copy URLs and listener page use `config.host` from getPreferredLANHost / icecast.xml. Docs: "Which IP is my LAN / WiFi?" in TROUBLESHOOTING.md.
-6. **Mobile** — Listener page, "Listen to Streams" header link, and Copy URL use correct LAN IP. HeaderComponent fetches config.host; TROUBLESHOOTING.md "Action Required: Mobile Listener Setup". _QA: Test with real device on same WiFi._
-7. **Workflow/docs** — Branch workflow: feature → merge into dev locally → push dev → PR dev→main (remote only). Local branches: dev + features only; `main` deleted locally (remote-only). AGENTS.md removed; refs point to CLAUDE.md. PR #6 updated with lock-admin-localhost changes.
-
-**Earlier:** Notification timing, LANStreamer.bat updater, Claude hooks, custom-instructions, capacity NaN fix, config capacity fields, shortMessage + troubleshooting link.
+**Done:** Notification timing, LANStreamer.bat updater, Claude hooks, custom-instructions, capacity NaN fix, config capacity fields, shortMessage + troubleshooting link.
 
 ---
 
