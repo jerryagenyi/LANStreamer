@@ -274,7 +274,7 @@ class FFmpegStreamsManager {
                 // Generate stream URL and show success message after UI has painted
                 const displayHost = this.serverHost || window.location.hostname;
                 const streamUrl = `http://${displayHost}:${this.icecastPort}/${streamConfig.id || 'stream'}`;
-                setTimeout(() => this.showNotification(`Stream started successfully! Stream is now available in the list below.`, 'success'), 1000);
+                this.afterNextPaint(() => this.showNotification(`Stream started successfully! Stream is now available in the list below.`, 'success'));
             } else {
                 throw new Error(this.formatStreamError(data, 'Failed to start stream'));
             }

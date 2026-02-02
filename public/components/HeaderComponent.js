@@ -173,6 +173,8 @@ class HeaderComponent {
                 <div class="flex items-center gap-3">
                     <!-- Update Bell Button -->
                     <button id="header-update-bell-btn"
+                    <!-- Update Check Button -->
+                    <button id="header-check-updates-btn"
                             class="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-300 hover:text-white bg-gray-800/50 hover:bg-gray-700/50 border border-gray-600/30 hover:border-gray-500/50 rounded-lg transition-all duration-300"
                             title="Check for Updates">
                         <span class="material-symbols-rounded text-sm">notifications</span>
