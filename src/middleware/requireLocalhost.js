@@ -1,0 +1,63 @@
+/**
+ * Lock admin to localhost: only allow admin UI and admin APIs when the request
+ * comes from localhost. Listener page (/streams) and listener APIs remain
+ * allowed from LAN for mobile and other devices.
+ */
+
+const LISTENER_GET_PATHS = [
+  '/streams',
+  '/streams.html',
+  '/api/health',
+  '/api/system/config',
+  '/api/streams/status',
+  '/api/contact-details',
+  '/api/info'
+];
+
+const LISTENER_PLAY_REGEX = /^\/api\/streams\/play\/[^/]+$/;
+
+function getClientIp(req) {
+  if (process.env.NODE_ENV === 'test' && req.get('X-Test-Remote-Address')) {
+    return req.get('X-Test-Remote-Address');
+  }
+  return req.ip || req.socket?.remoteAddress || '';
+}
+
+function isLocalhost(req) {
+  const ip = getClientIp(req);
+  return ip === '127.0.0.1' || ip === '::1' || ip === '::ffff:127.0.0.1';
+}
+
+function isListenerPathAllowed(req) {
+  if (req.method !== 'GET') return false;
+  const path = req.path || req.url?.split('?')[0] || '';
+  if (LISTENER_GET_PATHS.includes(path)) return true;
+  if (LISTENER_PLAY_REGEX.test(path)) return true;
+  return false;
+}
+
+const ADMIN_BLOCKED_HTML = `<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>Admin access restricted</title></head>
+<body style="font-family:sans-serif;max-width:480px;margin:2rem auto;padding:1rem;">
+<h1>Admin access restricted</h1>
+<p>Admin (login, dashboard) is only available from this computer (localhost).</p>
+<p>Use <strong>http://127.0.0.1:PORT</strong> or <strong>http://localhost:PORT</strong> to manage streams. Listeners can still use this address to open the listener page.</p>
+</body></html>`;
+
+/**
+ * Middleware: block admin pages and admin APIs when the request is not from localhost.
+ * Listener page (/streams) and listener APIs (config, status, play, contact-details, health, info) remain allowed from LAN.
+ */
+export function requireLocalhostAdmin(req, res, next) {
+  if (isLocalhost(req)) return next();
+  if (isListenerPathAllowed(req)) return next();
+  const isApi = (req.path || '').startsWith('/api/');
+  if (isApi) {
+    res.status(403).json({
+      error: 'Admin access is only allowed from localhost',
+      message: 'Use this machine (127.0.0.1) to manage streams. Listeners can use the LAN IP to open the listener page.'
+    });
+  } else {
+    res.status(403).set('Content-Type', 'text/html').send(ADMIN_BLOCKED_HTML);
+  }
+}

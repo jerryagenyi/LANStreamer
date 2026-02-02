@@ -5,10 +5,19 @@ Common issues and solutions for LANStreamer.
 ## Table of Contents
 - [Icecast Connection Issues](#icecast-connection-issues) ⭐ **Start Here**
 - [Network Connectivity Issues](#network-connectivity-issues) (includes [Which IP is my LAN / WiFi?](#which-ip-is-my-lan--wifi))
+- [Admin only on localhost](#admin-only-on-localhost)
 - [Stream Playback Issues](#stream-playback-issues)
 - [Firewall Issues](#firewall-issues)
 - [Audio Device Issues](#audio-device-issues)
 - [Installation Issues](#installation-issues)
+
+---
+
+## Admin only on localhost
+
+Admin (login, dashboard, stream management) is **only available from this computer** (localhost). If you open `http://YOUR-LAN-IP:3001/login` or `http://YOUR-LAN-IP:3001/dashboard` from another device, you will see **403 Admin access restricted**.
+
+**What to do:** Use **http://127.0.0.1:3001** or **http://localhost:3001** on the server PC to log in and manage streams. The **listener page** (`/streams`) and playback remain available from the LAN so mobile and other devices can listen.
 
 ---
 
