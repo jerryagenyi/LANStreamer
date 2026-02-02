@@ -1,6 +1,7 @@
 import express from 'express';
 import audioDeviceService from '../services/AudioDeviceService.js';
 import IcecastService from '../services/IcecastService.js';
+import streamingService from '../services/StreamingService.js';
 // import { updateService } from '../services/UpdateService.js';
 import { ErrorHandler, errorMiddleware } from '../utils/errors.js';
 
@@ -153,10 +154,20 @@ router.get('/config', async (req, res, next) => {
     await icecastService.ensureInitialized();
     const actualPort = icecastService.getActualPort() || 8000;
     const host = icecastService.getHostname() || 'localhost';
+    const sourceLimit = icecastService.getSourceLimit();
+
+    // Get active streams count
+    const activeStreams = Object.values(streamingService.activeStreams || {})
+      .filter(s => s.status === 'running').length;
+
     res.json({
       icecast: {
         port: actualPort,
-        host
+        host,
+        sourceLimit,
+        activeStreams,
+        remaining: sourceLimit - activeStreams,
+        configPath: icecastService.paths?.config
       }
     });
   } catch (error) {

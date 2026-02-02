@@ -19,6 +19,13 @@ jobs:
           node-cache: 'npm'
           cache-dependency-path: package-lock.json
 
+      - name: Install Icecast (for IcecastService / api/system/config)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y icecast2
+          # App looks for /usr/bin/icecast; Ubuntu package provides icecast2
+          sudo ln -sf /usr/bin/icecast2 /usr/bin/icecast || true
+
       - name: Install dependencies
         run: npm ci
 

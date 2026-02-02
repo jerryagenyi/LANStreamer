@@ -1,7 +1,0 @@
-== v1.2.0 (no errorDiagnostics.js) ==
-== v1.2.2 (no errorDiagnostics.js) ==
-== v1.2.3 (no errorDiagnostics.js) ==
-== HEAD (has errorDiagnostics.js - added post-v1.2.3) ==
-
-CRITICAL FINDING: errorDiagnostics.js was introduced AFTER v1.2.3
-Therefore, it cannot be the cause of regression from v1.2.0 to v1.2.3

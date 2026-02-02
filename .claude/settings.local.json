@@ -38,7 +38,15 @@
       "Bash(powershell:*)",
       "Bash(more:*)",
       "Bash(type:*)",
-      "Bash(del \"C:\\\\Users\\\\Username\\\\Documents\\\\github\\\\LANStreamer\\\\docs\\\\ICECAST_CONFIG_ARCHITECTURE.md\")"
+      "Bash(del \"C:\\\\Users\\\\Username\\\\Documents\\\\github\\\\LANStreamer\\\\docs\\\\ICECAST_CONFIG_ARCHITECTURE.md\")",
+      "Bash(npm test:*)",
+      "Bash(gh run list:*)",
+      "Bash(gh run view:*)",
+      "Bash(xargs:*)",
+      "Bash(cmd.exe /c \"netstat -ano | findstr :3001\")",
+      "Bash(tail:*)",
+      "Bash(timeout 5 ffmpeg:*)",
+      "Bash(timeout 3 ffmpeg:*)"
     ]
   }
 }

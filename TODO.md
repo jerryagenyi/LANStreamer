@@ -1,35 +1,29 @@
-# LANStreamer – Current state and notes
+# LANStreamer – TODO
 
-**Last updated:** 2026-01-31
-
----
-
-## Current state
-
-- **Streaming:** Working (FFmpeg → Icecast with localhost for source URL; spawn with `shell: true` on Windows).
-- **Copy URL:** Correct port (8200 or your Icecast port) via `GET /api/system/config`.
-- **Listening page:** Play uses same-origin proxy `/api/streams/play/:streamId`; Copy URL gives direct Icecast URL.
-- **Tests:** Unit and integration tests in place; see [docs/TEST-PLAN.md](docs/TEST-PLAN.md). Run with `npm test`.
-- **Docs:** [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md), [docs/STARTUP-SEQUENCE.md](docs/STARTUP-SEQUENCE.md), [docs/NETWORK-SETUP.md](docs/NETWORK-SETUP.md).
+Context: [CLAUDE.md](CLAUDE.md), [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md). Delete when done.
 
 ---
 
-## Max 2 streams (Icecast source limit)
+## To do (priority order)
 
-**Symptom:** Only the first one or two streams start; the next fails (e.g. “too many sources”).
+- [x] **Verify 5+ streams** — Confirmed 6/6 live (VB-Cable A/B, mics). Root cause of “5th fails” was bad device choice, not Icecast limit).
+- [ ] **Listener: dismiss without reload** — New-stream notification dismisses overlay without full reload (don’t stop playback).
+- [ ] **Source validation & clear errors** — On stream failure, check if source (device/file) is viable and say so in the error. Optional: “Test source” button per source.
+- [ ] **Lock admin to localhost** — Admin UI only on localhost; listeners use LAN IP.
+- [ ] **Listener page uses LAN IP** — Copy URLs and listener page use server LAN IP, not localhost.
+- [ ] **Unique stream names** — No duplicate names for live streams.
+- [ ] **Error alert UX** — Collapsible FFmpeg output, clearer quick fixes, alert bigger/centred.
+- [ ] **Stability** — Confirm 3+ streams stay stable (see TROUBLESHOOTING.md).
+- [ ] **Mobile** — Verify listener page and Play URL on mobile.
+- [ ] **Stream labels (optional)** — e.g. prefix streams S1, S2, S3; or better naming idea.
+- [ ] **Contact: WhatsApp** — Enforce country code, build `wa.me/<digits>` link.
+- [ ] **UI/UX polish (optional)** — [docs/UI-UX-RECOMMENDATIONS.md](docs/UI-UX-RECOMMENDATIONS.md).
 
-**Cause:** Icecast’s default `<sources>` in `icecast.xml` is **2**. When you **start Icecast from the LANStreamer dashboard**, the app writes a generated config with `<sources>32</sources>`. If you still see only 2 streams:
-
-- You may be using an **existing** `icecast.xml` (e.g. from a manual Icecast install) that was never updated.
-- Or Icecast was started outside the app with that config.
-
-**Fix:** See **Cause 5: Stream Source Limit Reached** in [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md): edit `<limits><sources>` in `icecast.xml` to 10 (or more), then restart Icecast. To allow up to 10 streams, use `<sources>10</sources>`.
-
-**Testing:** To verify more than 2 streams: start Icecast from the LANStreamer dashboard (so the app writes `icecast.xml` with `<sources>32</sources>`), then create 3–10 streams from the UI. If you use an external Icecast, set `<sources>10</sources>` (or higher) in its config first.
+**Done:** Notification timing, LANStreamer.bat updater, Claude hooks, custom-instructions, capacity NaN fix, config capacity fields, shortMessage + troubleshooting link.
 
 ---
 
-## Related
+## Reference
 
-- **Regression analysis (historical):** The long regression checklist was completed or superseded by the fixes above. Details were in `ERROR_DIAGNOSTICS_ANALYSIS_REPORT.md` if needed for reference.
-- **Next steps:** Run `npm test` before releases; use [docs/STARTUP-SEQUENCE.md](docs/STARTUP-SEQUENCE.md) for step-by-step troubleshooting.
+- Run `npm test` before releases; [STARTUP-SEQUENCE.md](docs/STARTUP-SEQUENCE.md) for troubleshooting.
+- **Future refactor:** ErrorFactory consistency, remove/trim FFmpegService.js, device mapping extraction, split large HTML/JS — see inline notes in codebase.

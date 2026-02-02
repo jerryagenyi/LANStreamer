@@ -26,7 +26,9 @@ router.post('/start', async (req, res) => {
     });
   } catch (error) {
     logger.error('Error starting stream:', { error: error.message, stack: error.stack });
-    res.status(500).json({ message: 'Error starting stream', error: error.message });
+    const payload = { message: 'Error starting stream', error: error.shortMessage || error.message };
+    if (error.capacity) payload.capacity = error.capacity;
+    res.status(500).json(payload);
   }
 });
 
@@ -81,7 +83,9 @@ router.post('/restart', async (req, res) => {
     });
   } catch (error) {
     logger.error('Error restarting stream:', { error: error.message, stack: error.stack });
-    res.status(500).json({ message: 'Error restarting stream', error: error.message });
+    const payload = { message: 'Error restarting stream', error: error.shortMessage || error.message };
+    if (error.capacity) payload.capacity = error.capacity;
+    res.status(500).json(payload);
   }
 });
 
