@@ -46,7 +46,9 @@
       "Bash(cmd.exe /c \"netstat -ano | findstr :3001\")",
       "Bash(tail:*)",
       "Bash(timeout 5 ffmpeg:*)",
-      "Bash(timeout 3 ffmpeg:*)"
+      "Bash(timeout 3 ffmpeg:*)",
+      "Bash(git stash:*)",
+      "Bash(the action is performed, not before.\"\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n\\)\")"
     ]
   }
 }
