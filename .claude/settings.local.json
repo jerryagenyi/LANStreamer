@@ -48,10 +48,11 @@
       "Bash(timeout 5 ffmpeg:*)",
       "Bash(timeout 3 ffmpeg:*)",
       "Bash(git stash:*)",
-      "Bash(the action is performed, not before.\"\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n\\)\")",
-      "Bash(when update available)",
-      "Bash(click to open modal with update info)",
-      "Bash(and link to latest release.\"\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n\\)\")"
+      "Bash(git pull:*)",
+      "Bash(git merge:*)",
+      "Bash(gh pr create:*)",
+      "Bash(gh pr view:*)",
+      "Bash(gh pr edit:*)"
     ]
   }
 }
