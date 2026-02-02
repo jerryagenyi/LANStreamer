@@ -38,9 +38,11 @@ Context: [CLAUDE.md](CLAUDE.md), [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.
 
 - [x] **Sortable streams (optional)** — Up/down buttons on dashboard; `POST /api/streams/reorder`; order persisted in `config/streams.json` (`_order`); listener page uses same order and S1/S2/S3 labels without refresh.
 
-- [x] **Contact: WhatsApp** — Country code enforced (digits 10–15, no leading zero); validation backend + ContactManager; `wa.me/<digits>` built on listener page; placeholder "e.g. +44 7123 456789 (country code required)".
+- [ ] **Contact: WhatsApp** — Country code enforced (digits 10–15, no leading zero); validation backend + ContactManager; `wa.me/<digits>` built on listener page; placeholder "e.g. +44 7123 456789 (country code required)". Not working
 
 - [ ] **Update notification UX** — Show notification bell icon when update available; click to open modal with update info and link to latest release. Current: button shows "Updates" and runs manual check on click; should auto-check on load and show bell when updateAvailable=true.
+
+- [ ] **Event Details & Your Contcact components** — Not working as should..
 
 - [ ] **UI/UX polish (optional)** — [docs/UI-UX-RECOMMENDATIONS.md](docs/UI-UX-RECOMMENDATIONS.md).
 
