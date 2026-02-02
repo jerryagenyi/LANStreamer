@@ -3,6 +3,7 @@ class HeaderComponent {
         this.containerId = containerId;
         this.isInitialized = false;
         this.currentUser = null;
+        this.serverHost = null; // Will be loaded from config for correct LAN IP
     }
 
     async init() {
@@ -12,10 +13,26 @@ class HeaderComponent {
         }
 
         console.log('🎯 Initializing HeaderComponent...');
+        await this.loadConfig(); // Load config first to get correct LAN IP
         this.render();
         this.setupEventListeners();
         this.isInitialized = true;
         console.log('✅ HeaderComponent initialization complete');
+    }
+
+    async loadConfig() {
+        try {
+            const response = await fetch('/api/system/config');
+            if (response.ok) {
+                const config = await response.json();
+                if (config.host || config.icecast?.host) {
+                    this.serverHost = config.host || config.icecast.host;
+                    console.log('🌐 Server host loaded for header:', this.serverHost);
+                }
+            }
+        } catch (error) {
+            console.warn('Failed to load config for header:', error);
+        }
     }
 
     render() {
@@ -25,15 +42,18 @@ class HeaderComponent {
             return;
         }
 
+        // Use config host for correct LAN IP, fallback to relative path
+        const streamsUrl = this.serverHost ? `http://${this.serverHost}:3001/streams` : '/streams';
+
         container.innerHTML = `
             <header class="sticky top-0 z-50 flex items-center justify-between whitespace-nowrap border-b border-solid border-[var(--border-color)] bg-[var(--dark-bg)]/80 px-10 py-4 backdrop-blur-lg">
                 <!-- Logo Section -->
                 <div class="flex items-center gap-4 text-white">
                     <a href="http://localhost:3001" class="flex items-center gap-2 text-white hover:text-[var(--primary-color)] transition-colors">
-                        <img src="/assets/lanstreamer-logo.png" 
-                             alt="LANStreamer" 
-                             class="h-16 w-auto" 
-                             id="logo-image" 
+                        <img src="/assets/lanstreamer-logo.png"
+                             alt="LANStreamer"
+                             class="h-16 w-auto"
+                             id="logo-image"
                              onerror="this.style.display='none'; document.getElementById('logo-fallback').style.display='flex';">
                         <div id="logo-fallback" style="display: none;" class="flex items-center">
                             <span class="text-xl font-bold tracking-wider">LANStreamer</span>
@@ -44,8 +64,8 @@ class HeaderComponent {
                 <!-- Navigation and Actions -->
                 <div class="flex items-center gap-3">
                     <!-- Update Check Button -->
-                    <button id="header-check-updates-btn" 
-                            class="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-300 hover:text-white bg-gray-800/50 hover:bg-gray-700/50 border border-gray-600/30 hover:border-gray-500/50 rounded-lg transition-all duration-300" 
+                    <button id="header-check-updates-btn"
+                            class="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-300 hover:text-white bg-gray-800/50 hover:bg-gray-700/50 border border-gray-600/30 hover:border-gray-500/50 rounded-lg transition-all duration-300"
                             title="Check for Updates">
                         <span class="material-symbols-rounded text-sm">system_update</span>
                         <span class="hidden sm:inline">Updates</span>
@@ -53,7 +73,7 @@ class HeaderComponent {
 
                     <!-- Admin Navigation Links -->
                     <div class="flex items-center gap-2">
-                        <a href="/streams" 
+                        <a href="${streamsUrl}"
                            target="_blank"
                            class="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-300 hover:text-white bg-gray-800/50 hover:bg-gray-700/50 border border-gray-600/30 hover:border-gray-500/50 rounded-lg transition-all duration-300"
                            title="Open Streams Page (for listeners)">

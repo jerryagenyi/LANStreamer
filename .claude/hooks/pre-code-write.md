@@ -45,13 +45,6 @@ Before modifying ANY code file:
 - `config/device-config.json` - Cached Icecast/FFmpeg paths
 - `config/icecast.xml` - Icecast server configuration (auto-generated)
 
-### Expert Roles
+### Patterns
 
-See AGENTS.md for when to use domain experts:
-- `@ffmpeg-expert` - FFmpeg-related issues
-- `@icecast-expert` - Icecast configuration and issues
-- `@nodejs-streaming` - Node.js streaming and process management
-- `@task-manager` - Complex multi-step tasks
-- `@code-reviewer` - Code review and validation
-
-If uncertain about patterns, **STOP** and ask user before proceeding.
+See CLAUDE.md for workflow, branch flow, and critical patterns (port, error diagnostics, Windows exit codes). If uncertain about patterns, **STOP** and ask user before proceeding.

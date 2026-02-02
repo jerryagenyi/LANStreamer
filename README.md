@@ -179,6 +179,8 @@ npm install  # If dependencies changed
 
 We welcome contributions! See [CLAUDE.md](CLAUDE.md) for the development workflow and architecture guide.
 
+**Branch workflow:** We never add to `main` directly. Pull from `main` when starting work; do work on a feature branch; merge into `dev` first; only then does change go to `main`. See [CLAUDE.md](CLAUDE.md) for the full flow.
+
 For bug reports, include your OS, Node.js version, and steps to reproduce.
 
 ---

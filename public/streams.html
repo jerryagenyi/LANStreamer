@@ -281,8 +281,9 @@
                 this.isMuted = false;
                 this.volumeBeforeMute = this.volume;
 
-                // Dynamic Icecast port (fetched from config)
+                // Dynamic Icecast config (fetched from /api/system/config)
                 this.icecastPort = 8000; // Default fallback (Icecast standard port)
+                this.serverHost = null; // Will be loaded from config - uses getPreferredLANHost() for correct network IP
 
                 // Client-side timer tracking for real-time uptime updates
                 this.clientTimers = new Map(); // streamId -> { startTime, isRunning }
@@ -322,6 +323,13 @@
                         if (config.icecast?.port) {
                             this.icecastPort = config.icecast.port;
                             console.log('📡 Icecast port loaded from config:', this.icecastPort);
+                        }
+                        if (config.host || config.icecast?.host) {
+                            this.serverHost = config.host || config.icecast.host;
+                            console.log('🌐 Server host loaded from config:', this.serverHost);
+                            // Re-render stream URLs and network message in case they were shown with fallback host
+                            this.updateNetworkInfo();
+                            if (this.streams.length > 0) this.renderStreams();
                         }
                     }
                 } catch (error) {
@@ -438,10 +446,9 @@
             }
 
             renderStream(stream) {
-                // Use the current host (works for both localhost and network access)
-                const currentHost = window.location.hostname;
-                // For mobile access, show the actual IP instead of localhost
-                const displayHost = currentHost === 'localhost' ? window.location.hostname : currentHost;
+                // Use server host from config (getPreferredLANHost) for correct network IP
+                // Falls back to window.location.hostname if config not loaded yet
+                const displayHost = this.serverHost || window.location.hostname;
                 const streamUrl = `http://${displayHost}:${this.icecastPort}/${stream.id}`;
                 const isPlaying = this.currentStream === stream.id;
                 const uptime = this.formatUptime(stream.uptime || 0);
@@ -976,20 +983,21 @@
 
             getNetworkAccessInfo() {
                 const hostname = window.location.hostname;
-                const port = window.location.port || '3000';
+                const port = window.location.port || '3001';
+                const displayHost = this.serverHost || hostname;
 
                 if (hostname === 'localhost' || hostname === '127.0.0.1') {
                     return {
                         isLocal: true,
                         message: 'For mobile access, use your computer\'s IP address instead of localhost',
-                        suggestion: 'Find your IP in network settings and use: http://YOUR-IP:' + port
+                        suggestion: this.serverHost ? `Use: http://${this.serverHost}:${port}/streams` : 'Find your IP in network settings (e.g. ipconfig) and use: http://YOUR-IP:' + port
                     };
                 }
 
                 return {
                     isLocal: false,
                     message: 'Network access available',
-                    currentUrl: `http://${hostname}:${port}`
+                    currentUrl: `http://${displayHost}:${port}`
                 };
             }
 

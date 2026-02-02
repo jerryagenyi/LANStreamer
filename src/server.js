@@ -9,6 +9,7 @@ import settingsRouter from './routes/settings.js';
 import contactRouter from './routes/contact.js';
 import authRouter from './routes/auth.js';
 import { optionalAuth, authenticateToken } from './middleware/auth.js';
+import { requireLocalhostAdmin } from './middleware/requireLocalhost.js';
 import streamingService from './services/StreamingService.js';
 import logger from './utils/logger.js';
 
@@ -22,9 +23,12 @@ const HOST = process.env.HOST || '0.0.0.0';
 // Middleware
 app.use(express.json());
 
-// Serve static files from public directory
+// Serve static files from public directory (so listener page on LAN gets CSS/JS)
 const publicPath = path.join(__dirname, '../public');
 app.use(express.static(publicPath));
+
+// Lock admin to localhost: block admin UI and admin APIs from non-localhost (listener page and APIs stay allowed)
+app.use(requireLocalhostAdmin);
 
 // A simple health check endpoint to confirm the server is running.
 app.get('/api/health', (req, res) => {

@@ -14,14 +14,32 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Development Workflow
 
+### Branch workflow (do not bypass)
+
+- **main** is the stable release branch. **Never add anything to main directly** without going through a feature branch and **dev** first.
+- **dev** is the integration branch. All changes land here (via merge or PR) before they can go to main.
+- **Feature branches** are created from **main** (or **dev**) when starting new work. Pull from main into your feature branch if you need latest: `git fetch origin main && git merge origin/main` (or rebase).
+- **Flow:** main → create `feature/xyz` → work → **merge feature into dev locally** → test → push dev → merge dev into main (release).
+
+### Merge feature into dev locally (recommended)
+
+Merge your feature into **dev** locally so you can test the combined state before pushing. Then push dev.
+
+```bash
+git checkout dev
+git pull origin dev
+git merge feature/<your-feature-branch>
+# Fix conflicts if any, then:
+npm test
+git push origin dev
+```
+
+Example: `git merge feature/start-all-and-unique-names`. After pushing dev, you can open a PR (feature → dev) for record-keeping or merge the PR on the remote; the code is already on dev.
+
 1. **Check hooks** in `.claude/hooks/` before any modification
 2. **Start server:** `npm start`
 3. **Test stream:** Login → Create stream → Verify playback on `/streams`
 4. **Check logs:** `logs/combined.log`
-
-## Agent selection
-
-Use **AGENTS.md** for expert roles: when to use `@ffmpeg-expert`, `@icecast-expert`, `@nodejs-streaming`, `@task-manager`, `@code-reviewer`. Prefer domain experts for FFmpeg/Icecast/Node issues.
 
 ## Critical Patterns
 

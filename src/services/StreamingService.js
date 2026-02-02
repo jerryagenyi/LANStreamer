@@ -146,6 +146,12 @@ class StreamingService {
       throw new Error(`Stream ${streamId} is already running`)
     }
 
+    // Unique stream names: no duplicate display names
+    const name = (streamConfig.name || '').trim()
+    if (name && this.streamNameExists(name, null)) {
+      throw new Error(`A stream named "${streamConfig.name}" already exists. Use a unique name.`)
+    }
+
     // Check for device conflicts (multiple streams on same device)
     if (streamConfig.deviceId) {
       const conflictingStreams = Object.values(this.activeStreams).filter(stream =>
@@ -834,6 +840,10 @@ class StreamingService {
 
     // If name is changing, generate a new stream ID
     if (updates.name !== undefined && updates.name !== prevName) {
+      const newName = (updates.name || '').trim()
+      if (newName && this.streamNameExists(newName, streamId)) {
+        throw new Error(`A stream named "${updates.name}" already exists. Use a unique name.`)
+      }
       // Generate clean stream ID from new name (same logic as creating new stream)
       const cleanId = updates.name
         .toLowerCase()
@@ -996,6 +1006,20 @@ class StreamingService {
   }
 
   /**
+   * Check if a stream with the given display name already exists (case-insensitive, trimmed).
+   * @param {string} name - Display name to check
+   * @param {string|null} excludeStreamId - Stream ID to exclude (e.g. current stream when editing)
+   * @returns {boolean}
+   */
+  streamNameExists(name, excludeStreamId) {
+    const normalized = (name || '').trim().toLowerCase()
+    if (!normalized) return false
+    return Object.values(this.activeStreams).some(stream =>
+      stream.id !== excludeStreamId && (stream.name || '').trim().toLowerCase() === normalized
+    )
+  }
+
+  /**
    * Stop all running streams
    * @returns {object} Result of the operation
    */
@@ -1028,6 +1052,43 @@ class StreamingService {
       message: `Stopped ${successCount} streams${failureCount > 0 ? `, ${failureCount} failed` : ''}`,
       stopped: successCount,
       failed: failureCount,
+      results
+    };
+  }
+
+  /**
+   * Start all persisted streams that are currently stopped or in error.
+   * @returns {object} { success, message, started, failed, results }
+   */
+  async startAllStoppedStreams() {
+    const stoppedStreams = Object.values(this.activeStreams).filter(stream =>
+      stream.status === 'stopped' || stream.status === 'error'
+    );
+
+    if (stoppedStreams.length === 0) {
+      return { success: true, message: 'No stopped streams to start', started: 0, failed: 0, results: [] };
+    }
+
+    const results = [];
+    for (const stream of stoppedStreams) {
+      try {
+        await this.restartStream(stream.id);
+        results.push({ id: stream.id, name: stream.name, success: true });
+      } catch (error) {
+        results.push({ id: stream.id, name: stream.name, success: false, error: error.message });
+      }
+    }
+
+    const startedCount = results.filter(r => r.success).length;
+    const failedCount = results.filter(r => !r.success).length;
+
+    logger.info(`Started ${startedCount} streams, ${failedCount} failed`);
+
+    return {
+      success: failedCount === 0,
+      message: `Started ${startedCount} streams${failedCount > 0 ? `, ${failedCount} failed` : ''}`,
+      started: startedCount,
+      failed: failedCount,
       results
     };
   }

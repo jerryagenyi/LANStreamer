@@ -821,6 +821,33 @@ class IcecastService {
   }
 
   /**
+   * Get preferred LAN IP for listener URLs (Copy URL, listener page).
+   * Use when icecast.xml hostname is localhost or wrong so mobile/other devices can connect.
+   * Prefers 192.168.x.x from Wi‑Fi; falls back to first 192.168.x.x, then icecast hostname.
+   */
+  getPreferredLANHost() {
+    const current = this.getHostname();
+    if (current && /^192\.168\.\d{1,3}\.\d{1,3}$/.test(current)) {
+      return current;
+    }
+    const ifaces = os.networkInterfaces();
+    const lanIPs = [];
+    const wifiIPs = [];
+    for (const name of Object.keys(ifaces)) {
+      const list = ifaces[name];
+      if (!list) continue;
+      const isWifi = /wi-?fi|wireless|wlan/i.test(name);
+      for (const iface of list) {
+        if (iface.family === 'IPv4' && !iface.internal && /^192\.168\.\d{1,3}\.\d{1,3}$/.test(iface.address)) {
+          if (isWifi) wifiIPs.push(iface.address);
+          else lanIPs.push(iface.address);
+        }
+      }
+    }
+    return (wifiIPs[0] || lanIPs[0]) || current || 'localhost';
+  }
+
+  /**
    * Parse source limit from icecast.xml
    * This is critical for understanding how many concurrent streams are allowed
    */

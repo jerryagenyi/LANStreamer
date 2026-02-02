@@ -239,6 +239,7 @@ All services follow the **singleton pattern** - exported as pre-instantiated obj
 | `getSourcePassword()` | 801 | Return in-memory source password |
 | `getAdminPassword()` | 808 | Return in-memory admin password |
 | `getHostname()` | 815 | Return in-memory hostname |
+| `getPreferredLANHost()` | 823-848 | Get preferred LAN IP for listener URLs (prefers 192.168.x.x from WiFi, falls back to icecast hostname) |
 | `startConfigWatcher()` | 822-857 | Watch icecast.xml for changes |
 | `startIcecast()` | 269-347 | Spawn icecast.exe process |
 | `stopIcecast()` | 352-398 | Kill icecast.exe process tree |

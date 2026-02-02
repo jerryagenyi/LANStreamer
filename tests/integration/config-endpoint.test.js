@@ -26,6 +26,13 @@ describe('GET /api/system/config', () => {
     expect(typeof res.body.icecast.host).toBe('string');
   });
 
+  it('returns top-level host for listener page / Copy URL (getPreferredLANHost)', async () => {
+    const res = await request(app).get('/api/system/config');
+    expect(res.body).toHaveProperty('host');
+    expect(typeof res.body.host).toBe('string');
+    expect(res.body.host.length).toBeGreaterThan(0);
+  });
+
   it('returns source capacity fields (sourceLimit, activeStreams, remaining, configPath)', async () => {
     const res = await request(app).get('/api/system/config');
     expect(res.body.icecast).toHaveProperty('sourceLimit');

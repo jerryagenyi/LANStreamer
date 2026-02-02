@@ -1,1 +1,1 @@
-Use CLAUDE.md and AGENTS.md in repo root.
+Use CLAUDE.md in repo root.

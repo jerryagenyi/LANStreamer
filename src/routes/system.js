@@ -153,7 +153,8 @@ router.get('/config', async (req, res, next) => {
   try {
     await icecastService.ensureInitialized();
     const actualPort = icecastService.getActualPort() || 8000;
-    const host = icecastService.getHostname() || 'localhost';
+    // Use preferred LAN IP so listener page and Copy URL work on mobile (192.168.x.x from WiFi)
+    const host = icecastService.getPreferredLANHost() || icecastService.getHostname() || 'localhost';
     const sourceLimit = icecastService.getSourceLimit();
 
     // Get active streams count
@@ -161,6 +162,7 @@ router.get('/config', async (req, res, next) => {
       .filter(s => s.status === 'running').length;
 
     res.json({
+      host, // Top-level for frontend stream URL building (getPreferredLANHost)
       icecast: {
         port: actualPort,
         host,

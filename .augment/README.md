@@ -1,3 +1,3 @@
 # .augment
 
-Project AI rules and agent definitions live in the repo root: **CLAUDE.md** and **AGENTS.md**. Use those for context and expert roles.
+Project AI rules live in the repo root: **CLAUDE.md**. Use it for workflow, branch flow, and critical patterns.
