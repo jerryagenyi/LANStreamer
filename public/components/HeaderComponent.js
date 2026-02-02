@@ -4,6 +4,8 @@ class HeaderComponent {
         this.isInitialized = false;
         this.currentUser = null;
         this.serverHost = null; // Will be loaded from config for correct LAN IP
+        this.updateAvailable = false;
+        this.updateInfo = null;
     }
 
     async init() {
@@ -16,6 +18,7 @@ class HeaderComponent {
         await this.loadConfig(); // Load config first to get correct LAN IP
         this.render();
         this.setupEventListeners();
+        this.checkForUpdates(); // Auto-check for updates on load
         this.isInitialized = true;
         console.log('✅ HeaderComponent initialization complete');
     }
@@ -33,6 +36,111 @@ class HeaderComponent {
         } catch (error) {
             console.warn('Failed to load config for header:', error);
         }
+    }
+
+    async checkForUpdates() {
+        try {
+            const response = await fetch('/api/system/update-check');
+            const data = await response.json();
+
+            if (data.success) {
+                this.updateInfo = data;
+                if (data.updateAvailable) {
+                    this.updateAvailable = true;
+                    this.updateBellIcon();
+                }
+            }
+        } catch (error) {
+            console.warn('Failed to check for updates:', error);
+        }
+    }
+
+    updateBellIcon() {
+        const bellBtn = document.getElementById('header-update-bell-btn');
+        if (!bellBtn) return;
+
+        if (this.updateAvailable) {
+            // Show bell with notification badge
+            bellBtn.innerHTML = `
+                <span class="material-symbols-rounded text-sm relative">
+                    notifications
+                    <span class="absolute -top-1 -right-1 flex h-2 w-2">
+                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                        <span class="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+                    </span>
+                </span>
+                <span class="hidden sm:inline">Update Available</span>
+            `;
+            bellBtn.classList.add('bg-green-900/30', 'border-green-600/50');
+            bellBtn.classList.remove('bg-gray-800/50', 'border-gray-600/30');
+            bellBtn.title = `Update available: ${this.updateInfo?.latest || ''}`;
+        } else {
+            // Show bell without badge
+            bellBtn.innerHTML = `
+                <span class="material-symbols-rounded text-sm">notifications</span>
+                <span class="hidden sm:inline">Updates</span>
+            `;
+        }
+    }
+
+    showUpdateModal() {
+        if (!this.updateInfo || !this.updateAvailable) {
+            this.showNotification('No update information available', 'info');
+            return;
+        }
+
+        const modal = document.createElement('div');
+        modal.className = 'fixed inset-0 bg-black/50 flex items-center justify-center z-50';
+        modal.innerHTML = `
+            <div class="bg-[var(--card-bg)] border border-[var(--border-color)] rounded-2xl p-6 max-w-md mx-4 shadow-2xl">
+                <div class="flex items-center gap-3 mb-4">
+                    <span class="material-symbols-rounded text-3xl text-green-500">system_update</span>
+                    <div>
+                        <h3 class="text-lg font-semibold text-white">Update Available!</h3>
+                        <p class="text-sm text-gray-400">A new version of LANStreamer is ready</p>
+                    </div>
+                </div>
+                <div class="bg-gray-800/50 rounded-lg p-4 mb-4">
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="text-gray-400 text-sm">Current Version</span>
+                        <span class="text-white font-medium">${this.updateInfo.current}</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-gray-400 text-sm">Latest Version</span>
+                        <span class="text-green-400 font-semibold">${this.updateInfo.latest}</span>
+                    </div>
+                </div>
+                <div class="flex gap-3">
+                    <button id="update-view-release" class="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg transition-colors">
+                        View Release
+                    </button>
+                    <button id="update-close-modal" class="flex-1 px-4 py-2 bg-gray-600 hover:bg-gray-500 text-white rounded-lg transition-colors">
+                        Close
+                    </button>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(modal);
+
+        // Add event listeners
+        const viewReleaseBtn = document.getElementById('update-view-release');
+        if (viewReleaseBtn && this.updateInfo.releaseUrl) {
+            viewReleaseBtn.addEventListener('click', () => {
+                window.open(this.updateInfo.releaseUrl, '_blank');
+            });
+        }
+
+        document.getElementById('update-close-modal').addEventListener('click', () => {
+            document.body.removeChild(modal);
+        });
+
+        // Close on backdrop click
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                document.body.removeChild(modal);
+            }
+        });
     }
 
     render() {
@@ -63,11 +171,11 @@ class HeaderComponent {
 
                 <!-- Navigation and Actions -->
                 <div class="flex items-center gap-3">
-                    <!-- Update Check Button -->
-                    <button id="header-check-updates-btn"
+                    <!-- Update Bell Button -->
+                    <button id="header-update-bell-btn"
                             class="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-300 hover:text-white bg-gray-800/50 hover:bg-gray-700/50 border border-gray-600/30 hover:border-gray-500/50 rounded-lg transition-all duration-300"
                             title="Check for Updates">
-                        <span class="material-symbols-rounded text-sm">system_update</span>
+                        <span class="material-symbols-rounded text-sm">notifications</span>
                         <span class="hidden sm:inline">Updates</span>
                     </button>
 
@@ -80,7 +188,7 @@ class HeaderComponent {
                             <span class="material-symbols-rounded text-sm">radio</span>
                             <span class="hidden sm:inline">Listen to Streams</span>
                         </a>
-                        
+
                         <button id="header-logout-btn"
                                class="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-300 hover:text-white bg-gray-800/50 hover:bg-gray-700/50 border border-gray-600/30 hover:border-gray-500/50 rounded-lg transition-all duration-300"
                                title="Logout from Admin Dashboard"
@@ -98,48 +206,53 @@ class HeaderComponent {
     }
 
     setupEventListeners() {
-        // Update Check Button
-        const updateBtn = document.getElementById('header-check-updates-btn');
-        if (updateBtn) {
-            updateBtn.addEventListener('click', async () => {
-                console.log('🔄 Header update check requested');
-                
-                // Show loading state
-                const originalContent = updateBtn.innerHTML;
-                updateBtn.innerHTML = `
-                    <span class="material-symbols-rounded text-sm animate-spin">refresh</span>
-                    <span class="hidden sm:inline">Checking...</span>
-                `;
-                updateBtn.disabled = true;
+        // Update Bell Button
+        const bellBtn = document.getElementById('header-update-bell-btn');
+        if (bellBtn) {
+            bellBtn.addEventListener('click', async () => {
+                if (this.updateAvailable) {
+                    // Show update modal if update is available
+                    this.showUpdateModal();
+                } else {
+                    // Manual check if no update available
+                    console.log('🔄 Header update check requested');
 
-                try {
-                    // Use existing update notification system if available
-                    if (window.updateNotification) {
-                        await window.updateNotification.forceUpdateCheck();
-                    } else {
-                        // Fallback to direct API call
+                    // Show loading state
+                    const originalContent = bellBtn.innerHTML;
+                    bellBtn.innerHTML = `
+                        <span class="material-symbols-rounded text-sm animate-spin">refresh</span>
+                        <span class="hidden sm:inline">Checking...</span>
+                    `;
+                    bellBtn.disabled = true;
+
+                    try {
                         const response = await fetch('/api/system/update-check/force', {
                             method: 'POST'
                         });
                         const data = await response.json();
 
                         if (data.success) {
+                            this.updateInfo = data;
                             if (data.updateAvailable) {
-                                this.showNotification(`Update available: ${data.latest}`, 'info');
+                                this.updateAvailable = true;
+                                this.updateBellIcon();
+                                this.showUpdateModal();
                             } else {
                                 this.showNotification('You have the latest version!', 'success');
                             }
                         } else {
                             this.showNotification('Failed to check for updates', 'error');
                         }
+                    } catch (error) {
+                        console.error('Update check failed:', error);
+                        this.showNotification('Update check failed', 'error');
+                    } finally {
+                        // Restore button if no update
+                        if (!this.updateAvailable) {
+                            bellBtn.innerHTML = originalContent;
+                        }
+                        bellBtn.disabled = false;
                     }
-                } catch (error) {
-                    console.error('Update check failed:', error);
-                    this.showNotification('Update check failed', 'error');
-                } finally {
-                    // Restore button
-                    updateBtn.innerHTML = originalContent;
-                    updateBtn.disabled = false;
                 }
             });
         }
@@ -294,7 +407,7 @@ class HeaderComponent {
             indicator.id = id;
             indicator.className = `status-indicator ${className}`;
             indicator.innerHTML = content;
-            
+
             // Insert before the user avatar
             const avatar = header.querySelector('.bg-center.bg-no-repeat');
             if (avatar) {
