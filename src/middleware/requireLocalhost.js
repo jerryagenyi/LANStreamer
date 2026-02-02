@@ -84,7 +84,8 @@ export function requireLocalhostAdmin(req, res, next) {
     const serverIps = getServerOwnIps();
     if (serverIps.has(clientIp)) {
       const host = req.get('host') || '';
-      const port = host.includes(':') ? host.split(':')[1] : (process.env.PORT || '3001');
+      // Port is after last ':' (works for "host:3001" and "[::1]:3001"; split(':')[1] fails for IPv6)
+      const port = host.includes(':') ? host.split(':').pop() : (process.env.PORT || '3001');
       const redirectUrl = `http://localhost:${port}${req.originalUrl || path}`;
       logger.info({ clientIp, path, redirectUrl }, 'Redirecting same-machine admin request to localhost');
       return res.redirect(302, redirectUrl);
