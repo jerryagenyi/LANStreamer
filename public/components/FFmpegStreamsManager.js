@@ -452,19 +452,28 @@ class FFmpegStreamsManager {
 
             await this.loadStreams();
             this.render();
-            if (data.started > 0) {
-                this.afterNextPaint(() => this.showNotification(data.message || `Started ${data.started} streams`, 'success'));
-            }
-            if (data.failed > 0 && data.results && data.results.length > 0) {
+            const hasSuccess = data.started > 0;
+            const hasFailure = data.failed > 0 && data.results && data.results.length > 0;
+            let errorMsg = '';
+            if (hasFailure) {
                 const failed = data.results.filter(r => !r.success);
                 const names = failed.map(r => r.name || r.id).slice(0, 5);
                 const namesText = failed.length > 5 ? `${names.join(', ')} and ${failed.length - 5} more` : names.join(', ');
                 const firstError = failed[0].error ? String(failed[0].error).slice(0, 120) : '';
-                const msg = firstError
+                errorMsg = firstError
                     ? `${data.failed} failed: ${namesText}. First error: ${firstError}${failed[0].error && failed[0].error.length > 120 ? '…' : ''}`
                     : `${data.failed} failed: ${namesText}. Check stream list.`;
-                this.afterNextPaint(() => this.showNotification(msg, 'error'), 150);
             }
+            this.afterNextPaint(() => {
+                if (hasSuccess) {
+                    this.showNotification(data.message || `Started ${data.started} streams`, 'success');
+                    if (hasFailure) {
+                        setTimeout(() => this.showNotification(errorMsg, 'error'), 150);
+                    }
+                } else if (hasFailure) {
+                    this.showNotification(errorMsg, 'error');
+                }
+            });
         } catch (error) {
             console.error('Failed to start all streams:', error);
             this.showNotification(`Failed to start all streams: ${error.message}`, 'error');
