@@ -804,17 +804,29 @@
                 this.updateLiveIndicator();
             }
 
+            dismissNewStreamNotification() {
+                // Remove overlay and banner, then refresh streams without full page reload
+                const overlay = document.getElementById('new-stream-overlay');
+                const banner = document.getElementById('new-stream-banner');
+
+                if (overlay) overlay.remove();
+                if (banner) banner.remove();
+
+                // Hot reload streams - keeps audio playing
+                this.loadStreams();
+            }
+
             showNewStreamNotification() {
                 // Create a PERSISTENT notification overlay - doesn't disappear until clicked
                 const existingBanner = document.getElementById('new-stream-banner');
                 if (existingBanner) return; // Don't show multiple
-                
+
                 // Create overlay to dim the page
                 const overlay = document.createElement('div');
                 overlay.id = 'new-stream-overlay';
                 overlay.className = 'fixed inset-0 bg-black/60 z-40 backdrop-blur-sm';
-                overlay.onclick = () => window.location.reload();
-                
+                overlay.onclick = () => this.dismissNewStreamNotification();
+
                 // Create the banner
                 const banner = document.createElement('div');
                 banner.id = 'new-stream-banner';
@@ -834,8 +846,8 @@
                         </button>
                     </div>
                 `;
-                banner.onclick = () => window.location.reload();
-                
+                banner.onclick = () => this.dismissNewStreamNotification();
+
                 document.body.appendChild(overlay);
                 document.body.appendChild(banner);
             }
