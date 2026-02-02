@@ -302,19 +302,17 @@ If you access the dashboard using a virtual adapter IP (e.g., `http://172.29.16.
    - Switch IPv4 to DHCP if a leftover static `.8` address exists.
 4. Share only the subnet-matching URL (e.g., `http://192.168.100.x:3001/streams`).
 
-#### 1c. "Authentication Failed" after changing device mid-stream
+#### 1c. Play fails after changing device mid-stream
 
-**Symptoms:** You edit a stream (change the audio device) while it was playing, then click Play on the listener page and see "Authentication Failed". Play only works again after removing and recreating the stream.
+**Symptoms:** You edit a stream (change the audio device) while it was playing, then click Play on the listener page. You may see "Stream not running" or previously "Authentication Failed" (Icecast 401 when the mount has no source).
 
-**Likely cause:** After an edit (device change), the stream is stopped and must be started again. The listener page may still be pointing at the old mount or the stream may be in an error state so the proxy or Icecast returns an error that appears as "Authentication Failed".
+**Cause:** After an edit (device change), the stream is stopped and must be started again. The play proxy now returns a clear message instead of piping Icecast’s error, so you no longer see "Authentication Failed".
 
 **What to do:**
 1. On the **admin dashboard**, open the stream and click **Start** (or use Start All) so the stream is running again with the new device.
-2. On the **listener page**, refresh the stream list (reload the page or wait for the next poll), then click Play again.
+2. On the **listener page**, click Play again (no refresh or delete/recreate needed).
 3. If it still fails, check that the stream shows "LIVE" on the dashboard and that Icecast is running. If the stream is in "ERROR" state, fix the device (e.g. select a working source) and click Start again.
 4. Only remove and recreate the stream if the mount is stuck (e.g. Icecast still thinks the old source is connected). Restarting Icecast from the dashboard can clear stuck mounts.
-
-**Note:** This behaviour is under review; the app should not require deleting and recreating the stream when only the device is changed.
 
 #### 2. Windows Firewall Blocking Connections
 

@@ -15,6 +15,8 @@ const __dirname = dirname(__filename)
 class StreamingService {
   constructor() {
     this.activeStreams = {}
+    /** @type {string[]} Display order of stream IDs (S1=first, S2=second, etc.). Persisted in streams.json as _order. */
+    this.streamOrder = []
     this.ffmpegService = FFmpegService
     this.streamsConfigPath = join(process.cwd(), 'config', 'streams.json')
     this.lastIcecastStatus = 'unknown'
@@ -42,19 +44,25 @@ class StreamingService {
       if (fs.existsSync(this.streamsConfigPath)) {
         const data = fs.readFileSync(this.streamsConfigPath, 'utf8')
         const persistentStreams = JSON.parse(data)
-        
-        // Convert persistent streams to active streams (without process references)
-        Object.keys(persistentStreams).forEach(streamId => {
+        const streamIds = Object.keys(persistentStreams).filter(k => k !== '_order')
+
+        this.streamOrder = Array.isArray(persistentStreams._order)
+          ? persistentStreams._order.filter(id => streamIds.includes(id))
+          : streamIds
+        const missingInOrder = streamIds.filter(id => !this.streamOrder.includes(id))
+        this.streamOrder.push(...missingInOrder)
+
+        streamIds.forEach(streamId => {
           const stream = persistentStreams[streamId]
           this.activeStreams[streamId] = {
             ...stream,
-            status: 'stopped', // Mark as stopped since server restarted
+            status: 'stopped',
             ffmpegProcess: null,
-            needsRestart: true // Flag to indicate this stream needs to be restarted
+            needsRestart: true
           }
         })
-        
-        logger.info(`Loaded ${Object.keys(persistentStreams).length} persistent streams`)
+
+        logger.info(`Loaded ${streamIds.length} persistent streams, order: ${this.streamOrder.length} entries`)
       }
     } catch (error) {
       logger.error('Failed to load persistent streams:', error)
@@ -66,14 +74,12 @@ class StreamingService {
    */
   savePersistentStreams() {
     try {
-      // Ensure config directory exists
       const configDir = dirname(this.streamsConfigPath)
       if (!fs.existsSync(configDir)) {
         fs.mkdirSync(configDir, { recursive: true })
       }
 
-      // Save only the stream configuration (not process references)
-      const persistentData = {}
+      const persistentData = { _order: this.streamOrder }
       Object.keys(this.activeStreams).forEach(streamId => {
         const stream = this.activeStreams[streamId]
         persistentData[streamId] = {
@@ -87,7 +93,7 @@ class StreamingService {
       })
 
       fs.writeFileSync(this.streamsConfigPath, JSON.stringify(persistentData, null, 2))
-      logger.info(`Saved ${Object.keys(persistentData).length} streams to persistent storage`)
+      logger.info(`Saved ${Object.keys(persistentData).length - 1} streams to persistent storage`)
     } catch (error) {
       logger.error('Failed to save persistent streams:', error)
     }
@@ -221,6 +227,9 @@ class StreamingService {
           lastStderr: '',  // Store stderr for error diagnostics
           exitCode: null,
           exitSignal: null
+        }
+        if (!this.streamOrder.includes(streamId)) {
+          this.streamOrder.push(streamId)
         }
 
         // Save to persistent storage
@@ -872,8 +881,11 @@ class StreamingService {
         config: { ...stream.config, name: newName || updates.name }
       }
 
-      // Remove old stream entry
+      // Remove old stream entry and update order (replace old id with new id)
       delete this.activeStreams[streamId]
+      const orderIdx = this.streamOrder.indexOf(streamId)
+      if (orderIdx !== -1) this.streamOrder[orderIdx] = newStreamId
+      else this.streamOrder.push(newStreamId)
 
       logger.info(`Stream ID updated from ${streamId} to ${newStreamId}`)
     }
@@ -949,8 +961,9 @@ class StreamingService {
       await this.stopStream(streamId)
     }
 
-    // Remove from active streams
+    // Remove from active streams and from display order
     delete this.activeStreams[streamId]
+    this.streamOrder = this.streamOrder.filter(id => id !== streamId)
 
     // Save to persistent storage (without the deleted stream)
     this.savePersistentStreams()
@@ -1347,17 +1360,25 @@ class StreamingService {
       return s
     })
 
-    // Count based on verified status
-    const runningStreams = verifiedStreams.filter(s => s.status === 'running')
-    const errorStreams = verifiedStreams.filter(s => s.status === 'error')
+    // Order by streamOrder (S1=first, S2=second, etc.); streams not in order go at end
+    const orderMap = new Map(this.streamOrder.map((id, i) => [id, i]))
+    const ordered = [...verifiedStreams].sort((a, b) => {
+      const ai = orderMap.has(a.id) ? orderMap.get(a.id) : this.streamOrder.length
+      const bi = orderMap.has(b.id) ? orderMap.get(b.id) : this.streamOrder.length
+      return ai - bi
+    })
+
+    const runningStreams = ordered.filter(s => s.status === 'running')
+    const errorStreams = ordered.filter(s => s.status === 'error')
 
     return {
-      total: verifiedStreams.length,
+      total: ordered.length,
       running: runningStreams.length,
       errors: errorStreams.length,
-      streams: verifiedStreams.map(s => ({
+      streams: ordered.map((s, index) => ({
         id: s.id,
         name: s.name,
+        label: `S${index + 1}`,
         status: s.status,
         deviceId: s.deviceId,
         inputFile: s.inputFile,
@@ -1370,6 +1391,17 @@ class StreamingService {
         uptime: s.startedAt ? Date.now() - s.startedAt.getTime() : 0
       }))
     }
+  }
+
+  /**
+   * Set display order of streams (for sortable list). Persists to config.
+   * @param {string[]} streamIds - Ordered list of stream IDs
+   */
+  setStreamOrder(streamIds) {
+    const valid = streamIds.filter(id => this.activeStreams[id])
+    this.streamOrder = valid.length ? valid : Object.keys(this.activeStreams)
+    this.savePersistentStreams()
+    logger.info('Stream order updated', { order: this.streamOrder })
   }
 }
 

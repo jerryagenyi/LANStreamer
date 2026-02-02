@@ -107,6 +107,8 @@ router.post('/restart', async (req, res) => {
 /**
  * @route GET /api/streams/play/:streamId
  * @description Proxy Icecast stream for same-origin playback (avoids CORS and firewall on Icecast port).
+ * When Icecast returns 4xx (e.g. 401/404 for no source), respond with 502 and a clear message so the
+ * listener page does not show "Authentication Failed" (e.g. after device change mid-stream).
  * @access Public
  */
 router.get('/play/:streamId', (req, res) => {
@@ -114,6 +116,16 @@ router.get('/play/:streamId', (req, res) => {
   const port = IcecastService.getActualPort() || 8000;
   const url = `http://127.0.0.1:${port}/${encodeURIComponent(streamId)}`;
   http.get(url, (upstream) => {
+    const status = upstream.statusCode || 0;
+    if (status !== 200) {
+      upstream.resume(); // consume body so the connection can close
+      logger.warn('Stream proxy: Icecast returned non-200', { streamId, status });
+      res.status(502).json({
+        error: 'Stream not available',
+        message: 'Stream is not running or mount not ready. Start the stream on the dashboard, then try Play again.'
+      });
+      return;
+    }
     const contentType = upstream.headers['content-type'] || 'audio/mpeg';
     res.setHeader('Content-Type', contentType);
     upstream.pipe(res);
@@ -154,6 +166,25 @@ router.post('/cleanup', (req, res) => {
   } catch (error) {
     logger.error('Error cleaning up streams:', error);
     res.status(500).json({ message: 'Error cleaning up streams', error: error.message });
+  }
+});
+
+/**
+ * @route POST /api/streams/reorder
+ * @description Set display order of streams (S1, S2, S3). Persists to config; affects dashboard and listener page.
+ * @access Public
+ */
+router.post('/reorder', async (req, res) => {
+  try {
+    const { streamIds } = req.body;
+    if (!Array.isArray(streamIds)) {
+      return res.status(400).json({ message: 'streamIds must be an array' });
+    }
+    streamingService.setStreamOrder(streamIds);
+    res.status(200).json({ message: 'Stream order updated', streamIds });
+  } catch (error) {
+    logger.error('Error reordering streams:', error);
+    res.status(500).json({ message: 'Error reordering streams', error: error.message });
   }
 });
 

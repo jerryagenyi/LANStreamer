@@ -128,8 +128,8 @@ router.post('/contact-details', async (req, res) => {
             throw new ValidationError('Invalid phone format', ErrorCodes.INVALID_FORMAT);
         }
 
-        if (whatsapp && !isValidPhone(whatsapp)) {
-            throw new ValidationError('Invalid WhatsApp number format', ErrorCodes.INVALID_FORMAT);
+        if (whatsapp && !isValidWhatsApp(whatsapp)) {
+            throw new ValidationError('WhatsApp number must include country code (e.g. +44 7123 456789). Use digits only with country code, no leading zero.', ErrorCodes.INVALID_FORMAT);
         }
 
         // Prepare contact details
@@ -204,6 +204,17 @@ function isValidPhone(phone) {
     // Check if it's a valid phone number (7-15 digits, optionally starting with +)
     const phoneRegex = /^\+?[1-9]\d{6,14}$/;
     return phoneRegex.test(cleaned);
+}
+
+/**
+ * Validate WhatsApp number for wa.me link: digits only with country code (no leading zero).
+ * E.g. +44 7123 456789 → 447123456789 (valid). 07123456789 (invalid, missing country code).
+ */
+function isValidWhatsApp(value) {
+    const digits = (value || '').replace(/\D/g, '');
+    if (digits.length < 10 || digits.length > 15) return false;
+    if (digits.startsWith('0')) return false; // leading zero usually means missing country code
+    return /^[1-9]\d{9,14}$/.test(digits);
 }
 
 /**

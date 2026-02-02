@@ -464,7 +464,7 @@
                                     <div class="absolute inset-0 w-3 h-3 rounded-full bg-[var(--live-color)] animate-ping opacity-75"></div>
                                 </div>
                                 <div class="flex-1 min-w-0">
-                                    <h3 class="font-semibold text-white text-base sm:text-lg mb-1 truncate">${stream.name || stream.id}</h3>
+                                    <h3 class="font-semibold text-white text-base sm:text-lg mb-1 truncate">${stream.label ? stream.label + ' — ' : ''}${stream.name || stream.id}</h3>
                                     <!-- Mobile: Stack info vertically, Desktop: Horizontal -->
                                     <div class="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4 text-xs sm:text-sm text-gray-400">
                                         <span class="flex items-center gap-1">
@@ -519,7 +519,7 @@
                             <div class="mt-4 p-3 bg-green-500/10 border border-green-500/20 rounded-lg">
                                 <div class="flex items-center gap-2 mb-3">
                                     <span class="material-symbols-rounded text-green-400">volume_up</span>
-                                    <span class="text-green-300 text-sm">Now playing: ${stream.name || stream.id}</span>
+                                    <span class="text-green-300 text-sm">Now playing: ${stream.label ? stream.label + ' ' : ''}${stream.name || stream.id}</span>
                                 </div>
                                 <!-- Volume Control -->
                                 <div class="flex items-center gap-3">
@@ -616,14 +616,14 @@
                                 errorMessage = 'Stream format not supported by your browser. Try Chrome, Firefox, or Edge for better AAC support.';
                             } else if (errorCode === 2) { // MEDIA_ERR_NETWORK
                                 if (networkState === 2 || networkState === 3) {
-                                    errorMessage = 'Network error loading stream. Check if the Icecast server is running and try again.';
+                                    errorMessage = 'Stream not running. Start it on the dashboard, then try Play again.';
                                 } else {
                                     errorMessage = 'Network error loading stream. Check your connection and try again.';
                                 }
                             } else if (errorCode === 3) { // MEDIA_ERR_DECODE
                                 errorMessage = 'Stream decode error. The audio format may be corrupted or incompatible.';
                             } else if (networkState === 2 || networkState === 3) {
-                                errorMessage = 'Stream server unavailable. Please check if the Icecast server is running.';
+                                errorMessage = 'Stream not running. Start it on the dashboard, then try Play again.';
                             }
 
                             this.showNotification(errorMessage, 'error');
@@ -1039,13 +1039,16 @@
                 }
 
                 if (contactData.showWhatsapp && contactData.whatsapp) {
-                    const whatsappUrl = `https://wa.me/${contactData.whatsapp.replace(/[^\d]/g, '')}?text=Hi%20from%20LANStreamer!`;
-                    contactItems.push(`
+                    const digits = contactData.whatsapp.replace(/\D/g, '');
+                    if (digits && !digits.startsWith('0')) {
+                        const whatsappUrl = `https://wa.me/${digits}?text=Hi%20from%20LANStreamer!`;
+                        contactItems.push(`
                         <a href="${whatsappUrl}" target="_blank" class="flex items-center gap-3 text-gray-300 hover:text-[var(--primary-color)] transition-colors">
                             <span class="material-symbols-rounded text-sm">chat</span>
                             <span class="text-sm">WhatsApp Chat</span>
                         </a>
                     `);
+                    }
                 }
 
                 // Hide the entire contact section if no contact details are available

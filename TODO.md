@@ -30,19 +30,19 @@ Context: [CLAUDE.md](CLAUDE.md), [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.
 
 - [ ] **Error alert UX** — Show structured error from API (cause + diagnosis: title, solutions); optional collapsible Details and FFmpeg output; centred modal or large toast when stream fails; link to troubleshooting guide. _Note: Implemented (structured modal, diagnosis, stderr in Technical details, scenario tests); QA pending._ _Edge cases: Start All partial failure — toast lists failed stream names (up to 5 + "and N more") and first error reason; test API response shape and frontend message._
 
-- [ ] **Stability** — Confirm 3+ streams stay stable (see TROUBLESHOOTING.md).
+- [x] **Stability** — Confirm 3+ streams stay stable (see TROUBLESHOOTING.md). _CONFIRMED working._
 
-- [ ] **Device change mid-stream / Play after edit** — After changing a stream's device mid-stream, Play on listener page can show "Authentication Failed"; workaround: Start stream on dashboard, refresh listener page. _See TROUBLESHOOTING.md. Should not require delete/recreate._
+- [x] **Device change mid-stream / Play after edit** — Play proxy now checks Icecast response status; non-200 returns 502 with clear message so listener page no longer shows "Authentication Failed". Listener page shows "Stream not running. Start it on the dashboard, then try Play again." No refresh or delete/recreate needed. _See TROUBLESHOOTING.md §1c._
 
-- [ ] **Stream labels (optional)** — e.g. prefix streams S1, S2, S3; or better naming idea.
+- [x] **Stream labels (optional)** — Streams show S1, S2, S3 from server order; label in `getStats()` and on listener page / dashboard.
 
-- [ ] **Sortable streams (optional)** — Drag-and-drop or up/down to reorder stream list on admin dashboard; persist order (e.g. in config). Works with Stream labels; affects frontend for listeners without refresh.
+- [x] **Sortable streams (optional)** — Up/down buttons on dashboard; `POST /api/streams/reorder`; order persisted in `config/streams.json` (`_order`); listener page uses same order and S1/S2/S3 labels without refresh.
 
-- [ ] **Contact: WhatsApp** — Enforce country code, build `wa.me/<digits>` link.
-
-- [ ] **UI/UX polish (optional)** — [docs/UI-UX-RECOMMENDATIONS.md](docs/UI-UX-RECOMMENDATIONS.md).
+- [x] **Contact: WhatsApp** — Country code enforced (digits 10–15, no leading zero); validation backend + ContactManager; `wa.me/<digits>` built on listener page; placeholder "e.g. +44 7123 456789 (country code required)".
 
 - [ ] **Update notification UX** — Show notification bell icon when update available; click to open modal with update info and link to latest release. Current: button shows "Updates" and runs manual check on click; should auto-check on load and show bell when updateAvailable=true.
+
+- [ ] **UI/UX polish (optional)** — [docs/UI-UX-RECOMMENDATIONS.md](docs/UI-UX-RECOMMENDATIONS.md).
 
 ---
 
