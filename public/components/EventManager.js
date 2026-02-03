@@ -285,7 +285,7 @@ class EventManager {
         }
 
         container.innerHTML = `
-            <div class="bg-[var(--card-bg)] border border-[var(--border-color)] rounded-2xl p-6 shadow-2xl shadow-black/30">
+            <div class="glass-card p-6">
                 <div class="mb-4">
                     <h2 class="text-lg font-bold text-white">🎯 Edit Event Details</h2>
                 </div>

@@ -94,7 +94,7 @@ class HeaderComponent {
         const modal = document.createElement('div');
         modal.className = 'fixed inset-0 bg-black/50 flex items-center justify-center z-50';
         modal.innerHTML = `
-            <div class="bg-[var(--card-bg)] border border-[var(--border-color)] rounded-2xl p-6 max-w-md mx-4 shadow-2xl">
+            <div class="glass-card p-6 max-w-md mx-4">
                 <div class="flex items-center gap-3 mb-4">
                     <span class="material-symbols-rounded text-3xl text-green-500">system_update</span>
                     <div>
@@ -102,7 +102,7 @@ class HeaderComponent {
                         <p class="text-sm text-gray-400">A new version of LANStreamer is ready</p>
                     </div>
                 </div>
-                <div class="bg-gray-800/50 rounded-lg p-4 mb-4">
+                <div class="glass-card-inset rounded-lg p-4 mb-4">
                     <div class="flex justify-between items-center mb-2">
                         <span class="text-gray-400 text-sm">Current Version</span>
                         <span class="text-white font-medium">${this.updateInfo.current}</span>
@@ -113,10 +113,10 @@ class HeaderComponent {
                     </div>
                 </div>
                 <div class="flex gap-3">
-                    <button id="update-view-release" class="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg transition-colors">
+                    <button id="update-view-release" class="btn-glass btn-glass-primary flex-1">
                         View Release
                     </button>
-                    <button id="update-close-modal" class="flex-1 px-4 py-2 bg-gray-600 hover:bg-gray-500 text-white rounded-lg transition-colors">
+                    <button id="update-close-modal" class="btn-glass btn-glass-secondary flex-1">
                         Close
                     </button>
                 </div>
@@ -159,13 +159,13 @@ class HeaderComponent {
         const streamsUrl = this.serverHost ? `http://${this.serverHost}:3001/streams` : '/streams';
 
         container.innerHTML = `
-            <header class="sticky top-0 z-50 flex items-center justify-between whitespace-nowrap border-b border-solid border-[var(--border-color)] bg-[var(--dark-bg)]/80 px-10 py-4 backdrop-blur-lg">
+            <header class="header-glass sticky top-0 z-50 flex items-center justify-between whitespace-nowrap px-10 py-4">
                 <!-- Logo Section -->
                 <div class="flex items-center gap-4 text-white">
                     <a href="http://localhost:3001" class="flex items-center gap-2 text-white hover:text-[var(--primary-color)] transition-colors">
                         <img src="/assets/lanstreamer-logo.png"
                              alt="LANStreamer"
-                             class="h-16 w-auto"
+                             class="h-16 w-auto logo-glow"
                              id="logo-image"
                              onerror="this.style.display='none'; document.getElementById('logo-fallback').style.display='flex';">
                         <div id="logo-fallback" style="display: none;" class="flex items-center">
@@ -178,7 +178,7 @@ class HeaderComponent {
                 <div class="flex items-center gap-3">
                     <!-- Update Icon: shows badge when update available; click opens modal or runs check -->
                     <button id="header-update-bell-btn"
-                            class="inline-flex items-center justify-center w-10 h-10 text-gray-300 hover:text-white bg-gray-800/50 hover:bg-gray-700/50 border border-gray-600/30 hover:border-gray-500/50 rounded-lg transition-all duration-300"
+                            class="icon-btn text-gray-300 hover:text-white"
                             title="Check for Updates"
                             aria-label="Check for Updates">
                         <span class="material-symbols-rounded text-sm">system_update</span>
@@ -188,14 +188,14 @@ class HeaderComponent {
                     <div class="flex items-center gap-2">
                         <a href="${streamsUrl}"
                            target="_blank"
-                           class="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-300 hover:text-white bg-gray-800/50 hover:bg-gray-700/50 border border-gray-600/30 hover:border-gray-500/50 rounded-lg transition-all duration-300"
+                           class="btn-glass btn-glass-secondary"
                            title="Open Streams Page (for listeners)">
                             <span class="material-symbols-rounded text-sm">radio</span>
                             <span class="hidden sm:inline">Listen to Streams</span>
                         </a>
 
                         <button id="header-logout-btn"
-                               class="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-300 hover:text-white bg-gray-800/50 hover:bg-gray-700/50 border border-gray-600/30 hover:border-gray-500/50 rounded-lg transition-all duration-300"
+                               class="btn-glass btn-glass-secondary"
                                title="Logout from Admin Dashboard"
                                aria-label="Sign out of admin dashboard"
                                role="button">
@@ -318,17 +318,17 @@ class HeaderComponent {
             const modal = document.createElement('div');
             modal.className = 'fixed inset-0 bg-black/50 flex items-center justify-center z-50';
             modal.innerHTML = `
-                <div class="bg-[var(--card-bg)] border border-[var(--border-color)] rounded-2xl p-6 max-w-md mx-4 shadow-2xl">
+                <div class="glass-card p-6 max-w-md mx-4">
                     <div class="flex items-center gap-3 mb-4">
                         <span class="material-symbols-rounded text-yellow-500">logout</span>
                         <h3 class="text-lg font-semibold text-white">Confirm Logout</h3>
                     </div>
                     <p class="text-gray-300 mb-6">Are you sure you want to sign out of the admin dashboard?</p>
                     <div class="flex justify-end gap-3">
-                        <button id="cancel-logout" class="px-4 py-2 bg-gray-600 hover:bg-gray-500 text-white rounded-lg transition-colors">
+                        <button id="cancel-logout" class="btn-glass btn-glass-secondary">
                             Cancel
                         </button>
-                        <button id="confirm-logout" class="px-4 py-2 bg-red-600 hover:bg-red-500 text-white rounded-lg transition-colors">
+                        <button id="confirm-logout" class="btn-glass btn-glass-danger">
                             Sign Out
                         </button>
                     </div>
