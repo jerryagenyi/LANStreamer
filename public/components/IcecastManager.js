@@ -414,7 +414,7 @@ class IcecastManager {
         const icecastAdminUrl = `http://${icecastHost}:${icecastPort}/admin/`;
 
         container.innerHTML = `
-            <div class="bg-[var(--card-bg)] border border-[var(--border-color)] rounded-2xl p-6 shadow-2xl shadow-black/30">
+            <div class="glass-card p-6">
                 <div class="flex justify-between items-start mb-4">
                     <div class="flex items-center gap-3">
                         <h2 class="text-xl font-bold text-white">Icecast Server</h2>
@@ -438,7 +438,7 @@ class IcecastManager {
 
                 <div class="space-y-5 ${!this.status.installed ? 'opacity-50' : ''}">
                     <!-- Server Status -->
-                    <div class="flex items-center gap-4 p-3 bg-[#111111] border border-[var(--border-color)] rounded-xl">
+                    <div class="flex items-center gap-4 p-3 glass-card-inset rounded-xl">
                         <span class="material-symbols-rounded text-2xl ${statusColor.replace('bg-', 'text-')}">${statusIcon}</span>
                         <div class="flex-1">
                             <p class="font-semibold text-white">${this.getServerStatusText()}</p>

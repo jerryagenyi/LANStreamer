@@ -77,7 +77,7 @@ class FFmpegStreamsManager {
                 </div>
                 <p data-duplicate-message class="text-gray-300 text-sm mb-6"></p>
                 <div class="flex justify-end">
-                    <button data-duplicate-ok class="px-4 py-2 bg-[var(--primary-color)] hover:opacity-90 text-white rounded-lg transition-colors">OK</button>
+                    <button data-duplicate-ok class="px-4 py-2 btn-glass btn-glass-primary text-white rounded-lg">OK</button>
                 </div>
             </div>
         `;
@@ -651,7 +651,7 @@ class FFmpegStreamsManager {
                                 id="editStreamName"
                                 value="${stream.name || ''}"
                                 maxlength="50"
-                                class="w-full px-3 py-2 bg-[#1a1a1a] border border-[var(--border-color)] rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-[var(--primary-color)] transition-colors pr-12"
+                                class="w-full px-3 py-2 input-glass rounded-lg text-white placeholder-gray-400 transition-colors pr-12"
                                 placeholder="Enter stream name"
                                 required
                             >
@@ -688,7 +688,7 @@ class FFmpegStreamsManager {
                         </button>
                         <button
                             type="submit"
-                            class="flex-1 px-4 py-2 bg-[var(--primary-color)]/20 hover:bg-[var(--primary-color)]/30 border border-[var(--primary-color)]/30 text-[var(--primary-color)] rounded-lg transition-all duration-300"
+                            class="flex-1 btn-glass btn-glass-secondary"
                         >
                             Update Stream
                         </button>
@@ -952,7 +952,7 @@ class FFmpegStreamsManager {
         }
 
         this.container.innerHTML = `
-            <div class="bg-[var(--card-bg)] border border-[var(--border-color)] rounded-2xl p-6 shadow-2xl shadow-black/30">
+            <div class="glass-card p-6">
                 <!-- Header -->
                 <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
                     <div>
@@ -1008,7 +1008,7 @@ class FFmpegStreamsManager {
                         <p class="text-gray-400 mb-4">No active streams yet. Start streaming audio from any input source.</p>
                     </div>
 
-                    <div class="bg-[#111111] border border-[var(--border-color)] rounded-xl p-6 max-w-md mx-auto">
+                    <div class="glass-card-inset rounded-xl p-6 max-w-md mx-auto">
                         <h4 class="text-white font-medium mb-3">🚀 Quick Start Guide:</h4>
                         <div class="text-left space-y-2 text-sm text-gray-300">
                             <div class="flex items-center gap-2">
@@ -1081,7 +1081,7 @@ class FFmpegStreamsManager {
             }
 
             return `
-            <div class="bg-[#111111] border border-[var(--border-color)] rounded-xl p-5 hover:border-[var(--primary-color)]/30 transition-all duration-300">
+            <div class="glass-card-inset rounded-xl p-5 hover:border-[var(--primary-color)]/30 transition-all duration-300">
                 <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                     <!-- Stream Info (label S1, S2, S3 + reorder) -->
                     <div class="flex items-center gap-4 flex-1">
@@ -1266,7 +1266,7 @@ class FFmpegStreamsManager {
         if (!this.container) return;
 
         this.container.innerHTML = `
-            <div class="bg-[var(--card-bg)] border border-[var(--border-color)] rounded-2xl p-6 shadow-2xl shadow-black/30">
+            <div class="glass-card p-6">
                 <div class="flex items-center justify-between mb-4">
                     <h2 class="text-xl font-bold text-white">FFmpeg Streams</h2>
                     <div class="group relative flex items-center">
@@ -1279,7 +1279,7 @@ class FFmpegStreamsManager {
                 <div class="text-center py-8">
                     <span class="material-symbols-rounded text-4xl text-red-500 mb-2">error</span>
                     <p class="text-red-400 mb-2">${message}</p>
-                    <button onclick="ffmpegStreamsManager.init()" class="inline-flex items-center gap-2 rounded-md px-4 py-2 text-sm font-semibold text-white bg-[var(--primary-color)]/10 hover:bg-[var(--primary-color)]/20 border border-[var(--border-color)] transition-all duration-300">
+                    <button onclick="ffmpegStreamsManager.init()" class="btn-glass btn-glass-secondary text-sm">
                         <span class="material-symbols-rounded">refresh</span>
                         Retry
                     </button>
@@ -1319,7 +1319,7 @@ class FFmpegStreamsManager {
         const modal = document.createElement('div');
         modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
         modal.innerHTML = `
-            <div class="bg-[var(--card-bg)] border border-[var(--border-color)] rounded-2xl p-6 shadow-2xl shadow-black/30 max-w-lg w-full mx-4">
+            <div class="glass-card p-6 max-w-lg w-full mx-4">
                 <div class="flex items-center gap-3 mb-6">
                     <span class="material-symbols-rounded text-2xl text-[var(--primary-color)]">radio</span>
                     <h3 class="text-xl font-bold text-white">🎤 Start New Audio Stream</h3>
@@ -1346,7 +1346,7 @@ class FFmpegStreamsManager {
                                 <input type="text"
                                        id="stream-name"
                                        maxlength="50"
-                                       class="w-full bg-[#2A2A2A] border border-[var(--border-color)] text-white text-sm rounded-md focus:ring-[var(--primary-color)] focus:border-[var(--primary-color)] block px-3 py-2.5 pr-12"
+                                       class="w-full input-glass text-white text-sm rounded-md focus:ring-[var(--primary-color)] focus:border-[var(--primary-color)] block px-3 py-2.5 pr-12"
                                        placeholder="e.g., Main Room Audio, DJ Mix, Podcast"
                                        required>
                                 <div class="absolute right-3 top-1/2 transform -translate-y-1/2">
@@ -1361,7 +1361,7 @@ class FFmpegStreamsManager {
                                 <span class="material-symbols-rounded text-sm mr-1">mic</span>
                                 Audio Input Source
                             </label>
-                            <select id="stream-device" class="w-full bg-[#2A2A2A] border border-[var(--border-color)] text-white text-sm rounded-md focus:ring-[var(--primary-color)] focus:border-[var(--primary-color)] block px-3 py-2.5" required>
+                            <select id="stream-device" class="w-full input-glass text-white text-sm rounded-md focus:ring-[var(--primary-color)] focus:border-[var(--primary-color)] block px-3 py-2.5" required>
                                 <option value="">🎯 Select your audio source...</option>
                                 ${this.audioDevices.map(device => `
                                     <option value="${device.id}">
@@ -1384,7 +1384,7 @@ class FFmpegStreamsManager {
                                 <span class="material-symbols-rounded text-sm mr-1">high_quality</span>
                                 Stream Quality
                             </label>
-                            <select id="stream-bitrate" class="w-full bg-[#2A2A2A] border border-[var(--border-color)] text-white text-sm rounded-md focus:ring-[var(--primary-color)] focus:border-[var(--primary-color)] block px-3 py-2.5">
+                            <select id="stream-bitrate" class="w-full input-glass text-white text-sm rounded-md focus:ring-[var(--primary-color)] focus:border-[var(--primary-color)] block px-3 py-2.5">
                                 <option value="128">🎵 128 kbps - Good (smaller file size)</option>
                                 <option value="192" selected>🎶 192 kbps - High Quality (recommended)</option>
                                 <option value="256">🎼 256 kbps - Very High Quality</option>
