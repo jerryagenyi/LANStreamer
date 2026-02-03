@@ -6,6 +6,8 @@ Context: [CLAUDE.md](CLAUDE.md), [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.
 
 ## To do (priority order)
 
+- [ ] **Explore: Listener song requests** — Extend LANStreamer so anyone on the network (mobile or PC) can request to play a song from their device; admin grants the request and the song is listed on the listener page for others to hear. Support multiple user requests.
+
 - [ ] **Centralize notifications/alerts** — Control all notifications, alerts, and toasts from a single place so one change impacts everywhere (e.g. styling, z-index, behaviour). To be done on branch `fix/error-handling-refactor` or a new dedicated branch (e.g. `refactor/centralize-notifications`).
 
 - [ ] **Centralised theming (light/dark, themes)** — UI-UX v2 was implemented with many styles inline in `index.html` and `streams.html` (duplicated variables, hardcoded colours). Refactor to a single theme layer (e.g. shared CSS or design tokens) so themes and light/dark mode can be added without touching every component. Prefer one source of truth for colours, shadows, and glass tokens.
