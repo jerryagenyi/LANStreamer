@@ -22,13 +22,13 @@ Context: [CLAUDE.md](CLAUDE.md), [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.
 
 - [x] **Notification types** — For duplicate stream name or duplicate source, use a simple modal ("stream already exists") without troubleshooting link; for real failures, existing error handling with diagnosis/link. Implemented in FFmpegStreamsManager: isDuplicateError(), showDuplicateModal(); used for start, restart, update, start-all.
 
-- [ ] **Source validation & clear errors** — On stream failure, check if source (device/file) is viable and say so in the error. Optional: "Test source" button per source. _Note: Test source button + Show test tools toggle and structured errors implemented; QA pending._
+- [x] **Source validation & clear errors** — On stream failure, backend errorDiagnostics provides category (device, connection, auth, etc.), title, solutions; API returns shortMessage; frontend shows error + troubleshooting link. Optional "Test source" button deferred.
 
 - [x] **Timing of Modals** — Alert modals should appear only after the action is performed, not before. All success modals now have 1-second delay after UI updates.
 
 - [x] **Listener: dismiss without reload** — New-stream notification dismisses overlay without full reload (don't stop playback). Hot reload only for the affected stream. Implemented: `dismissNewStreamNotification()` calls `loadStreams()` to refresh without page reload.
 
-- [ ] **Error alert UX** — Show structured error from API (cause + diagnosis: title, solutions); optional collapsible Details and FFmpeg output; centred modal or large toast when stream fails; link to troubleshooting guide. _Note: Implemented (structured modal, diagnosis, stderr in Technical details, scenario tests); QA pending._ _Edge cases: Start All partial failure — toast lists failed stream names (up to 5 + "and N more") and first error reason; test API response shape and frontend message._
+- [x] **Error alert UX** — Structured error from API (shortMessage = diagnosis title); centred toast with message + link to troubleshooting guide; Start All partial failure lists failed names (up to 5 + "and N more") and first error. Duplicate errors use simple modal without link.
 
 - [x] **Stability** — Confirm 3+ streams stay stable (see TROUBLESHOOTING.md). _CONFIRMED working._
 
@@ -44,7 +44,7 @@ Context: [CLAUDE.md](CLAUDE.md), [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.
 
 - [x] **Event Details & Your Contact components** — Not working as they should; details not saving for contact, and the event details collapsible doesn't open after saving details.
 
-- [ ] **UI/UX polish (optional)** — [docs/UI-UX-RECOMMENDATIONS.md](docs/UI-UX-RECOMMENDATIONS.md).
+- [x] **UI/UX polish (optional)** — [docs/UI-UX-RECOMMENDATIONS.md](docs/UI-UX-RECOMMENDATIONS.md).
 
 ---
 
