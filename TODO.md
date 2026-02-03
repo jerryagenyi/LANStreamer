@@ -6,6 +6,10 @@ Context: [CLAUDE.md](CLAUDE.md), [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.
 
 ## To do (priority order)
 
+- [ ] **Centralize notifications/alerts** — Control all notifications, alerts, and toasts from a single place so one change impacts everywhere (e.g. styling, z-index, behaviour). To be done on branch `fix/error-handling-refactor` or a new dedicated branch (e.g. `refactor/centralize-notifications`).
+
+- [ ] **Centralised theming (light/dark, themes)** — UI-UX v2 was implemented with many styles inline in `index.html` and `streams.html` (duplicated variables, hardcoded colours). Refactor to a single theme layer (e.g. shared CSS or design tokens) so themes and light/dark mode can be added without touching every component. Prefer one source of truth for colours, shadows, and glass tokens.
+
 - [x] **Lock admin to localhost** — Admin UI only on localhost; listeners use LAN IP. Implemented: `requireLocalhostAdmin` middleware; listener page and APIs (config, status, play, contact-details) allowed from LAN; integration tests in `lock-admin-localhost.test.js`.
 
 - [x] **Verify 5+ streams** — Confirmed 6/6 live (VB-Cable A/B, mics). Root cause of "5th fails" was bad device choice, not Icecast limit.
@@ -22,13 +26,13 @@ Context: [CLAUDE.md](CLAUDE.md), [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.
 
 - [x] **Notification types** — For duplicate stream name or duplicate source, use a simple modal ("stream already exists") without troubleshooting link; for real failures, existing error handling with diagnosis/link. Implemented in FFmpegStreamsManager: isDuplicateError(), showDuplicateModal(); used for start, restart, update, start-all.
 
-- [x] **Source validation & clear errors** — On stream failure, backend errorDiagnostics provides category (device, connection, auth, etc.), title, solutions; API returns shortMessage; frontend shows error + troubleshooting link. Optional "Test source" button deferred.
+- [x] **Source validation & clear errors** — On stream failure, backend errorDiagnostics provides category (device, connection, auth, etc.), title, solutions; API returns shortMessage; admin dashboard shows error + troubleshooting link. Optional "Test source" button deferred.
 
 - [x] **Timing of Modals** — Alert modals should appear only after the action is performed, not before. All success modals now have 1-second delay after UI updates.
 
 - [x] **Listener: dismiss without reload** — New-stream notification dismisses overlay without full reload (don't stop playback). Hot reload only for the affected stream. Implemented: `dismissNewStreamNotification()` calls `loadStreams()` to refresh without page reload.
 
-- [x] **Error alert UX** — Structured error from API (shortMessage = diagnosis title); centred toast with message + link to troubleshooting guide; Start All partial failure lists failed names (up to 5 + "and N more") and first error. Duplicate errors use simple modal without link.
+- [x] **Error alert UX** — Structured error from API (shortMessage = diagnosis title); admin dashboard shows centred toast with message + link to troubleshooting guide; Start All partial failure lists failed names (up to 5 + "and N more") and first error. Duplicate errors use simple modal without link.
 
 - [x] **Stability** — Confirm 3+ streams stay stable (see TROUBLESHOOTING.md). _CONFIRMED working._
 
