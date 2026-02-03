@@ -342,8 +342,10 @@ class IcecastService {
    * Check environment variable paths (highest priority)
    */
   async _checkEnvironmentPaths() {
-    const exePath = config.icecast.paths.exePath;
-    const configPath = config.icecast.paths.configPath || config.icecast.configPath;
+    const paths = config.icecast?.paths;
+    if (!paths) return null;
+    const exePath = paths.exePath;
+    const configPath = paths.configPath || config.icecast?.configPath;
 
     if (!exePath || !configPath) {
       return null;
@@ -1473,6 +1475,16 @@ class IcecastService {
           success: true,
           message: 'Icecast is already running',
           status: 'running'
+        };
+      }
+
+      // Respect manual stop flag: if user manually stopped, don't auto-start
+      if (!isManualStart && this.manuallyStopped) {
+        logger.icecast('Auto-start blocked - Icecast was manually stopped by user');
+        return {
+          success: false,
+          message: 'Icecast was manually stopped. Click Start to restart.',
+          status: 'manually_stopped'
         };
       }
 
