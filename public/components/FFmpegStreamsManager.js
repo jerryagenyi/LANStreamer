@@ -106,6 +106,15 @@ class FFmpegStreamsManager {
         const linkUrl = TROUBLESHOOTING_GUIDE_URL;
         const linkText = 'troubleshooting guide';
 
+        // Every stream start/restart failure also lands in the notification bell
+        if (window.LSNotifications) {
+            LSNotifications.notify({
+                title,
+                message: 'Stream could not be started. Open the row details for the cause.',
+                type: 'error'
+            });
+        }
+
         if (diagnosis && (diagnosis.description || (diagnosis.solutions && diagnosis.solutions.length > 0))) {
             // Structured error: show centred modal with title, short solutions, expandable Details
             const escapedTitle = String(title).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -126,7 +135,7 @@ class FFmpegStreamsManager {
                             <h3 class="text-lg font-semibold text-white">${escapedTitle}</h3>
                             ${solutionsHtml}
                             <p class="text-sm mt-2 text-red-200/90">
-                                See the <a href="${linkUrl}" target="_blank" rel="noopener noreferrer" class="underline font-medium hover:opacity-90">${linkText}</a> for more steps.
+                                Open the <a href="/docs" target="_blank" rel="noopener" class="underline font-medium hover:opacity-90">in-app guide</a> or the <a href="${linkUrl}" target="_blank" rel="noopener noreferrer" class="underline font-medium hover:opacity-90">full ${linkText}</a> for more steps.
                             </p>
                         </div>
                         <button class="text-gray-400 hover:text-white transition-colors flex-shrink-0" onclick="this.closest('.fixed').remove()" aria-label="Close">
@@ -241,6 +250,21 @@ class FFmpegStreamsManager {
             if (data.streams) {
                 // Update client timers based on stream status changes
                 this.updateClientTimers(data.streams);
+
+                // Feed the notification bell when a running stream lands in error
+                if (window.LSNotifications && Array.isArray(this.activeStreams)) {
+                    data.streams.forEach(next => {
+                        const prev = this.activeStreams.find(s => s.id === next.id);
+                        if (prev && prev.status === 'running' && next.status === 'error') {
+                            LSNotifications.notify({
+                                title: `Stream "${next.name || next.id}" stopped with an error`,
+                                message: next.errorShort || 'Check the row details for the cause.',
+                                type: 'error'
+                            });
+                        }
+                    });
+                }
+
                 this.activeStreams = data.streams;
 
                 // Debug: Log stream names
@@ -512,6 +536,13 @@ class FFmpegStreamsManager {
             }
         } catch (error) {
             console.error('Failed to restart stream:', error);
+            if (window.LSNotifications) {
+                LSNotifications.notify({
+                    title: error.shortMessageHint || `Could not start "${streamId}"`,
+                    message: (error.message || '').split('\n')[0],
+                    type: 'error'
+                });
+            }
             const msg = error.message || 'Failed to restart stream';
             if (this.isDuplicateError(msg)) {
                 this.showDuplicateModal('Stream already exists', msg);
@@ -1242,7 +1273,16 @@ class FFmpegStreamsManager {
                         <span class="uptime-chip" title="Uptime" data-stream-uptime="${stream.id}"><span class="material-symbols-rounded text-sm" aria-hidden="true">schedule</span> ${uptime}</span>
                     </div>
                     ${stream.status === 'error' ? `
-                        <div class="mt-1.5 text-xs text-red-400/90 leading-relaxed" data-stream-error>${errorMessage} <button type="button" onclick="ffmpegStreamsManager.editStream('${stream.id}')" class="underline hover:text-red-300">Edit</button> to change device, then Start.</div>
+                        <details class="stream-error" data-stream-error>
+                            <summary title="Show what went wrong">
+                                <span class="material-symbols-rounded" aria-hidden="true">error</span>
+                                <span class="truncate">${this.escapeHtml(stream.errorShort || 'Stream failed to start')}</span>
+                                <span class="material-symbols-rounded chev" aria-hidden="true">expand_more</span>
+                            </summary>
+                            <div class="stream-error-detail">${this.escapeHtml(errorMessage)}
+
+<a href="/docs" target="_blank" rel="noopener">Open troubleshooting guide</a> · <button type="button" onclick="ffmpegStreamsManager.editStream('${stream.id}')" style="background:none;border:none;cursor:pointer;padding:0;color:var(--tok-accent);text-decoration:underline;font-size:inherit;">Edit stream</button> to change the audio source.</div>
+                        </details>
                     ` : ''}
                 </div>
 
@@ -1600,6 +1640,17 @@ class FFmpegStreamsManager {
     }
 
     /**
+     * Escape text for safe interpolation into HTML templates
+     */
+    escapeHtml(text) {
+        return String(text ?? '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;');
+    }
+
+    /**
      * Format uptime duration
      */
     formatUptime(milliseconds) {
@@ -1623,59 +1674,17 @@ class FFmpegStreamsManager {
      * @param {{ linkUrl?: string, linkText?: string }} options - Optional; linkUrl + linkText show "See the [link] for steps."
      */
     showNotification(message, type = 'info', options = {}) {
-        const { linkUrl, linkText = 'troubleshooting guide' } = options;
-        const useErrorWithLink = type === 'error' && linkUrl;
-
-        // For stream errors with link, always use our own toast (short message + link)
-        if (useErrorWithLink) {
-            const escaped = String(message).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-            const linkHtml = `<a href="${linkUrl}" target="_blank" rel="noopener noreferrer" class="underline font-medium hover:opacity-90">${linkText}</a>`;
-            const content = `${escaped}<br><br>See the ${linkHtml} for steps.`;
-            const toast = document.createElement('div');
-            toast.className = 'fixed top-4 left-1/2 -translate-x-1/2 z-50 px-6 py-5 rounded-xl shadow-2xl transition-all duration-300 max-w-md bg-red-700 text-white';
-            toast.innerHTML = `
-                <div class="flex items-start gap-3">
-                    <span class="material-symbols-rounded text-xl mt-0.5 flex-shrink-0">error</span>
-                    <div class="flex-1 min-w-0 text-sm leading-relaxed">${content}</div>
-                    <button class="text-white/80 hover:text-white transition-colors flex-shrink-0 ml-2" onclick="this.closest('.fixed').remove()">
-                        <span class="material-symbols-rounded text-xl">close</span>
-                    </button>
-                </div>
-            `;
-            document.body.appendChild(toast);
-            const timeout = 60000;
-            setTimeout(() => { toast.style.opacity = '0'; setTimeout(() => toast.remove(), 300); }, timeout);
+        // All toasts go through the stacking toast system (LSToasts): new ones
+        // push older ones down instead of overlapping at the same fixed spot.
+        if (window.LSToasts) {
+            LSToasts.show(message, type, {
+                linkUrl: options.linkUrl,
+                linkText: options.linkText || 'troubleshooting guide',
+                timeoutMs: type === 'error' ? 30000 : undefined
+            });
             return;
         }
-
-        if (window.showNotification) {
-            window.showNotification(message, type);
-        } else {
-            const maxWidth = type === 'error' ? 'max-w-3xl' : 'max-w-md';
-            const toast = document.createElement('div');
-            toast.className = `fixed top-4 left-1/2 -translate-x-1/2 z-50 px-6 py-5 rounded-xl shadow-2xl transition-all duration-300 ${maxWidth} ${
-                type === 'success' ? 'bg-green-600 text-white' :
-                type === 'error' ? 'bg-red-700 text-white' :
-                'bg-blue-600 text-white'
-            }`;
-            const formattedMessage = type === 'error'
-                ? `<pre class="whitespace-pre-wrap font-sans text-sm leading-relaxed max-h-96 overflow-y-auto">${String(message).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</pre>`
-                : `<span class="flex-1">${String(message).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</span>`;
-            toast.innerHTML = `
-                <div class="flex items-start gap-3">
-                    <span class="material-symbols-rounded text-xl mt-0.5 flex-shrink-0">
-                        ${type === 'success' ? 'check_circle' : type === 'error' ? 'error' : 'info'}
-                    </span>
-                    <div class="flex-1 min-w-0">${formattedMessage}</div>
-                    <button class="text-white/80 hover:text-white transition-colors flex-shrink-0 ml-2" onclick="this.parentElement.parentElement.remove()">
-                        <span class="material-symbols-rounded text-xl">close</span>
-                    </button>
-                </div>
-            `;
-            document.body.appendChild(toast);
-            const timeout = type === 'error' ? 60000 : 4000;
-            setTimeout(() => { toast.style.opacity = '0'; setTimeout(() => toast.remove(), 300); }, timeout);
-        }
+        console.log(`${type.toUpperCase()}: ${message}`);
     }
 
     /**

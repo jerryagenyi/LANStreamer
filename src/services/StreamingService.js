@@ -194,7 +194,9 @@ class StreamingService {
 
       if (conflictingStreams.length > 0) {
         const conflictNames = conflictingStreams.map(s => s.name).join(', ');
-        throw new Error(`Device "${streamConfig.deviceId}" is already in use by: ${conflictNames}. Stop other streams first.`);
+        const err = new Error(`Audio source already in use: "${streamConfig.deviceId}" is streaming on ${conflictNames}. Stop that stream first, or edit this stream to use a different audio source.`);
+        err.shortMessage = `🎤 Audio source busy — already used by ${conflictNames}`;
+        throw err;
       }
     }
 
@@ -828,7 +830,9 @@ class StreamingService {
 
         if (conflictingStreams.length > 0) {
           const conflictNames = conflictingStreams.map(s => s.name).join(', ');
-          throw new Error(`Device "${stream.config.deviceId}" is already in use by: ${conflictNames}. Stop other streams first.`);
+          const err = new Error(`Audio source already in use: "${stream.config.deviceId}" is streaming on ${conflictNames}. Stop that stream first, or edit this stream to use a different audio source.`);
+          err.shortMessage = `🎤 Audio source busy — already used by ${conflictNames}`;
+          throw err;
         }
 
         // Validate device is still available
@@ -869,6 +873,13 @@ class StreamingService {
       
     } catch (error) {
       logger.error(`Failed to restart stream ${streamId}:`, error)
+      // Surface the failure on the row itself (short summary + expandable detail)
+      if (this.activeStreams[streamId]) {
+        this.activeStreams[streamId].status = 'error'
+        this.activeStreams[streamId].error = error.message
+        this.activeStreams[streamId].errorShort = error.shortMessage || String(error.message || '').split('\n')[0]
+        this.savePersistentStreams()
+      }
       throw error
     }
   }
@@ -1166,10 +1177,11 @@ class StreamingService {
    */
   handleProcessError(streamId, error) {
     logger.error(`FFmpeg process error for stream ${streamId}:`, error)
-    
+
     if (this.activeStreams[streamId]) {
       this.activeStreams[streamId].status = 'error'
       this.activeStreams[streamId].error = error.message
+      this.activeStreams[streamId].errorShort = error.shortMessage || String(error.message || '').split('\n')[0]
     }
   }
 
@@ -1213,7 +1225,9 @@ class StreamingService {
         
         // Get device info before parsing error
         const deviceName = stream.deviceName || stream.deviceId || 'Unknown device'
-        this.activeStreams[streamId].error = this.parseFFmpegError(code, safeStderrData, deviceName)
+        const parsed = this.parseFFmpegError(code, safeStderrData, deviceName)
+        this.activeStreams[streamId].error = parsed.message
+        this.activeStreams[streamId].errorShort = parsed.short
         logger.error(`Stream ${streamId} failed with exit code ${code}:`, this.activeStreams[streamId].error)
       }
     }
@@ -1225,7 +1239,7 @@ class StreamingService {
    * @param {number} exitCode - FFmpeg exit code
    * @param {string} stderrData - FFmpeg stderr output
    * @param {string} deviceName - Optional device name for better error messages
-   * @returns {string} Human-readable error message
+   * @returns {{message: string, short: string}} Full message + one-line summary
    */
   parseFFmpegError(exitCode, stderrData, deviceName = null) {
     // Analyze stderr for specific error patterns
@@ -1250,8 +1264,11 @@ class StreamingService {
       icecastPort: actualPort
     })
 
-    // Format the message
-    return errorDiagnostics.formatMessage(diagnosis)
+    // Full message for the expandable details; title for the one-line summary
+    return {
+      message: errorDiagnostics.formatMessage(diagnosis),
+      short: diagnosis.title || 'Stream failed to start'
+    }
   }
 
   /**
@@ -1393,9 +1410,12 @@ class StreamingService {
             // Generate error message
             if (exitCode !== null) {
               const deviceName = s.deviceName || s.deviceId || s.name || null
-              s.error = this.parseFFmpegError(exitCode, s.lastStderr || 'FFmpeg process exited without error output', deviceName)
+              const parsed = this.parseFFmpegError(exitCode, s.lastStderr || 'FFmpeg process exited without error output', deviceName)
+              s.error = parsed.message
+              s.errorShort = parsed.short
             } else {
               s.error = 'FFmpeg process terminated unexpectedly (no exit code). This may indicate a system-level issue.'
+              s.errorShort = 'FFmpeg terminated unexpectedly'
             }
 
             // Clear the dead process reference
@@ -1438,6 +1458,7 @@ class StreamingService {
         startedAt: s.startedAt,
         createdAt: s.createdAt,
         error: s.error,
+        errorShort: s.errorShort,
         uptime: s.startedAt ? Date.now() - s.startedAt.getTime() : 0
       }))
     }

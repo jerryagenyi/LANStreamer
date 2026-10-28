@@ -18,10 +18,10 @@ class HeaderComponent {
         await this.loadConfig(); // Load config first to get correct LAN IP
         this.render();
         this.setupEventListeners();
-        this.updateBellIcon(); // Sync bell state (default until check completes)
-        this.checkForUpdates(); // Auto-check for updates on load
+        if (window.LSNotifications) LSNotifications.bindBell(); // Notification center owns the bell now
+        this.checkForUpdates(); // Feeds update notices into the notification bell
         this.isInitialized = true;
-        console.log('✅ HeaderComponent initialization complete');
+        console.log('🎯 HeaderComponent initialization complete');
     }
 
     async loadConfig() {
@@ -44,108 +44,21 @@ class HeaderComponent {
             const response = await fetch('/api/system/update-check');
             const data = await response.json();
 
-            if (data.success) {
+            if (data.success && data.updateAvailable) {
                 this.updateInfo = data;
-                if (data.updateAvailable) {
-                    this.updateAvailable = true;
-                    this.updateBellIcon();
+                this.updateAvailable = true;
+                // Update notices are one of the bell's notification sources
+                if (window.LSNotifications) {
+                    LSNotifications.notify({
+                        title: `Update available: v${data.latest} (you have v${data.current})`,
+                        message: 'Download it from the GitHub releases page.',
+                        type: 'update'
+                    });
                 }
             }
         } catch (error) {
             console.warn('Failed to check for updates:', error);
         }
-    }
-
-    updateBellIcon() {
-        const bellBtn = document.getElementById('header-update-bell-btn');
-        if (!bellBtn) return;
-
-        if (this.updateAvailable) {
-            // Show update icon with notification badge
-            bellBtn.innerHTML = `
-                <span class="material-symbols-rounded text-sm relative">
-                    system_update
-                    <span class="absolute -top-1 -right-1 flex h-2 w-2">
-                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                        <span class="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
-                    </span>
-                </span>
-            `;
-            bellBtn.classList.add('bg-green-900/30', 'border-green-600/50', 'text-green-400');
-            bellBtn.classList.remove('bg-gray-800/50', 'border-gray-600/30', 'text-gray-300');
-            bellBtn.title = `Update available: ${this.updateInfo?.latest || ''}`;
-        } else {
-            // Show update icon without badge
-            bellBtn.innerHTML = `
-                <span class="material-symbols-rounded text-sm">system_update</span>
-            `;
-            bellBtn.classList.remove('bg-green-900/30', 'border-green-600/50', 'text-green-400');
-            bellBtn.classList.add('bg-gray-800/50', 'border-gray-600/30', 'text-gray-300');
-            bellBtn.title = 'Check for Updates';
-        }
-    }
-
-    showUpdateModal() {
-        if (!this.updateInfo || !this.updateAvailable) {
-            this.showNotification('No update information available', 'info');
-            return;
-        }
-
-        const modal = document.createElement('div');
-        modal.className = 'fixed inset-0 bg-black/50 flex items-center justify-center z-50';
-        modal.innerHTML = `
-            <div class="glass-card p-6 max-w-md mx-4">
-                <div class="flex items-center gap-3 mb-4">
-                    <span class="material-symbols-rounded text-3xl text-green-500">system_update</span>
-                    <div>
-                        <h3 class="text-lg font-semibold text-white">Update Available!</h3>
-                        <p class="text-sm text-gray-400">A new version of LANStreamer is ready</p>
-                    </div>
-                </div>
-                <div class="glass-card-inset rounded-lg p-4 mb-4">
-                    <div class="flex justify-between items-center mb-2">
-                        <span class="text-gray-400 text-sm">Current Version</span>
-                        <span class="text-white font-medium">${this.updateInfo.current}</span>
-                    </div>
-                    <div class="flex justify-between items-center">
-                        <span class="text-gray-400 text-sm">Latest Version</span>
-                        <span class="text-green-400 font-semibold">${this.updateInfo.latest}</span>
-                    </div>
-                </div>
-                <div class="flex gap-3">
-                    <button id="update-view-release" class="btn-glass btn-glass-primary flex-1">
-                        View Release
-                    </button>
-                    <button id="update-close-modal" class="btn-glass btn-glass-secondary flex-1">
-                        Close
-                    </button>
-                </div>
-            </div>
-        `;
-
-        document.body.appendChild(modal);
-
-        // Add event listeners
-        const viewReleaseBtn = document.getElementById('update-view-release');
-        if (viewReleaseBtn && this.updateInfo.releaseUrl) {
-            viewReleaseBtn.addEventListener('click', () => {
-                const url = this.updateInfo.releaseUrl;
-                if (url && (url.startsWith('https://github.com') || url.startsWith('https://api.github.com'))) {
-                    window.open(url, '_blank');
-                }
-            });
-        }
-
-        document.getElementById('update-close-modal').addEventListener('click', () => {
-            document.body.removeChild(modal);
-        });
-
-        // Close on backdrop click
-        modal.addEventListener('click', (e) => {
-            if (e.target === modal) {
-                document.body.removeChild(modal);
-            }
-        });
     }
 
     render() {
@@ -177,12 +90,13 @@ class HeaderComponent {
 
                 <!-- Navigation and Actions -->
                 <div class="flex items-center gap-3">
-                    <!-- Update Icon: shows badge when update available; click opens modal or runs check -->
-                    <button id="header-update-bell-btn"
-                            class="icon-btn text-gray-300 hover:text-white"
-                            title="Check for Updates"
-                            aria-label="Check for Updates">
-                        <span class="material-symbols-rounded text-sm">system_update</span>
+                    <!-- Notification bell: lights up when there are unread notifications -->
+                    <button id="header-bell-btn"
+                            class="theme-toggle"
+                            title="No notifications"
+                            aria-label="No notifications"
+                            aria-haspopup="dialog">
+                        <span class="material-symbols-rounded text-sm">notifications</span>
                     </button>
 
                     <!-- Theme toggle (dark/light) -->
@@ -236,56 +150,7 @@ class HeaderComponent {
     }
 
     setupEventListeners() {
-        // Update Bell Button
-        const bellBtn = document.getElementById('header-update-bell-btn');
-        if (bellBtn) {
-            bellBtn.addEventListener('click', async () => {
-                if (this.updateAvailable) {
-                    // Show update modal if update is available
-                    this.showUpdateModal();
-                } else {
-                    // Manual check if no update available
-                    console.log('🔄 Header update check requested');
-
-                    // Show loading state
-                    bellBtn.innerHTML = `
-                        <span class="material-symbols-rounded text-sm animate-spin">refresh</span>
-                    `;
-                    bellBtn.disabled = true;
-
-                    try {
-                        const response = await fetch('/api/system/update-check/force', {
-                            method: 'POST'
-                        });
-                        const data = await response.json();
-
-                        if (data.success) {
-                            this.updateInfo = data;
-                            if (data.updateAvailable) {
-                                this.updateAvailable = true;
-                                this.updateBellIcon();
-                                this.showUpdateModal();
-                            } else {
-                                this.showNotification('You have the latest version!', 'success');
-                            }
-                        } else {
-                            this.showNotification('Failed to check for updates', 'error');
-                        }
-                    } catch (error) {
-                        console.error('Update check failed:', error);
-                        this.showNotification('Update check failed', 'error');
-                    } finally {
-                        // Restore button if no update
-                        if (!this.updateAvailable) {
-                            bellBtn.innerHTML = originalContent;
-                        }
-                        bellBtn.disabled = false;
-                    }
-                }
-            });
-        }
-
-
+        // Notification bell is wired up by notifications.js (LSNotifications.bindBell)
         console.log('🎯 Header event listeners setup complete');
     }
 

@@ -77,6 +77,9 @@ class ErrorDiagnostics {
           /device is being used/i,
           /exclusive access/i,
           /cannot open.*device/i,
+          /could not open (?:the )?(?:audio )?device/i,
+          /\[dshow[^\]]*\].*(?:error|fail|could not)/i,
+          /\[wasapi[^\]]*\].*(?:error|fail|could not)/i,
         ],
         diagnose: (stderr, exitCode, context) => this.diagnoseDeviceBusy(stderr, exitCode, context)
       },
@@ -125,10 +128,15 @@ class ErrorDiagnostics {
         category: 'device_not_found',
         patterns: [
           /could not find audio device/i,
+          /could not find (?:any )?(?:audio |video )?device/i,
           /no such device/i,
+          /no such audio device/i,
           /device not found/i,
           /cannot find.*device/i,
           /immediate exit requested/i,
+          // FFmpeg 9 wraps DirectShow failures under [in#0/...] — "Error opening
+          // input: Immediate exit requested" is the common device-open failure.
+          /error opening input/i,
         ],
         diagnose: (stderr, exitCode, context) => this.diagnoseDeviceNotFound(stderr, exitCode, context)
       },
@@ -139,6 +147,8 @@ class ErrorDiagnostics {
         patterns: [
           /dshow/i,
           /directshow/i,
+          /\[in#0\/dshow[^\]]*\]/i,
+          /\[in#0\/wasapi[^\]]*\]/i,
           /could not set video options/i,
           /could not enumerate.*devices/i,
         ],
@@ -217,12 +227,20 @@ class ErrorDiagnostics {
     // Check for specific exit codes first (Windows crash codes)
     if (this.windowsExitCodes[exitCodeStr]) {
       const codeInfo = this.windowsExitCodes[exitCodeStr];
-      
-      // Exit code -5 or 4294967291 typically means connection refused
+
+      // Exit code -5 or 4294967291 can mean connection refused OR access
+      // denied while opening a capture device. Only trust the connection
+      // reading when stderr agrees (or is empty with no device involved);
+      // otherwise let the pattern matcher classify device errors below.
       if (codeInfo.signed === -5) {
-        return this.diagnoseConnectionError(stderr, exitCode, context);
+        const looksLikeConnection = /connection refused|could not connect|econnrefused|network is unreachable/i.test(stderrLower);
+        const noUsableOutput = !stderrLower ||
+          (!stderrLower.includes('error') && !stderrLower.includes('fail') && !stderrLower.includes('could not'));
+        if (looksLikeConnection || (noUsableOutput && !(context.deviceId || context.deviceName))) {
+          return this.diagnoseConnectionError(stderr, exitCode, context);
+        }
       }
-      
+
       // Windows process crash code
       if (codeInfo.hex === '0xA7F00008') {
         return this.diagnoseWindowsCrash(stderr, exitCode, context);
@@ -412,6 +430,33 @@ class ErrorDiagnostics {
    */
   diagnoseDeviceBusy(stderr, exitCode, context) {
     const deviceName = context.deviceName || context.deviceId || 'Audio device';
+    const s = (stderr || '').toLowerCase();
+    // FFmpeg could see the device name but failed to open it — most often the
+    // device does not exist as a DirectShow audio capture source (e.g. virtual
+    // camera audio pins) or another process holds it.
+    const notFound = /could not find|no such device|error opening input/.test(s);
+
+    if (notFound) {
+      return {
+        category: 'device_busy',
+        severity: 'warning',
+        title: `🎤 Audio Source "${deviceName}" Could Not Be Opened`,
+        description: `FFmpeg could not open "${deviceName}" as a capture device. Either it is not a real audio input, or another program/stream is holding it.`,
+        causes: [
+          `"${deviceName}" is a video device's audio pin that DirectShow cannot capture (e.g. OBS Virtual Camera)`,
+          'Another LANStreamer stream is already using the same audio source',
+          'Another application holds the device (OBS, Zoom, Teams, Discord, Audacity)',
+          'A virtual audio device (VB-Audio/VoiceMeeter) stopped or needs a restart',
+        ],
+        solutions: [
+          '1. If another stream in LANStreamer uses the same source: stop it first, or pick a different source for this stream',
+          '2. Pick a different input in the stream editor (mic, line-in, or a virtual cable output)',
+          '3. Close other apps that may hold the microphone',
+          '4. For virtual devices: restart VoiceMeeter/VB-Cable, then Refresh Devices',
+        ],
+        technicalDetails: `Device: ${deviceName}\nExit code: ${exitCode}\nStderr preview: ${(stderr || '').substring(0, 400)}`,
+      };
+    }
 
     return {
       category: 'device_busy',
@@ -661,6 +706,12 @@ class ErrorDiagnostics {
       !stderrLower.includes('denied');
 
     if (hasOnlyVersionInfo) {
+      // With no usable stderr, the best signal we have: if a capture device was
+      // involved, blame the device before blaming Icecast (exit -5 also matches
+      // access-denied on Windows, which dshow open failures produce).
+      if (context.deviceId || context.deviceName) {
+        return this.diagnoseDeviceNotFound(stderr, exitCode, context);
+      }
       return this.diagnoseConnectionError(stderr, exitCode, context);
     }
 

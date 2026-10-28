@@ -6,6 +6,12 @@
     <title>LANStreamer - Live Streams</title>
     <link rel="icon" type="image/png" href="/assets/favicon.png">
     <link rel="icon" type="image/svg+xml" href="/assets/logo-mark.svg">
+    <!-- PWA: lets listeners install/bookmark the page (Install app / Add to Home Screen) -->
+    <link rel="manifest" href="/manifest.webmanifest">
+    <meta name="theme-color" content="#05060A">
+    <link rel="apple-touch-icon" href="/assets/icon-192.png">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="LANStreamer">
     <link rel="stylesheet" href="/assets/vendor/tailwind.css">
     <link rel="stylesheet" href="/assets/vendor/fonts/fonts.css">
     <link rel="stylesheet" href="/assets/css/tokens.css">
@@ -374,6 +380,17 @@
     </style>
 </head>
 <body class="text-white">
+    <!-- Boot overlay: paints before any CSS/JS loads; boot.js dismisses it or
+         swaps it to a failure state after a timeout (e.g. cached PWA shell
+         while the server is down). -->
+    <div id="boot-overlay" style="position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;background:#05060A;color:#F2F5F9;font-family:Inter,'Noto Sans',sans-serif;transition:opacity .4s ease;">
+      <div style="display:flex;flex-direction:column;align-items:center;gap:14px;text-align:center;padding:24px;">
+        <img src="/assets/logo.svg?v=3" alt="LANStreamer" style="height:52px;width:auto;" onerror="this.style.display='none'">
+        <div style="font-weight:700;letter-spacing:.1em;text-transform:uppercase;font-size:.72rem;color:#9AA3B2;">LANStreamer <span id="boot-version"></span></div>
+        <div class="boot-dots" aria-label="Loading"><span></span><span></span><span></span></div>
+        <div style="font-size:.85rem;color:#5D6570;">Loading…</div>
+      </div>
+    </div>
     <div class="relative flex size-full min-h-screen flex-col body-bg dark group/design-root overflow-x-hidden" style='font-family: Inter, "Noto Sans", sans-serif;'>
         <!-- Header -->
         <header class="header-glass sticky top-0 z-50 flex items-center justify-between whitespace-nowrap px-4 sm:px-6 lg:px-10 py-3 sm:py-4">
@@ -431,8 +448,8 @@
                         <div class="w-16 h-16 mx-auto mb-4 bg-gray-500/10 rounded-full flex items-center justify-center">
                             <span class="material-symbols-rounded text-3xl text-gray-500">radio</span>
                         </div>
-                        <h3 class="text-xl font-semibold text-white mb-2">No Live Streams</h3>
-                        <p class="text-gray-400">There are currently no active streams. Check back later!</p>
+                        <h3 class="text-xl font-semibold text-white mb-2">No Live Stream</h3>
+                        <p class="text-gray-400">Nothing is on air right now. This page updates itself — the stream will appear the moment it starts.</p>
                     </div>
                 </div>
 
@@ -478,15 +495,15 @@
 
         <!-- Footer -->
         <footer class="mt-12 border-t border-[var(--border-color)] pt-8 pb-8 px-4 sm:px-6 lg:px-10">
-            <div class="flex flex-col sm:flex-row items-center justify-between gap-6 text-xs text-gray-500">
+            <div class="flex flex-col sm:flex-row items-center justify-between gap-4 text-xs" style="color:var(--tok-text-3);">
                 <div class="flex items-center gap-4">
                     <span id="version-info">LANStreamer</span>
-                    <a href="https://github.com/jerryagenyi/LANStreamer" 
+                    <a href="https://github.com/jerryagenyi/LANStreamer"
                        target="_blank"
                        rel="noopener noreferrer"
-                       class="text-blue-400 hover:text-blue-300 transition-colors flex items-center gap-1">
+                       class="flex items-center gap-1 transition-colors" style="color:var(--tok-accent);">
                         <span class="material-symbols-rounded text-sm">open_in_new</span>
-                        GitHub Repository
+                        GitHub
                     </a>
                 </div>
                 <div class="flex items-center gap-4">
@@ -499,6 +516,8 @@
     <!-- Audio Player (Hidden) -->
     <audio id="audio-player" preload="none"></audio>
 
+    <script src="/assets/js/boot.js"></script>
+    <script src="/assets/js/toasts.js"></script>
     <script>
         class StreamListener {
             constructor() {
@@ -512,6 +531,16 @@
                 // Dynamic Icecast config (fetched from /api/system/config)
                 this.icecastPort = 8000; // Default fallback (Icecast standard port)
                 this.serverHost = null; // Will be loaded from config - uses getPreferredLANHost() for correct network IP
+
+                // Off-air handling: when the stream we're listening to stops on
+                // the server, keep the row in a "waiting" state for a grace
+                // period, then flip the icon back to play. When the stream
+                // returns (during OR after the grace), resume automatically.
+                this.OFFAIR_GRACE_MS = 15000; // 15s ≈ 3 missed 5s polls; avoids flapping on quick restarts
+                this.offAirSince = null;      // timestamp while in grace, else null
+                this.userPaused = false;      // listener deliberately paused → never auto-resume
+                this.lastStreamId = null;     // remembered across reloads (localStorage ls:lastStream)
+                this.autoResumeWanted = false;// set when we gave up after grace and should resume on return
 
                 // Client-side timer tracking for real-time uptime updates
 
@@ -558,6 +587,34 @@
                 window.addEventListener('beforeunload', () => {
                     this.stopUptimeUpdates();
                 });
+
+                // Resume the stream this listener played last (page reload / PWA relaunch)
+                this.tryResumeLastStream();
+
+                // Everything mounted — dismiss the boot overlay
+                if (window.LSBoot) LSBoot.ready();
+            }
+
+            /** Direct Icecast mount URL for a stream (used for logging/display only). */
+            buildStreamUrl(streamId) {
+                const displayHost = this.serverHost || window.location.hostname;
+                return `http://${displayHost}:${this.icecastPort}/${streamId}`;
+            }
+
+            /** On load: if the listener's last stream is on air, start it again. */
+            tryResumeLastStream() {
+                try {
+                    const id = localStorage.getItem('ls:lastStream');
+                    const wants = localStorage.getItem('ls:autoResume') === '1';
+                    if (!id || !wants || this.currentStream) return;
+                    const target = this.streams.find(s => s.id === id && s.status === 'running');
+                    if (!target) return;
+                    console.log('🔁 Auto-resuming last stream:', id);
+                    this.playStream(id, this.buildStreamUrl(id)).catch(err => {
+                        console.warn('Auto-resume blocked:', err && err.name);
+                        this.showNotification('Autoplay was blocked — tap ▶ to start listening.', 'info');
+                    });
+                } catch (e) { /* storage unavailable */ }
             }
 
             async loadConfig() {
@@ -622,14 +679,26 @@
 
                     // Off-air sync: if the stream we're listening to stopped on the
                     // server, stop pretending to play (the audio element can sit in
-                    // a buffering "playing" state with no output).
+                    // a buffering "playing" state with no output). We give the
+                    // stream a grace period (quick restarts shouldn't flap the
+                    // UI), then flip the icon back to play — and resume on return.
+                    const allStreams = data.streams || [];
                     if (this.currentStream && !this.intentionallyStopping) {
-                        const current = (data.streams || []).find(s => s.id === this.currentStream);
+                        const current = allStreams.find(s => s.id === this.currentStream);
                         if (!current || current.status !== 'running') {
-                            this.handleStreamWentOffAir(current);
+                            if (!this.offAirSince) {
+                                this.enterOffAir();
+                            } else if (Date.now() - this.offAirSince >= this.OFFAIR_GRACE_MS) {
+                                this.giveUpOffAir();
+                            }
+                        } else if (this.offAirSince) {
+                            this.resumeFromOffAir();
                         }
+                    } else if (!this.currentStream && this.autoResumeWanted && !this.userPaused) {
+                        const back = allStreams.find(s => s.id === this.lastStreamId && s.status === 'running');
+                        if (back) this.autoResumeStream();
                     }
-                    
+
                     if (data.streams && data.streams.length > 0) {
                         // Debug: Log all stream statuses
                         console.log('🔍 All streams with status:', data.streams.map(s => ({ id: s.id, name: s.name, status: s.status })));
@@ -701,6 +770,7 @@
                 const displayHost = this.serverHost || window.location.hostname;
                 const streamUrl = `http://${displayHost}:${this.icecastPort}/${stream.id}`;
                 const isPlaying = this.currentStream === stream.id;
+                const inGrace = isPlaying && this.offAirSince !== null;
                 const isRunning = stream.status === 'running';
                 const uptime = this.formatUptime(stream.uptime || 0);
                 const channel = stream.label || '';
@@ -711,7 +781,10 @@
                         <div class="flex-1 min-w-0">
                             <div class="stream-name">${stream.name || stream.id}</div>
                             <div class="stream-sub">
-                                ${isPlaying ? `
+                                ${inGrace ? `
+                                    <span class="material-symbols-rounded text-sm animate-spin" style="color:var(--tok-warning,#F59E0B);" aria-hidden="true">progress_activity</span>
+                                    <span class="live-chip" style="color:var(--tok-warning,#F59E0B);">Reconnecting…</span>
+                                ` : isPlaying ? `
                                     <span class="eq" aria-hidden="true"><span></span><span></span><span></span><span></span></span>
                                     <span class="live-chip">On air</span>
                                 ` : isRunning ? `
@@ -728,10 +801,10 @@
                         <button
                             onclick="streamListener.${isPlaying ? 'togglePlayPause()' : `playStream('${stream.id}', '${streamUrl}')`}"
                             class="play-btn ${isPlaying ? 'is-playing' : ''}"
-                            aria-label="${isPlaying ? 'Pause ' + (stream.name || stream.id) : 'Play ' + (stream.name || stream.id)}"
+                            aria-label="${inGrace ? 'Reconnecting to ' + (stream.name || stream.id) : isPlaying ? 'Pause ' + (stream.name || stream.id) : 'Play ' + (stream.name || stream.id)}"
                             ${!isRunning && !isPlaying ? 'title="Stream is not running — start it on the dashboard first"' : ''}
                         >
-                            <span class="material-symbols-rounded" style="font-variation-settings: 'FILL' 1;">${isPlaying ? (this.audioPlayer.paused ? 'play_arrow' : 'pause') : 'play_arrow'}</span>
+                            <span class="material-symbols-rounded" style="font-variation-settings: 'FILL' 1;">${inGrace ? 'hourglass_top' : isPlaying ? (this.audioPlayer.paused ? 'play_arrow' : 'pause') : 'play_arrow'}</span>
                         </button>
                         <button
                             onclick="window.LSShare && LSShare.show(window.location.origin + '/streams')"
@@ -787,8 +860,8 @@
                         console.log(`⚠️ Browser format detection unclear - will attempt playback anyway (mobile browsers often work despite this)`);
                     }
 
-                    // Show loading state
-                    this.showNotification('🔄 Connecting to stream... Please wait', 'info');
+                    // Show loading state (replaced by "Now playing" on success)
+                    this.showNotification('Connecting to stream…', 'info', { tag: 'play-status' });
 
                     // Skip HEAD request validation on mobile - it often fails even when stream works
                     // Let the audio element's error handler catch real issues
@@ -845,13 +918,18 @@
                     const loadedHandler = () => {
                         console.log('Stream loaded successfully');
                         this.audioPlayer.removeEventListener('loadeddata', loadedHandler);
-                        this.showNotification(`🎵 Now playing: ${streamId}`, 'success');
+                        this.showNotification(`Now playing: ${streamId}`, 'success', { tag: 'play-status' });
                     };
                     this.audioPlayer.addEventListener('loadeddata', loadedHandler);
 
                     // Play the stream
                     await this.audioPlayer.play();
                     this.currentStream = streamId;
+                    this.offAirSince = null;
+                    this.userPaused = false;
+                    this.autoResumeWanted = false;
+                    this.lastStreamId = streamId;
+                    this.saveResumePreference(true);
 
                     // Update UI
                     this.renderStreams();
@@ -899,6 +977,7 @@
                 this.audioPlayer.pause();
                 this.audioPlayer.src = '';
                 this.currentStream = null;
+                this.offAirSince = null;
 
                 // Clear the flag after a short delay
                 setTimeout(() => {
@@ -912,9 +991,23 @@
                 this.showNotification(`${streamTitle} stopped`, 'info');
             }
 
-            /** The stream we were listening to stopped on the server. */
-            handleStreamWentOffAir(stream) {
-                const name = stream?.name || this.currentStream || 'The stream';
+            /** The stream we're listening to just disappeared from the server. */
+            enterOffAir() {
+                this.offAirSince = Date.now();
+                // Pause output but keep the row marked as "waiting" — the icon
+                // flips back to play only after the grace period expires.
+                this.audioPlayer.pause();
+                this.renderStreams();
+                this.updateMiniPlayer();
+                const name = this.streamName(this.currentStream);
+                this.showNotification(`${name} went off air — waiting ${Math.round(this.OFFAIR_GRACE_MS / 1000)}s before giving up…`, 'info');
+            }
+
+            /** Grace period expired: stop pretending, flip icon back to play. */
+            giveUpOffAir() {
+                const name = this.streamName(this.currentStream);
+                this.offAirSince = null;
+                this.autoResumeWanted = !this.userPaused; // resume automatically when it returns
                 this.intentionallyStopping = true;
                 this.audioPlayer.pause();
                 this.audioPlayer.src = '';
@@ -922,19 +1015,67 @@
                 setTimeout(() => { this.intentionallyStopping = false; }, 1000);
                 this.renderStreams();
                 this.updateMiniPlayer();
-                this.showNotification(`${name} went off air`, 'info');
+                this.showNotification(`${name} is off air. It will resume automatically when it returns.`, 'info');
+            }
+
+            /** The stream came back while we were still in the grace window. */
+            resumeFromOffAir() {
+                const id = this.currentStream;
+                this.offAirSince = null;
+                this.audioPlayer.src = `/api/streams/play/${encodeURIComponent(id)}`;
+                this.audioPlayer.play().then(() => {
+                    this.showNotification(`${this.streamName(id)} is back on air — resumed.`, 'success');
+                    this.renderStreams();
+                    this.updateMiniPlayer();
+                }).catch(err => {
+                    console.warn('Resume failed:', err && err.message);
+                    this.showNotification(`${this.streamName(id)} is back — tap ▶ to resume.`, 'info');
+                    this.renderStreams();
+                });
+            }
+
+            /** The stream returned after we had given up: start it again. */
+            autoResumeStream() {
+                const id = this.lastStreamId;
+                this.autoResumeWanted = false;
+                this.playStream(id, this.buildStreamUrl(id)).then(() => {
+                    this.showNotification(`${this.streamName(id)} is back on air — resumed.`, 'success');
+                }).catch(err => {
+                    console.warn('Auto-resume failed:', err && err.message);
+                    this.showNotification(`${this.streamName(id)} is back — tap ▶ to listen.`, 'info');
+                });
+            }
+
+            /** Display name for a stream id, tolerating unknown ids. */
+            streamName(id) {
+                const s = this.streams.find(x => x.id === id);
+                return (s && (s.name || s.id)) || id || 'The stream';
             }
 
             /** Pause/resume the stream that is currently loaded. */
             togglePlayPause() {
                 if (!this.currentStream) return;
                 if (this.audioPlayer.paused) {
+                    this.userPaused = false;
+                    this.saveResumePreference(true);
                     this.audioPlayer.play().catch(err => console.warn('Resume failed:', err.message));
                 } else {
+                    // Deliberate pause: never auto-resume this listener until they play again
+                    this.userPaused = true;
+                    this.autoResumeWanted = false;
+                    this.saveResumePreference(false);
                     this.audioPlayer.pause();
                 }
                 this.renderStreams();
                 this.updateMiniPlayer();
+            }
+
+            /** Remember which stream this listener plays and whether to auto-resume. */
+            saveResumePreference(wantsResume) {
+                try {
+                    if (this.currentStream) localStorage.setItem('ls:lastStream', this.currentStream);
+                    localStorage.setItem('ls:autoResume', wantsResume ? '1' : '0');
+                } catch (e) { /* storage unavailable */ }
             }
 
             /** Sync the persistent bottom mini-player with playback state. */
@@ -953,8 +1094,9 @@
                 mp.removeAttribute('aria-hidden');
                 document.body.classList.add('has-miniplayer');
 
-                document.getElementById('mp-label').textContent =
-                    `On air${stream?.label ? ' · ' + stream.label : ''}`;
+                document.getElementById('mp-label').textContent = this.offAirSince
+                    ? 'Waiting for stream…'
+                    : `On air${stream?.label ? ' · ' + stream.label : ''}`;
                 const mpNameEl = document.getElementById('mp-name');
                 mpNameEl.title = stream?.name || this.currentStream;
                 mpNameEl.innerHTML = `<span class="mq-inner">${stream?.name || this.currentStream}</span>`;
@@ -1131,31 +1273,15 @@
                 this.showNoStreams();
             }
 
-            showNotification(message, type = 'info') {
-                // Create a centered toast notification
-                const toast = document.createElement('div');
-                toast.className = `fixed top-4 left-1/2 -translate-x-1/2 z-50 px-4 py-3 rounded-lg shadow-lg transition-all duration-300 max-w-md ${
-                    type === 'success' ? 'bg-green-600 text-white' :
-                    type === 'error' ? 'bg-red-600 text-white' :
-                    'bg-blue-600 text-white'
-                }`;
-                toast.innerHTML = `
-                    <div class="flex items-start gap-3">
-                        <span class="material-symbols-rounded text-sm mt-0.5">${type === 'success' ? 'check_circle' : type === 'error' ? 'error' : 'info'}</span>
-                        <span class="flex-1">${message}</span>
-                        <button class="text-white/80 hover:text-white transition-colors" onclick="this.parentElement.parentElement.remove()">
-                            <span class="material-symbols-rounded text-lg">close</span>
-                        </button>
-                    </div>
-                `;
-                
-                document.body.appendChild(toast);
-                
-                // Remove after timeout - 60 seconds for errors (long messages), 8 seconds for success/info
-                const timeout = type === 'error' ? 60000 : 8000;
-                setTimeout(() => {
-                    toast.remove();
-                }, timeout);
+            showNotification(message, type = 'info', opts = {}) {
+                // Stacked toasts: new notifications push older ones down instead
+                // of overlapping. Tagged toasts (e.g. play status) replace
+                // themselves so "Connecting…" becomes "Now playing".
+                if (window.LSToasts) {
+                    LSToasts.show(message, type, opts);
+                } else {
+                    console.log(`${type.toUpperCase()}: ${message}`);
+                }
             }
 
             /**
@@ -1163,6 +1289,10 @@
              */
             startUptimeUpdates() {
                 this.uptimeUpdateInterval = setInterval(() => {
+                    // Expire the off-air grace precisely (polls only run every 5s)
+                    if (this.offAirSince && Date.now() - this.offAirSince >= this.OFFAIR_GRACE_MS) {
+                        this.giveUpOffAir();
+                    }
                     this.updateUptimeDisplays();
                 }, 1000);
             }
@@ -1522,7 +1652,12 @@
         let streamListener;
         document.addEventListener('DOMContentLoaded', () => {
             console.log('🚀 DOM Content Loaded, initializing StreamListener...');
-            streamListener = new StreamListener();
+            try {
+                streamListener = new StreamListener();
+            } catch (error) {
+                console.error('❌ Failed to initialize StreamListener:', error);
+                if (window.LSBoot) LSBoot.fail(error && error.message ? error.message : 'Listener page initialization failed.');
+            }
         });
 
         // Fallback initialization if DOMContentLoaded already fired
@@ -1531,7 +1666,22 @@
         } else {
             // Document has already loaded
             console.log('🚀 Document already loaded, initializing StreamListener immediately...');
-            streamListener = new StreamListener();
+            try {
+                streamListener = new StreamListener();
+            } catch (error) {
+                console.error('❌ Failed to initialize StreamListener:', error);
+                if (window.LSBoot) LSBoot.fail(error && error.message ? error.message : 'Listener page initialization failed.');
+            }
+        }
+
+        // PWA: register the service worker so listeners can install the page
+        // as an app (Add to Home Screen / Install app) and get an offline shell.
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js').catch(err => {
+                    console.warn('Service worker registration failed:', err);
+                });
+            });
         }
 
 

@@ -552,6 +552,16 @@
       </style>
     </head>
     <body class="bg-[var(--dark-bg)]">
+    <!-- Boot overlay: paints before any CSS/JS loads; boot.js dismisses it or
+         swaps it to a failure state after a timeout. -->
+    <div id="boot-overlay" style="position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;background:#05060A;color:#F2F5F9;font-family:Inter,'Noto Sans',sans-serif;transition:opacity .4s ease;">
+      <div style="display:flex;flex-direction:column;align-items:center;gap:14px;text-align:center;padding:24px;">
+        <img src="/assets/logo.svg?v=3" alt="LANStreamer" style="height:52px;width:auto;" onerror="this.style.display='none'">
+        <div style="font-weight:700;letter-spacing:.1em;text-transform:uppercase;font-size:.72rem;color:#9AA3B2;">LANStreamer <span id="boot-version"></span></div>
+        <div class="boot-dots" aria-label="Loading"><span></span><span></span><span></span></div>
+        <div style="font-size:.85rem;color:#5D6570;">Loading…</div>
+      </div>
+    </div>
     <div class="relative min-h-screen flex flex-col body-bg dark group/design-root overflow-x-hidden" style='font-family: Inter, "Noto Sans", sans-serif;'>
     <!-- Header Component Container -->
     <div id="header-container"></div>
@@ -821,6 +831,10 @@
 
     <!-- Include Components -->
     <script src="/assets/js/notice-dismiss.js"></script>
+    <script src="/assets/js/boot.js"></script>
+    <script src="/assets/js/toasts.js"></script>
+    <script src="/assets/js/collapsible.js"></script>
+    <script src="/assets/js/notifications.js"></script>
     <script src="/components/ComponentManager.js"></script>
     <script src="/components/LobbyMusicPlayer.js"></script>
     <script src="/components/FileBrowser.js"></script>
@@ -885,6 +899,11 @@
                 await this.loadAudioDevices();
                 await this.checkFFmpegStatus();
                 await this.initializeComponents();
+
+                // Main UI is mounted — dismiss the boot overlay now. The slower
+                // trailing checks (footer, security, contact) must not hold the
+                // loading screen hostage on cold starts.
+                if (window.LSBoot) LSBoot.ready();
                 this.setupEventListeners();
                 this.startStatusPolling();
 
@@ -1078,37 +1097,51 @@
                 const finalInputDevices = inputDevices;
                 const finalOutputDevices = outputDevices;
 
-                container.innerHTML = `
-                    <div class="glass-card p-6">
-                        <div class="flex items-center justify-between mb-4">
-                            <h2 class="text-xl font-bold text-white">🎤 Audio Input Sources for Streaming</h2>
-                            <button id="refresh-audio-devices" class="btn-glass btn-glass-secondary">
-                                <span class="material-symbols-rounded text-base">refresh</span>
-                                <span>Refresh Devices</span>
-                            </button>
-                        </div>
+                const refreshBtnHtml = `
+                    <button id="refresh-audio-devices" class="copy-btn" title="Refresh device list" aria-label="Refresh device list">
+                        <span class="material-symbols-rounded text-base">refresh</span>
+                    </button>
+                `;
 
-                        <div class="mb-4 p-3 glass-card-inset rounded-lg border border-blue-500/20">
-                            <div class="flex items-start gap-2">
-                                <span class="material-symbols-rounded text-blue-400 text-lg mt-0.5">info</span>
-                                <div class="text-sm">
-                                    <p class="text-blue-300 font-medium">Streaming Focus</p>
-                                    <p class="text-blue-200/80">These are audio input sources for streaming. Install <strong>VoiceMeeter</strong> or <strong>VB-Audio Virtual Cable</strong> to create virtual audio routing from your music players, DJ software, or other audio sources.</p>
-                                </div>
+                const focusBox = `
+                    <div class="mb-4 p-3 rounded-lg" style="background:var(--tok-surface-inset);border:1px solid var(--tok-line);">
+                        <div class="flex items-start gap-2">
+                            <span class="material-symbols-rounded text-lg mt-0.5" style="color:var(--tok-accent)" aria-hidden="true">info</span>
+                            <div class="text-sm" style="color:var(--tok-text-2);">
+                                <p class="font-semibold" style="color:var(--tok-text-1);">Streaming Focus</p>
+                                <p>These are audio input sources for streaming. Install <strong>VoiceMeeter</strong> or <strong>VB-Audio Virtual Cable</strong> to create virtual audio routing from your music players, DJ software, or other audio sources.</p>
                             </div>
                         </div>
+                    </div>
+                `;
 
-                        <div class="space-y-2">
-                            ${finalInputDevices.map(device => `
-                                <div class="flex items-center gap-3 p-3 glass-card-inset rounded-lg hover:border-[var(--primary-color)]/30 transition-all duration-300">
-                                    <span class="material-symbols-rounded text-xl ${device.fallback ? 'text-gray-500' : (device.virtual ? 'text-purple-400' : 'text-[var(--live-color)]')}">
-                                        ${device.virtual ? 'cable' : 'mic'}
-                                    </span>
-                                    <span class="font-medium text-white text-sm flex-1">${device.name}</span>
-                                    ${device.virtual ? `<span class="px-2 py-0.5 text-xs font-medium bg-purple-500/20 text-purple-300 rounded-full">Virtual</span>` : ''}
-                                </div>
-                            `).join('')}
+                const devicesList = `
+                    <div class="space-y-2">
+                        ${finalInputDevices.map(device => `
+                            <div class="flex items-center gap-3 p-3 rounded-lg transition-all duration-300" style="background:var(--tok-surface-inset);border:1px solid var(--tok-line);">
+                                <span class="material-symbols-rounded text-xl" style="color:${device.fallback ? 'var(--tok-text-3)' : (device.virtual ? '#A78BFA' : 'var(--tok-live)')};">
+                                    ${device.virtual ? 'cable' : 'mic'}
+                                </span>
+                                <span class="font-medium text-sm flex-1" style="color:var(--tok-text-1);">${device.name}</span>
+                                ${device.virtual ? `<span class="px-2 py-0.5 text-xs font-medium rounded-full" style="background:rgba(167,139,250,0.15);color:#A78BFA;">Virtual</span>` : ''}
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+
+                container.innerHTML = window.LSCollapse
+                    ? LSCollapse.wrap('audio-sources',
+                        { icon: 'mic', title: 'Audio Input Sources for Streaming', aside: refreshBtnHtml },
+                        focusBox + devicesList,
+                        false /* collapsed by default */)
+                    : `
+                    <div class="glass-card p-6">
+                        <div class="flex items-center justify-between mb-4">
+                            <h2 class="text-lg font-bold text-white">🎤 Audio Input Sources for Streaming</h2>
+                            ${refreshBtnHtml}
                         </div>
+                        ${focusBox}
+                        ${devicesList}
                     </div>
                 `;
 
@@ -1552,44 +1585,13 @@
             }
 
             showNotification(message, type = 'info') {
-                const notification = document.createElement('div');
-                notification.className = `fixed top-4 left-1/2 -translate-x-1/2 z-50 px-4 py-3 rounded-lg shadow-lg transition-all duration-300 max-w-md opacity-0`;
-
-                const colors = {
-                    'info': 'glass-card border-blue-500/30 text-blue-300',
-                    'success': 'toast-success',  /* Uses glassmorphism toast styles */
-                    'error': 'glass-card border-red-500/30 text-red-300'
-                };
-
-                notification.className += ` ${colors[type] || colors.info}`;
-                notification.innerHTML = `
-                    <div class="flex items-start gap-3">
-                        <span class="flex-1">${message}</span>
-                        <button class="text-white/80 hover:text-white transition-colors" onclick="this.parentElement.parentElement.remove()">
-                            <span class="material-symbols-rounded text-lg">close</span>
-                        </button>
-                    </div>
-                `;
-                
-                document.body.appendChild(notification);
-                
-                // Fade in
-                setTimeout(() => {
-                    notification.classList.remove('opacity-0');
-                    notification.classList.add('opacity-100');
-                }, 100);
-                
-                // Tiered auto-dismiss: short for info/success (lightweight feedback), long for errors (troubleshooting)
-                const timeout = type === 'error' ? 60000 : 4000;
-                setTimeout(() => {
-                    notification.classList.remove('opacity-100');
-                    notification.classList.add('opacity-0');
-                    setTimeout(() => {
-                        if (notification.parentNode) {
-                            notification.parentNode.removeChild(notification);
-                        }
-                    }, 300);
-                }, timeout);
+                // Stacking toasts (LSToasts): new notifications push older ones
+                // down instead of rendering at the same fixed spot.
+                if (window.LSToasts) {
+                    LSToasts.show(message, type);
+                } else {
+                    console.log(`${type.toUpperCase()}: ${message}`);
+                }
             }
 
             // Development utilities
@@ -1695,17 +1697,10 @@
                     console.log('✅ Dashboard initialized successfully');
                 } catch (error) {
                     console.error('❌ Failed to initialize dashboard:', error);
-                    // Show error message to user
-                    document.body.innerHTML = `
-                        <div style="padding: 20px; color: #ff6b6b; background: #1a1a1a; font-family: Arial;">
-                            <h2>⚠️ LANStreamer Loading Error</h2>
-                            <p>Failed to initialize dashboard. Please refresh the page.</p>
-                            <p>Error: ${error.message}</p>
-                            <button onclick="location.reload()" style="padding: 10px 20px; background: #4CAF50; color: white; border: none; border-radius: 4px; cursor: pointer;">
-                                🔄 Refresh Page
-                            </button>
-                        </div>
-                    `;
+                    // Swap the boot overlay to its failure state (keeps Retry button)
+                    if (window.LSBoot) {
+                        LSBoot.fail(error && error.message ? error.message : 'Dashboard initialization failed.');
+                    }
                 }
             }, 500);
         });

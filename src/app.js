@@ -54,6 +54,11 @@ export function createApp() {
     res.redirect('/streams');
   });
 
+  // In-app troubleshooting / documentation (linked from error messages)
+  app.get('/docs', (req, res) => {
+    res.sendFile(path.join(__dirname, '../public/docs.html'));
+  });
+
   // Serve streams page (for listeners) - both /streams and /streams.html
   app.get('/streams', (req, res) => {
     res.sendFile(path.join(__dirname, '../public/streams.html'));
