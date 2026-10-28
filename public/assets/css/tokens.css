@@ -231,3 +231,21 @@ html [data-theme="light"] .glass-card:hover {
 [data-theme="light"] .bg-gray-600 { background-color: var(--tok-line-strong); }
 [data-theme="light"] .hover\:bg-gray-600\/50:hover, [data-theme="light"] .hover\:bg-gray-600\/30:hover { background-color: var(--tok-surface-inset); }
 [data-theme="light"] .border-gray-600\/50, [data-theme="light"] .border-gray-600\/30 { border-color: var(--tok-line-strong); }
+
+/* Pages redefine the legacy vars in their own <style> blocks AFTER this file
+   (same :root specificity, later wins). html[data-theme=light] outranks :root
+   regardless of order, so the light values always win in light mode. */
+html[data-theme="light"] {
+  --card-bg: var(--tok-surface-1);
+  --border-color: var(--tok-line);
+  --primary-color: var(--tok-accent);
+  --live-color: var(--tok-live);
+  --warning-color: var(--tok-danger);
+  --dark-bg: var(--tok-bg);
+  --glass-bg-subtle: rgba(15, 23, 42, 0.03);
+  --glass-bg-mid: rgba(15, 23, 42, 0.05);
+  --glass-bg-strong: rgba(15, 23, 42, 0.08);
+  --glass-border-subtle: rgba(15, 23, 42, 0.10);
+  --glass-border-mid: rgba(15, 23, 42, 0.18);
+  --glass-border-strong: rgba(15, 23, 42, 0.25);
+}

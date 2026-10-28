@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>LANStreamer - Live Streams</title>
     <link rel="icon" type="image/png" href="/assets/favicon.png">
+    <link rel="icon" type="image/svg+xml" href="/assets/logo-mark.svg">
     <link rel="stylesheet" href="/assets/vendor/tailwind.css">
     <link rel="stylesheet" href="/assets/vendor/fonts/fonts.css">
     <link rel="stylesheet" href="/assets/css/tokens.css">
@@ -475,26 +476,6 @@
             </div>
         </main>
 
-        <!-- Mini-player: persistent controls once playback starts (survives scrolling) -->
-        <div id="mini-player" class="mini-player hidden" role="region" aria-label="Now playing">
-            <span class="eq" aria-hidden="true"><span></span><span></span><span></span><span></span></span>
-            <div class="flex-1 min-w-0">
-                <div class="mp-label" id="mp-label">On air</div>
-                <div class="mp-name mq" id="mp-name" title="">—</div>
-            </div>
-            <button class="mp-btn mp-primary" id="mp-playpause" onclick="streamListener.togglePlayPause()" aria-label="Pause">
-                <span class="material-symbols-rounded" style="font-variation-settings: 'FILL' 1;">pause</span>
-            </button>
-            <button class="mp-btn" id="mp-mute" onclick="streamListener.toggleMute()" aria-label="Mute">
-                <span class="material-symbols-rounded" id="mp-mute-icon">volume_up</span>
-            </button>
-            <input type="range" min="0" max="100" id="mp-volume" class="flex-1 h-2 rounded-lg appearance-none volume-slider hidden sm:block"
-                   oninput="streamListener.setVolume(this.value)" aria-label="Volume">
-            <button class="mp-btn" onclick="streamListener.stopStream()" aria-label="Stop and close player">
-                <span class="material-symbols-rounded">close</span>
-            </button>
-        </div>
-
         <!-- Footer -->
         <footer class="mt-12 border-t border-[var(--border-color)] pt-8 pb-8 px-4 sm:px-6 lg:px-10">
             <div class="flex flex-col sm:flex-row items-center justify-between gap-6 text-xs text-gray-500">
@@ -539,6 +520,13 @@
                 for (const evt of ['ended', 'error', 'stalled']) {
                     this.audioPlayer.addEventListener(evt, () => {
                         if (this.intentionallyStopping) return;
+                        if (evt === 'error' && this.currentStream) {
+                            const failed = this.streams.find(s => s.id === this.currentStream);
+                            this.showNotification(
+                                `Playback failed for "${failed?.name || this.currentStream}". The stream may not be running — ask the operator to check it.`,
+                                'error'
+                            );
+                        }
                         this.updateMiniPlayer();
                         this.renderStreams();
                     });
@@ -759,6 +747,15 @@
 
             async playStream(streamId, streamUrl) {
                 try {
+                    // Off-air pre-check: explain WHY playback would fail instead of
+                    // silently doing nothing (e.g. duplicate-source streams that the
+                    // operator hasn't started).
+                    const target = this.streams.find(s => s.id === streamId);
+                    if (target && target.status !== 'running') {
+                        this.showNotification(`"${target.name || streamId}" is off air — ask the operator to start it on the dashboard.`, 'error');
+                        return;
+                    }
+
                     // Use same-origin proxy so playback works regardless of CORS/firewall on Icecast port
                     const playUrl = `/api/streams/play/${encodeURIComponent(streamId)}`;
                     console.log(`🎵 Playing stream: ${streamId} via proxy ${playUrl} (direct: ${streamUrl})`);
@@ -945,12 +942,15 @@
                 const mp = document.getElementById('mini-player');
                 if (!mp) return;
                 if (!this.currentStream) {
-                    mp.classList.add('hidden');
+                    // Fade out, then release layout once the transition ends
+                    mp.classList.add('is-hidden');
+                    mp.setAttribute('aria-hidden', 'true');
                     document.body.classList.remove('has-miniplayer');
                     return;
                 }
                 const stream = this.streams.find(s => s.id === this.currentStream);
-                mp.classList.remove('hidden');
+                mp.classList.remove('is-hidden');
+                mp.removeAttribute('aria-hidden');
                 document.body.classList.add('has-miniplayer');
 
                 document.getElementById('mp-label').textContent =

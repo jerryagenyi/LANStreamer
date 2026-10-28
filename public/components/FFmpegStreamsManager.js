@@ -1091,13 +1091,8 @@ class FFmpegStreamsManager {
                             <span class="text-xs font-medium text-green-400">${this.getStreamCountStatus()}</span>
                         </div>
                         <div class="flex items-center gap-2 flex-wrap">
-                            <label class="inline-flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-gray-400 bg-gray-700/30 border border-gray-600/30 cursor-pointer hover:bg-gray-600/30 transition-all duration-300" title="Show or hide test tools (e.g. Test source)">
-                                <input type="checkbox" id="show-test-tools-toggle" class="rounded border-gray-500 bg-gray-700 text-[var(--primary-color)] focus:ring-[var(--primary-color)]" ${this.showTestTools ? 'checked' : ''}>
-                                <span>Show test tools</span>
-                            </label>
-                            <button id="refresh-devices-btn" class="inline-flex items-center justify-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-gray-300 bg-gray-700/50 hover:bg-gray-600/50 transition-all duration-300 border border-gray-600/50" title="Refresh Audio Devices">
-                                <span class="material-symbols-rounded text-sm">refresh</span>
-                                Refresh Devices
+                            <button id="refresh-devices-btn" class="copy-btn" title="Refresh devices" aria-label="Refresh audio devices">
+                                <span class="material-symbols-rounded text-base">refresh</span>
                             </button>
                             ${this.getRunningStreamsCount() > 0 || this.getStoppedStreamsCount() > 0 ? `
                                 <button id="start-stop-all-btn" class="inline-flex items-center justify-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-all duration-300 border ${this.getRunningStreamsCount() > 0 ? 'text-red-300 bg-red-900/30 hover:bg-red-800/40 border-red-700/50' : 'text-green-300 bg-green-900/30 hover:bg-green-800/40 border-green-700/50'}" title="${this.getRunningStreamsCount() > 0 ? 'Stop All Running Streams' : 'Start All Stopped Streams'}">
@@ -1105,9 +1100,8 @@ class FFmpegStreamsManager {
                                     ${this.getRunningStreamsCount() > 0 ? 'Stop All' : 'Start All'}
                                 </button>
                             ` : ''}
-                            <button id="add-stream-btn" class="inline-flex items-center justify-center gap-2 rounded-md px-4 py-2.5 text-sm font-semibold text-white bg-[var(--live-color)] hover:bg-[var(--live-color)]/80 transition-all duration-300 shadow-lg">
-                                <span class="material-symbols-rounded">add</span>
-                                🔴 Start New Stream
+                            <button id="add-stream-btn" class="play-btn" title="Start a new stream" aria-label="Start a new stream">
+                                <span class="material-symbols-rounded" style="font-variation-settings: 'FILL' 1;">add</span>
                             </button>
                         </div>
                     </div>
@@ -1252,11 +1246,7 @@ class FFmpegStreamsManager {
                     ` : ''}
                 </div>
 
-                ${stream.status === 'running' ? `
-                    <code class="hidden md:inline-block text-xs text-[var(--tok-accent,#00AEEF)] bg-[var(--tok-surface-2,#1A1A1A)] px-2 py-1 rounded truncate" style="max-width:220px" title="Listener page: ${listenerUrl}">${listenerUrl}</code>
-                ` : ''}
-
-                <!-- Actions -->
+                <!-- Actions (sharing lives in the header card, not per stream) -->
                 <div class="flex items-center gap-1.5 flex-shrink-0">
                     ${stream.status === 'running' ? `
                         <button onclick="ffmpegStreamsManager.stopStream('${stream.id}')" class="play-btn is-playing" title="Stop stream" aria-label="Stop ${stream.name || stream.id}">
@@ -1270,17 +1260,6 @@ class FFmpegStreamsManager {
                     <button onclick="ffmpegStreamsManager.editStream('${stream.id}')" class="copy-btn" title="Edit stream settings" aria-label="Edit ${stream.name || stream.id}">
                         <span class="material-symbols-rounded text-base">edit</span>
                     </button>
-                    ${stream.status === 'running' ? `
-                        <button onclick="ffmpegStreamsManager.copyStreamUrl('${listenerUrl}', this)" class="copy-btn" title="Copy listener page URL" aria-label="Copy listener page URL">
-                            <span class="material-symbols-rounded text-base">link</span>
-                        </button>
-                        <button onclick="window.LSShare && LSShare.show('${listenerUrl}')" class="copy-btn" title="Show QR code to scan" aria-label="Show QR code for listener page">
-                            <span class="material-symbols-rounded text-base">qr_code_2</span>
-                        </button>
-                        <button onclick="window.open('${listenerUrl}', '_blank')" class="copy-btn" title="Open listener page" aria-label="Open listener page">
-                            <span class="material-symbols-rounded text-base">open_in_new</span>
-                        </button>
-                    ` : ''}
                     <button onclick="ffmpegStreamsManager.deleteStream('${stream.id}')" class="copy-btn hover:!text-red-400" title="Delete stream" aria-label="Delete ${stream.name || stream.id}">
                         <span class="material-symbols-rounded text-base">delete</span>
                     </button>

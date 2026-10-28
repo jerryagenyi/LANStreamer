@@ -54,6 +54,16 @@ Example: `git merge feature/start-all-and-unique-names`. After pushing dev, you 
 - FFmpeg exit codes are unsigned, require conversion to signed
 - Example: 0xA7F00008 needs special handling
 
+## UI rules (enforced)
+
+- **Design tokens are the single source of truth**: `public/assets/css/tokens.css` (`--tok-*`, dark default + `[data-theme="light"]`). Tailwind maps them (`tailwind.config.js` → `bg-surface-1`, `text-muted`, `border-line`, `text-accent`, `rounded-pill`, `shadow-glow`…). **Never hardcode hex colors or dark-only Tailwind grays in new UI code** — use the semantic tokens so both themes work.
+- **Shared components live in `public/assets/css/ui.css`**: `.btn-primary/secondary/ghost/danger`, `.play-btn`, `.copy-btn` (IconButton), `.channel-badge`, `.stream-row`, `.live-chip`, `.eq`, `.mq` (marquee), `.tok-label`. New variants need a shared definition there first — no one-off button styles.
+- **One icon family**: Material Symbols Rounded, locally served. Icon-only buttons must have `aria-label` + `title`. Replace decorative emoji used as UI icons; content emoji is fine.
+- **Sharing the listener page happens in ONE place** (header share card: open / copy / QR via `LSShare`). Never per-stream share buttons — we share the page, not individual mounts.
+- **Notifications**: transient confirmations via the page toast; stream failures stay visible near the stream; never `alert()`. Don't report success before the server confirms.
+- **Offline rule**: no runtime CDN dependencies — fonts/icons/styles all self-hosted (`build:css`, `vendor:fonts`).
+- After changing classes anywhere: run `npm run build:css`.
+
 ## Telemetry (PostHog)
 
 - `src/services/TelemetryService.js` — opt-in only; **never** capture personal data, audio, stream names, or paths. Events: `app_start`, `stream_started` (format), `stream_stopped`, `stream_failed` (error category), `telemetry_enabled/disabled`. Distinct ID = anonymous install UUID from `config/telemetry.json`.

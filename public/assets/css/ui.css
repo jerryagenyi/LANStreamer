@@ -125,3 +125,8 @@
 
 /* Uptime chip (icon + duration, tooltip explains) */
 .uptime-chip { display:inline-flex; align-items:center; gap:0.25rem; }
+
+/* Mini-player fade: slides in when playback starts, fades out when it ends.
+   Toggling .hidden would jump; we animate opacity/transform instead. */
+.mini-player { transition: opacity 320ms ease, transform 320ms ease; }
+.mini-player.is-hidden { opacity: 0; transform: translateY(100%); pointer-events: none; }
