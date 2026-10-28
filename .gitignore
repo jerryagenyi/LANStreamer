@@ -136,3 +136,4 @@ nul
 /release/
 .claude/settings.local.json
 .claude-consult-prompt.md
+config/
