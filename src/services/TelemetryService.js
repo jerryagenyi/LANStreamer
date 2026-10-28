@@ -59,7 +59,20 @@ class TelemetryService {
     }
     this.installId = state.installId || crypto.randomUUID();
     this.consented = typeof state.consented === 'boolean' ? state.consented : null;
+    // Key/host may come from env (dev) or this config file (packaged Electron,
+    // where a .env next to the exe is not a thing users can rely on):
+    //   { "posthogKey": "phc_...", "posthogHost": "https://eu.i.posthog.com" }
+    this._configKey = state.posthogKey || null;
+    this._configHost = state.posthogHost || null;
     if (!state.installId) this._saveState();
+  }
+
+  getKey() {
+    return process.env.POSTHOG_KEY || this._configKey;
+  }
+
+  getHost() {
+    return process.env.POSTHOG_HOST || this._configHost || 'https://us.i.posthog.com';
   }
 
   _saveState() {
@@ -68,6 +81,8 @@ class TelemetryService {
       fs.writeFileSync(this.configPath, JSON.stringify({
         installId: this.installId,
         consented: this.consented,
+        posthogKey: this._configKey || undefined,
+        posthogHost: this._configHost || undefined,
       }, null, 2));
     } catch (error) {
       logger.debug(`Telemetry state not saved: ${error.message}`);
@@ -75,7 +90,7 @@ class TelemetryService {
   }
 
   _maybeStartClient() {
-    const key = process.env.POSTHOG_KEY;
+    const key = this.getKey();
     if (!key || this.consented !== true) {
       this.enabled = false;
       return;
@@ -84,7 +99,7 @@ class TelemetryService {
       // Lazy import so a missing/broken SDK never affects the app
       const { PostHog } = require('posthog-node');
       this.client = new PostHog(key, {
-        host: process.env.POSTHOG_HOST || 'https://us.i.posthog.com',
+        host: this.getHost(),
         flushAt: 10,
         flushInterval: 30_000,
       });

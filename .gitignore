@@ -134,3 +134,5 @@ Desktop.ini
 # Windows reserved name (can appear as accidental file)
 nul
 /release/
+.claude/settings.local.json
+.claude-consult-prompt.md

@@ -162,7 +162,7 @@ async function createTray() {
 async function maybeAskTelemetryConsent() {
   const telemetry = (await import('../src/services/TelemetryService.js')).default;
   const state = telemetry.getConsentState();
-  if (state.consented !== null || !process.env.POSTHOG_KEY) return; // decided, or nothing to enable
+  if (state.consented !== null || !telemetry.getKey()) return; // decided, or nothing to enable
 
   const { response } = await dialog.showMessageBox(mainWindow, {
     type: 'question',

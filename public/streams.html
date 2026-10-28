@@ -304,6 +304,119 @@
             box-shadow: 0 6px 20px 0 rgba(248, 81, 73, 0.4);
         }
 
+        /* ========================================
+           STREAM ROWS — broadcast console style
+           (hairline rows, big channel numerals; tokens drive both themes)
+           ======================================== */
+        .stream-row {
+            display: flex; align-items: center; gap: 0.875rem;
+            padding: 0.875rem 0.25rem;
+            border-bottom: 1px solid var(--tok-line);
+            background: transparent;
+            transition: background 180ms ease;
+        }
+        .stream-row:first-child { border-top: 1px solid var(--tok-line); }
+        .stream-row:hover { background: var(--tok-surface-2); }
+        .stream-row-live { box-shadow: inset 3px 0 0 var(--tok-accent); padding-left: 0.875rem; }
+
+        .channel-badge {
+            flex-shrink: 0;
+            width: 3rem; height: 3rem;
+            display: flex; align-items: center; justify-content: center;
+            border: 1px solid var(--tok-line-strong);
+            border-radius: 0.75rem;
+            font-weight: 800; font-size: 1rem; letter-spacing: 0.02em;
+            color: var(--tok-text-1);
+            background: var(--tok-surface-1);
+        }
+        .stream-row-live .channel-badge {
+            border-color: var(--tok-accent);
+            color: var(--tok-accent);
+            box-shadow: var(--tok-accent-glow);
+        }
+
+        .stream-name {
+            font-weight: 600; font-size: 1rem; color: var(--tok-text-1);
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .stream-sub {
+            display: flex; align-items: center; gap: 0.5rem;
+            font-size: 0.75rem; color: var(--tok-text-3); margin-top: 0.125rem;
+        }
+        .live-chip {
+            display: inline-flex; align-items: center; gap: 0.25rem;
+            font-size: 0.6875rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
+            color: var(--tok-live);
+        }
+
+        /* Equalizer bars — the one animated element; answers "is it playing" */
+        .eq { display: inline-flex; align-items: flex-end; gap: 2px; height: 0.75rem; }
+        .eq span { width: 3px; border-radius: 1px; background: var(--tok-live); animation: eq-bounce 1s ease-in-out infinite; }
+        .eq span:nth-child(1) { height: 40%; animation-delay: 0s; }
+        .eq span:nth-child(2) { height: 90%; animation-delay: 0.15s; }
+        .eq span:nth-child(3) { height: 60%; animation-delay: 0.3s; }
+        .eq span:nth-child(4) { height: 100%; animation-delay: 0.1s; }
+        @keyframes eq-bounce { 0%, 100% { transform: scaleY(0.4); } 50% { transform: scaleY(1); } }
+        @media (prefers-reduced-motion: reduce) { .eq span { animation: none; } }
+
+        .play-btn {
+            flex-shrink: 0;
+            width: 3rem; height: 3rem;
+            display: inline-flex; align-items: center; justify-content: center;
+            border-radius: 999px;
+            background: linear-gradient(135deg, var(--tok-accent), var(--tok-accent-strong));
+            color: #fff;
+            box-shadow: var(--tok-accent-glow);
+            transition: transform 180ms ease, filter 180ms ease;
+        }
+        .play-btn:hover { transform: scale(1.06); filter: brightness(1.1); }
+        .play-btn:focus-visible { outline: 2px solid var(--tok-accent); outline-offset: 3px; }
+        .play-btn.is-playing { background: var(--tok-surface-2); color: var(--tok-accent); border: 1px solid var(--tok-accent); box-shadow: none; }
+
+        .copy-btn {
+            flex-shrink: 0;
+            width: 2.5rem; height: 2.5rem;
+            display: inline-flex; align-items: center; justify-content: center;
+            border-radius: 999px;
+            color: var(--tok-text-3);
+            transition: color 180ms ease, background 180ms ease;
+        }
+        .copy-btn:hover { color: var(--tok-text-1); background: var(--tok-surface-2); }
+
+        /* ========================================
+           MINI-PLAYER — persistent bottom bar (the bold element)
+           ======================================== */
+        .mini-player {
+            position: fixed; left: 0; right: 0; bottom: 0; z-index: 60;
+            display: flex; align-items: center; gap: 0.875rem;
+            padding: 0.75rem 1rem calc(0.75rem + env(safe-area-inset-bottom, 0px));
+            background: color-mix(in srgb, var(--tok-surface-1) 88%, transparent);
+            backdrop-filter: blur(18px) saturate(160%);
+            -webkit-backdrop-filter: blur(18px) saturate(160%);
+            border-top: 1px solid var(--tok-line-strong);
+            box-shadow: 0 -12px 40px rgba(0,0,0,0.35);
+        }
+        body.has-miniplayer { padding-bottom: 5.5rem; }
+        .mini-player .mp-label {
+            font-size: 0.6875rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
+            color: var(--tok-live);
+            display: flex; align-items: center; gap: 0.375rem;
+        }
+        .mini-player .mp-name {
+            font-weight: 600; font-size: 0.9375rem; color: var(--tok-text-1);
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 42vw;
+        }
+        .mp-btn {
+            flex-shrink: 0; width: 2.75rem; height: 2.75rem; border-radius: 999px;
+            display: inline-flex; align-items: center; justify-content: center;
+            border: 1px solid var(--tok-line-strong); background: var(--tok-surface-2); color: var(--tok-text-1);
+            transition: all 160ms ease;
+        }
+        .mp-btn:hover { border-color: var(--tok-accent); color: var(--tok-accent); }
+        .mp-btn:focus-visible { outline: 2px solid var(--tok-accent); outline-offset: 2px; }
+        .mp-btn.mp-primary { background: linear-gradient(135deg, var(--tok-accent), var(--tok-accent-strong)); color: #fff; border: none; box-shadow: var(--tok-accent-glow); }
+        .mini-player .volume-slider { max-width: 7rem; }
+
         /* Volume Slider Styling with glassmorphism */
         .volume-slider {
             background: transparent;
@@ -471,6 +584,26 @@
                 </div>
             </div>
         </main>
+
+        <!-- Mini-player: persistent controls once playback starts (survives scrolling) -->
+        <div id="mini-player" class="mini-player hidden" role="region" aria-label="Now playing">
+            <span class="eq" aria-hidden="true"><span></span><span></span><span></span><span></span></span>
+            <div class="flex-1 min-w-0">
+                <div class="mp-label" id="mp-label">On air</div>
+                <div class="mp-name" id="mp-name">—</div>
+            </div>
+            <button class="mp-btn mp-primary" id="mp-playpause" onclick="streamListener.togglePlayPause()" aria-label="Pause">
+                <span class="material-symbols-rounded" style="font-variation-settings: 'FILL' 1;">pause</span>
+            </button>
+            <button class="mp-btn" id="mp-mute" onclick="streamListener.toggleMute()" aria-label="Mute">
+                <span class="material-symbols-rounded" id="mp-mute-icon">volume_up</span>
+            </button>
+            <input type="range" min="0" max="100" id="mp-volume" class="flex-1 h-2 rounded-lg appearance-none volume-slider hidden sm:block"
+                   oninput="streamListener.setVolume(this.value)" aria-label="Volume">
+            <button class="mp-btn" onclick="streamListener.stopStream()" aria-label="Stop and close player">
+                <span class="material-symbols-rounded">close</span>
+            </button>
+        </div>
 
         <!-- Footer -->
         <footer class="mt-12 border-t border-[var(--border-color)] pt-8 pb-8 px-4 sm:px-6 lg:px-10">
@@ -661,11 +794,6 @@
                 const streamsHtml = this.streams.map(stream => this.renderStream(stream)).join('');
                 streamsList.innerHTML = streamsHtml;
 
-                // Remove bottom margin from the last stream card for cleaner spacing
-                const streamCards = streamsList.querySelectorAll('.bg-\\[var\\(--card-bg\\)\\]');
-                if (streamCards.length > 0) {
-                    streamCards[streamCards.length - 1].classList.remove('mb-4');
-                }
                 this.updateLiveIndicator();
             }
 
@@ -675,95 +803,46 @@
                 const displayHost = this.serverHost || window.location.hostname;
                 const streamUrl = `http://${displayHost}:${this.icecastPort}/${stream.id}`;
                 const isPlaying = this.currentStream === stream.id;
+                const isRunning = stream.status === 'running';
                 const uptime = this.formatUptime(stream.uptime || 0);
+                const channel = stream.label || '';
 
                 return `
-                    <div class="bg-[var(--card-bg)] border border-[var(--border-color)] rounded-2xl p-4 sm:p-6 shadow-2xl shadow-black/30 hover:border-[var(--primary-color)]/30 transition-all duration-300 mb-4">
-                        <!-- Mobile-first layout: Stack on small screens, side-by-side on larger screens -->
-                        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                            <!-- Stream Info -->
-                            <div class="flex items-center gap-3 flex-1 min-w-0">
-                                <div class="relative flex-shrink-0">
-                                    <div class="w-3 h-3 rounded-full bg-[var(--live-color)] pulse-live"></div>
-                                    <div class="absolute inset-0 w-3 h-3 rounded-full bg-[var(--live-color)] animate-ping opacity-75"></div>
-                                </div>
-                                <div class="flex-1 min-w-0">
-                                    <h3 class="font-semibold text-white text-base sm:text-lg mb-1 truncate">${stream.label ? stream.label + ' - ' : ''}${stream.name || stream.id}</h3>
-                                    <!-- Mobile: Stack info vertically, Desktop: Horizontal -->
-                                    <div class="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4 text-xs sm:text-sm text-gray-400">
-                                        <span class="flex items-center gap-1">
-                                            <span class="material-symbols-rounded text-sm">schedule</span>
-                                            <span data-stream-uptime="${stream.id}">${uptime}</span>
-                                        </span>
-                                        <span class="flex items-center gap-1">
-                                            <span class="material-symbols-rounded text-sm">radio</span>
-                                            ${stream.config?.bitrate || '192'} kbps
-                                        </span>
-                                        <span class="flex items-center gap-1">
-                                            <span class="material-symbols-rounded text-sm">info</span>
-                                            Status: ${stream.status || 'unknown'}
-                                        </span>
-
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Action Buttons -->
-                            <div class="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+                    <div class="stream-row ${isPlaying ? 'stream-row-live' : ''}" data-stream-row="${stream.id}">
+                        <div class="channel-badge" aria-hidden="true">${channel}</div>
+                        <div class="flex-1 min-w-0">
+                            <div class="stream-name">${stream.name || stream.id}</div>
+                            <div class="stream-sub">
                                 ${isPlaying ? `
-                                    <button
-                                        onclick="streamListener.stopStream()"
-                                        class="inline-flex items-center gap-2 rounded-md px-4 sm:px-6 py-2 sm:py-3 text-sm font-semibold text-white shadow-lg transition-all duration-300 btn-stop-gradient flex-1 sm:flex-initial justify-center"
-                                    >
-                                        <span class="material-symbols-rounded text-base">stop</span>
-                                        <span class="hidden sm:inline">Stop</span>
-                                    </button>
+                                    <span class="eq" aria-hidden="true"><span></span><span></span><span></span><span></span></span>
+                                    <span class="live-chip">On air</span>
+                                ` : isRunning ? `
+                                    <span class="live-chip">Live</span>
                                 ` : `
-                                    <button
-                                        onclick="streamListener.playStream('${stream.id}', '${streamUrl}')"
-                                        class="inline-flex items-center gap-2 rounded-md px-4 sm:px-6 py-2 sm:py-3 text-sm font-semibold text-white shadow-lg transition-all duration-300 btn-gradient flex-1 sm:flex-initial justify-center"
-                                    >
-                                        <span class="material-symbols-rounded text-base" style="font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;">play_arrow</span>
-                                        <span class="hidden sm:inline">Play</span>
-                                    </button>
+                                    <span>${stream.status || 'unknown'}</span>
                                 `}
-
-                                <button
-                                    onclick="streamListener.copyStreamUrl('${streamUrl}')"
-                                    class="inline-flex items-center gap-2 rounded-md px-3 sm:px-4 py-2 sm:py-3 text-sm font-medium text-gray-300 bg-[#2A2A2A] hover:bg-[#3A3A3A] border border-[var(--border-color)] transition-all duration-300 flex-shrink-0"
-                                    title="Copy stream URL"
-                                >
-                                    <span class="material-symbols-rounded text-base">content_copy</span>
-                                    <span class="hidden sm:inline">Copy</span>
-                                </button>
+                                <span aria-hidden="true">·</span>
+                                <span data-stream-uptime="${stream.id}">${uptime}</span>
+                                <span aria-hidden="true">·</span>
+                                <span>${stream.config?.bitrate || '192'} kbps</span>
                             </div>
                         </div>
-                        
-                        ${isPlaying ? `
-                            <div class="mt-4 p-3 bg-green-500/10 border border-green-500/20 rounded-lg">
-                                <div class="flex items-center gap-2 mb-3">
-                                    <span class="material-symbols-rounded text-green-400">volume_up</span>
-                                    <span class="text-green-300 text-sm">Now playing: ${stream.label ? stream.label + ' ' : ''}${stream.name || stream.id}</span>
-                                </div>
-                                <!-- Volume Control -->
-                                <div class="flex items-center gap-3">
-                                    <button onclick="streamListener.toggleMute()"
-                                            class="flex items-center justify-center w-6 h-6 rounded hover:bg-green-500/20 transition-colors"
-                                            title="${this.isMuted ? 'Unmute' : 'Mute'}">
-                                        <span class="material-symbols-rounded text-green-400 text-sm">
-                                            ${this.isMuted ? 'volume_off' : (this.volume === 0 ? 'volume_mute' : this.volume < 50 ? 'volume_down' : 'volume_up')}
-                                        </span>
-                                    </button>
-                                    <input type="range"
-                                           min="0"
-                                           max="100"
-                                           value="${this.isMuted ? 0 : this.volume}"
-                                           class="flex-1 h-2 bg-gray-700 rounded-lg appearance-none volume-slider"
-                                           oninput="streamListener.setVolume(this.value)">
-                                    <span class="text-xs text-gray-400 font-mono min-w-[3rem]" id="volume-display">${this.isMuted ? 'Muted' : this.volume + '%'}</span>
-                                </div>
-                            </div>
-                        ` : ''}
+                        <button
+                            onclick="streamListener.${isPlaying ? 'togglePlayPause()' : `playStream('${stream.id}', '${streamUrl}')`}"
+                            class="play-btn ${isPlaying ? 'is-playing' : ''}"
+                            aria-label="${isPlaying ? 'Pause ' + (stream.name || stream.id) : 'Play ' + (stream.name || stream.id)}"
+                            ${!isRunning && !isPlaying ? 'title="Stream is not running — start it on the dashboard first"' : ''}
+                        >
+                            <span class="material-symbols-rounded" style="font-variation-settings: 'FILL' 1;">${isPlaying ? (this.audioPlayer.paused ? 'play_arrow' : 'pause') : 'play_arrow'}</span>
+                        </button>
+                        <button
+                            onclick="streamListener.copyStreamUrl('${streamUrl}')"
+                            class="copy-btn"
+                            title="Copy stream URL"
+                            aria-label="Copy stream URL for ${stream.name || stream.id}"
+                        >
+                            <span class="material-symbols-rounded text-base">link</span>
+                        </button>
                     </div>
                 `;
             }
@@ -869,6 +948,7 @@
 
                     // Update UI
                     this.renderStreams();
+                    this.updateMiniPlayer();
 
                 } catch (error) {
                     console.error('❌ Failed to play stream:', error);
@@ -920,8 +1000,53 @@
 
                 // Update UI
                 this.renderStreams();
+                this.updateMiniPlayer();
 
                 this.showNotification(`${streamTitle} stopped`, 'info');
+            }
+
+            /** Pause/resume the stream that is currently loaded. */
+            togglePlayPause() {
+                if (!this.currentStream) return;
+                if (this.audioPlayer.paused) {
+                    this.audioPlayer.play().catch(err => console.warn('Resume failed:', err.message));
+                } else {
+                    this.audioPlayer.pause();
+                }
+                this.renderStreams();
+                this.updateMiniPlayer();
+            }
+
+            /** Sync the persistent bottom mini-player with playback state. */
+            updateMiniPlayer() {
+                const mp = document.getElementById('mini-player');
+                if (!mp) return;
+                if (!this.currentStream) {
+                    mp.classList.add('hidden');
+                    document.body.classList.remove('has-miniplayer');
+                    return;
+                }
+                const stream = this.streams.find(s => s.id === this.currentStream);
+                mp.classList.remove('hidden');
+                document.body.classList.add('has-miniplayer');
+
+                document.getElementById('mp-label').textContent =
+                    `On air${stream?.label ? ' · ' + stream.label : ''}`;
+                document.getElementById('mp-name').textContent =
+                    stream?.name || this.currentStream;
+
+                const paused = this.audioPlayer.paused;
+                const playpauseBtn = document.getElementById('mp-playpause');
+                playpauseBtn.setAttribute('aria-label', paused ? 'Play' : 'Pause');
+                playpauseBtn.querySelector('.material-symbols-rounded').textContent = paused ? 'play_arrow' : 'pause';
+
+                const muteIcon = document.getElementById('mp-mute-icon');
+                muteIcon.textContent = this.isMuted ? 'volume_off'
+                    : (this.volume === 0 ? 'volume_mute' : this.volume < 50 ? 'volume_down' : 'volume_up');
+                document.getElementById('mp-mute').setAttribute('aria-label', this.isMuted ? 'Unmute' : 'Mute');
+
+                const vol = document.getElementById('mp-volume');
+                if (vol && document.activeElement !== vol) vol.value = this.isMuted ? 0 : this.volume;
             }
 
             copyStreamUrl(url) {
@@ -1405,6 +1530,7 @@
                 }
                 this.updateVolumeDisplay();
                 this.saveVolume(); // Save volume preference
+                this.updateMiniPlayer();
                 console.log(`🔊 Volume set to ${this.volume}%${this.isMuted ? ' (Muted)' : ''}`);
 
                 // Don't re-render during volume changes to avoid interfering with slider interaction
@@ -1433,6 +1559,7 @@
                 if (this.currentStream) {
                     this.renderStreams();
                 }
+                this.updateMiniPlayer();
             }
 
             updateVolumeDisplay() {

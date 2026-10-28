@@ -9,9 +9,13 @@ This directory contains comprehensive documentation for the LANStreamer project.
 | Document | Description | Audience |
 |----------|-------------|----------|
 | **[LANSTREAMER_SYSTEM_ARCHITECTURE.md](./LANSTREAMER_SYSTEM_ARCHITECTURE.md)** | ⭐ **Complete system architecture** - Detailed technical documentation covering all services, startup sequence, configuration, and troubleshooting | Developers, AI assistants, advanced users |
+| **[APP-FLOW.md](./APP-FLOW.md)** | ⭐ **Every page, user flow (mermaid), wireframe, and component** — the map used for UI work; view on GitHub for rendered diagrams | Developers, designers |
 | **[TROUBLESHOOTING.md](./TROUBLESHOOTING.md)** | Common issues and solutions - Practical troubleshooting guide for real-world problems | All users |
 | **[NETWORK-SETUP.md](./NETWORK-SETUP.md)** | Network configuration guide - Static IP setup for events and conferences | Event organisers, network admins |
+| **[TEST-PLAN.md](./TEST-PLAN.md)** | Manual + automated test plan | Developers, QA |
 | **[CHANGELOG.md](./CHANGELOG.md)** | Version history - Release notes, updates, and compatibility information | All users |
+
+User-facing guides also live in the root: **[../README.md](../README.md)** (quick start + Telemetry & Privacy), **[../CLAUDE.md](../CLAUDE.md)** (developer guide incl. telemetry internals), **[../manual-setup/](../manual-setup/)** (hardware-specific setups).
 
 ### Installation Guides
 
