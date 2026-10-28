@@ -814,6 +814,7 @@
     </div>
 
     <!-- Include Components -->
+    <script src="/assets/js/notice-dismiss.js"></script>
     <script src="/components/ComponentManager.js"></script>
     <script src="/components/LobbyMusicPlayer.js"></script>
     <script src="/components/FileBrowser.js"></script>
@@ -857,6 +858,15 @@
                 this.icecastStatus = 'unknown';
                 this.componentManager = null;
                 this.lobbyMusicPlayer = null;
+                document.addEventListener('lsnotice-restored', (e) => {
+                    if (e.detail.id === 'security-warning') this.checkSecurityWarning();
+                });
+                document.addEventListener('lsnotice-dismissed', (e) => {
+                    if (e.detail.id === 'security-warning') {
+                        const banner = document.getElementById('security-warning-banner');
+                        if (banner && window.LSNotices) banner.innerHTML = LSNotices.hiddenStub('security-warning', 'Security warning');
+                    }
+                });
                 this.init();
             }
 
@@ -1231,6 +1241,12 @@
                 const banner = document.getElementById('security-warning-banner');
                 if (!banner) return;
 
+                // Stay hidden once dismissed until the user clicks "Show" on the stub
+                if (window.LSNotices && LSNotices.isDismissed('security-warning')) {
+                    banner.innerHTML = LSNotices.hiddenStub('security-warning', 'Security warning');
+                    return;
+                }
+
                 const criticalVulns = securityData.vulnerabilities.filter(v => v.severity === 'critical');
                 const hasDefaultCredentials = criticalVulns.length > 0;
 
@@ -1243,9 +1259,12 @@
                                     <strong>Security Warning:</strong> Your Icecast server is using default credentials that are publicly known!
                                 </p>
                             </div>
-                            <button id="security-details-toggle" class="px-3 py-1 bg-red-500/20 hover:bg-red-500/30 border border-red-500/50 rounded-lg text-sm font-medium transition-colors">
-                                Show Details
-                            </button>
+                            <div class="flex items-center gap-2">
+                                <button id="security-details-toggle" class="px-3 py-1 bg-red-500/20 hover:bg-red-500/30 border border-red-500/50 rounded-lg text-sm font-medium transition-colors">
+                                    Show Details
+                                </button>
+                                ${window.LSNotices ? LSNotices.dismissButton('security-warning') : ''}
+                            </div>
                         </div>
                         <div id="security-details" class="hidden mt-4 p-4 bg-red-900/20 border border-red-500/30 rounded-lg">
                             ${this.renderSecurityDetails(securityData)}

@@ -51,6 +51,12 @@ class IcecastService {
     this.adminPassword = null
     this.hostname = null
 
+    // Poll-response caches: the dashboard polls every few seconds; re-running
+    // installation scans / security checks / config reads each time floods the
+    // log and burns CPU for identical results.
+    this._installCache = null      // { result, ts }
+    this._securityCache = null     // { result, ts }
+
     // Source limit from icecast.xml (parsed during initialization)
     this.sourceLimit = null
 
@@ -281,7 +287,11 @@ class IcecastService {
    * Detect Icecast installation using simplified strategy pattern
    */
   async detectInstallation() {
-    return ErrorHandler.handle(async () => {
+    // Cached for 30s: called by every dashboard status poll
+    if (this._installCache && Date.now() - this._installCache.ts < 30_000) {
+      return this._installCache.result;
+    }
+    const result = await ErrorHandler.handle(async () => {
       const strategies = [
         () => this._checkEnvironmentPaths(),
         () => this._checkStandardPaths(),
@@ -314,6 +324,8 @@ class IcecastService {
         }
       );
     }, { operation: 'detectInstallation' });
+    this._installCache = { result, ts: Date.now() };
+    return result;
   }
 
   /**
@@ -954,9 +966,11 @@ class IcecastService {
         logger.warn('Port not yet parsed from icecast.xml in checkRunningStatus');
         return;
       }
-      const host = this.getHostname();
+      // Always poll localhost: the app and Icecast run on the same machine, and the
+      // hostname in icecast.xml can be a stale LAN IP after network changes (DHCP).
+      const host = 'localhost';
       const response = await fetch(`http://${host}:${port}/admin/stats.xml`, {
-        timeout: 5000
+        signal: AbortSignal.timeout(3000)
       })
       
       if (response.ok) {
@@ -1058,9 +1072,11 @@ class IcecastService {
         logger.warn('Port not yet parsed from icecast.xml in checkRunningStatus');
         return;
       }
-      const host = this.getHostname();
+      // Always poll localhost: the app and Icecast run on the same machine, and the
+      // hostname in icecast.xml can be a stale LAN IP after network changes (DHCP).
+      const host = 'localhost';
       const response = await fetch(`http://${host}:${port}/admin/stats.xml`, {
-        timeout: 5000,
+        signal: AbortSignal.timeout(3000),
         headers: {
           'Authorization': `Basic ${Buffer.from(`admin:${this.getAdminPassword()}`).toString('base64')}`
         }
@@ -1322,6 +1338,14 @@ class IcecastService {
    * Check for security vulnerabilities in Icecast configuration
    */
   async checkSecurityVulnerabilities() {
+    // Cached for 15s: called by every dashboard status poll
+    if (this._securityCache && Date.now() - this._securityCache.ts < 15_000) {
+      return this._securityCache.result;
+    }
+    const _cacheResult = (result) => {
+      this._securityCache = { result, ts: Date.now() };
+      return result;
+    };
     try {
       // Try multiple config path sources
       let configPath = this.paths?.config || this.configPath;
@@ -1337,14 +1361,14 @@ class IcecastService {
 
       if (!configPath || !await fs.pathExists(configPath)) {
         logger.icecast('No Icecast config file found for security check');
-        return {
+        return _cacheResult({
           hasVulnerabilities: false,
           message: 'Configuration file not found'
-        };
+        });
       }
 
       const configContent = await fs.readFile(configPath, 'utf8');
-      logger.icecast('Security check - reading config file', {
+      logger.debug('Security check - reading config file', {
         path: configPath,
         contentLength: configContent.length
       });
@@ -1355,7 +1379,7 @@ class IcecastService {
       const hasDefaultSourcePassword = configContent.includes('<source-password>hackme</source-password>');
       const hasDefaultRelayPassword = configContent.includes('<relay-password>hackme</relay-password>');
 
-      logger.icecast('Security check - credential detection', {
+      logger.debug('Security check - credential detection', {
         hasDefaultAdmin,
         hasDefaultPassword,
         hasDefaultSourcePassword,
@@ -1371,7 +1395,7 @@ class IcecastService {
           message: 'ICECAST: Default admin credentials (admin/hackme) are in use',
           description: 'Anyone can access the Icecast admin panel and control your server',
           fix: 'Change admin-user and admin-password in icecast.xml',
-          adminUrl: `http://${this.getHostname()}:${this.actualPort}/admin/`
+          adminUrl: `http://localhost:${this.actualPort}/admin/`
         });
       }
 
@@ -1395,12 +1419,12 @@ class IcecastService {
         });
       }
       
-      return {
+      return _cacheResult({
         hasVulnerabilities: vulnerabilities.length > 0,
         vulnerabilities,
         configPath,
         lastChecked: new Date().toISOString()
-      };
+      });
       
     } catch (error) {
       logger.icecast('Failed to check security vulnerabilities', { error: error.message });
@@ -1419,9 +1443,10 @@ class IcecastService {
         logger.warn('Port not yet parsed from icecast.xml in checkRunningStatus');
         return;
       }
-      const host = this.getHostname();
+      // Same machine as Icecast: poll localhost (icecast.xml hostname can be a stale LAN IP)
+      const host = 'localhost';
       const response = await fetch(`http://${host}:${port}/admin/listmounts.xml`, {
-        timeout: 5000,
+        signal: AbortSignal.timeout(3000),
         headers: {
           'Authorization': `Basic ${Buffer.from(`admin:${this.getAdminPassword()}`).toString('base64')}`
         }
@@ -1448,7 +1473,7 @@ class IcecastService {
             content_type: source.content_type || 'unknown',
             stream_start: source.stream_start || null,
             title: source.title || '',
-            url: `http://${this.getHostname()}:${this.actualPort}${source.$.mount}`
+            url: `http://${this.getPreferredLANHost() || this.getHostname()}:${this.actualPort}${source.$.mount}`
           })
         }
       }
@@ -2099,8 +2124,8 @@ class IcecastService {
         if (health.checks.process.status === 'healthy') {
           try {
             const response = await fetch(
-              `http://${this.getHostname()}:${this.actualPort}/admin/stats.xml`,
-              { timeout: 3000 }
+              `http://localhost:${this.actualPort}/admin/stats.xml`,
+              { signal: AbortSignal.timeout(3000) }
             );
 
             if (response.ok) {
@@ -2108,7 +2133,7 @@ class IcecastService {
                 status: 'healthy',
                 message: 'Admin interface accessible',
                 details: {
-                  host: this.getHostname(),
+                  host: 'localhost',
                   port: this.actualPort || 8000,
                   responseStatus: response.status
                 }

@@ -163,11 +163,11 @@ class HeaderComponent {
                 <!-- Logo Section -->
                 <div class="flex items-center gap-4 text-white">
                     <a href="http://localhost:3001" class="flex items-center gap-2 text-white hover:text-[var(--primary-color)] transition-colors">
-                        <img src="/assets/lanstreamer-logo.png"
+                        <img src="/assets/logo.svg"
                              alt="LANStreamer"
                              class="h-16 w-auto logo-glow"
                              id="logo-image"
-                             onerror="this.style.display='none'; document.getElementById('logo-fallback').style.display='flex';">
+                             onerror="this.onerror=null; this.src='/assets/lanstreamer-logo.png';">
                         <div id="logo-fallback" style="display: none;" class="flex items-center">
                             <span class="text-xl font-bold tracking-wider">LANStreamer</span>
                         </div>

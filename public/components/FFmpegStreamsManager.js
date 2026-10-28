@@ -1123,7 +1123,10 @@ class FFmpegStreamsManager {
                         <p class="text-gray-400 mb-4">No active streams yet. Start streaming audio from any input source.</p>
                     </div>
 
-                    <div class="glass-card-inset rounded-xl p-6 max-w-md mx-auto">
+                    ${(window.LSNotices && LSNotices.isDismissed('quick-start'))
+                        ? `<div class="max-w-md mx-auto">${LSNotices.hiddenStub('quick-start', 'Quick Start')}</div>`
+                        : `<div class="glass-card-inset rounded-xl p-6 max-w-md mx-auto relative">
+                        <div class="absolute top-2 right-2">${window.LSNotices ? LSNotices.dismissButton('quick-start') : ''}</div>
                         <h4 class="text-white font-medium mb-3">🚀 Quick Start Guide:</h4>
                         <div class="text-left space-y-2 text-sm text-gray-300">
                             <div class="flex items-center gap-2">
@@ -1145,7 +1148,7 @@ class FFmpegStreamsManager {
                                 💡 <strong>Pro Tip:</strong> Install DVS (Dante Virtual Soundcard) or Virtual Audio Cable to route audio from music players, DJ software, or any application to LANStreamer.
                             </p>
                         </div>
-                    </div>
+                    </div>` }
                 </div>
             `;
         }
@@ -1510,11 +1513,14 @@ class FFmpegStreamsManager {
                                     </button>
                                 </div>
                             ` : ''}
-                            ${this.hasVirtualAudioDevices() ? `
-                                <div class="mt-2 p-2 bg-yellow-500/10 border border-yellow-500/20 rounded text-xs text-yellow-300">
-                                    ⚠️ <strong>Virtual Audio Notice:</strong> Virtual devices may occasionally disappear due to driver restarts. If streaming fails, try restarting your virtual audio software or refresh audio devices.
-                                </div>
-                            ` : ''}
+                            ${this.hasVirtualAudioDevices() ? (
+                                (window.LSNotices && LSNotices.isDismissed('virtual-audio'))
+                                    ? `<div class="mt-2">${LSNotices.hiddenStub('virtual-audio', 'Virtual Audio notice')}</div>`
+                                    : `<div class="mt-2 p-2 bg-yellow-500/10 border border-yellow-500/20 rounded text-xs text-yellow-300 flex items-start justify-between gap-2">
+                                        <span>⚠️ <strong>Virtual Audio Notice:</strong> Virtual devices may occasionally disappear due to driver restarts. If streaming fails, try restarting your virtual audio software or refresh audio devices.</span>
+                                        ${window.LSNotices ? LSNotices.dismissButton('virtual-audio', 'text-yellow-300/70 hover:text-yellow-100') : ''}
+                                    </div>`
+                            ) : ''}
                         </div>
 
                         <div>
