@@ -1215,166 +1215,70 @@ class FFmpegStreamsManager {
             }
 
             return `
-            <div class="glass-card-inset rounded-xl p-5 hover:border-[var(--primary-color)]/30 transition-all duration-300">
-                <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                    <!-- Stream Info (label S1, S2, S3 + reorder) -->
-                    <div class="flex items-center gap-4 flex-1">
-                        <div class="flex flex-col items-center gap-0.5 flex-shrink-0">
-                            <button type="button" onclick="ffmpegStreamsManager.moveStreamUp(${index})" title="Move up" class="p-1 rounded hover:bg-[var(--primary-color)]/20 text-gray-400 hover:text-white disabled:opacity-30 disabled:pointer-events-none" ${index === 0 ? 'disabled' : ''}>
-                                <span class="material-symbols-rounded text-lg">arrow_upward</span>
-                            </button>
-                            <span class="text-xs font-medium text-[var(--primary-color)]">${stream.label || 'S' + (index + 1)}</span>
-                            <button type="button" onclick="ffmpegStreamsManager.moveStreamDown(${index})" title="Move down" class="p-1 rounded hover:bg-[var(--primary-color)]/20 text-gray-400 hover:text-white disabled:opacity-30 disabled:pointer-events-none" ${index === this.activeStreams.length - 1 ? 'disabled' : ''}>
-                                <span class="material-symbols-rounded text-lg">arrow_downward</span>
-                            </button>
-                        </div>
-                        <div class="relative">
-                            <div class="w-3 h-3 rounded-full ${stream.status === 'running' ? 'bg-[var(--live-color)] pulse-live' : stream.status === 'error' ? 'bg-red-500' : 'bg-gray-500'}"></div>
-                            ${stream.status === 'running' ? '<div class="absolute inset-0 w-3 h-3 rounded-full bg-[var(--live-color)] animate-ping opacity-75"></div>' : ''}
-                        </div>
-                        <div class="flex-1 min-w-0">
-                            <div class="flex items-start justify-between gap-2 mb-1">
-                                <h3 class="font-semibold text-white text-lg truncate flex-1">${stream.label ? stream.label + ' - ' : ''}${stream.name || stream.id}</h3>
-                            </div>
-                            <div class="flex flex-wrap items-center gap-3 text-sm text-gray-400">
-                                <span class="flex items-center gap-1">
-                                    <span class="material-symbols-rounded text-sm">mic</span>
-                                    ${this.getDeviceName(stream.deviceId)}
-                                </span>
-                                <span class="flex items-center gap-1">
-                                    <span class="material-symbols-rounded text-sm">high_quality</span>
-                                    ${stream.config?.bitrate || '192'} kbps
-                                </span>
-                                <span class="flex items-center gap-1">
-                                    <span class="material-symbols-rounded text-sm">schedule</span>
-                                    <span data-stream-uptime="${stream.id}">Uptime: ${uptime}</span>
-                                </span>
-                                <span class="px-2 py-1 text-xs font-medium ${statusBg} ${statusColor} border rounded-full flex items-center gap-1 flex-shrink-0">
-                                    <span class="material-symbols-rounded text-xs">${statusIcon}</span>
-                                    ${statusText}
-                                </span>
-                            </div>
-                        </div>
+            <div class="stream-row stream-row-admin ${stream.status === 'running' ? 'stream-row-live' : stream.status === 'error' ? 'stream-row-error' : ''}" data-stream-row="${stream.id}" style="flex-wrap:wrap">
+                <!-- Reorder (compact, left of badge) -->
+                <div class="flex flex-col items-center flex-shrink-0 -my-1">
+                    <button type="button" onclick="ffmpegStreamsManager.moveStreamUp(${index})" title="Move up" aria-label="Move ${stream.name || stream.id} up" class="p-0.5 rounded hover:bg-[var(--tok-surface-2,#333)] text-gray-400 hover:text-white disabled:opacity-30 disabled:pointer-events-none" ${index === 0 ? 'disabled' : ''}>
+                        <span class="material-symbols-rounded text-base">keyboard_arrow_up</span>
+                    </button>
+                    <button type="button" onclick="ffmpegStreamsManager.moveStreamDown(${index})" title="Move down" aria-label="Move ${stream.name || stream.id} down" class="p-0.5 rounded hover:bg-[var(--tok-surface-2,#333)] text-gray-400 hover:text-white disabled:opacity-30 disabled:pointer-events-none" ${index === this.activeStreams.length - 1 ? 'disabled' : ''}>
+                        <span class="material-symbols-rounded text-base">keyboard_arrow_down</span>
+                    </button>
+                </div>
+
+                <div class="channel-badge" aria-hidden="true">${stream.label || 'S' + (index + 1)}</div>
+
+                <div class="flex-1 min-w-0" style="min-width:200px">
+                    <div class="stream-name">${stream.name || stream.id}</div>
+                    <div class="stream-sub">
+                        ${stream.status === 'running' ? `
+                            <span class="eq" aria-hidden="true"><span></span><span></span><span></span><span></span></span>
+                            <span class="live-chip">Live</span>
+                        ` : `
+                            <span class="${stream.status === 'error' ? 'text-red-400' : ''}">${statusText}</span>
+                        `}
+                        <span aria-hidden="true">·</span>
+                        <span>${this.getDeviceName(stream.deviceId)}</span>
+                        <span aria-hidden="true">·</span>
+                        <span>${stream.config?.bitrate || '192'} kbps</span>
+                        <span aria-hidden="true">·</span>
+                        <span data-stream-uptime="${stream.id}">${uptime}</span>
                     </div>
-
-
-
-                    <!-- Stream Actions -->
-                    <div class="flex items-center gap-3 w-full sm:w-auto">
-                        <div class="flex items-center gap-2 flex-1 sm:flex-initial">
-                            ${stream.status === 'running' ? `
-                                <button
-                                    onclick="ffmpegStreamsManager.copyStreamUrl('${streamUrl}', this)"
-                                    class="inline-flex items-center justify-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-gray-300 bg-[#2A2A2A] hover:bg-[#3A3A3A] border border-[var(--border-color)] transition-all duration-300"
-                                    title="Copy stream URL"
-                                >
-                                    <span class="material-symbols-rounded text-sm">link</span>
-                                    Copy URL
-                                </button>
-                                <button
-                                    onclick="ffmpegStreamsManager.editStream('${stream.id}')"
-                                    class="inline-flex items-center justify-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-blue-300 bg-blue-600/20 hover:bg-blue-600/30 border border-blue-600/30 transition-all duration-300"
-                                    title="Edit stream settings"
-                                >
-                                    <span class="material-symbols-rounded text-sm">edit</span>
-                                    Edit
-                                </button>
-                                <button
-                                    onclick="ffmpegStreamsManager.stopStream('${stream.id}')"
-                                    class="inline-flex items-center justify-center gap-2 rounded-md px-4 py-2 text-sm font-semibold text-white bg-red-600 hover:bg-red-700 transition-all duration-300 shadow-lg"
-                                >
-                                    <span class="material-symbols-rounded">stop</span>
-                                    Stop Stream
-                                </button>
-                            ` : `
-                                <button
-                                    onclick="ffmpegStreamsManager.restartStream('${stream.id}')"
-                                    class="inline-flex items-center justify-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-green-300 bg-green-600/20 hover:bg-green-600/30 border border-green-600/30 transition-all duration-300"
-                                    title="Start stream"
-                                >
-                                    <span class="material-symbols-rounded text-sm">play_arrow</span>
-                                    Start
-                                </button>
-                                <button
-                                    onclick="ffmpegStreamsManager.editStream('${stream.id}')"
-                                    class="inline-flex items-center justify-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-blue-300 bg-blue-600/20 hover:bg-blue-600/30 border border-blue-600/30 transition-all duration-300"
-                                    title="Edit stream settings"
-                                >
-                                    <span class="material-symbols-rounded text-sm">edit</span>
-                                    Edit
-                                </button>
-                                <button
-                                    onclick="ffmpegStreamsManager.deleteStream('${stream.id}')"
-                                    class="inline-flex items-center justify-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-red-300 bg-red-600/20 hover:bg-red-600/30 border border-red-600/30 transition-all duration-300"
-                                    title="Delete stream"
-                                >
-                                    <span class="material-symbols-rounded text-sm">delete</span>
-                                    Delete
-                                </button>
-                            `}
-                        </div>
-                    </div>
+                    ${stream.status === 'error' ? `
+                        <div class="mt-1.5 text-xs text-red-400/90 leading-relaxed" data-stream-error>${errorMessage} <button type="button" onclick="ffmpegStreamsManager.editStream('${stream.id}')" class="underline hover:text-red-300">Edit</button> to change device, then Start.</div>
+                    ` : ''}
                 </div>
 
                 ${stream.status === 'running' ? `
-                    <!-- Stream URL Display -->
-                    <div class="mt-4 p-3 bg-[#0A0A0A] border border-[var(--border-color)] rounded-lg">
-                        <div class="flex items-center justify-between gap-2">
-                            <div class="flex items-center gap-2 flex-1">
-                                <span class="material-symbols-rounded text-sm text-[var(--primary-color)]">radio</span>
-                                <span class="text-xs text-gray-400">Listen via:</span>
-                                <code class="text-xs text-[var(--primary-color)] font-mono bg-[var(--primary-color)]/10 px-2 py-1 rounded flex-1 truncate">${streamUrl}</code>
-                            </div>
-                            <div class="flex items-center gap-1">
-                                <button
-                                    onclick="ffmpegStreamsManager.copyStreamUrl('${streamUrl}', this)"
-                                    class="text-xs text-gray-400 hover:text-white transition-colors px-1"
-                                    title="Copy stream URL to clipboard"
-                                >
-                                    <span class="material-symbols-rounded text-sm">content_copy</span>
-                                </button>
-                                <button
-                                    onclick="window.open('${streamUrl}', '_blank')"
-                                    class="text-xs text-gray-400 hover:text-white transition-colors px-1"
-                                    title="Test stream in browser"
-                                >
-                                    <span class="material-symbols-rounded text-sm">open_in_new</span>
-                                </button>
-                             ${stream.status === 'stopped' ? `
-                             <button
-                                 onclick="ffmpegStreamsManager.restartStream('${stream.id}')"
-                                 class="text-xs text-blue-400 hover:text-blue-300 transition-colors px-1"
-                                 title="Start this stream"
-                             >
-                                 <span class="material-symbols-rounded text-sm">restart_alt</span>
-                             </button>
-                             ` : ''}
-                            </div>
-                        </div>
-                        <div class="mt-2 text-xs text-gray-500">
-                            💡 Stream is live! Click copy button to share this URL.
-                        </div>
-                    </div>
-                ` : stream.status === 'stopped' ? `
-                    <!-- Stream Status Info -->
-                    <div class="mt-4 p-3 bg-gray-500/10 border border-gray-500/20 rounded-lg">
-                        <div class="flex items-center gap-2">
-                            <span class="material-symbols-rounded text-sm text-gray-400">info</span>
-                            <span class="text-xs text-gray-400">Stream stopped. Use Start to begin streaming.</span>
-                        </div>
-                    </div>
-                ` : `
-                    <!-- Error Status Info -->
-                    <div class="mt-4 p-3 bg-red-500/10 border border-red-500/20 rounded-lg">
-                        <div class="flex items-start gap-2">
-                            <span class="material-symbols-rounded text-sm text-red-400 mt-0.5">error</span>
-                            <div class="flex-1">
-                                <p class="text-xs text-red-300 font-medium mb-1">${errorMessage}</p>
-                                <p class="text-xs text-red-400/80">Click Edit to change device, then Start.</p>
-                            </div>
-                        </div>
-                    </div>
-                `}
+                    <code class="hidden md:inline-block text-xs text-[var(--tok-accent,#00AEEF)] bg-[var(--tok-surface-2,#1A1A1A)] px-2 py-1 rounded truncate" style="max-width:220px" title="Listen via ${streamUrl}">${streamUrl}</code>
+                ` : ''}
+
+                <!-- Actions -->
+                <div class="flex items-center gap-1.5 flex-shrink-0">
+                    ${stream.status === 'running' ? `
+                        <button onclick="ffmpegStreamsManager.stopStream('${stream.id}')" class="play-btn is-playing" title="Stop stream" aria-label="Stop ${stream.name || stream.id}">
+                            <span class="material-symbols-rounded">stop</span>
+                        </button>
+                    ` : `
+                        <button onclick="ffmpegStreamsManager.restartStream('${stream.id}')" class="play-btn" title="Start stream" aria-label="Start ${stream.name || stream.id}">
+                            <span class="material-symbols-rounded" style="font-variation-settings: 'FILL' 1;">play_arrow</span>
+                        </button>
+                    `}
+                    <button onclick="ffmpegStreamsManager.editStream('${stream.id}')" class="copy-btn" title="Edit stream settings" aria-label="Edit ${stream.name || stream.id}">
+                        <span class="material-symbols-rounded text-base">edit</span>
+                    </button>
+                    ${stream.status === 'running' ? `
+                        <button onclick="ffmpegStreamsManager.copyStreamUrl('${streamUrl}', this)" class="copy-btn" title="Copy stream URL" aria-label="Copy stream URL">
+                            <span class="material-symbols-rounded text-base">link</span>
+                        </button>
+                        <button onclick="window.open('${streamUrl}', '_blank')" class="copy-btn" title="Test stream in browser" aria-label="Open stream URL">
+                            <span class="material-symbols-rounded text-base">open_in_new</span>
+                        </button>
+                    ` : ''}
+                    <button onclick="ffmpegStreamsManager.deleteStream('${stream.id}')" class="copy-btn hover:!text-red-400" title="Delete stream" aria-label="Delete ${stream.name || stream.id}">
+                        <span class="material-symbols-rounded text-base">delete</span>
+                    </button>
+                </div>
             </div>
         `;
         }).join('');
