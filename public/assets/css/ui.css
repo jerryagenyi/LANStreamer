@@ -114,3 +114,14 @@
 /* Admin (dashboard) row variants */
 .stream-row-admin { padding: 0.75rem 0.5rem; }
 .stream-row-error { box-shadow: inset 3px 0 0 var(--tok-danger); padding-left: 0.875rem; }
+
+/* Marquee: overflowing single-line labels scroll; hover pauses (title tooltip) */
+.mq { display:inline-block; max-width:170px; overflow:hidden; white-space:nowrap; vertical-align:bottom; }
+.mq .mq-inner { display:inline-block; }
+.mq-on .mq-inner { animation: mq-slide var(--mq-dur,6s) linear infinite alternate; }
+.mq:hover .mq-inner { animation-play-state: paused; }
+@keyframes mq-slide { from { transform: translateX(0); } to { transform: translateX(var(--mq-shift,-40px)); } }
+@media (prefers-reduced-motion: reduce) { .mq-on .mq-inner { animation: none; } }
+
+/* Uptime chip (icon + duration, tooltip explains) */
+.uptime-chip { display:inline-flex; align-items:center; gap:0.25rem; }

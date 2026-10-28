@@ -204,14 +204,6 @@ class HeaderComponent {
                             <span class="hidden sm:inline">Listen to Streams</span>
                         </a>
 
-                        <button id="header-logout-btn"
-                               class="btn-glass btn-glass-secondary"
-                               title="Logout from Admin Dashboard"
-                               aria-label="Sign out of admin dashboard"
-                               role="button">
-                            <span class="material-symbols-rounded text-sm" aria-hidden="true">logout</span>
-                            <span class="hidden sm:inline">Logout</span>
-                        </button>
                     </div>
                 </div>
             </header>
@@ -270,51 +262,6 @@ class HeaderComponent {
             });
         }
 
-        // Logout Button
-        const logoutBtn = document.getElementById('header-logout-btn');
-        if (logoutBtn) {
-            logoutBtn.addEventListener('click', async (e) => {
-                e.preventDefault();
-                console.log('🚪 Logout requested');
-
-                // Show confirmation dialog
-                const confirmed = await this.showLogoutConfirmation();
-                if (!confirmed) {
-                    return;
-                }
-
-                // Show loading state
-                const originalContent = logoutBtn.innerHTML;
-                logoutBtn.innerHTML = '<span class="material-symbols-rounded text-sm animate-spin">refresh</span><span class="hidden sm:inline">Signing Out...</span>';
-                logoutBtn.disabled = true;
-
-                try {
-                    // Call logout API with timeout
-                    const controller = new AbortController();
-                    const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
-
-                    await fetch('/api/auth/logout', {
-                        method: 'POST',
-                        signal: controller.signal,
-                        headers: {
-                            'Authorization': `Bearer ${localStorage.getItem('lanstreamer_token')}`,
-                            'Content-Type': 'application/json'
-                        }
-                    });
-
-                    clearTimeout(timeoutId);
-                } catch (error) {
-                    console.log('Logout request failed:', error);
-                    // Continue with logout even if API fails
-                } finally {
-                    // Comprehensive token and session clearance
-                    this.clearAllAuthData();
-
-                    // Redirect to login page
-                    window.location.href = '/login.html';
-                }
-            });
-        }
 
         console.log('🎯 Header event listeners setup complete');
     }

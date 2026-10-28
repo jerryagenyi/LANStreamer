@@ -175,7 +175,7 @@ class StreamingService {
 
     const streamId = streamConfig.id || `stream_${Date.now()}`
 
-    if (this.activeStreams[streamId]) {
+    if (this.activeStreams[streamId]?.status === 'running') {
       throw new Error(`Stream ${streamId} is already running`)
     }
 

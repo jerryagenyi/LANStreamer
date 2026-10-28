@@ -1,4 +1,5 @@
 import express from 'express';
+import QRCode from 'qrcode';
 import audioDeviceService from '../services/AudioDeviceService.js';
 import IcecastService from '../services/IcecastService.js';
 import streamingService from '../services/StreamingService.js';
@@ -151,6 +152,32 @@ router.get('/audio-devices/diagnose', async (req, res) => {
  * @description Get system config for frontend (Icecast port, host). Used for building listener/copy URLs.
  * @access Public
  */
+/**
+ * @route GET /api/qr?url=<http(s) URL>
+ * @description QR code (SVG) for any URL — used by the share popups so people
+ *   can scan to open the listener page on their phones. Fully offline.
+ * @access Public (encodes only the URL the caller provides)
+ */
+router.get('/qr', async (req, res) => {
+  try {
+    const url = String(req.query.url || '');
+    if (!/^https?:\/\/.+/.test(url) || url.length > 512) {
+      return res.status(400).json({ error: 'A valid http(s) url parameter is required' });
+    }
+    const svg = await QRCode.toString(url, {
+      type: 'svg',
+      margin: 1,
+      width: 320,
+      color: { dark: '#000000', light: '#FFFFFF' },
+    });
+    res.setHeader('Content-Type', 'image/svg+xml');
+    res.setHeader('Cache-Control', 'public, max-age=300');
+    res.send(svg);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to generate QR code' });
+  }
+});
+
 router.get('/config', async (req, res, next) => {
   try {
     await icecastService.ensureInitialized();

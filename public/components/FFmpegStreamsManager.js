@@ -1183,7 +1183,10 @@ class FFmpegStreamsManager {
             }
 
             const displayHost = this.serverHost || window.location.hostname;
-            const streamUrl = `http://${displayHost}:${this.icecastPort}/${stream.id}`;
+            // Sharing always points at the LISTENER page (not the raw Icecast
+            // mount): phones get the proper UI, and the URL survives port changes.
+            const serverPort = window.location.port || '3001';
+            const listenerUrl = `http://${displayHost}:${serverPort}/streams`;
 
             // Determine status styling and icon
             let statusColor, statusIcon, statusText, statusBg, errorMessage = '';
@@ -1238,11 +1241,11 @@ class FFmpegStreamsManager {
                             <span class="${stream.status === 'error' ? 'text-red-400' : ''}">${statusText}</span>
                         `}
                         <span aria-hidden="true">·</span>
-                        <span>${this.getDeviceName(stream.deviceId)}</span>
+                        <span class="mq" title="${this.getDeviceName(stream.deviceId)}"><span class="mq-inner">${this.getDeviceName(stream.deviceId)}</span></span>
                         <span aria-hidden="true">·</span>
                         <span>${stream.config?.bitrate || '192'} kbps</span>
                         <span aria-hidden="true">·</span>
-                        <span data-stream-uptime="${stream.id}">${uptime}</span>
+                        <span class="uptime-chip" title="Uptime" data-stream-uptime="${stream.id}"><span class="material-symbols-rounded text-sm" aria-hidden="true">schedule</span> ${uptime}</span>
                     </div>
                     ${stream.status === 'error' ? `
                         <div class="mt-1.5 text-xs text-red-400/90 leading-relaxed" data-stream-error>${errorMessage} <button type="button" onclick="ffmpegStreamsManager.editStream('${stream.id}')" class="underline hover:text-red-300">Edit</button> to change device, then Start.</div>
@@ -1250,7 +1253,7 @@ class FFmpegStreamsManager {
                 </div>
 
                 ${stream.status === 'running' ? `
-                    <code class="hidden md:inline-block text-xs text-[var(--tok-accent,#00AEEF)] bg-[var(--tok-surface-2,#1A1A1A)] px-2 py-1 rounded truncate" style="max-width:220px" title="Listen via ${streamUrl}">${streamUrl}</code>
+                    <code class="hidden md:inline-block text-xs text-[var(--tok-accent,#00AEEF)] bg-[var(--tok-surface-2,#1A1A1A)] px-2 py-1 rounded truncate" style="max-width:220px" title="Listener page: ${listenerUrl}">${listenerUrl}</code>
                 ` : ''}
 
                 <!-- Actions -->
@@ -1268,10 +1271,13 @@ class FFmpegStreamsManager {
                         <span class="material-symbols-rounded text-base">edit</span>
                     </button>
                     ${stream.status === 'running' ? `
-                        <button onclick="ffmpegStreamsManager.copyStreamUrl('${streamUrl}', this)" class="copy-btn" title="Copy stream URL" aria-label="Copy stream URL">
+                        <button onclick="ffmpegStreamsManager.copyStreamUrl('${listenerUrl}', this)" class="copy-btn" title="Copy listener page URL" aria-label="Copy listener page URL">
                             <span class="material-symbols-rounded text-base">link</span>
                         </button>
-                        <button onclick="window.open('${streamUrl}', '_blank')" class="copy-btn" title="Test stream in browser" aria-label="Open stream URL">
+                        <button onclick="window.LSShare && LSShare.show('${listenerUrl}')" class="copy-btn" title="Show QR code to scan" aria-label="Show QR code for listener page">
+                            <span class="material-symbols-rounded text-base">qr_code_2</span>
+                        </button>
+                        <button onclick="window.open('${listenerUrl}', '_blank')" class="copy-btn" title="Open listener page" aria-label="Open listener page">
                             <span class="material-symbols-rounded text-base">open_in_new</span>
                         </button>
                     ` : ''}

@@ -1,5 +1,6 @@
 import fs from 'fs';
 import path from 'path';
+import os from 'os';
 import crypto from 'crypto';
 import { createRequire } from 'module';
 import logger from '../utils/logger.js';
@@ -64,8 +65,8 @@ class TelemetryService {
     //   2. config/telemetry.json (operator-configurable at runtime)
     //   3. electron/telemetry-key.json (injected at build time so packaged
     //      apps ship telemetry with zero user configuration)
-    this._configKey = state.posthogKey || this._readBundledKey()?.posthogKey || null;
-    this._configHost = state.posthogHost || this._readBundledKey()?.posthogHost || null;
+    this._configKey = state.posthogKey || this._readSecretsStore()?.posthogKey || this._readBundledKey()?.posthogKey || null;
+    this._configHost = state.posthogHost || this._readSecretsStore()?.posthogHost || this._readBundledKey()?.posthogHost || null;
     if (!state.installId) this._saveState();
   }
 
@@ -75,6 +76,30 @@ class TelemetryService {
       if (fs.existsSync(bundledPath)) {
         return JSON.parse(fs.readFileSync(bundledPath, 'utf8'));
       }
+    } catch { /* ignore */ }
+    return null;
+  }
+
+  /**
+   * Machine credential store convention (this operator's setup):
+   * ~/.secrets/posthog with KEY=VALUE lines — POSTHOG_PROJECT_TOKEN and
+   * optional POSTHOG_HOST. Values are never logged.
+   */
+  _readSecretsStore() {
+    try {
+      const secretsPath = path.join(os.homedir(), '.secrets', 'posthog');
+      if (!fs.existsSync(secretsPath)) return null;
+      const lines = fs.readFileSync(secretsPath, 'utf8').split('\n');
+      const map = {};
+      for (const line of lines) {
+        const m = line.match(/^\s*([A-Z0-9_]+)\s*=\s*(.+?)\s*$/);
+        if (m) map[m[1]] = m[2];
+      }
+      if (!map.POSTHOG_PROJECT_TOKEN) return null;
+      return {
+        posthogKey: map.POSTHOG_PROJECT_TOKEN,
+        ...(map.POSTHOG_HOST ? { posthogHost: map.POSTHOG_HOST } : {}),
+      };
     } catch { /* ignore */ }
     return null;
   }

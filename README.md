@@ -105,11 +105,19 @@ LANStreamer/
 
 ## ⚙️ System Requirements
 
-- **Operating System**: Windows 10/11 (macOS/Linux supported)
-- **Node.js**: Version 18 or higher ([Download](https://nodejs.org/))
-- **FFmpeg**: Audio/video processing toolkit ([Download](https://ffmpeg.org/))
-- **Icecast**: Streaming media server ([Download](https://icecast.org/))
-- **Audio Input**: Any audio device (built-in mic, USB mic, audio interface, etc.)
+**Minimum (operator PC)**
+- Windows 10/11 64-bit (macOS/Linux supported from source)
+- 4 GB RAM, dual-core CPU — encoding one stream uses ~2–5% of a modern CPU
+- Any audio input (built-in mic, USB, or virtual audio cable)
+- FFmpeg + Icecast (bundling planned; today installed separately — see guides)
+
+**Listeners:** any phone/PC with a browser and WiFi — nothing to install. ~20–25 listeners per consumer WiFi access point for stable audio; larger events should add access points.
+
+**Recommended:** 8 GB RAM for 4+ simultaneous streams, wired Ethernet from the operator PC to the router, 5 GHz WiFi for listeners (see [Latency guide](docs/LATENCY.md)).
+
+**Running from source additionally needs:** Node.js 18+ (the packaged desktop app drops this requirement).
+
+**Cross-OS testing:** the automated suite + Electron smoke test run on Windows/macOS/Linux via CI (GitHub Actions matrix), and the web pages are verified with Playwright on all three engines — that's the "test it across major OSes" story; there's no credible downloadable tool that substitutes for real devices beyond VMs and the CI matrix.
 
 ---
 

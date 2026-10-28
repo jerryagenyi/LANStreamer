@@ -6,7 +6,11 @@ Context: [CLAUDE.md](CLAUDE.md), [docs/APP-FLOW.md](docs/APP-FLOW.md), [docs/TRO
 
 ## To do (priority order)
 
-- [ ] **UI redesign — dashboard pass (listener page DONE)** — Restyle dashboard stream cards to the broadcast-row language (channel badge, live chip/eq, circular controls) on the token system; both themes; then a11y pass (aria, focus rings, 44px targets).
+- [ ] **Latency management** — [docs/LATENCY.md](docs/LATENCY.md) has the research. Next: generate `icecast.xml` with `burst-on-connect 0` + small `queue-size`, then measure end-to-end (clap test) before/after; surface a "latency tips" link on the dashboard pointing at the operator-side guidance (5 GHz, dedicated AP, QoS, wired operator, AP placement — user-side, beyond our control).
+
+- [ ] **Minimum PC specs + cross-OS test story** — README section: minimum requirements (x64, 4 GB RAM, Node 18+ for source runs, FFmpeg, Icecast; packaged app drops the Node requirement). Cross-OS testing: GitHub Actions windows/macos/ubuntu matrix runs the suite + `electron:smoke` online (Phase 4); locally, Playwright covers the web pages on all three OSes; no credible downloadable "test on every PC" tool exists beyond VMs + the CI matrix.
+
+- [ ] **UI redesign — dashboard deep pass** — Restyle remaining dashboard sections (Icecast panel, event/contact panels, header) to the broadcast language on tokens; a11y sweep (aria, focus rings, 44px targets).
 
 - [ ] **Centralize notifications/alerts** — All toasts/modals from one module so styling + z-index + behaviour change in one place.
 
@@ -20,7 +24,7 @@ Context: [CLAUDE.md](CLAUDE.md), [docs/APP-FLOW.md](docs/APP-FLOW.md), [docs/TRO
 
 - [ ] **Phase 4: test/CI** — Playwright `_electron` + listener-page web E2E + axe-core + GitHub Actions 3-OS matrix (use `npm run electron:smoke`); electron-updater replaces UpdateService/.bat at packaging. Add E2E regression: machine IP change must not break status polling (covered by localhost polls; test the contract).
 
-- [ ] **Phase 6: packaging** — Windows NSIS/portable first; unsigned DMG later for savvy Mac users. Telemetry disclosure + LICENSES in installer. Telemetry key ships via `electron:build:win` (auto-injected from POSTHOG_KEY).
+- [ ] **Phase 6: packaging** — Windows NSIS/portable first; unsigned DMG later for savvy Mac users. Telemetry disclosure + LICENSES in installer. Telemetry key ships via `electron:build:win` (auto-injected from POSTHOG_KEY; also reads ~/.secrets/posthog on dev machines).
 
 ---
 

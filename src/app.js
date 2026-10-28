@@ -38,19 +38,20 @@ export function createApp() {
   app.use('/api/settings', settingsRouter);
   app.use('/api', contactRouter); // Contact routes can be public
 
-  // Serve login page
+  // No login page: the Electron app / localhost lock IS the admin boundary.
+  // /login is kept only as a redirect for old bookmarks.
   app.get('/login', (req, res) => {
-    res.sendFile(path.join(__dirname, '../public/login.html'));
+    res.redirect('/dashboard');
   });
 
-  // Serve dashboard page (protected)
+  // Serve dashboard page (admin UI; localhost-only via requireLocalhostAdmin)
   app.get('/dashboard', optionalAuth, (req, res) => {
     res.sendFile(path.join(__dirname, '../public/index.html'));
   });
 
-  // Serve client page (for listeners)
+  // Legacy client path → listener page
   app.get('/client', (req, res) => {
-    res.sendFile(path.join(__dirname, '../public/index.html'));
+    res.redirect('/streams');
   });
 
   // Serve streams page (for listeners) - both /streams and /streams.html
@@ -62,17 +63,13 @@ export function createApp() {
     res.sendFile(path.join(__dirname, '../public/streams.html'));
   });
 
-  // Fallback to index for SPA routing (but exclude /streams routes)
+  // Fallback: listener-first. Unknown pages go to the listener page, not the
+  // admin dashboard — phones hitting the server root should land somewhere useful.
   app.get('*', (req, res) => {
     if (req.path.startsWith('/api/')) {
       res.status(404).json({ error: 'API endpoint not found' });
-    } else if (req.path === '/streams' || req.path === '/streams.html') {
-      res.sendFile(path.join(__dirname, '../public/streams.html'));
-    } else if (req.path === '/login.html') {
-      res.sendFile(path.join(__dirname, '../public/login.html'));
     } else {
-      // Direct access to admin dashboard
-      res.sendFile(path.join(__dirname, '../public/index.html'));
+      res.redirect('/streams');
     }
   });
 
