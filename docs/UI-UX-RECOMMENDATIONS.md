@@ -1,6 +1,16 @@
-# UI/UX Recommendations for LANStreamer Dashboard v2
+# UI/UX Recommendations for LANStreamer Dashboard
 
-**Enhanced glassmorphism edition** - inspired by premium frosted glass UI with softer transparency, layered depth, and elegant gradients.
+<!--
+Versioning (adopted from the devops repo's supersedes convention, 2026-10-28):
+this file is append-only. New recommendations land as a new Version section;
+never fork a *-v2 filename again — git history plus the version log IS the
+versioning.
+-->
+
+**Version 2 — Enhanced glassmorphism edition** (renamed 2026-10-28):
+inspired by premium frosted glass UI with softer transparency, layered
+depth, and elegant gradients. Supersedes Version 1, preserved at
+`docs/archive/UI-UX-RECOMMENDATIONS.md`.
 
 Reference: [Gradient UI/UX Elements](https://www.freepik.com/free-vector/gradient-ui-ux-elements-background_16829080.htm)
 
@@ -744,3 +754,15 @@ button[aria-label=""] {
 
 - **v2** - Enhanced glassmorphism with premium frosted glass, layered depth, and professional animation curves
 - [v1](./UI-UX-RECOMMENDATIONS.md) - Original recommendations with basic glass effects
+
+
+## Version log
+
+- **v2 (2026-10-28)** — glassmorphism edition; renamed from
+  `UI-UX-RECOMMENDATIONS-v2.md` (append-only versioning adopted; v1 archived).
+
+## Version log
+
+- **v2 (2026-10-28)** — glassmorphism edition; renamed from
+  `UI-UX-RECOMMENDATIONS-v2.md` to this append-only file (v1 archived at
+  `docs/archive/UI-UX-RECOMMENDATIONS.md`).

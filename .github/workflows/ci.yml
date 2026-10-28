@@ -29,5 +29,8 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Integrity check (design tokens + UI rules)
+        run: node scripts/check-design-tokens.mjs
+
       - name: Run tests
         run: npm test
