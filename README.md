@@ -187,7 +187,7 @@ npm install  # If dependencies changed
 
 LANStreamer is **free and open source — no one makes money from it, and no one should** (MIT license).
 
-**What we collect (only if you allow it):** anonymous events — app start, stream started/stopped/failed (with the error *category* only), app version, OS, and a random install ID. **Never collected:** audio, stream names, contact details, file paths, IPs, or any personal data. Listeners' phones never send anything — telemetry comes only from the operator's install.
+**What we collect (only if you allow it):** anonymous events — app start, stream started/stopped/failed (with the error *category* only), app version, OS, and a random install ID. Every event also carries a fixed `app: lanstreamer` tag (the maintainer's PostHog project is shared across apps; the tag separates this app's events). **Never collected:** audio, stream names, contact details, file paths, IPs, or any personal data. Listeners' phones never send anything — telemetry comes only from the operator's install.
 
 - **First run** asks once: Allow / Decline. The choice is saved (`config/telemetry.json`).
 - **Change it anytime**: tray icon → **Telemetry → On/Off**.

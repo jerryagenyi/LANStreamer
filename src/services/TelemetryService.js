@@ -19,7 +19,10 @@ const require = createRequire(import.meta.url);
  *
  * Collected event properties: event name, timestamp, app version, OS +
  * architecture, anonymous install ID, and for failures the error category
- * (from errorDiagnostics) — nothing else. See docs/APP-FLOW.md and README.
+ * (from errorDiagnostics) — nothing else. Every event also carries the fixed
+ * app=lanstreamer tag (the maintainer's PostHog project is shared with other
+ * apps; the tag is how insights tell this app's events apart). See
+ * docs/APP-FLOW.md and README.
  *
  * Config: config/telemetry.json { installId, consented: boolean|null }
  * Env: POSTHOG_KEY (project API key), POSTHOG_HOST (default us.i.posthog.com).
@@ -169,6 +172,7 @@ class TelemetryService {
         distinctId: this.installId,
         event: `lanstreamer_${event}`,
         properties: {
+          app: 'lanstreamer',
           appVersion: process.env.npm_package_version || 'unknown',
           platform: process.platform,
           arch: process.arch,
