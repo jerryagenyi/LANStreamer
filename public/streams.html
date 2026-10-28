@@ -6,12 +6,6 @@
     <title>LANStreamer - Live Streams</title>
     <link rel="icon" type="image/png" href="/assets/favicon.png">
     <link rel="icon" type="image/svg+xml" href="/assets/logo-mark.svg">
-    <!-- PWA: lets listeners install/bookmark the page (Install app / Add to Home Screen) -->
-    <link rel="manifest" href="/manifest.webmanifest">
-    <meta name="theme-color" content="#05060A">
-    <link rel="apple-touch-icon" href="/assets/icon-192.png">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-title" content="LANStreamer">
     <link rel="stylesheet" href="/assets/vendor/tailwind.css">
     <link rel="stylesheet" href="/assets/vendor/fonts/fonts.css">
     <link rel="stylesheet" href="/assets/css/tokens.css">
@@ -1674,13 +1668,14 @@
             }
         }
 
-        // PWA: register the service worker so listeners can install the page
-        // as an app (Add to Home Screen / Install app) and get an offline shell.
+        // PWA removed (an installed shortcut is bound to the IP it was made
+        // from, which breaks whenever the streaming PC's address changes).
+        // If a service worker was registered by an earlier version, remove it.
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/sw.js').catch(err => {
-                    console.warn('Service worker registration failed:', err);
-                });
+                navigator.serviceWorker.getRegistrations()
+                    .then(regs => regs.forEach(r => r.unregister()))
+                    .catch(() => {});
             });
         }
 

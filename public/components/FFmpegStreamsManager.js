@@ -1393,22 +1393,22 @@ class FFmpegStreamsManager {
      * Show add stream modal with improved UX
      */
     showAddStreamModal() {
-        // Create modal for adding new stream
+        // Create modal for adding new stream (token-driven — verified in both themes via /showcase.html)
         const modal = document.createElement('div');
-        modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+        modal.className = 'fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4';
         modal.innerHTML = `
-            <div class="glass-card p-6 max-w-lg w-full mx-4">
+            <div class="glass-card p-6 max-w-lg w-full mx-4" style="border-radius:var(--tok-radius-card,16px);">
                 <div class="flex items-center gap-3 mb-6">
-                    <span class="material-symbols-rounded text-2xl text-[var(--primary-color)]">radio</span>
-                    <h3 class="text-xl font-bold text-white">🎤 Start New Audio Stream</h3>
+                    <span class="material-symbols-rounded text-2xl" style="color:var(--tok-accent);">radio</span>
+                    <h3 class="text-xl font-bold" style="color:var(--tok-text-1);">🎤 Start New Audio Stream</h3>
                 </div>
 
-                <div class="mb-4 p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+                <div class="mb-4 p-3 rounded-lg" style="background:var(--tok-surface-inset);border:1px solid var(--tok-line);">
                     <div class="flex items-start gap-2">
-                        <span class="material-symbols-rounded text-blue-400 text-lg mt-0.5">info</span>
-                        <div class="text-sm">
-                            <p class="text-blue-300 font-medium">Quick Start</p>
-                            <p class="text-blue-200/80">Select your audio input source and click "Go Live" to start streaming immediately.</p>
+                        <span class="material-symbols-rounded text-lg mt-0.5" style="color:var(--tok-accent);" aria-hidden="true">info</span>
+                        <div class="text-sm" style="color:var(--tok-text-2);">
+                            <p class="font-medium" style="color:var(--tok-text-1);">Quick Start</p>
+                            <p>Select your audio input source and click "Go Live" to start streaming immediately.</p>
                         </div>
                     </div>
                 </div>
@@ -1416,8 +1416,8 @@ class FFmpegStreamsManager {
                 <form id="add-stream-form">
                     <div class="space-y-5">
                         <div>
-                            <label class="block text-sm font-medium text-gray-300 mb-2">
-                                <span class="material-symbols-rounded text-sm mr-1">label</span>
+                            <label class="block text-sm font-medium mb-2" style="color:var(--tok-text-2);" for="stream-name">
+                                <span class="material-symbols-rounded text-sm mr-1" aria-hidden="true">label</span>
                                 Stream Name
                             </label>
                             <div class="relative">
@@ -1428,23 +1428,23 @@ class FFmpegStreamsManager {
                                        placeholder="e.g., Main Room Audio, DJ Mix, Podcast"
                                        required>
                                 <div class="absolute right-3 top-1/2 transform -translate-y-1/2">
-                                    <span id="stream-name-counter" class="text-xs text-gray-400">0/50</span>
+                                    <span id="stream-name-counter" class="text-xs" style="color:var(--tok-text-3);">0/50</span>
                                 </div>
                             </div>
                         </div>
 
                         <div>
-                            <label class="block text-sm font-medium text-gray-300 mb-2">
-                                <span class="material-symbols-rounded text-sm mr-1">mic</span>
+                            <label class="block text-sm font-medium mb-2" style="color:var(--tok-text-2);" for="stream-device">
+                                <span class="material-symbols-rounded text-sm mr-1" aria-hidden="true">mic</span>
                                 Audio Input Source
-                                <button type="button" id="audio-source-info" class="text-gray-400 hover:text-white ml-1 align-middle" aria-label="Audio source tips">
+                                <button type="button" id="audio-source-info" class="ml-1 align-middle" style="color:var(--tok-text-3);background:none;border:none;cursor:pointer;padding:0;" aria-label="Audio source tips">
                                     <span class="material-symbols-rounded text-base">info</span>
                                 </button>
                             </label>
-                            <div id="audio-source-info-pop" class="hidden mb-2 p-3 rounded-lg border border-[var(--tok-line-strong,#2F2F2F)] bg-[var(--tok-surface-2,#1A1A1A)] text-xs text-gray-300 leading-relaxed">
-                                <p class="mb-1"><strong>Routing app audio into LANStreamer:</strong> install DVS (Dante Virtual Soundcard) or VB-Audio Virtual Cable, then pick it above.</p>
-                                <p><strong>Virtual devices disappearing?</strong> Driver restarts can drop them — restart your virtual audio software or click Refresh Devices.</p>
-                                <p class="mt-1">Full guide: <a class="underline hover:text-white" href="/manual-setup/README.md" target="_blank" rel="noopener">manual setup docs</a></p>
+                            <div id="audio-source-info-pop" class="hidden mb-2 p-3 rounded-lg text-xs leading-relaxed" style="border:1px solid var(--tok-line-strong);background:var(--tok-surface-2);color:var(--tok-text-2);">
+                                <p class="mb-1"><strong style="color:var(--tok-text-1);">Routing app audio into LANStreamer:</strong> install DVS (Dante Virtual Soundcard) or VB-Audio Virtual Cable, then pick it above.</p>
+                                <p><strong style="color:var(--tok-text-1);">Virtual devices disappearing?</strong> Driver restarts can drop them — restart your virtual audio software or click Refresh Devices.</p>
+                                <p class="mt-1">Full guide: <a class="underline" style="color:var(--tok-accent);" href="/manual-setup/README.md" target="_blank" rel="noopener">manual setup docs</a></p>
                             </div>
                             <select id="stream-device" class="w-full input-glass text-white text-sm rounded-md focus:ring-[var(--primary-color)] focus:border-[var(--primary-color)] block px-3 py-2.5" required>
                                 <option value="">🎯 Select your audio source...</option>
@@ -1458,7 +1458,7 @@ class FFmpegStreamsManager {
                             </select>
                             ${this.showTestTools ? `
                                 <div class="mt-2">
-                                    <button type="button" id="test-source-btn" class="inline-flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-amber-300 bg-amber-600/20 hover:bg-amber-600/30 border border-amber-500/30 transition-all duration-300" title="Test if the selected source is available">
+                                    <button type="button" id="test-source-btn" class="btn btn-secondary" title="Test if the selected source is available" style="color:var(--tok-warning,#F59E0B);border-color:var(--tok-warning,#F59E0B);">
                                         <span class="material-symbols-rounded text-sm">science</span>
                                         Test source
                                     </button>
@@ -1467,8 +1467,8 @@ class FFmpegStreamsManager {
                         </div>
 
                         <div>
-                            <label class="block text-sm font-medium text-gray-300 mb-2">
-                                <span class="material-symbols-rounded text-sm mr-1">high_quality</span>
+                            <label class="block text-sm font-medium mb-2" style="color:var(--tok-text-2);" for="stream-bitrate">
+                                <span class="material-symbols-rounded text-sm mr-1" aria-hidden="true">high_quality</span>
                                 Stream Quality
                             </label>
                             <select id="stream-bitrate" class="w-full input-glass text-white text-sm rounded-md focus:ring-[var(--primary-color)] focus:border-[var(--primary-color)] block px-3 py-2.5">
@@ -1481,11 +1481,11 @@ class FFmpegStreamsManager {
                     </div>
 
                     <div class="flex gap-3 mt-8">
-                        <button type="submit" class="flex-1 inline-flex items-center justify-center gap-2 rounded-md px-4 py-3 text-sm font-semibold text-white bg-[var(--live-color)] hover:bg-[var(--live-color)]/80 transition-all duration-300 shadow-lg">
+                        <button type="submit" class="btn btn-primary flex-1">
                             <span class="material-symbols-rounded">play_arrow</span>
                             🔴 Go Live
                         </button>
-                        <button type="button" onclick="this.closest('.fixed').remove()" class="flex-1 inline-flex items-center justify-center gap-2 rounded-md px-4 py-3 text-sm font-semibold text-white bg-gray-600 hover:bg-gray-700 transition-all duration-300">
+                        <button type="button" onclick="this.closest('.fixed').remove()" class="btn btn-secondary flex-1">
                             <span class="material-symbols-rounded">close</span>
                             Cancel
                         </button>
@@ -1549,11 +1549,11 @@ class FFmpegStreamsManager {
 
                 // Change color based on character count
                 if (length > 45) {
-                    streamNameCounter.className = 'text-xs text-red-400';
+                    streamNameCounter.style.color = 'var(--tok-danger)';
                 } else if (length > 40) {
-                    streamNameCounter.className = 'text-xs text-yellow-400';
+                    streamNameCounter.style.color = 'var(--tok-warning, #F59E0B)';
                 } else {
-                    streamNameCounter.className = 'text-xs text-gray-400';
+                    streamNameCounter.style.color = 'var(--tok-text-3)';
                 }
             };
             
