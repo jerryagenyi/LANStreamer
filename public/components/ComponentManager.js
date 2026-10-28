@@ -96,12 +96,8 @@ class ComponentManager {
                 static: 'lobby-music-static',
                 name: 'Lobby Background Music'
             },
-            // Future components will be registered here
-            'audio-devices': {
-                component: 'AudioDeviceSelector',
-                static: 'audio-devices-static',
-                name: 'Audio Devices'
-            },
+            // audio-devices + video-sources render as plain dashboard markup
+            // (sidebar inputs card / hidden panel) — no component fallback needed.
             'icecast-server': {
                 component: 'IcecastManager',
                 static: 'icecast-server-static',
@@ -111,11 +107,6 @@ class ComponentManager {
                 component: 'FFmpegStreamsManager',
                 static: 'ffmpeg-streams-static',
                 name: 'FFmpeg Streams'
-            },
-            'video-sources': {
-                component: 'VideoSourcesPanel',
-                static: 'video-sources-static',
-                name: 'Video Sources'
             },
             'event-manager': {
                 component: 'EventManager',

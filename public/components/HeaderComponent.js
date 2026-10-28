@@ -108,43 +108,16 @@ class HeaderComponent {
                         <span class="material-symbols-rounded text-sm">light_mode</span>
                     </button>
 
-                    <!-- Listener page share card: one place, three actions -->
-                    <div class="flex items-center gap-1 rounded-full px-2 py-1"
-                         style="background:var(--tok-surface-2,#12151C);border:1px solid var(--tok-line-strong,#2F2F2F);">
-                        <span class="hidden md:inline text-xs mr-1" style="color:var(--tok-text-2,#9AA3B2);">Listen to streams:</span>
-                        <a href="${streamsUrl}" target="_blank" id="header-open-listener"
-                           class="copy-btn" title="Open listener page" aria-label="Open listener page">
-                            <span class="material-symbols-rounded text-base">open_in_new</span>
-                        </a>
-                        <button type="button" id="header-copy-listener" class="copy-btn" title="Copy listener page URL" aria-label="Copy listener page URL">
-                            <span class="material-symbols-rounded text-base">link</span>
-                        </button>
-                        <button type="button" id="header-qr-listener" class="copy-btn" title="Show QR code to scan" aria-label="Show QR code for listener page">
-                            <span class="material-symbols-rounded text-base">qr_code_2</span>
-                        </button>
-                    </div>
+                    <!-- Open listener page (sharing lives in the dashboard sidebar card) -->
+                    <a href="${streamsUrl}" target="_blank" rel="noopener" class="btn btn-secondary" style="height:30px;padding:0 10px;font-size:13px;" title="Open the listener page">
+                        <span class="material-symbols-rounded" style="font-size:15px;">headphones</span>
+                        <span class="hidden sm:inline">Open listener page</span>
+                    </a>
 
                     </div>
                 </div>
             </header>
         `;
-
-        // Share actions all point at the listener page URL
-        try {
-            const url = this.serverHost ? `http://${this.serverHost}:3001/streams` : `${location.origin}/streams`;
-            const copyBtn = document.getElementById('header-copy-listener');
-            if (copyBtn) copyBtn.addEventListener('click', async () => {
-                try {
-                    await navigator.clipboard.writeText(url);
-                    copyBtn.title = 'Copied!';
-                    setTimeout(() => { copyBtn.title = 'Copy listener page URL'; }, 1500);
-                } catch { window.prompt('Copy this link:', url); }
-            });
-            const qrBtn = document.getElementById('header-qr-listener');
-            if (qrBtn) qrBtn.addEventListener('click', () => {
-                if (window.LSShare) LSShare.show(url);
-            });
-        } catch { /* share buttons are non-critical */ }
 
         console.log('🎯 Header rendered successfully');
     }

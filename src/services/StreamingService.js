@@ -86,10 +86,67 @@ class StreamingService {
         })
 
         logger.info(`Loaded ${streamIds.length} persistent streams, order: ${this.streamOrder.length} entries`)
+
+        // Auto-start: streams saved with autoStart=true come up with the app.
+        // Fire-and-forget with a small stagger so devices/limits settle; failures
+        // surface on the row like any other start.
+        const autoStartIds = streamIds.filter(id => persistentStreams[streamId]?.config?.autoStart === true)
+        if (autoStartIds.length > 0) {
+          logger.info(`Auto-starting ${autoStartIds.length} stream(s) on boot: ${autoStartIds.join(', ')}`)
+          autoStartIds.forEach((id, i) => {
+            setTimeout(() => {
+              this.restartStream(id).catch(err => {
+                logger.warn(`Auto-start failed for ${id}: ${err.shortMessage || err.message}`)
+              })
+            }, 1500 + i * 3000)
+          })
+        }
       }
     } catch (error) {
       logger.error('Failed to load persistent streams:', error)
     }
+  }
+
+  /**
+   * Create a stream configuration WITHOUT starting it ("Save" in the new-stream
+   * drawer). Persists as stopped so it appears in the Ready group immediately.
+   * @param {object} streamConfig { name, deviceId, bitrate?, autoStart? }
+   * @returns {object} The created (stopped) stream record
+   */
+  createStoppedStream(streamConfig) {
+    if (!streamConfig || !streamConfig.name || !streamConfig.deviceId) {
+      throw new Error('Invalid stream configuration: name and deviceId are required')
+    }
+    const name = String(streamConfig.name).trim()
+    if (!name) throw new Error('Stream name cannot be empty')
+    if (this.streamNameExists(name, null)) {
+      throw new Error(`A stream named "${name}" already exists. Use a unique name.`)
+    }
+
+    const streamId = streamConfig.id || this.generateUniqueStreamId()
+    const config = {
+      ...streamConfig,
+      name,
+      id: streamId,
+      bitrate: parseInt(streamConfig.bitrate, 10) || 192,
+      autoStart: streamConfig.autoStart === true
+    }
+
+    this.activeStreams[streamId] = {
+      id: streamId,
+      deviceId: config.deviceId,
+      name,
+      status: 'stopped',
+      ffmpegProcess: null,
+      startedAt: null,
+      createdAt: new Date(),
+      config,
+      needsRestart: false
+    }
+    this.streamOrder.push(streamId)
+    this.savePersistentStreams()
+    logger.info(`Created stopped stream ${streamId} (${name})`)
+    return this.activeStreams[streamId]
   }
 
   /**

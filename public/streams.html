@@ -6,6 +6,17 @@
     <title>LANStreamer - Live Streams</title>
     <link rel="icon" type="image/png" href="/assets/favicon.png">
     <link rel="icon" type="image/svg+xml" href="/assets/logo-mark.svg">
+    <style>
+        /* Listener page-specific layout (designer P4) */
+        .lmini{display:none;position:fixed;left:12px;right:12px;bottom:12px;z-index:30;align-items:center;gap:12px;padding:10px 10px 10px 14px;}
+        @media (max-width:560px){
+            .listener-layout{grid-template-columns:1fr !important;}
+            #player-card{grid-template-columns:1fr !important;text-align:center;justify-items:center;padding:24px 18px;}
+            #player-channel{font-size:20px;}
+            body.playing.scrolled .lmini{display:flex;}
+        }
+        @media (max-width:900px){.listener-layout{grid-template-columns:1fr !important;}}
+    </style>
     <link rel="stylesheet" href="/assets/vendor/tailwind.css">
     <link rel="stylesheet" href="/assets/vendor/fonts/fonts.css">
     <link rel="stylesheet" href="/assets/css/tokens.css">
@@ -377,7 +388,7 @@
     <!-- Boot overlay: paints before any CSS/JS loads; boot.js dismisses it or
          swaps it to a failure state after a timeout (e.g. cached PWA shell
          while the server is down). -->
-    <div id="boot-overlay" style="position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;background:#05060A;color:#F2F5F9;font-family:Inter,'Noto Sans',sans-serif;transition:opacity .4s ease;">
+    <div id="boot-overlay" style="position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;background:#07090D;color:#EEF1F6;font-family:Space Grotesk,Inter,system-ui,sans-serif;transition:opacity .4s ease;">
       <div style="display:flex;flex-direction:column;align-items:center;gap:14px;text-align:center;padding:24px;">
         <img src="/assets/logo.svg?v=3" alt="LANStreamer" style="height:52px;width:auto;" onerror="this.style.display='none'">
         <div style="font-weight:700;letter-spacing:.1em;text-transform:uppercase;font-size:.72rem;color:#9AA3B2;">LANStreamer <span id="boot-version"></span></div>
@@ -385,22 +396,15 @@
         <div style="font-size:.85rem;color:#5D6570;">Loading…</div>
       </div>
     </div>
-    <div class="relative flex size-full min-h-screen flex-col body-bg dark group/design-root overflow-x-hidden" style='font-family: Inter, "Noto Sans", sans-serif;'>
-        <!-- Header -->
-        <header class="header-glass sticky top-0 z-50 flex items-center justify-between whitespace-nowrap px-4 sm:px-6 lg:px-10 py-3 sm:py-4">
-            <div class="flex items-center gap-2 sm:gap-4 text-white min-w-0">
-                <a href="/" class="flex items-center gap-2 text-white hover:text-[var(--primary-color)] transition-colors min-w-0">
-                    <img src="/assets/logo.svg?v=3" alt="LANStreamer" class="h-12 sm:h-16 w-auto flex-shrink-0" id="logo-image" data-theme-logo onerror="this.onerror=null; this.src='/assets/lanstreamer-logo.png';">
-                    <div id="logo-fallback" style="display: none;" class="flex items-center">
-                        <span class="text-lg sm:text-xl font-bold tracking-wider">LANStreamer</span>
-                    </div>
-                </a>
-            </div>
-            <div class="flex items-center gap-2 sm:gap-3 flex-shrink-0">
-                <div id="on-air-button" class="on-air-button inactive rounded-xl px-3 sm:px-4 py-2 sm:py-2.5 flex items-center gap-2 sm:gap-2.5">
-                    <div id="on-air-indicator" class="on-air-indicator inactive w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full"></div>
-                    <span id="on-air-text" class="text-xs sm:text-sm font-semibold tracking-wide text-gray-400">OFF AIR</span>
+    <div class="relative flex size-full min-h-screen flex-col body-bg dark group/design-root overflow-x-hidden" style='font-family: var(--tok-font);'>
+        <!-- Top bar: brand · ON AIR pill · theme -->
+        <header class="header-glass sticky top-0 z-50">
+            <div class="mx-auto max-w-6xl flex items-center gap-4 px-4 sm:px-6" style="height:64px;">
+                <div class="flex items-center gap-2.5 min-w-0">
+                    <img src="/assets/logo.svg?v=3" alt="LANStreamer" class="h-8 w-auto flex-shrink-0" id="logo-image" data-theme-logo onerror="this.onerror=null; this.src='/assets/lanstreamer-logo.png';">
                 </div>
+                <span style="flex:1;"></span>
+                <span class="onair inactive" id="onair-pill"><span class="pip" aria-hidden="true"></span><span id="onair-text">OFF AIR</span></span>
                 <button data-theme-toggle
                         class="theme-toggle"
                         title="Toggle dark/light mode"
@@ -412,77 +416,79 @@
         </header>
 
         <!-- Main Content -->
-        <main class="flex-1 px-4 sm:px-6 lg:px-10 py-6 sm:py-8">
-            <div class="mx-auto max-w-7xl">
-                <!-- Page Title (Full Width, No Border) -->
-                <div class="mb-6 sm:mb-8">
-                    <h2 id="event-title" class="text-2xl sm:text-3xl font-bold text-white mb-2">Live Audio Streams</h2>
-                    <p id="event-subtitle" class="text-sm sm:text-base text-gray-400">Click play to listen to any available stream</p>
+        <main class="flex-1 px-4 sm:px-6 py-6 sm:py-8" style="width:100%;">
+            <div class="mx-auto max-w-6xl">
+                <!-- Hero -->
+                <section style="padding:28px 0 20px;">
+                    <span class="tok-label" id="hero-eyebrow">Live now · on this network</span>
+                    <h1 id="event-title" style="margin-top:10px;font-size:clamp(30px,5vw,48px);line-height:1.05;letter-spacing:-.03em;font-weight:700;color:var(--tok-text-1);max-width:18ch;">Live Audio Streams</h1>
+                    <p id="event-subtitle" style="margin-top:12px;font-size:17px;color:var(--tok-text-2);">Click play to listen to any available stream</p>
+                </section>
+
+                <!-- Loading / no-stream states (toggled by the poller) -->
+                <div id="loading-state" class="text-center pb-6 hidden">
+                    <span class="material-symbols-rounded animate-spin" style="color:var(--tok-accent);font-size:28px;" aria-hidden="true">progress_activity</span>
+                    <p style="color:var(--tok-text-2);font-size:14px;margin-top:8px;">Loading live streams…</p>
+                </div>
+                <div id="no-streams-state" class="hidden" style="padding:36px 20px;text-align:center;border:1px dashed var(--tok-line-strong);border-radius:14px;margin-bottom:20px;">
+                    <span class="material-symbols-rounded" style="font-size:34px;color:var(--tok-text-3);" aria-hidden="true">podcasts</span>
+                    <h3 style="font-size:20px;color:var(--tok-text-1);margin-top:10px;">No Live Stream</h3>
+                    <p style="color:var(--tok-text-2);margin-top:6px;font-size:14px;">Nothing is on air right now. This page updates itself — the stream will appear the moment it starts.</p>
                 </div>
 
-                <div class="grid grid-cols-1 xl:grid-cols-3 gap-8 items-start">
-                    <!-- Left Column (Streams) -->
-                    <div class="xl:col-span-2">
-
-                        <!-- Streams Container -->
-                        <div id="streams-container">
-                <!-- Loading State -->
-                <div id="loading-state" class="text-center pb-6">
-                    <div class="bg-[var(--card-bg)] border border-[var(--border-color)] rounded-2xl p-8 shadow-2xl shadow-black/30">
-                        <div class="w-16 h-16 mx-auto mb-4 bg-[var(--primary-color)]/10 rounded-full flex items-center justify-center">
-                            <span class="material-symbols-rounded text-3xl text-[var(--primary-color)] animate-spin">refresh</span>
-                        </div>
-                        <p class="text-gray-400">Loading live streams...</p>
-                    </div>
-                </div>
-
-                <!-- No Streams State -->
-                <div id="no-streams-state" class="text-center pb-6 hidden">
-                    <div class="bg-[var(--card-bg)] border border-[var(--border-color)] rounded-2xl p-8 shadow-2xl shadow-black/30">
-                        <div class="w-16 h-16 mx-auto mb-4 bg-gray-500/10 rounded-full flex items-center justify-center">
-                            <span class="material-symbols-rounded text-3xl text-gray-500">radio</span>
-                        </div>
-                        <h3 class="text-xl font-semibold text-white mb-2">No Live Stream</h3>
-                        <p class="text-gray-400">Nothing is on air right now. This page updates itself — the stream will appear the moment it starts.</p>
-                    </div>
-                </div>
-
-                <!-- Streams List -->
-                <div id="streams-list" class="space-y-4 hidden">
-                    <!-- Streams will be dynamically inserted here -->
-                </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Right Column (Sidebar) -->
-                    <div class="space-y-6">
-                        <!-- Event Image -->
-                        <div id="event-image-container" class="hidden">
-                            <div class="bg-[var(--card-bg)] border border-[var(--border-color)] rounded-2xl p-4 shadow-2xl shadow-black/30">
-                                <img id="event-image" src="" alt="Event Image" class="w-full h-48 object-cover rounded-xl border border-[var(--border-color)]">
+                <div style="display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:20px;align-items:start;" class="listener-layout">
+                    <!-- Left: player + channels + help -->
+                    <div>
+                        <!-- Player card -->
+                        <section class="glass-card" id="player-card" aria-label="Player" style="padding:24px;display:grid;grid-template-columns:auto minmax(0,1fr);gap:24px;align-items:center;position:relative;">
+                            <button class="bigplay" id="bigplay" aria-label="Play" title="Play">
+                                <span class="material-symbols-rounded" id="bigplay-icon" style="font-variation-settings:'FILL' 1;">play_arrow</span>
+                            </button>
+                            <div style="min-width:0;">
+                                <div class="tok-label" style="display:flex;gap:8px;align-items:center;">
+                                    <span class="chip chip-live" id="player-chip" style="display:none;"><span class="pip" aria-hidden="true"></span>LIVE</span>
+                                    <span class="mono" id="player-timer" style="color:var(--tok-text-3);display:none;">0m 00s</span>
+                                    <span class="chip chip-warn" id="player-reconnecting" style="display:none;"><span class="pip" aria-hidden="true"></span>Reconnecting…</span>
+                                </div>
+                                <h2 id="player-channel" style="font-size:24px;letter-spacing:-.02em;margin:8px 0 6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--tok-text-1);">—</h2>
+                                <div style="font-size:14px;color:var(--tok-text-2);"><span class="mono" id="player-kbps">192 kbps</span></div>
+                                <div id="waveform" aria-hidden="true" style="display:flex;align-items:center;gap:3px;height:32px;margin-top:14px;"></div>
+                                <div style="display:flex;align-items:center;gap:10px;margin-top:16px;color:var(--tok-text-2);">
+                                    <span class="material-symbols-rounded" style="font-size:18px;" aria-hidden="true">volume_up</span>
+                                    <input type="range" min="0" max="100" value="75" class="volume-slider" id="volume-slider" aria-label="Volume" style="flex:1;max-width:200px;accent-color:var(--tok-accent);">
+                                    <span class="mono" id="volume-display" style="font-size:12px;">75%</span>
+                                </div>
                             </div>
-                        </div>
+                        </section>
 
-                        <!-- About Section -->
-                        <div id="about-section" class="bg-[var(--card-bg)] border border-[var(--border-color)] rounded-2xl p-6 shadow-2xl shadow-black/30">
-                            <h3 class="text-lg font-semibold text-white mb-4">ℹ️ About</h3>
-                            <div id="about-content" class="space-y-3 text-sm text-gray-400">
+                        <!-- Channel picker -->
+                        <section style="margin-top:20px;">
+                            <h3 class="tok-label" style="margin-bottom:10px;">Choose a channel</h3>
+                            <div id="channels-list"></div>
+                        </section>
+
+                        <p style="font-size:13px;color:var(--tok-text-3);margin-top:16px;display:flex;gap:8px;align-items:flex-start;">
+                            <span class="material-symbols-rounded" style="font-size:16px;flex-shrink:0;" aria-hidden="true">help</span>
+                            <span>No sound? Make sure you're on the venue Wi-Fi and your phone isn't on silent. Keep this page open — audio continues with the screen locked.</span>
+                        </p>
+                    </div>
+
+                    <!-- Right: artwork + about + contact -->
+                    <aside style="display:flex;flex-direction:column;gap:16px;">
+                        <div id="event-image-container" class="glass-card hidden" style="overflow:hidden;padding:0;">
+                            <img id="event-image" src="" alt="Event artwork" style="width:100%;aspect-ratio:4/3;object-fit:cover;display:block;">
+                        </div>
+                        <details class="glass-card" id="about-section" open style="padding:0;">
+                            <summary style="list-style:none;cursor:pointer;display:flex;align-items:center;padding:16px 18px;font-weight:600;color:var(--tok-text-1);">About this event</summary>
+                            <div id="about-content" style="padding:0 18px 16px;font-size:14px;color:var(--tok-text-2);">
                                 <p>Welcome to LANStreamer - your local audio streaming platform.</p>
-                                <p>Listen to live audio streams from your network.</p>
-                            </div>
-                        </div>
-
-                        <!-- Contact & Feedback Section (collapsed by default — no sensible defaults for contact data) -->
-                        <details id="contact-section" class="bg-[var(--card-bg)] border border-[var(--border-color)] rounded-2xl p-6 shadow-2xl shadow-black/30">
-                            <summary class="text-lg font-semibold text-white cursor-pointer flex items-center justify-between list-none [&::-webkit-details-marker]:hidden">
-                                <span>📞 Contact &amp; Feedback</span>
-                                <span class="material-symbols-rounded text-xl text-gray-400 transition-transform" aria-hidden="true">expand_more</span>
-                            </summary>
-                            <div id="contact-details" class="space-y-3 pt-4">
-                                <!-- Contact details will be loaded here -->
                             </div>
                         </details>
-                    </div>
+                        <details class="glass-card" id="contact-section" style="padding:0;">
+                            <summary style="list-style:none;cursor:pointer;display:flex;align-items:center;padding:16px 18px;font-weight:600;color:var(--tok-text-1);">Contact &amp; feedback</summary>
+                            <div id="contact-details" class="space-y-3" style="padding:0 18px 16px;display:flex;flex-direction:column;gap:10px;"></div>
+                        </details>
+                    </aside>
                 </div>
             </div>
         </main>
@@ -505,6 +511,17 @@
                 </div>
             </div>
         </footer>
+        <!-- Mobile mini-player: pinned while playing and scrolled past the player -->
+        <div class="glass-card lmini" id="mini-player">
+            <span class="eq" style="color:var(--tok-accent);" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+            <div style="flex:1;min-width:0;">
+                <b id="mp-name" style="display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--tok-text-1);">—</b>
+                <span class="mono" id="mp-label" style="color:var(--tok-text-3);font-size:11px;">LIVE</span>
+            </div>
+            <button type="button" class="playbtn" id="mp-playpause" style="width:44px;height:44px;" aria-label="Pause">
+                <span class="material-symbols-rounded">pause</span>
+            </button>
+        </div>
     </div>
 
     <!-- Audio Player (Hidden) -->
@@ -561,6 +578,49 @@
                 this.knownStreamIds = new Set();
                 this.hadStreamsRecently = false; // Track if we had streams before they disappeared
                 this.isInitialLoad = true;
+
+                // --- Player card wiring (designer P4) ---
+                // Big play: play/pause current channel, or start the first live one
+                const bigplay = document.getElementById('bigplay');
+                if (bigplay) {
+                    bigplay.addEventListener('click', () => {
+                        if (this.currentStream) { this.togglePlayPause(); return; }
+                        const first = this.streams.find(s => s.status === 'running');
+                        if (first) { this.playChannel(first.id); return; }
+                        this.showNotification('No live stream right now — this page updates itself the moment one starts.', 'info');
+                    });
+                }
+
+                // Volume slider drives the same setVolume path as before
+                const vol = document.getElementById('volume-slider');
+                if (vol) {
+                    vol.value = this.volume;
+                    vol.addEventListener('input', (e) => this.setVolume(e.target.value));
+                }
+
+                // Waveform bars: decorative but honest — animates only while playing
+                const wave = document.getElementById('waveform');
+                if (wave) {
+                    wave.innerHTML = '<i></i>'.repeat(28);
+                    const bars = wave.querySelectorAll('i');
+                    for (const b of bars) {
+                        b.style.cssText = 'flex:1;max-width:5px;border-radius:3px;background:var(--tok-line-strong);height:18%;transition:height .12s;';
+                    }
+                    if (!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
+                        this.waveInterval = setInterval(() => {
+                            if (!this.currentStream || this.audioPlayer.paused || this.offAirSince) return;
+                            for (const b of bars) {
+                                b.style.background = 'var(--tok-accent)';
+                                b.style.height = (15 + Math.random() * 85) + '%';
+                            }
+                        }, 150);
+                    }
+                }
+
+                // Mobile mini-player appears once the listener scrolls past the hero
+                window.addEventListener('scroll', () => {
+                    document.body.classList.toggle('scrolled', window.scrollY > 380);
+                }, { passive: true });
 
                 this.init();
             }
@@ -738,78 +798,115 @@
             renderStreams() {
                 const loadingState = document.getElementById('loading-state');
                 const noStreamsState = document.getElementById('no-streams-state');
-                const streamsList = document.getElementById('streams-list');
+                const channelsList = document.getElementById('channels-list');
 
                 if (this.streams.length === 0) {
                     loadingState.classList.add('hidden');
                     noStreamsState.classList.remove('hidden');
-                    streamsList.classList.add('hidden');
+                    if (channelsList) channelsList.innerHTML = '';
+                    this.updatePlayerUi();
                     this.updateLiveIndicator();
                     return;
                 }
 
                 loadingState.classList.add('hidden');
                 noStreamsState.classList.add('hidden');
-                streamsList.classList.remove('hidden');
 
-                const streamsHtml = this.streams.map(stream => this.renderStream(stream)).join('');
-                streamsList.innerHTML = streamsHtml;
+                // Channel picker: running streams first, stopped ones greyed out
+                const running = this.streams.filter(s => s.status === 'running');
+                const offAir = this.streams.filter(s => s.status !== 'running');
+                if (channelsList) {
+                    channelsList.innerHTML =
+                        running.map(s => this.renderChannelRow(s, true)).join('') +
+                        offAir.map(s => this.renderChannelRow(s, false)).join('');
+                }
 
+                this.updatePlayerUi();
                 this.updateLiveIndicator();
             }
 
-            renderStream(stream) {
-                // Use server host from config (getPreferredLANHost) for correct network IP
-                // Falls back to window.location.hostname if config not loaded yet
-                const displayHost = this.serverHost || window.location.hostname;
-                const streamUrl = `http://${displayHost}:${this.icecastPort}/${stream.id}`;
-                const isPlaying = this.currentStream === stream.id;
-                const inGrace = isPlaying && this.offAirSince !== null;
-                const isRunning = stream.status === 'running';
-                const uptime = this.formatUptime(stream.uptime || 0);
-                const channel = stream.label || '';
+            renderChannelRow(stream, isRunning) {
+                const name = stream.name || stream.id;
+                const isCurrent = this.currentStream === stream.id;
+                const inGrace = isCurrent && this.offAirSince !== null;
+
+                if (!isRunning) {
+                    return `
+                        <div class="chrow off" aria-disabled="true">
+                            <span class="lang" aria-hidden="true">${stream.label || '··'}</span>
+                            <span class="t"><b>${name}</b><span class="faint" style="font-size:13px;">Starts soon</span></span>
+                        </div>`;
+                }
 
                 return `
-                    <div class="stream-row ${isPlaying ? 'stream-row-live' : ''}" data-stream-row="${stream.id}">
-                        <div class="channel-badge" aria-hidden="true">${channel}</div>
-                        <div class="flex-1 min-w-0">
-                            <div class="stream-name">${stream.name || stream.id}</div>
-                            <div class="stream-sub">
-                                ${inGrace ? `
-                                    <span class="material-symbols-rounded text-sm animate-spin" style="color:var(--tok-warning,#F59E0B);" aria-hidden="true">progress_activity</span>
-                                    <span class="live-chip" style="color:var(--tok-warning,#F59E0B);">Reconnecting…</span>
-                                ` : isPlaying ? `
-                                    <span class="eq" aria-hidden="true"><span></span><span></span><span></span><span></span></span>
-                                    <span class="live-chip">On air</span>
-                                ` : isRunning ? `
-                                    <span class="live-chip">Live</span>
-                                ` : `
-                                    <span>${stream.status || 'unknown'}</span>
-                                `}
-                                <span aria-hidden="true">·</span>
-                                <span data-stream-uptime="${stream.id}">${uptime}</span>
-                                <span aria-hidden="true">·</span>
-                                <span>${stream.config?.bitrate || '192'} kbps</span>
-                            </div>
-                        </div>
-                        <button
-                            onclick="streamListener.${isPlaying ? 'togglePlayPause()' : `playStream('${stream.id}', '${streamUrl}')`}"
-                            class="play-btn ${isPlaying ? 'is-playing' : ''}"
-                            aria-label="${inGrace ? 'Reconnecting to ' + (stream.name || stream.id) : isPlaying ? 'Pause ' + (stream.name || stream.id) : 'Play ' + (stream.name || stream.id)}"
-                            ${!isRunning && !isPlaying ? 'title="Stream is not running — start it on the dashboard first"' : ''}
-                        >
-                            <span class="material-symbols-rounded" style="font-variation-settings: 'FILL' 1;">${inGrace ? 'hourglass_top' : isPlaying ? (this.audioPlayer.paused ? 'play_arrow' : 'pause') : 'play_arrow'}</span>
-                        </button>
-                        <button
-                            onclick="window.LSShare && LSShare.show(window.location.origin + '/streams')"
-                            class="copy-btn"
-                            title="Share listener page (QR code)"
-                            aria-label="Share listener page for ${stream.name || stream.id}"
-                        >
-                            <span class="material-symbols-rounded text-base">link</span>
-                        </button>
-                    </div>
-                `;
+                    <button type="button" class="chrow" data-n="${name}" aria-current="${isCurrent}"
+                            onclick="streamListener.playChannel('${stream.id}')">
+                        <span class="lang" aria-hidden="true">${stream.label || '♪'}</span>
+                        <span class="t"><b>${name}</b>
+                            <span class="faint" style="font-size:13px;">Live · <span data-stream-uptime="${stream.id}">${this.formatUptime(stream.uptime || 0)}</span> · ${stream.config?.bitrate || '192'}k</span>
+                        </span>
+                        ${inGrace
+                            ? '<span class="chip chip-warn"><span class="pip" aria-hidden="true"></span>Reconnecting…</span>'
+                            : isCurrent
+                                ? '<span class="eq" style="color:var(--tok-accent);" aria-hidden="true"><i></i><i></i><i></i><i></i></span>'
+                                : '<span class="chip chip-live"><span class="pip" aria-hidden="true"></span>LIVE</span>'}
+                    </button>`;
+            }
+
+            /** Play (or switch to) a channel from the picker. */
+            playChannel(streamId) {
+                if (this.currentStream === streamId) {
+                    this.togglePlayPause();
+                    return;
+                }
+                this.playStream(streamId, this.buildStreamUrl(streamId));
+            }
+
+            /** Player card + mini-player presentation, driven by playback state. */
+            updatePlayerUi() {
+                const current = this.streams.find(s => s.id === this.currentStream);
+                const fallback = this.streams.find(s => s.status === 'running');
+                const shown = current || fallback;
+                const playing = !!this.currentStream && !this.audioPlayer.paused;
+                const inGrace = !!this.currentStream && this.offAirSince !== null;
+
+                document.body.classList.toggle('playing', playing);
+
+                const icon = document.getElementById('bigplay-icon');
+                const bigBtn = document.getElementById('bigplay');
+                if (bigBtn) {
+                    const label = inGrace ? 'Reconnecting…' : playing ? 'Pause' : 'Play';
+                    bigBtn.setAttribute('aria-label', label);
+                    bigBtn.title = label;
+                }
+                if (icon) {
+                    icon.textContent = inGrace ? 'hourglass_top' : playing ? 'pause' : 'play_arrow';
+                }
+
+                const nameEl = document.getElementById('player-channel');
+                if (nameEl) nameEl.textContent = shown ? (shown.name || shown.id) : (this.streams.length ? '—' : 'No live stream');
+
+                const chip = document.getElementById('player-chip');
+                const timer = document.getElementById('player-timer');
+                const reconnect = document.getElementById('player-reconnecting');
+                const kbps = document.getElementById('player-kbps');
+                if (chip) chip.style.display = this.currentStream && !inGrace ? '' : 'none';
+                if (timer) timer.style.display = this.currentStream && !inGrace ? '' : 'none';
+                if (reconnect) reconnect.style.display = inGrace ? '' : 'none';
+                if (kbps) kbps.textContent = `${shown?.config?.bitrate || '192'} kbps`;
+
+                // Mini player (mobile, pinned while playing + scrolled)
+                const mpName = document.getElementById('mp-name');
+                const mpLabel = document.getElementById('mp-label');
+                const mpBtn = document.getElementById('mp-playpause');
+                const mpIcon = mpBtn?.querySelector('.material-symbols-rounded');
+                if (mpBtn) {
+                    mpBtn.setAttribute('aria-label', playing ? 'Pause' : 'Play');
+                    if (mpIcon) mpIcon.textContent = playing ? 'pause' : 'play_arrow';
+                    mpBtn.onclick = () => this.togglePlayPause();
+                }
+                if (mpName && shown) mpName.textContent = shown.name || shown.id;
+                if (mpLabel) mpLabel.textContent = inGrace ? 'WAITING' : playing ? 'LIVE' : 'PAUSED';
             }
 
             async playStream(streamId, streamUrl) {
@@ -1072,41 +1169,9 @@
                 } catch (e) { /* storage unavailable */ }
             }
 
-            /** Sync the persistent bottom mini-player with playback state. */
+            /** Kept for compatibility — the player card + mini are driven by updatePlayerUi(). */
             updateMiniPlayer() {
-                const mp = document.getElementById('mini-player');
-                if (!mp) return;
-                if (!this.currentStream) {
-                    // Fade out, then release layout once the transition ends
-                    mp.classList.add('is-hidden');
-                    mp.setAttribute('aria-hidden', 'true');
-                    document.body.classList.remove('has-miniplayer');
-                    return;
-                }
-                const stream = this.streams.find(s => s.id === this.currentStream);
-                mp.classList.remove('is-hidden');
-                mp.removeAttribute('aria-hidden');
-                document.body.classList.add('has-miniplayer');
-
-                document.getElementById('mp-label').textContent = this.offAirSince
-                    ? 'Waiting for stream…'
-                    : `On air${stream?.label ? ' · ' + stream.label : ''}`;
-                const mpNameEl = document.getElementById('mp-name');
-                mpNameEl.title = stream?.name || this.currentStream;
-                mpNameEl.innerHTML = `<span class="mq-inner">${stream?.name || this.currentStream}</span>`;
-
-                const paused = this.audioPlayer.paused;
-                const playpauseBtn = document.getElementById('mp-playpause');
-                playpauseBtn.setAttribute('aria-label', paused ? 'Play' : 'Pause');
-                playpauseBtn.querySelector('.material-symbols-rounded').textContent = paused ? 'play_arrow' : 'pause';
-
-                const muteIcon = document.getElementById('mp-mute-icon');
-                muteIcon.textContent = this.isMuted ? 'volume_off'
-                    : (this.volume === 0 ? 'volume_mute' : this.volume < 50 ? 'volume_down' : 'volume_up');
-                document.getElementById('mp-mute').setAttribute('aria-label', this.isMuted ? 'Unmute' : 'Mute');
-
-                const vol = document.getElementById('mp-volume');
-                if (vol && document.activeElement !== vol) vol.value = this.isMuted ? 0 : this.volume;
+                this.updatePlayerUi();
             }
 
             copyStreamUrl(url) {
@@ -1200,14 +1265,15 @@
             showNoStreams() {
                 const loadingState = document.getElementById('loading-state');
                 const noStreamsState = document.getElementById('no-streams-state');
-                const streamsList = document.getElementById('streams-list');
+                const channelsList = document.getElementById('channels-list');
 
                 // Clear the streams array so updateLiveIndicator knows there are no streams
                 this.streams = [];
 
-                loadingState.classList.add('hidden');
-                noStreamsState.classList.remove('hidden');
-                streamsList.classList.add('hidden');
+                if (loadingState) loadingState.classList.add('hidden');
+                if (noStreamsState) noStreamsState.classList.remove('hidden');
+                if (channelsList) channelsList.innerHTML = '';
+                this.updatePlayerUi();
 
                 // Update the ON AIR indicator to OFF AIR
                 this.updateLiveIndicator();
@@ -1345,6 +1411,10 @@
                     if (uptimeElement && timer.isRunning) {
                         const currentUptime = Date.now() - timer.startTime;
                         uptimeElement.textContent = this.formatUptime(currentUptime);
+                        if (streamId === this.currentStream) {
+                            const t = document.getElementById('player-timer');
+                            if (t) t.textContent = this.formatUptime(currentUptime);
+                        }
                     }
                 });
             }
@@ -1471,15 +1541,16 @@
                     subtitleElement.textContent = configData.eventSubtitle || 'Click play to listen to any available stream';
                 }
 
-                // Handle event image: configured image, or the brand mark as default
-                // so the layout stays stable when no image is set.
+                // Handle event artwork: configured image, or a token-themed
+                // default (accent ripples) so the card never looks broken.
                 if (configData.eventImage && imageContainer && imageElement) {
                     imageElement.src = configData.eventImage;
-                    imageElement.className = 'w-full h-48 object-cover rounded-xl border border-[var(--border-color)]';
+                    imageElement.removeAttribute('style');
+                    imageElement.style.cssText = 'width:100%;aspect-ratio:4/3;object-fit:cover;display:block;';
                     imageContainer.classList.remove('hidden');
                 } else if (imageContainer && imageElement) {
                     imageElement.src = '/assets/logo-mark.svg';
-                    imageElement.className = 'w-40 h-40 mx-auto object-contain rounded-2xl';
+                    imageElement.style.cssText = 'width:100%;aspect-ratio:4/3;object-fit:contain;padding:12%;display:block;background:var(--tok-accent-soft);';
                     imageElement.alt = 'LANStreamer';
                     imageContainer.classList.remove('hidden');
                 }
@@ -1519,42 +1590,11 @@
             }
 
             updateLiveIndicator() {
-                const onAirButton = document.getElementById('on-air-button');
-                const onAirIndicator = document.getElementById('on-air-indicator');
-                const onAirText = document.getElementById('on-air-text');
+                const pill = document.getElementById('onair-pill');
+                const text = document.getElementById('onair-text');
                 const hasActiveStreams = this.streams && this.streams.length > 0;
-
-                if (hasActiveStreams) {
-                    // ON AIR - Red glowing button like radio studios
-                    if (onAirButton) {
-                        onAirButton.classList.remove('inactive');
-                        onAirButton.classList.add('active');
-                    }
-                    if (onAirIndicator) {
-                        onAirIndicator.classList.remove('inactive');
-                        onAirIndicator.classList.add('active');
-                    }
-                    if (onAirText) {
-                        onAirText.textContent = 'ON AIR';
-                        onAirText.classList.remove('text-gray-400');
-                        onAirText.classList.add('text-white');
-                    }
-                } else {
-                    // OFF AIR - Grayed out button
-                    if (onAirButton) {
-                        onAirButton.classList.remove('active');
-                        onAirButton.classList.add('inactive');
-                    }
-                    if (onAirIndicator) {
-                        onAirIndicator.classList.remove('active');
-                        onAirIndicator.classList.add('inactive');
-                    }
-                    if (onAirText) {
-                        onAirText.textContent = 'OFF AIR';
-                        onAirText.classList.remove('text-white');
-                        onAirText.classList.add('text-gray-400');
-                    }
-                }
+                if (pill) pill.classList.toggle('inactive', !hasActiveStreams);
+                if (text) text.textContent = hasActiveStreams ? 'ON AIR' : 'OFF AIR';
             }
 
             startAutoRefresh() {

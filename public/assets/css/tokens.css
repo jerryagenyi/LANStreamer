@@ -12,38 +12,45 @@
    ========================================================================== */
 
 :root {
-  /* Surfaces */
-  --tok-bg: #05060A;            /* app background — near black */
-  --tok-surface-1: #0B0D12;     /* cards */
-  --tok-surface-2: #12151C;     /* raised / hover */
-  --tok-surface-inset: #07080C; /* wells, code, inset panels */
+  /* Surfaces (designer palette, 2026-10-28 redesign) */
+  --tok-bg: #07090D;            /* app background — near black */
+  --tok-surface-1: #0E1117;     /* cards */
+  --tok-surface-2: #141821;     /* raised / hover */
+  --tok-surface-inset: #0A0D12; /* wells, code, inset panels */
 
   /* Text */
-  --tok-text-1: #F2F5F9;
-  --tok-text-2: #9AA3B2;
-  --tok-text-3: #5D6570;
+  --tok-text-1: #EEF1F6;
+  --tok-text-2: #97A0B0;
+  --tok-text-3: #636C7C;
 
   /* Lines + accents */
-  --tok-line: rgba(255, 255, 255, 0.08);        /* hairline borders */
-  --tok-line-strong: rgba(255, 255, 255, 0.16);
-  --tok-accent: #00AEEF;                         /* LANStreamer cyan */
-  --tok-accent-strong: #0088CC;
-  --tok-accent-contrast: #FFFFFF;
-  --tok-accent-glow: 0 0 24px rgba(0, 174, 239, 0.35);
+  --tok-line: rgba(255, 255, 255, 0.07);        /* hairline borders */
+  --tok-line-strong: rgba(255, 255, 255, 0.13);
+  --tok-accent: #1AA6F5;                         /* LANStreamer blue */
+  --tok-accent-strong: #0C86D6;
+  --tok-accent-soft: rgba(26, 166, 245, 0.13);
+  --tok-accent-contrast: #03121C;                /* dark text on the bright blue */
+  --tok-accent-glow: 0 8px 24px -8px rgba(26, 166, 245, 0.5);
 
   /* Semantic */
-  --tok-live: #22C55E;
-  --tok-live-dim: rgba(34, 197, 94, 0.14);
-  --tok-warning: #F59E0B;
-  --tok-danger: #EF4444;
-  --tok-danger-dim: rgba(239, 68, 68, 0.12);
+  --tok-live: #2BD46A;
+  --tok-live-dim: rgba(43, 212, 106, 0.12);
+  --tok-warning: #F5A524;                        /* separate from danger (was danger-coloured) */
+  --tok-warning-dim: rgba(245, 165, 36, 0.13);
+  --tok-danger: #F2555A;
+  --tok-danger-dim: rgba(242, 85, 90, 0.12);
+  --tok-onair: #FF4A3B;                          /* reserved: the ON AIR badge only */
+
+  /* Type */
+  --tok-font: "Space Grotesk", Inter, system-ui, sans-serif;
+  --tok-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
 
   /* Shape + depth */
-  --tok-radius-card: 16px;
+  --tok-radius-card: 14px;
   --tok-radius-input: 10px;
-  --tok-radius-btn: 999px;      /* pill */
-  --tok-shadow-card: 0 1px 0 rgba(255,255,255,0.03) inset, 0 8px 32px rgba(0,0,0,0.45);
-  --tok-shadow-pop: 0 12px 40px rgba(0,0,0,0.55);
+  --tok-radius-btn: 10px;      /* designer moved off pill buttons */
+  --tok-shadow-card: 0 1px 0 rgba(255,255,255,0.03) inset, 0 10px 30px -14px rgba(0,0,0,0.7);
+  --tok-shadow-pop: 0 12px 40px -10px rgba(0, 0, 0, 0.65);
 
   /* Motion */
   --tok-ease: cubic-bezier(0.4, 0, 0.2, 1);
@@ -52,7 +59,7 @@
   /* Legacy var remap (existing markup reads these) */
   --primary-color: var(--tok-accent);
   --live-color: var(--tok-live);
-  --warning-color: var(--tok-danger);
+  --warning-color: var(--tok-warning);
   --dark-bg: var(--tok-bg);
   --card-bg: var(--tok-surface-1);
   --border-color: var(--tok-line);
@@ -62,28 +69,33 @@
    Light theme
    -------------------------------------------------------------------------- */
 [data-theme="light"] {
-  --tok-bg: #F3F5F8;
+  --tok-bg: #F4F5F8;
   --tok-surface-1: #FFFFFF;
-  --tok-surface-2: #EEF1F5;
-  --tok-surface-inset: #E9EDF2;
+  --tok-surface-2: #EEF0F3;
+  --tok-surface-inset: #E6E9EE;
 
-  --tok-text-1: #0F172A;
-  --tok-text-2: #556070;
-  --tok-text-3: #8A93A0;
+  --tok-text-1: #0E1420;
+  --tok-text-2: #5A6475;
+  --tok-text-3: #8A93A3;
 
-  --tok-line: rgba(15, 23, 42, 0.10);
-  --tok-line-strong: rgba(15, 23, 42, 0.22);
-  --tok-accent: #0090D0;
-  --tok-accent-strong: #0073AC;
-  --tok-accent-glow: 0 0 18px rgba(0, 144, 208, 0.25);
+  --tok-line: rgba(14, 20, 32, 0.09);
+  --tok-line-strong: rgba(14, 20, 32, 0.16);
+  --tok-accent: #0A84D6;
+  --tok-accent-strong: #0868AA;
+  --tok-accent-soft: rgba(10, 132, 214, 0.10);
+  --tok-accent-contrast: #FFFFFF;
+  --tok-accent-glow: 0 8px 24px -10px rgba(10, 132, 214, 0.4);
 
-  --tok-live: #16A34A;
-  --tok-live-dim: rgba(22, 163, 74, 0.12);
-  --tok-danger: #DC2626;
-  --tok-danger-dim: rgba(220, 38, 38, 0.10);
+  --tok-live: #14A34D;
+  --tok-live-dim: rgba(20, 163, 77, 0.12);
+  --tok-warning: #D98A04;
+  --tok-warning-dim: rgba(217, 138, 4, 0.12);
+  --tok-danger: #D93025;
+  --tok-danger-dim: rgba(217, 48, 37, 0.10);
+  --tok-onair: #E5372B;
 
-  --tok-shadow-card: 0 1px 2px rgba(15,23,42,0.06), 0 10px 30px rgba(15,23,42,0.10);
-  --tok-shadow-pop: 0 16px 44px rgba(15,23,42,0.16);
+  --tok-shadow-card: 0 1px 2px rgba(14,23,42,0.04), 0 8px 24px -12px rgba(14,23,42,0.12);
+  --tok-shadow-pop: 0 16px 44px -12px rgba(14, 23, 42, 0.25);
 }
 
 /* --------------------------------------------------------------------------
@@ -104,18 +116,19 @@
 .btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
 .btn-primary {
-  background: linear-gradient(135deg, var(--tok-accent), var(--tok-accent-strong));
+  background: var(--tok-accent);
   color: var(--tok-accent-contrast);
   box-shadow: var(--tok-accent-glow);
 }
-.btn-primary:hover:not(:disabled) { filter: brightness(1.08); transform: translateY(-1px); }
+.btn-primary:hover:not(:disabled) { filter: brightness(1.08); }
 
 .btn-secondary {
-  background: var(--tok-surface-2);
+  background: var(--tok-surface-1);
   color: var(--tok-text-1);
   border-color: var(--tok-line-strong);
+  box-shadow: none;
 }
-.btn-secondary:hover:not(:disabled) { background: var(--tok-surface-inset); border-color: var(--tok-accent); }
+.btn-secondary:hover:not(:disabled) { background: var(--tok-surface-2); border-color: var(--tok-accent); }
 
 .btn-ghost {
   background: transparent;
@@ -124,17 +137,19 @@
 .btn-ghost:hover:not(:disabled) { color: var(--tok-text-1); background: var(--tok-surface-2); }
 
 .btn-danger {
-  background: var(--tok-danger-dim);
+  background: transparent;
   color: var(--tok-danger);
-  border-color: var(--tok-danger);
+  border-color: color-mix(in oklab, var(--tok-danger) 35%, transparent);
 }
-.btn-danger:hover:not(:disabled) { background: var(--tok-danger); color: #fff; }
+.btn-danger:hover:not(:disabled) { background: var(--tok-danger-dim); }
 
-/* Micro label — uppercase, tracked (Stemtracks trait) */
+/* Micro label — mono, uppercase, tracked (eyebrow) */
 .tok-label {
-  font-size: 0.6875rem; font-weight: 700; letter-spacing: 0.12em;
+  font-family: var(--tok-mono);
+  font-size: 0.6875rem; font-weight: 500; letter-spacing: 0.08em;
   text-transform: uppercase; color: var(--tok-text-3);
 }
+.mono { font-family: var(--tok-mono); font-size: 0.75rem; letter-spacing: 0.01em; }
 
 /* --------------------------------------------------------------------------
    Theme shims — make existing dark-hardcoded markup usable in light mode.

@@ -21,6 +21,9 @@ const FONT_CSS_URLS = [
   'https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&display=swap',
   // Noto Sans weights (dashboard)
   'https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;500;700;900&display=swap',
+  // Redesign (2026-10-28): UI + mono faces from the designer mock
+  'https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap',
+  'https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap',
   // Material Symbols Rounded: variable axes (listener page) and FILL@1 instance class (dashboard/login)
   'https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200',
   'https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:FILL@1',

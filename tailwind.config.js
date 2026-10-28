@@ -17,6 +17,10 @@ export default {
   ],
   theme: {
     extend: {
+      fontFamily: {
+        sans: ['Space Grotesk', 'Inter', 'system-ui', 'sans-serif'],
+        mono: ['JetBrains Mono', 'ui-monospace', 'SFMono-Regular', 'Menlo', 'monospace'],
+      },
       colors: {
         bg: 'var(--tok-bg)',
         'surface-1': 'var(--tok-surface-1)',
@@ -29,9 +33,11 @@ export default {
         'line-strong': 'var(--tok-line-strong)',
         accent: 'var(--tok-accent)',
         'accent-strong': 'var(--tok-accent-strong)',
+        'accent-soft': 'var(--tok-accent-soft)',
         live: 'var(--tok-live)',
         warn: 'var(--tok-warning)',
         danger: 'var(--tok-danger)',
+        onair: 'var(--tok-onair)',
       },
       borderRadius: {
         card: 'var(--tok-radius-card)',

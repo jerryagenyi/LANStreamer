@@ -53,6 +53,21 @@ router.post('/start', async (req, res) => {
 });
 
 /**
+ * @route POST /api/streams/create
+ * @description Create a stream configuration without starting it (drawer "Save").
+ * @access Public
+ */
+router.post('/create', async (req, res) => {
+  try {
+    const stream = await streamingService.createStoppedStream(req.body || {});
+    res.status(200).json({ message: 'Stream created (stopped)', streamId: stream.id, stream });
+  } catch (error) {
+    logger.error('Error creating stream:', { error: error.message });
+    res.status(400).json({ message: 'Error creating stream', error: error.message });
+  }
+});
+
+/**
  * @route POST /api/streams/stop
  * @description Stop an active stream.
  * @access Public

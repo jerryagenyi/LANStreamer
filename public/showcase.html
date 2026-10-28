@@ -14,7 +14,7 @@
     <script src="/assets/js/collapsible.js"></script>
     <script src="/assets/js/notifications.js"></script>
     <style>
-        body { font-family: Inter, "Noto Sans", sans-serif; }
+        body { font-family: var(--tok-font); }
         .sc-wrap { max-width: 56rem; margin: 0 auto; padding: 2.5rem 1.25rem 5rem; }
         .sc-section { margin-top: 3rem; }
         .sc-section > h2 {
@@ -114,43 +114,70 @@
         </div>
     </section>
 
-    <!-- STREAM ROWS -->
+    <!-- STREAM ROWS (admin) + CHANNEL ROWS (listener) -->
     <section class="sc-section">
         <h2><span class="material-symbols-rounded">podcasts</span>Stream rows</h2>
-        <div class="sc-block">
-            <div class="stream-row stream-row-live">
-                <div class="channel-badge">S1</div>
-                <div class="flex-1 min-w-0">
-                    <div class="stream-name">Main Room English</div>
-                    <div class="stream-sub"><span class="eq" aria-hidden="true"><span></span><span></span><span></span><span></span></span><span class="live-chip">On air</span><span aria-hidden="true">·</span><span>1m 02s</span><span aria-hidden="true">·</span><span>192 kbps</span></div>
+        <div class="sc-block" style="padding:0;overflow:hidden;">
+            <div class="group-label tok-label">On air · 1</div>
+            <div class="arow is-live">
+                <span class="sid2" aria-hidden="true">S1</span>
+                <div style="min-width:0;">
+                    <div class="name">Main Room English</div>
+                    <div class="meta"><span class="chip chip-live"><span class="eq" aria-hidden="true"><i></i><i></i><i></i><i></i></span>LIVE</span>
+                        <span class="src" title="CABLE Output (VB-Audio Virtual Cable)"><span class="material-symbols-rounded" style="font-size:13px;" aria-hidden="true">mic</span>CABLE Output (VB-Audio Virtual Cable)</span>
+                        <span class="dotsep" aria-hidden="true"></span><span class="mono">192k</span>
+                        <span class="dotsep" aria-hidden="true"></span><span class="mono">1m 02s</span></div>
                 </div>
-                <button class="play-btn is-playing" aria-label="Pause"><span class="material-symbols-rounded">pause</span></button>
-                <button class="copy-btn" title="Share" aria-label="Share"><span class="material-symbols-rounded text-base">link</span></button>
-            </div>
-            <div class="stream-row">
-                <div class="channel-badge">S2</div>
-                <div class="flex-1 min-w-0">
-                    <div class="stream-name">Side Room French</div>
-                    <div class="stream-sub"><span>STOPPED</span><span aria-hidden="true">·</span><span class="mq"><span class="mq-inner">🎤 CABLE Output (VB-Audio Virtual Cable)</span></span><span aria-hidden="true">·</span><span>192 kbps</span></div>
+                <div class="rowactions">
+                    <button class="playbtn stop" aria-label="Stop"><span class="material-symbols-rounded" style="font-size:16px;">stop</span></button>
+                    <div class="menu"><button class="iconbtn" aria-label="More actions"><span class="material-symbols-rounded text-base">more_vert</span></button>
+                        <div class="menu-pop"><button type="button">Copy listener link</button><button type="button">Edit</button><button type="button" class="del">Delete</button></div></div>
                 </div>
-                <button class="play-btn" aria-label="Play"><span class="material-symbols-rounded" style="font-variation-settings:'FILL' 1;">play_arrow</span></button>
             </div>
-            <div class="stream-row stream-row-error">
-                <div class="channel-badge">S3</div>
-                <div class="flex-1 min-w-0">
-                    <div class="stream-name">AutoStart Test</div>
-                    <div class="stream-sub"><span style="color:var(--tok-danger)">ERROR</span><span aria-hidden="true">·</span><span class="mq"><span class="mq-inner">🎤 OBS Virtual Camera (Audio)</span></span><span aria-hidden="true">·</span><span>192 kbps</span></div>
-                    <details class="stream-error">
-                        <summary title="Show what went wrong">
-                            <span class="material-symbols-rounded" aria-hidden="true">error</span>
-                            <span class="truncate">🎤 Audio Device Not Found</span>
-                            <span class="material-symbols-rounded chev" aria-hidden="true">expand_more</span>
-                        </summary>
-                        <div class="stream-error-detail">FFmpeg could not open "OBS Virtual Camera (Audio)" as a capture device… <a href="/docs" target="_blank" rel="noopener">Open troubleshooting guide</a></div>
-                    </details>
+            <div class="group-label tok-label">Ready · 1</div>
+            <div class="arow is-err">
+                <span class="sid2" aria-hidden="true">S3</span>
+                <div style="min-width:0;">
+                    <div class="name">AutoStart Test</div>
+                    <div class="meta"><span class="chip chip-err"><span class="pip" aria-hidden="true"></span>ERROR</span>
+                        <span class="src" title="OBS Virtual Camera (Audio)"><span class="material-symbols-rounded" style="font-size:13px;" aria-hidden="true">mic</span>OBS Virtual Camera (Audio)</span>
+                        <span class="dotsep" aria-hidden="true"></span><span class="mono">192k</span></div>
                 </div>
-                <button class="play-btn" aria-label="Start"><span class="material-symbols-rounded" style="font-variation-settings:'FILL' 1;">play_arrow</span></button>
+                <div class="rowactions">
+                    <button class="playbtn" aria-label="Retry"><span class="material-symbols-rounded" style="font-size:18px;font-variation-settings:'FILL' 1;">play_arrow</span></button>
+                    <div class="menu"><button class="iconbtn" aria-label="More actions"><span class="material-symbols-rounded text-base">more_vert</span></button></div>
+                </div>
+                <div class="errbox">
+                    <b>🎤 Audio Device Not Found</b>
+                    <span class="grow">The device is missing or held by another app — reconnect it or pick a different input.</span>
+                    <button class="btn btn-secondary" style="height:30px;padding:0 10px;font-size:13px;">Change input</button>
+                    <button class="btn btn-ghost" style="height:30px;padding:0 10px;font-size:13px;">Retry</button>
+                </div>
             </div>
+        </div>
+        <div class="sc-label">Listener channel row</div>
+        <div style="max-width:26rem;">
+            <button type="button" class="chrow" aria-current="true"><span class="lang" aria-hidden="true">S1</span><span class="t"><b>Main Room English</b><span class="faint" style="font-size:13px;">Live · 1m 02s · 192k</span></span><span class="eq" style="color:var(--tok-accent);" aria-hidden="true"><i></i><i></i><i></i><i></i></span></button>
+            <div class="chrow off"><span class="lang" aria-hidden="true">S2</span><span class="t"><b>Side Room French</b><span class="faint" style="font-size:13px;">Starts soon</span></span></div>
+        </div>
+    </section>
+
+    <!-- STRIP + BANNER + FILTERS -->
+    <section class="sc-section">
+        <h2><span class="material-symbols-rounded">monitoring</span>Status strip · banner · filters</h2>
+        <div class="strip" style="margin-top:1.25rem;">
+            <div class="glass-card stat"><span class="tok-label">On air</span><span class="v"><span class="eq" style="color:var(--tok-live);" aria-hidden="true"><i></i><i></i><i></i><i></i></span>1<small>/ 7 streams</small></span></div>
+            <div class="glass-card stat"><span class="tok-label">Listeners</span><span class="v">23 <small>peak 31</small></span></div>
+            <div class="glass-card stat"><span class="tok-label">Icecast server</span><span class="v"><span class="chip chip-live"><span class="pip" aria-hidden="true"></span>Online</span><small class="mono">:8200</small></span></div>
+            <div class="glass-card stat alert"><span class="tok-label">Needs attention</span><span class="v">1 stream · 1 setting</span></div>
+        </div>
+        <div class="banner" style="margin-top:1rem;">
+            <span class="material-symbols-rounded" style="color:var(--tok-warning);" aria-hidden="true">gpp_maybe</span>
+            <div class="grow"><b>Default Icecast password in use.</b> <span style="color:var(--tok-text-2);">Anyone on your network could take over a stream.</span></div>
+            <button class="btn btn-secondary" style="height:30px;padding:0 10px;font-size:13px;">Change password</button>
+        </div>
+        <div class="sc-row">
+            <div class="seg" role="group" aria-label="Filter"><button aria-pressed="true">All 7</button><button aria-pressed="false">Live · 1</button><button aria-pressed="false">Issues</button></div>
         </div>
     </section>
 

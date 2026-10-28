@@ -554,7 +554,7 @@
     <body class="bg-[var(--dark-bg)]">
     <!-- Boot overlay: paints before any CSS/JS loads; boot.js dismisses it or
          swaps it to a failure state after a timeout. -->
-    <div id="boot-overlay" style="position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;background:#05060A;color:#F2F5F9;font-family:Inter,'Noto Sans',sans-serif;transition:opacity .4s ease;">
+    <div id="boot-overlay" style="position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;background:#07090D;color:#EEF1F6;font-family:Space Grotesk,Inter,system-ui,sans-serif;transition:opacity .4s ease;">
       <div style="display:flex;flex-direction:column;align-items:center;gap:14px;text-align:center;padding:24px;">
         <img src="/assets/logo.svg?v=3" alt="LANStreamer" style="height:52px;width:auto;" onerror="this.style.display='none'">
         <div style="font-weight:700;letter-spacing:.1em;text-transform:uppercase;font-size:.72rem;color:#9AA3B2;">LANStreamer <span id="boot-version"></span></div>
@@ -562,23 +562,22 @@
         <div style="font-size:.85rem;color:#5D6570;">Loading…</div>
       </div>
     </div>
-    <div class="relative min-h-screen flex flex-col body-bg dark group/design-root overflow-x-hidden" style='font-family: Inter, "Noto Sans", sans-serif;'>
+    <div class="relative min-h-screen flex flex-col body-bg dark group/design-root overflow-x-hidden" style='font-family: var(--tok-font);'>
     <!-- Header Component Container -->
     <div id="header-container"></div>
     <main class="px-4 sm:px-6 lg:px-10 py-8">
     <div class="mx-auto max-w-7xl">
+    <!-- Status strip: the operator's first glance (on-air / listeners / icecast / attention) -->
+    <div class="strip" id="status-strip" aria-label="System status"></div>
     <!-- Security Warning Banner (will be populated by JavaScript) -->
     <div id="security-warning-banner"></div>
     <div class="grid grid-cols-1 xl:grid-cols-3 gap-8">
         <!-- Left Column (Primary Controls) -->
         <div class="xl:col-span-2 space-y-8">
-            
+
             <!-- FFmpeg Streams - Component or Static -->
             <div id="ffmpeg-streams"></div>
-            
-            <!-- Audio Devices - Component or Static -->
-            <div id="audio-devices"></div>
-            
+
             <!-- Video Sources - Collapsible Panel (Hidden by default) -->
             <div class="collapsible-section hidden">
                 <button id="video-sources-toggle" class="w-full flex items-center justify-between p-3 bg-[var(--card-bg)] border border-[var(--border-color)] rounded-xl hover:bg-[var(--card-bg)]/80 transition-all duration-300">
@@ -594,20 +593,54 @@
                 </div>
             </div>
         </div>
-        
+
         <!-- Right Column (Sidebar) -->
         <div class="space-y-8">
-            
+
                     <!-- Icecast Server - Component or Static -->
         <div id="icecast-server">
             <!-- IcecastManager component will be initialized here -->
         </div>
-            
+
+            <!-- Share with listeners: QR + LAN address (moved from the header) -->
+            <div class="glass-card" style="padding:0;" id="share-card">
+                <div style="display:flex;align-items:center;gap:10px;padding:16px 18px;border-bottom:1px solid var(--tok-line);">
+                    <h3 style="font-size:15px;font-weight:600;color:var(--tok-text-1);">Share with listeners</h3>
+                </div>
+                <div style="padding:16px 18px;display:flex;gap:14px;align-items:center;">
+                    <div class="qr-box" id="share-qr" style="display:grid;place-items:center;">
+                        <span class="material-symbols-rounded" style="color:var(--tok-text-3);" aria-hidden="true">qr_code_2</span>
+                    </div>
+                    <div style="min-width:0;flex:1;display:flex;flex-direction:column;gap:8px;">
+                        <p style="font-size:13px;color:var(--tok-text-2);">Scan or open on any device on this network.</p>
+                        <div class="share-url">
+                            <code id="share-url-text"></code>
+                            <button type="button" class="iconbtn" id="share-copy" style="width:28px;height:28px;" aria-label="Copy link" title="Copy listener link">
+                                <span class="material-symbols-rounded" style="font-size:15px;">content_copy</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Audio inputs: always visible, with IN USE / IDLE / MISSING status -->
+            <div class="glass-card" style="padding:0;">
+                <div style="display:flex;align-items:center;gap:10px;padding:16px 18px;border-bottom:1px solid var(--tok-line);">
+                    <h3 style="font-size:15px;font-weight:600;color:var(--tok-text-1);">Audio inputs</h3>
+                    <span class="chip chip-off" id="audio-inputs-count"></span>
+                    <span style="flex:1;"></span>
+                    <button type="button" class="iconbtn" id="refresh-audio-devices" style="width:30px;height:30px;" aria-label="Rescan inputs" title="Rescan inputs">
+                        <span class="material-symbols-rounded" style="font-size:15px;">refresh</span>
+                    </button>
+                </div>
+                <ul class="devices" id="audio-devices" style="padding:12px 18px;margin:0;"></ul>
+            </div>
+
             <!-- Event Manager - Component -->
             <div id="event-manager">
                 <!-- EventManager component will be initialized here -->
             </div>
-            
+
             <!-- Contact Manager - Component -->
             <div id="contact-manager">
                 <!-- ContactManager component will be initialized here -->
@@ -919,6 +952,10 @@
                 // Force render audio devices to ensure dynamic content is shown
                 this.renderAudioDevices();
 
+                // Status strip + sidebar share card (needs config/icecast host)
+                this.renderStatusStrip();
+                this.populateShareCard();
+
                 // Icecast Manager will be initialized by ComponentManager with proper fallback
             }
 
@@ -1030,167 +1067,133 @@
                 } catch (error) {
                     console.error('Failed to load audio devices:', error);
                     this.updateHeaderTooltip('audio-devices-status', 'Failed to load devices');
-                    this.renderAudioDevicesError();
+                    this.renderAudioDevices(); // error path renders the empty list with a rescan hint
                 }
             }
 
             renderAudioDevices() {
+                // Sidebar card body: one row per input with IN USE / IDLE status.
+                // The card shell (header + rescan) lives in the static markup.
                 const container = document.getElementById('audio-devices');
-                if (!container) {
-                    console.error('Audio devices container not found');
-                    return;
+                if (!container) return;
+
+                const refreshBtn = document.getElementById('refresh-audio-devices');
+                if (refreshBtn && !refreshBtn.dataset.wired) {
+                    refreshBtn.dataset.wired = '1';
+                    refreshBtn.addEventListener('click', async () => {
+                        await this.loadAudioDevices(true);
+                        this.showNotification('Rescanning inputs…', 'info', { tag: 'scan' });
+                    });
                 }
+
+                const countChip = document.getElementById('audio-inputs-count');
+                if (countChip && this.audioDevices) countChip.textContent = `${this.audioDevices.length} found`;
 
                 if (!this.audioDevices || this.audioDevices.length === 0) {
-                    container.innerHTML = `
-                        <div class="bg-[var(--card-bg)] border border-[var(--border-color)] rounded-2xl p-6 shadow-2xl shadow-black/30">
-                            <div class="flex items-center justify-between mb-4">
-                                <h2 class="text-xl font-bold text-white">Audio Devices captured by FFmpeg</h2>
-                                <button id="refresh-audio-devices" class="flex items-center gap-2 rounded-md px-3 py-1.5 text-sm font-semibold text-white bg-[var(--primary-color)]/10 hover:bg-[var(--primary-color)]/20 border border-[var(--border-color)] transition-all duration-300">
-                                    <span class="material-symbols-rounded text-base">refresh</span>
-                                    Refresh device list
-                                </button>
-                            </div>
-                            <div class="text-center py-8">
-                                <span class="material-symbols-rounded text-4xl text-gray-600 mb-4">mic_off</span>
-                                <p class="text-gray-400">No audio devices detected</p>
-                            </div>
-                        </div>
-                    `;
-
-                    // Add event listener for the refresh button
-                    const refreshBtn = document.getElementById('refresh-audio-devices');
-                    if (refreshBtn) {
-                        refreshBtn.addEventListener('click', async () => {
-                            await this.loadAudioDevices(true); // Force refresh
-                            this.showNotification('Audio devices refreshed', 'info');
-                        });
-                    }
-
+                    container.innerHTML = `<li style="color:var(--tok-text-3);">No audio inputs detected — click rescan.</li>`;
                     return;
                 }
 
-                // Separate input and output devices using deviceType property
-                const inputDevices = this.audioDevices.filter(device =>
-                    device.deviceType === 'input' ||
-                    (!device.deviceType && (
-                        device.name.toLowerCase().includes('mic') ||
-                        device.name.toLowerCase().includes('input') ||
-                        device.name.toLowerCase().includes('line in') ||
-                        device.name.toLowerCase().includes('scarlett') ||
-                        device.name.toLowerCase().includes('umc') ||
-                        device.fallback // Include fallback devices as input
-                    ))
+                const runningIds = new Set(
+                    (window.ffmpegStreamsManager?.activeStreams || [])
+                        .filter(s => s.status === 'running' && s.deviceId)
+                        .map(s => s.deviceId)
                 );
 
-                const outputDevices = this.audioDevices.filter(device =>
-                    device.deviceType === 'output' ||
-                    (!device.deviceType && (
-                        device.name.toLowerCase().includes('output') ||
-                        device.name.toLowerCase().includes('speaker') ||
-                        device.name.toLowerCase().includes('headphone') ||
-                        device.name.toLowerCase().includes('monitor')
-                    ))
-                );
-
-                // Use the properly separated devices
-                const finalInputDevices = inputDevices;
-                const finalOutputDevices = outputDevices;
-
-                const refreshBtnHtml = `
-                    <button id="refresh-audio-devices" class="copy-btn" title="Refresh device list" aria-label="Refresh device list">
-                        <span class="material-symbols-rounded text-base">refresh</span>
-                    </button>
-                `;
-
-                const focusBox = `
-                    <div class="mb-4 p-3 rounded-lg" style="background:var(--tok-surface-inset);border:1px solid var(--tok-line);">
-                        <div class="flex items-start gap-2">
-                            <span class="material-symbols-rounded text-lg mt-0.5" style="color:var(--tok-accent)" aria-hidden="true">info</span>
-                            <div class="text-sm" style="color:var(--tok-text-2);">
-                                <p class="font-semibold" style="color:var(--tok-text-1);">Streaming Focus</p>
-                                <p>These are audio input sources for streaming. Install <strong>VoiceMeeter</strong> or <strong>VB-Audio Virtual Cable</strong> to create virtual audio routing from your music players, DJ software, or other audio sources.</p>
-                            </div>
-                        </div>
-                    </div>
-                `;
-
-                const devicesList = `
-                    <div class="space-y-2">
-                        ${finalInputDevices.map(device => `
-                            <div class="flex items-center gap-3 p-3 rounded-lg transition-all duration-300" style="background:var(--tok-surface-inset);border:1px solid var(--tok-line);">
-                                <span class="material-symbols-rounded text-xl" style="color:${device.fallback ? 'var(--tok-text-3)' : (device.virtual ? '#A78BFA' : 'var(--tok-live)')};">
-                                    ${device.virtual ? 'cable' : 'mic'}
-                                </span>
-                                <span class="font-medium text-sm flex-1" style="color:var(--tok-text-1);">${device.name}</span>
-                                ${device.virtual ? `<span class="px-2 py-0.5 text-xs font-medium rounded-full" style="background:rgba(167,139,250,0.15);color:#A78BFA;">Virtual</span>` : ''}
-                            </div>
-                        `).join('')}
-                    </div>
-                `;
-
-                container.innerHTML = window.LSCollapse
-                    ? LSCollapse.wrap('audio-sources',
-                        { icon: 'mic', title: 'Audio Input Sources for Streaming', aside: refreshBtnHtml },
-                        focusBox + devicesList,
-                        false /* collapsed by default */)
-                    : `
-                    <div class="glass-card p-6">
-                        <div class="flex items-center justify-between mb-4">
-                            <h2 class="text-lg font-bold text-white">🎤 Audio Input Sources for Streaming</h2>
-                            ${refreshBtnHtml}
-                        </div>
-                        ${focusBox}
-                        ${devicesList}
-                    </div>
-                `;
-
-                // Add event listener for the refresh button
-                const refreshBtn = document.getElementById('refresh-audio-devices');
-                if (refreshBtn) {
-                    refreshBtn.addEventListener('click', async () => {
-                        await this.loadAudioDevices(true); // Force refresh
-                        this.showNotification('Audio devices refreshed', 'info');
-                    });
-                }
-
-                console.log('Audio devices rendered:', this.audioDevices);
+                container.innerHTML = this.audioDevices.map(device => {
+                    const inUse = runningIds.has(device.id);
+                    return `
+                        <li>
+                            <span class="chip ${inUse ? 'chip-live' : 'chip-off'}" style="height:20px;">${inUse ? 'IN USE' : 'IDLE'}</span>
+                            <span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${device.name}">${device.name}</span>
+                        </li>`;
+                }).join('');
             }
 
-            renderAudioDevicesError() {
-                const container = document.getElementById('audio-devices');
-                if (!container) {
-                    console.error('Audio devices container not found');
-                    return;
+            /**
+             * Status strip (designer P2): the operator's first glance.
+             * On-air count · listeners (+ session peak) · Icecast · needs attention.
+             */
+            renderStatusStrip() {
+                const strip = document.getElementById('status-strip');
+                if (!strip) return;
+
+                const streams = window.ffmpegStreamsManager?.activeStreams || [];
+                const live = streams.filter(s => s.status === 'running').length;
+                const errorCount = streams.filter(s => s.status === 'error').length;
+
+                const icecast = (window.icecastManager?.status) || {};
+                const icecastRunning = !!icecast.running;
+                const icecastPort = icecast.port || '8000';
+
+                // Listener peak persists for the session only
+                const listeners = icecast.listeners || 0;
+                let peak = parseInt(sessionStorage.getItem('ls-listener-peak') || '0', 10);
+                if (listeners > peak) {
+                    peak = listeners;
+                    sessionStorage.setItem('ls-listener-peak', String(peak));
                 }
 
-                container.innerHTML = `
-                    <div class="glass-card p-6">
-                        <div class="flex items-center justify-between mb-4">
-                            <h2 class="text-xl font-bold text-white">Audio Devices captured by FFmpeg</h2>
-                            <button id="refresh-audio-devices" class="btn-glass btn-glass-secondary">
-                                <span class="material-symbols-rounded text-base">refresh</span>
-                                <span>Refresh Devices</span>
-                            </button>
-                        </div>
-                        <div class="text-center py-8">
-                            <span class="material-symbols-rounded text-4xl text-red-500 mb-4">error</span>
-                            <p class="text-red-400 mb-2">Failed to load audio devices</p>
-                            <p class="text-gray-400 text-sm">Click refresh to try again</p>
-                        </div>
+                const settings = this.securityAttention ? 1 : 0;
+                const attention = errorCount + settings;
+
+                strip.innerHTML = `
+                    <div class="glass-card stat">
+                        <span class="tok-label">On air</span>
+                        <span class="v">
+                            ${live > 0 ? '<span class="eq" style="color:var(--tok-live);" aria-hidden="true"><i></i><i></i><i></i><i></i></span>' : ''}
+                            <span>${live}</span><small>/ ${streams.length} streams</small>
+                        </span>
+                    </div>
+                    <div class="glass-card stat">
+                        <span class="tok-label">Listeners</span>
+                        <span class="v">${listeners}${peak > 0 ? ` <small>peak ${peak}</small>` : ''}</span>
+                    </div>
+                    <div class="glass-card stat">
+                        <span class="tok-label">Icecast server</span>
+                        <span class="v">
+                            <span class="chip ${icecastRunning ? 'chip-live' : 'chip-err'}"><span class="pip" aria-hidden="true"></span>${icecastRunning ? 'Online' : 'Offline'}</span>
+                            <small class="mono">:${icecastPort}</small>
+                        </span>
+                    </div>
+                    <div class="glass-card stat ${attention > 0 ? 'alert' : ''}">
+                        <span class="tok-label">Needs attention</span>
+                        <span class="v">${attention > 0
+                            ? `${errorCount ? errorCount + ' stream' + (errorCount > 1 ? 's' : '') : ''}${errorCount && settings ? ' · ' : ''}${settings ? settings + ' setting' : ''}`
+                            : '<span class="chip chip-live"><span class="pip" aria-hidden="true"></span>All good</span>'}</span>
                     </div>
                 `;
+            }
 
-                // Add event listener for the refresh button
-                const refreshBtn = document.getElementById('refresh-audio-devices');
-                if (refreshBtn) {
-                    refreshBtn.addEventListener('click', async () => {
-                        await this.loadAudioDevices(true); // Force refresh
-                        this.showNotification('Audio devices refreshed', 'info');
+            /** Sidebar share card: real QR (offline endpoint) + LAN address + copy. */
+            async populateShareCard() {
+                const host = (window.icecastManager?.status?.host) || this.serverHost || window.location.hostname;
+                const url = `http://${host}:${window.location.port || '3001'}/streams`;
+                const urlEl = document.getElementById('share-url-text');
+                const qrEl = document.getElementById('share-qr');
+                if (urlEl) urlEl.textContent = url.replace(/^https?:\/\//, '');
+
+                const copyBtn = document.getElementById('share-copy');
+                if (copyBtn && !copyBtn.dataset.wired) {
+                    copyBtn.dataset.wired = '1';
+                    copyBtn.addEventListener('click', async () => {
+                        try {
+                            await navigator.clipboard.writeText(url);
+                            this.showNotification('Listener link copied', 'success', { tag: 'copy' });
+                        } catch { window.prompt('Copy this link:', url); }
                     });
                 }
 
-                console.error('Error rendering audio devices');
+                if (qrEl && !qrEl.dataset.loaded) {
+                    try {
+                        const res = await fetch(`/api/system/qr?url=${encodeURIComponent(url)}`);
+                        if (res.ok) {
+                            const svg = await res.text();
+                            qrEl.innerHTML = svg;
+                            qrEl.dataset.loaded = '1';
+                        }
+                    } catch { /* QR stays on its placeholder icon */ }
+                }
             }
 
             async checkIcecastStatus() {
@@ -1288,26 +1291,19 @@
 
                 const criticalVulns = securityData.vulnerabilities.filter(v => v.severity === 'critical');
                 const hasDefaultCredentials = criticalVulns.length > 0;
+                this.securityAttention = true;
 
+                // Compact warning banner (designer P2): warning colour, one line,
+                // direct action — it must not compete with real stream errors.
                 banner.innerHTML = `
-                    <div class="mb-8 p-4 rounded-xl glass-card border border-red-500/50 text-red-400">
-                        <div class="flex items-center justify-between">
-                            <div class="flex items-center gap-3">
-                                <span class="material-symbols-rounded text-2xl">security</span>
-                                <p class="font-medium">
-                                    <strong>Security Warning:</strong> Your Icecast server is using default credentials that are publicly known!
-                                </p>
-                            </div>
-                            <div class="flex items-center gap-2">
-                                <button id="security-details-toggle" class="px-3 py-1 bg-red-500/20 hover:bg-red-500/30 border border-red-500/50 rounded-lg text-sm font-medium transition-colors">
-                                    Show Details
-                                </button>
-                                ${window.LSNotices ? LSNotices.dismissButton('security-warning') : ''}
-                            </div>
-                        </div>
-                        <div id="security-details" class="hidden mt-4 p-4 bg-red-900/20 border border-red-500/30 rounded-lg">
-                            ${this.renderSecurityDetails(securityData)}
-                        </div>
+                    <div class="banner" id="security-banner" role="alert" style="margin-bottom:20px;">
+                        <span class="material-symbols-rounded" style="color:var(--tok-warning);" aria-hidden="true">gpp_maybe</span>
+                        <div class="grow"><b>Default Icecast password in use.</b> <span style="color:var(--tok-text-2);">Anyone on your network could take over a stream.</span></div>
+                        <button type="button" id="security-details-toggle" class="btn btn-secondary" style="height:30px;padding:0 10px;font-size:13px;">Change password</button>
+                        ${window.LSNotices ? LSNotices.dismissButton('security-warning') : ''}
+                    </div>
+                    <div id="security-details" class="hidden glass-card p-4 mb-4 text-sm" style="color:var(--tok-text-2);">
+                        ${this.renderSecurityDetails(securityData)}
                     </div>
                 `;
 
@@ -1398,6 +1394,7 @@
             }
 
             hideSecurityWarning() {
+                this.securityAttention = false;
                 const banner = document.getElementById('security-warning-banner');
                 if (banner) {
                     banner.innerHTML = '';
@@ -1558,6 +1555,9 @@
                                 await ffmpegComponent.loadStreams();
                             }
                         }
+
+                        // Status strip reflects everything above
+                        this.renderStatusStrip();
                     } catch (error) {
                         console.warn('Status polling error:', error);
                     }
