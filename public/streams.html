@@ -18,12 +18,12 @@
         @media (max-width:900px){.listener-layout{grid-template-columns:1fr !important;}}
     </style>
     <link rel="stylesheet" href="/assets/vendor/tailwind.css">
-    <link rel="stylesheet" href="/assets/vendor/fonts/fonts.css">
-    <link rel="stylesheet" href="/assets/css/tokens.css">
-    <link rel="stylesheet" href="/assets/css/ui.css">
-    <script src="/assets/js/theme-toggle.js"></script>
-    <script src="/assets/js/qr-share.js"></script>
-    <script src="/assets/js/marquee.js"></script>
+    <link rel="stylesheet" href="/assets/vendor/fonts/fonts.css?v=5">
+    <link rel="stylesheet" href="/assets/css/tokens.css?v=5">
+    <link rel="stylesheet" href="/assets/css/ui.css?v=5">
+    <script src="/assets/js/theme-toggle.js?v=5"></script>
+    <script src="/assets/js/qr-share.js?v=5"></script>
+    <script src="/assets/js/marquee.js?v=5"></script>
     <style>
         :root {
           /* Existing colors */
@@ -527,8 +527,8 @@
     <!-- Audio Player (Hidden) -->
     <audio id="audio-player" preload="none"></audio>
 
-    <script src="/assets/js/boot.js"></script>
-    <script src="/assets/js/toasts.js"></script>
+    <script src="/assets/js/boot.js?v=5"></script>
+    <script src="/assets/js/toasts.js?v=5"></script>
     <script>
         class StreamListener {
             constructor() {
@@ -865,8 +865,14 @@
             /** Player card + mini-player presentation, driven by playback state. */
             updatePlayerUi() {
                 const current = this.streams.find(s => s.id === this.currentStream);
-                const fallback = this.streams.find(s => s.status === 'running');
-                const shown = current || fallback;
+
+                // The player is a "now playing" surface: it only exists once the
+                // listener has actually started a stream. Before that, the channel
+                // picker is the entry point — no empty player with a dead play button.
+                const playerCard = document.getElementById('player-card');
+                if (playerCard) playerCard.style.display = this.currentStream ? '' : 'none';
+
+                const shown = current;
                 const playing = !!this.currentStream && !this.audioPlayer.paused;
                 const inGrace = !!this.currentStream && this.offAirSince !== null;
 
@@ -884,7 +890,7 @@
                 }
 
                 const nameEl = document.getElementById('player-channel');
-                if (nameEl) nameEl.textContent = shown ? (shown.name || shown.id) : (this.streams.length ? '—' : 'No live stream');
+                if (nameEl) nameEl.textContent = shown ? (shown.name || shown.id) : '—';
 
                 const chip = document.getElementById('player-chip');
                 const timer = document.getElementById('player-timer');

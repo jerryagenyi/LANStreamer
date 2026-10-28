@@ -40,7 +40,7 @@
    * Compact stub shown in place of a dismissed notice, with a "Show" link.
    */
   function hiddenStub(id, label, extraClasses) {
-    return `<div class="flex items-center justify-center gap-2 py-2 text-xs text-gray-500 ${extraClasses || ''}">
+    return `<div class="flex items-center justify-start gap-2 py-2 text-xs text-gray-500 ${extraClasses || ''}">
       <span>${label} hidden</span>
       <button type="button" data-ls-restore="${id}" class="underline hover:text-gray-300 transition-colors">Show</button>
     </div>`;

@@ -32,8 +32,10 @@
     const open = isOpen(key, defaultOpen);
     const icon = o.iconHtml ? o.iconHtml
       : (o.icon ? `<span class="material-symbols-rounded text-lg ls-collapse-icon" aria-hidden="true">${o.icon}</span>` : '');
+    // plain: no card chrome — just a bottom-bordered row + arrow (nested disclosures)
+    const cls = `ls-collapse glass-card${o.plain ? ' ls-collapse--plain' : ''}`;
     return `
-      <div class="ls-collapse glass-card" data-ls-collapse="${key}">
+      <div class="${cls}" data-ls-collapse="${key}">
         <button type="button" class="ls-collapse-toggle" data-ls-collapse-toggle="${key}" aria-expanded="${open}">
           <span class="flex items-center gap-2.5 min-w-0">
             ${icon}

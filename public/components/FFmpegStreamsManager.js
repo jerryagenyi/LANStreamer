@@ -1107,13 +1107,21 @@ class FFmpegStreamsManager {
     }
 
     /**
-     * Render the component
+     * Render the component. Skips the DOM rewrite when the visible data is
+     * unchanged (`force` overrides): re-rendering on every 5s poll closes any
+     * open "⋯" menu and makes the row actions flicker.
      */
-    render() {
+    render(force = false) {
         if (!this.container) {
             console.error('Cannot render: container not found');
             return;
         }
+
+        const signature = JSON.stringify(this.activeStreams.map(s =>
+            [s.id, s.status, s.name, s.label, s.deviceId, s.config?.bitrate, s.errorShort]
+        ));
+        if (!force && signature === this._listSignature) return;
+        this._listSignature = signature;
 
         const total = this.activeStreams.length;
         const live = this.getRunningStreamsCount();
@@ -1269,7 +1277,7 @@ class FFmpegStreamsManager {
                 ? `<span class="chip chip-err"><span class="pip" aria-hidden="true"></span>ERROR</span>`
                 : `<span class="chip chip-off">Stopped</span>`;
 
-        const deviceName = this.getDeviceName(stream.deviceId).replace(/^[🎤🔗]\s*/, '');
+        const deviceName = this.getDeviceName(stream.deviceId);
         const metaExtras = live
             ? `<span class="dotsep" aria-hidden="true"></span><span class="mono" data-stream-uptime="${stream.id}">${uptime}</span>`
             : '';
@@ -1391,7 +1399,7 @@ class FFmpegStreamsManager {
             filterGroup.querySelectorAll('button[data-f]').forEach(btn => {
                 btn.addEventListener('click', () => {
                     this.streamFilter = btn.getAttribute('data-f');
-                    this.render();
+                    this.render(true); // filter change must repaint even with identical data
                 });
             });
         }
@@ -1604,12 +1612,11 @@ class FFmpegStreamsManager {
      * Get device name from device ID
      */
     getDeviceName(deviceId) {
+        // Plain name only — icons live in the UI layer (Material mic symbol).
+        // Emoji prefixes here previously produced '�' replacement characters:
+        // the emoji-stripping regex split surrogate pairs.
         const device = this.audioDevices.find(d => d.id === deviceId);
-        if (device) {
-            const icon = device.virtual ? '🔗' : '🎤';
-            return `${icon} ${device.name}`;
-        }
-        return `🎤 ${deviceId || 'Unknown Device'}`;
+        return device ? device.name : (deviceId || 'Unknown Device');
     }
 
     /**

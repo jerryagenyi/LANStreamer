@@ -9,12 +9,12 @@
     <link rel="icon" type="image/png" href="/assets/favicon.png">
     <link rel="icon" type="image/svg+xml" href="/assets/logo-mark.svg">
     <link rel="stylesheet" href="/assets/vendor/tailwind.css">
-    <link rel="stylesheet" href="/assets/vendor/fonts/fonts.css">
-    <link rel="stylesheet" href="/assets/css/tokens.css">
-    <link rel="stylesheet" href="/assets/css/ui.css">
-    <script src="/assets/js/theme-toggle.js"></script>
-    <script src="/assets/js/qr-share.js"></script>
-    <script src="/assets/js/marquee.js"></script>
+    <link rel="stylesheet" href="/assets/vendor/fonts/fonts.css?v=5">
+    <link rel="stylesheet" href="/assets/css/tokens.css?v=5">
+    <link rel="stylesheet" href="/assets/css/ui.css?v=5">
+    <script src="/assets/js/theme-toggle.js?v=5"></script>
+    <script src="/assets/js/qr-share.js?v=5"></script>
+    <script src="/assets/js/marquee.js?v=5"></script>
     <style>
         :root {
           /* Existing colors */
@@ -602,24 +602,35 @@
             <!-- IcecastManager component will be initialized here -->
         </div>
 
-            <!-- Share with listeners: QR + LAN address (moved from the header) -->
+            <!-- Share with listeners: LAN address always visible, QR on demand -->
             <div class="glass-card" style="padding:0;" id="share-card">
                 <div style="display:flex;align-items:center;gap:10px;padding:16px 18px;border-bottom:1px solid var(--tok-line);">
                     <h3 style="font-size:15px;font-weight:600;color:var(--tok-text-1);">Share with listeners</h3>
                 </div>
-                <div style="padding:16px 18px;display:flex;gap:14px;align-items:center;">
-                    <div class="qr-box" id="share-qr" style="display:grid;place-items:center;">
-                        <span class="material-symbols-rounded" style="color:var(--tok-text-3);" aria-hidden="true">qr_code_2</span>
+                <!-- Default view: address + copy + show-QR -->
+                <div id="share-body-default" style="padding:16px 18px;display:flex;flex-direction:column;gap:10px;">
+                    <p style="font-size:13px;color:var(--tok-text-2);">Open on any device on this network, or show a QR code to scan.</p>
+                    <div class="share-url">
+                        <code id="share-url-text"></code>
+                        <button type="button" class="iconbtn" id="share-copy" style="width:28px;height:28px;" aria-label="Copy link" title="Copy listener link">
+                            <span class="material-symbols-rounded" style="font-size:15px;">content_copy</span>
+                        </button>
                     </div>
-                    <div style="min-width:0;flex:1;display:flex;flex-direction:column;gap:8px;">
-                        <p style="font-size:13px;color:var(--tok-text-2);">Scan or open on any device on this network.</p>
-                        <div class="share-url">
-                            <code id="share-url-text"></code>
-                            <button type="button" class="iconbtn" id="share-copy" style="width:28px;height:28px;" aria-label="Copy link" title="Copy listener link">
-                                <span class="material-symbols-rounded" style="font-size:15px;">content_copy</span>
-                            </button>
-                        </div>
+                    <button type="button" class="btn btn-secondary" id="share-show-qr" style="align-self:flex-start;height:30px;padding:0 10px;font-size:13px;">
+                        <span class="material-symbols-rounded" style="font-size:15px;">qr_code_2</span>
+                        Show QR code
+                    </button>
+                </div>
+                <!-- QR view: large code + close -->
+                <div id="share-body-qr" class="hidden" style="padding:16px 18px;position:relative;">
+                    <button type="button" class="iconbtn" id="share-qr-close" aria-label="Close QR code" title="Close"
+                            style="position:absolute;top:8px;right:8px;width:30px;height:30px;">
+                        <span class="material-symbols-rounded" style="font-size:18px;">close</span>
+                    </button>
+                    <div id="share-qr" style="width:100%;max-width:220px;margin:0 auto;color:var(--tok-text-1);display:grid;place-items:center;min-height:180px;">
+                        <span class="material-symbols-rounded animate-spin" style="color:var(--tok-text-3);font-size:26px;" aria-hidden="true">progress_activity</span>
                     </div>
+                    <p style="font-size:12px;color:var(--tok-text-3);text-align:center;margin-top:8px;">Scan with a phone camera</p>
                 </div>
             </div>
 
@@ -863,21 +874,21 @@
     </div>
 
     <!-- Include Components -->
-    <script src="/assets/js/notice-dismiss.js"></script>
-    <script src="/assets/js/boot.js"></script>
-    <script src="/assets/js/toasts.js"></script>
-    <script src="/assets/js/collapsible.js"></script>
-    <script src="/assets/js/notifications.js"></script>
-    <script src="/components/ComponentManager.js"></script>
-    <script src="/components/LobbyMusicPlayer.js"></script>
-    <script src="/components/FileBrowser.js"></script>
-    <script src="/components/IcecastManager.js"></script>
-    <script src="/components/FFmpegStreamsManager.js"></script>
-    <script src="/components/EventManager.js"></script>
-    <script src="/components/ContactManager.js"></script>
-    <script src="/components/HeaderComponent.js"></script>
-    <script src="/components/FooterComponent.js"></script>
-    <script src="/components/UpdateNotification.js"></script>
+    <script src="/assets/js/notice-dismiss.js?v=5"></script>
+    <script src="/assets/js/boot.js?v=5"></script>
+    <script src="/assets/js/toasts.js?v=5"></script>
+    <script src="/assets/js/collapsible.js?v=5"></script>
+    <script src="/assets/js/notifications.js?v=5"></script>
+    <script src="/components/ComponentManager.js?v=5"></script>
+    <script src="/components/LobbyMusicPlayer.js?v=5"></script>
+    <script src="/components/FileBrowser.js?v=5"></script>
+    <script src="/components/IcecastManager.js?v=5"></script>
+    <script src="/components/FFmpegStreamsManager.js?v=5"></script>
+    <script src="/components/EventManager.js?v=5"></script>
+    <script src="/components/ContactManager.js?v=5"></script>
+    <script src="/components/HeaderComponent.js?v=5"></script>
+    <script src="/components/FooterComponent.js?v=5"></script>
+    <script src="/components/UpdateNotification.js?v=5"></script>
 
     <!-- Debug script loading -->
     <script>
@@ -1165,13 +1176,13 @@
                 `;
             }
 
-            /** Sidebar share card: real QR (offline endpoint) + LAN address + copy. */
+            /** Sidebar share card: LAN address + copy always; QR fetched on demand. */
             async populateShareCard() {
                 const host = (window.icecastManager?.status?.host) || this.serverHost || window.location.hostname;
                 const url = `http://${host}:${window.location.port || '3001'}/streams`;
                 const urlEl = document.getElementById('share-url-text');
-                const qrEl = document.getElementById('share-qr');
                 if (urlEl) urlEl.textContent = url.replace(/^https?:\/\//, '');
+                this.shareUrl = url;
 
                 const copyBtn = document.getElementById('share-copy');
                 if (copyBtn && !copyBtn.dataset.wired) {
@@ -1184,15 +1195,39 @@
                     });
                 }
 
-                if (qrEl && !qrEl.dataset.loaded) {
-                    try {
-                        const res = await fetch(`/api/system/qr?url=${encodeURIComponent(url)}`);
-                        if (res.ok) {
-                            const svg = await res.text();
-                            qrEl.innerHTML = svg;
-                            qrEl.dataset.loaded = '1';
+                // QR is on demand: rarely used, and a permanent box broke the layout
+                const showBtn = document.getElementById('share-show-qr');
+                const closeBtn = document.getElementById('share-qr-close');
+                const defaultBody = document.getElementById('share-body-default');
+                const qrBody = document.getElementById('share-body-qr');
+                const qrEl = document.getElementById('share-qr');
+
+                if (showBtn && !showBtn.dataset.wired) {
+                    showBtn.dataset.wired = '1';
+                    showBtn.addEventListener('click', async () => {
+                        defaultBody.classList.add('hidden');
+                        qrBody.classList.remove('hidden');
+                        if (qrEl && !qrEl.dataset.loaded) {
+                            try {
+                                const res = await fetch(`/api/system/qr?url=${encodeURIComponent(url)}`);
+                                if (res.ok) {
+                                    qrEl.innerHTML = await res.text();
+                                    qrEl.dataset.loaded = '1';
+                                } else {
+                                    qrEl.innerHTML = '<span style="font-size:13px;color:var(--tok-text-3);">QR unavailable</span>';
+                                }
+                            } catch {
+                                qrEl.innerHTML = '<span style="font-size:13px;color:var(--tok-text-3);">QR unavailable</span>';
+                            }
                         }
-                    } catch { /* QR stays on its placeholder icon */ }
+                    });
+                }
+                if (closeBtn && !closeBtn.dataset.wired) {
+                    closeBtn.dataset.wired = '1';
+                    closeBtn.addEventListener('click', () => {
+                        qrBody.classList.add('hidden');
+                        defaultBody.classList.remove('hidden');
+                    });
                 }
             }
 

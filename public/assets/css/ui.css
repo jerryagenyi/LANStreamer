@@ -151,6 +151,18 @@
 .ls-collapse-body { padding: 0.25rem 1.25rem 1.25rem; }
 .ls-collapse-body.is-closed { display: none; }
 
+/* Plain variant: nested disclosures render as a plain bottom-bordered row —
+   no card-in-card chrome, just the arrow to signal it opens.
+   (Two classes so it outranks the pages' own .glass-card rules.) */
+.ls-collapse.ls-collapse--plain { background: transparent; border: none; box-shadow: none; border-radius: 0; }
+.ls-collapse.ls-collapse--plain .ls-collapse-toggle {
+    padding: 0.625rem 0;
+    border-bottom: 1px solid var(--tok-line);
+    border-radius: 0;
+}
+.ls-collapse.ls-collapse--plain .ls-collapse-toggle:hover { background: transparent; }
+.ls-collapse.ls-collapse--plain .ls-collapse-body { padding: 0.875rem 0 0.25rem; }
+
 /* ========================================
    NOTIFICATION CENTER — header bell + panel
    ======================================== */
@@ -288,9 +300,11 @@
 .seg button{height:28px;padding:0 10px;border-radius:7px;font-size:13px;font-weight:500;color:var(--tok-text-2)}
 .seg button[aria-pressed="true"]{background:var(--tok-surface-1);color:var(--tok-text-1);box-shadow:0 1px 2px rgba(0,0,0,.08)}
 
-/* Admin stream rows (dashboard list) */
-.arow{display:grid;grid-template-columns:auto auto minmax(0,1fr) auto;align-items:center;gap:14px;padding:12px 18px;border-top:1px solid var(--tok-line);position:relative}
+/* Admin stream rows (dashboard list) — actions pinned top-right so wrapping
+   meta text never shifts them, and rows never jump between renders */
+.arow{display:grid;grid-template-columns:auto auto minmax(0,1fr) auto;align-items:start;gap:14px;padding:12px 18px;border-top:1px solid var(--tok-line);position:relative}
 .arow:hover{background:color-mix(in oklab,var(--tok-surface-2) 55%,transparent)}
+.arow > div:has(> .name){margin-top:8px}
 .arow.is-live::before,.arow.is-err::before{content:"";position:absolute;left:0;top:10px;bottom:10px;width:3px;border-radius:0 3px 3px 0;background:var(--tok-live)}
 .arow.is-err::before{background:var(--tok-danger)}
 .sid2{width:38px;height:38px;border-radius:10px;border:1px solid var(--tok-line-strong);display:grid;place-items:center;font-family:var(--tok-mono);font-size:13px;font-weight:500;color:var(--tok-text-2)}
