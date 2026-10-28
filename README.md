@@ -175,6 +175,20 @@ npm install  # If dependencies changed
 
 ---
 
+## 📊 Telemetry & Privacy
+
+LANStreamer is **free and open source — no one makes money from it, and no one should** (MIT license).
+
+**What we collect (only if you allow it):** anonymous events — app start, stream started/stopped/failed (with the error *category* only), app version, OS, and a random install ID. **Never collected:** audio, stream names, contact details, file paths, IPs, or any personal data. Listeners' phones never send anything — telemetry comes only from the operator's install.
+
+- **First run** asks once: Allow / Decline. The choice is saved (`config/telemetry.json`).
+- **Change it anytime**: tray icon → **Telemetry → On/Off**.
+- Events go to the maintainer's PostHog over the internet, queued and flushed in the background — nothing is sent while you decline, and a fully offline LAN works either way.
+
+**What the app communicates with:** your own LAN (Express + Icecast for streaming), the maintainer's PostHog *if* telemetry is allowed, and GitHub release checks for update notifications.
+
+---
+
 ## 🤝 Contributing
 
 We welcome contributions! See [CLAUDE.md](CLAUDE.md) for the development workflow and architecture guide.

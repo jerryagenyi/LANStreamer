@@ -1,0 +1,185 @@
+/* ============================================================================
+   LANStreamer design tokens — single source of truth for theming.
+
+   Dark (default) + light via [data-theme="light"] on <html>.
+   Direction (Stemtracks ref, dribbble.com/shots/25182834): near-black surfaces,
+   hairline borders, ONE accent, pill buttons, uppercase micro-labels, subtle
+   glow on interactive elements. Restraint over glassmorphism.
+
+   Migration note: the "legacy var remap" + "theme shims" sections keep the
+   existing markup working under both themes while it is migrated to these
+   tokens. Delete shims as components adopt .tok-* classes.
+   ========================================================================== */
+
+:root {
+  /* Surfaces */
+  --tok-bg: #05060A;            /* app background — near black */
+  --tok-surface-1: #0B0D12;     /* cards */
+  --tok-surface-2: #12151C;     /* raised / hover */
+  --tok-surface-inset: #07080C; /* wells, code, inset panels */
+
+  /* Text */
+  --tok-text-1: #F2F5F9;
+  --tok-text-2: #9AA3B2;
+  --tok-text-3: #5D6570;
+
+  /* Lines + accents */
+  --tok-line: rgba(255, 255, 255, 0.08);        /* hairline borders */
+  --tok-line-strong: rgba(255, 255, 255, 0.16);
+  --tok-accent: #00AEEF;                         /* LANStreamer cyan */
+  --tok-accent-strong: #0088CC;
+  --tok-accent-contrast: #FFFFFF;
+  --tok-accent-glow: 0 0 24px rgba(0, 174, 239, 0.35);
+
+  /* Semantic */
+  --tok-live: #22C55E;
+  --tok-live-dim: rgba(34, 197, 94, 0.14);
+  --tok-warning: #F59E0B;
+  --tok-danger: #EF4444;
+  --tok-danger-dim: rgba(239, 68, 68, 0.12);
+
+  /* Shape + depth */
+  --tok-radius-card: 16px;
+  --tok-radius-input: 10px;
+  --tok-radius-btn: 999px;      /* pill */
+  --tok-shadow-card: 0 1px 0 rgba(255,255,255,0.03) inset, 0 8px 32px rgba(0,0,0,0.45);
+  --tok-shadow-pop: 0 12px 40px rgba(0,0,0,0.55);
+
+  /* Motion */
+  --tok-ease: cubic-bezier(0.4, 0, 0.2, 1);
+  --tok-speed: 180ms;
+
+  /* Legacy var remap (existing markup reads these) */
+  --primary-color: var(--tok-accent);
+  --live-color: var(--tok-live);
+  --warning-color: var(--tok-danger);
+  --dark-bg: var(--tok-bg);
+  --card-bg: var(--tok-surface-1);
+  --border-color: var(--tok-line);
+}
+
+/* --------------------------------------------------------------------------
+   Light theme
+   -------------------------------------------------------------------------- */
+[data-theme="light"] {
+  --tok-bg: #F3F5F8;
+  --tok-surface-1: #FFFFFF;
+  --tok-surface-2: #EEF1F5;
+  --tok-surface-inset: #E9EDF2;
+
+  --tok-text-1: #0F172A;
+  --tok-text-2: #556070;
+  --tok-text-3: #8A93A0;
+
+  --tok-line: rgba(15, 23, 42, 0.10);
+  --tok-line-strong: rgba(15, 23, 42, 0.22);
+  --tok-accent: #0090D0;
+  --tok-accent-strong: #0073AC;
+  --tok-accent-glow: 0 0 18px rgba(0, 144, 208, 0.25);
+
+  --tok-live: #16A34A;
+  --tok-live-dim: rgba(22, 163, 74, 0.12);
+  --tok-danger: #DC2626;
+  --tok-danger-dim: rgba(220, 38, 38, 0.10);
+
+  --tok-shadow-card: 0 1px 2px rgba(15,23,42,0.06), 0 10px 30px rgba(15,23,42,0.10);
+  --tok-shadow-pop: 0 16px 44px rgba(15,23,42,0.16);
+}
+
+/* --------------------------------------------------------------------------
+   Button system (adopt on new + redesigned markup)
+   -------------------------------------------------------------------------- */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem;
+  min-height: 40px; /* 44px touch target with padding */
+  padding: 0 1.25rem;
+  border-radius: var(--tok-radius-btn);
+  font-size: 0.875rem; font-weight: 600; letter-spacing: 0.01em;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all var(--tok-speed) var(--tok-ease);
+  white-space: nowrap;
+}
+.btn:focus-visible { outline: 2px solid var(--tok-accent); outline-offset: 2px; }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.btn-primary {
+  background: linear-gradient(135deg, var(--tok-accent), var(--tok-accent-strong));
+  color: var(--tok-accent-contrast);
+  box-shadow: var(--tok-accent-glow);
+}
+.btn-primary:hover:not(:disabled) { filter: brightness(1.08); transform: translateY(-1px); }
+
+.btn-secondary {
+  background: var(--tok-surface-2);
+  color: var(--tok-text-1);
+  border-color: var(--tok-line-strong);
+}
+.btn-secondary:hover:not(:disabled) { background: var(--tok-surface-inset); border-color: var(--tok-accent); }
+
+.btn-ghost {
+  background: transparent;
+  color: var(--tok-text-2);
+}
+.btn-ghost:hover:not(:disabled) { color: var(--tok-text-1); background: var(--tok-surface-2); }
+
+.btn-danger {
+  background: var(--tok-danger-dim);
+  color: var(--tok-danger);
+  border-color: var(--tok-danger);
+}
+.btn-danger:hover:not(:disabled) { background: var(--tok-danger); color: #fff; }
+
+/* Micro label — uppercase, tracked (Stemtracks trait) */
+.tok-label {
+  font-size: 0.6875rem; font-weight: 700; letter-spacing: 0.12em;
+  text-transform: uppercase; color: var(--tok-text-3);
+}
+
+/* --------------------------------------------------------------------------
+   Theme shims — make existing dark-hardcoded markup usable in light mode.
+   REMOVE each line as the component adopts tokens.
+   -------------------------------------------------------------------------- */
+[data-theme="light"] .text-white { color: var(--tok-text-1); }
+[data-theme="light"] .text-gray-300 { color: var(--tok-text-2); }
+[data-theme="light"] .text-gray-400 { color: var(--tok-text-2); }
+[data-theme="light"] .text-gray-500 { color: var(--tok-text-3); }
+[data-theme="light"] .bg-black\/50,
+[data-theme="light"] .bg-black\/60 { background-color: rgba(15, 23, 42, 0.45); }
+[data-theme="light"] .bg-gray-700 { background-color: var(--tok-line-strong); }
+[data-theme="light"] .border-gray-600 { border-color: var(--tok-line-strong); }
+
+/* Page background per theme (html prefix wins the specificity tie against
+   the pages' inline <style> blocks that define .body-bg after this file) */
+html .body-bg {
+  background:
+    radial-gradient(circle at 15% 85%, rgba(0, 174, 239, 0.07) 0%, transparent 45%),
+    radial-gradient(circle at 85% 10%, rgba(0, 174, 239, 0.05) 0%, transparent 40%),
+    var(--tok-bg);
+  background-attachment: fixed;
+  min-height: 100vh;
+  transition: background-color 300ms var(--tok-ease);
+}
+html .glass-card {
+  background: var(--tok-surface-1);
+  border-color: var(--tok-line);
+}
+[data-theme="light"] html .glass-card:hover,
+html [data-theme="light"] .glass-card:hover {
+  background: var(--tok-surface-1);
+  border-color: var(--tok-line-strong);
+}
+
+/* Theme toggle button */
+.theme-toggle {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 40px; height: 40px;
+  border-radius: var(--tok-radius-btn);
+  border: 1px solid var(--tok-line-strong);
+  background: var(--tok-surface-2);
+  color: var(--tok-text-2);
+  cursor: pointer;
+  transition: all var(--tok-speed) var(--tok-ease);
+}
+.theme-toggle:hover { color: var(--tok-accent); border-color: var(--tok-accent); }
+.theme-toggle:focus-visible { outline: 2px solid var(--tok-accent); outline-offset: 2px; }

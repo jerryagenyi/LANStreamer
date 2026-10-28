@@ -259,6 +259,7 @@ class StreamingService {
         this.savePersistentStreams()
 
         logger.info(`Stream ${streamId} started successfully with ${currentFormat.name} format`)
+        import('./TelemetryService.js').then(m => m.default.capture('stream_started', { format: currentFormat.name })).catch(() => {})
         return this.activeStreams[streamId]
 
       } catch (error) {
@@ -275,6 +276,7 @@ class StreamingService {
 
     // If we get here, all formats failed
     logger.error(`Failed to start stream ${streamId} with all available formats:`, lastError)
+    import('./TelemetryService.js').then(m => m.default.capture('stream_failed', { category: lastError?.cause || 'unknown' })).catch(() => {})
     const err = new Error(`Stream failed to start with all audio formats (MP3, AAC, OGG). Last error: ${lastError?.message || 'Unknown error'}`)
     if (lastError?.capacity) err.capacity = lastError.capacity
     if (lastError?.shortMessage) err.shortMessage = lastError.shortMessage
@@ -763,6 +765,7 @@ class StreamingService {
 
     try {
       logger.info(`Stopping stream: ${streamId}`)
+      import('./TelemetryService.js').then(m => m.default.capture('stream_stopped', {})).catch(() => {})
       
       if (stream.ffmpegProcess) {
         // Kill the FFmpeg process gracefully

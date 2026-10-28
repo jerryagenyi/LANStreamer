@@ -55,6 +55,7 @@
     "jsonwebtoken": "^9.0.2",
     "multer": "^2.0.2",
     "node-fetch": "^3.3.2",
+    "posthog-node": "^5.56.4",
     "winston": "^3.17.0",
     "winston-daily-rotate-file": "^5.0.0",
     "xml2js": "^0.6.2"

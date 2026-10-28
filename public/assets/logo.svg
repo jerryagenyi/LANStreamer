@@ -1,11 +1,11 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 96" role="img" aria-label="LANStreamer">
   <!--
-    LANStreamer logo — dark theme (light text).
-    Editable source: mark (left) + wordmark (right). Colors reference the app
-    design tokens (--primary-color #00AEEF, --gradient-cyan #00AEEF -> #0088CC).
+    LANStreamer logo (dark theme, light text).
+    Editable source: mark (left) and wordmark (right). Colors reference the
+    app design tokens: primary #00AEEF, gradient #00AEEF to #0088CC.
     For light backgrounds use logo-light.svg; mark alone in logo-mark.svg.
     Wordmark uses a font stack; embed Inter as a path if pixel-exact
-    reproduction inside <img> tags is ever needed.
+    reproduction inside img tags is ever needed.
   -->
   <defs>
     <linearGradient id="tile" x1="0" y1="0" x2="1" y2="1">

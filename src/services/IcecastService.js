@@ -803,6 +803,7 @@ class IcecastService {
       if (hostnameMatch) {
         this.hostname = hostnameMatch[1].trim();
         logger.icecast('Parsed hostname from icecast.xml', { hostname: this.hostname });
+        await this._syncStaleHostname(configContent, this.hostname);
       } else {
         this.hostname = 'localhost';
         logger.warn('Could not parse hostname from icecast.xml, using localhost');
@@ -810,6 +811,43 @@ class IcecastService {
     } catch (error) {
       logger.warn('Error parsing hostname from icecast.xml:', error.message);
       this.hostname = 'localhost';
+    }
+  }
+
+  /**
+   * Machines change LAN IPs (DHCP, different venues). When icecast.xml holds a
+   * hostname that is neither localhost nor one of this machine's current IPs,
+   * rewrite it to the current preferred LAN IP. Purely cosmetic for our own
+   * fetches (they use localhost), but keeps Icecast's advertised host and any
+   * user-visible URLs honest. Best-effort: unwritable config (e.g. Program
+   * Files without elevation) only logs a warning.
+   */
+  async _syncStaleHostname(configContent, parsedHostname) {
+    try {
+      const os = await import('os');
+      const currentIps = Object.values(os.networkInterfaces())
+        .flat()
+        .filter(i => i && i.family === 'IPv4' && !i.internal)
+        .map(i => i.address);
+
+      const isCurrent = parsedHostname === 'localhost' || currentIps.includes(parsedHostname);
+      if (isCurrent) return;
+
+      const preferred = this.getPreferredLANHost() || 'localhost';
+      logger.warn(
+        `icecast.xml hostname "${parsedHostname}" matches none of this machine's IPs `
+        + `(${currentIps.join(', ') || 'none'}). Syncing to "${preferred}".`
+      );
+
+      const updated = configContent.replace(
+        /<hostname>[^<]+<\/hostname>/,
+        `<hostname>${preferred}</hostname>`
+      );
+      await fs.writeFile(this.paths.config, updated, 'utf8');
+      this.hostname = preferred;
+      logger.icecast('icecast.xml hostname synced to current network', { hostname: preferred });
+    } catch (error) {
+      logger.warn(`Could not sync stale icecast.xml hostname (non-fatal): ${error.message}`);
     }
   }
 

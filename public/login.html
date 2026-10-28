@@ -11,6 +11,8 @@
     <link rel="icon" type="image/png" href="/assets/favicon.png">
     <link rel="stylesheet" href="/assets/vendor/tailwind.css">
     <link rel="stylesheet" href="/assets/vendor/fonts/fonts.css">
+    <link rel="stylesheet" href="/assets/css/tokens.css">
+    <script src="/assets/js/theme-toggle.js"></script>
     <style>
         :root {
             --primary-color: #00AEEF;
@@ -33,7 +35,7 @@
         <!-- Logo and Title -->
         <div class="text-center mb-8">
             <div class="flex items-center justify-center gap-3 mb-4">
-                <img src="/assets/logo.svg" alt="LANStreamer" class="h-16 w-auto" onerror="this.onerror=null; this.src='/assets/lanstreamer-logo.png';">
+                <img src="/assets/logo.svg?v=3" alt="LANStreamer" class="h-16 w-auto" data-theme-logo onerror="this.onerror=null; this.src='/assets/lanstreamer-logo.png';">
                 <div id="logo-fallback" style="display: none;" class="flex items-center">
                     <span class="text-2xl font-bold tracking-wider text-white">LANStreamer</span>
                 </div>

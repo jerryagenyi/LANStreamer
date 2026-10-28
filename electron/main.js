@@ -77,6 +77,9 @@ async function shutdownBackend() {
     await serverHandle.shutdown({ timeoutMs: 4000 });
     serverHandle = null;
   }
+
+  const telemetry = (await import('../src/services/TelemetryService.js')).default;
+  await telemetry.shutdown();
 }
 
 // ---------------------------------------------------------------------------
@@ -119,12 +122,24 @@ function createWindow() {
   mainWindow.on('closed', () => { mainWindow = null; });
 }
 
-function createTray() {
+async function createTray() {
+  const telemetry = (await import('../src/services/TelemetryService.js')).default;
+  const telemetryItem = {
+    label: `Telemetry: ${telemetry.getConsentState().enabled ? 'On' : 'Off'}`,
+    click: async () => {
+      const state = telemetry.getConsentState();
+      telemetry.setConsented(!state.enabled);
+      createTray(); // refresh label
+    },
+  };
+
   tray = new Tray(getIcon());
   tray.setToolTip('LANStreamer');
 
   const menu = Menu.buildFromTemplate([
     { label: 'Show Dashboard', click: () => { if (mainWindow) { mainWindow.show(); mainWindow.focus(); } } },
+    { type: 'separator' },
+    { label: 'Telemetry', submenu: [telemetryItem] },
     { type: 'separator' },
     {
       label: 'Stop All & Quit',
@@ -138,6 +153,35 @@ function createTray() {
 
   tray.setContextMenu(menu);
   tray.on('double-click', () => { if (mainWindow) mainWindow.show(); });
+}
+
+/**
+ * First-run consent: ask once, remember the answer (config/telemetry.json).
+ * Users can change it anytime from the tray menu (Telemetry: On/Off).
+ */
+async function maybeAskTelemetryConsent() {
+  const telemetry = (await import('../src/services/TelemetryService.js')).default;
+  const state = telemetry.getConsentState();
+  if (state.consented !== null || !process.env.POSTHOG_KEY) return; // decided, or nothing to enable
+
+  const { response } = await dialog.showMessageBox(mainWindow, {
+    type: 'question',
+    title: 'Help improve LANStreamer?',
+    message: 'Allow anonymous usage statistics?',
+    detail: 'LANStreamer is free and open source — no one profits from it.\n\n'
+      + 'If you allow telemetry, the operator of this install sends anonymous events '
+      + '(app start/stop, stream started/stopped/failed, app version, OS) to the '
+      + 'maintainer\'s PostHog. No audio, no stream names, no personal data, and '
+      + 'listeners\' phones never send anything.\n\n'
+      + 'You can change this anytime: tray icon → Telemetry → On/Off.',
+    buttons: ['Allow', 'Decline'],
+    defaultId: 1,
+    cancelId: 1,
+    noLink: true,
+  });
+
+  telemetry.setConsented(response === 0);
+  createTray(); // refresh the tray label
 }
 
 // ---------------------------------------------------------------------------
@@ -176,6 +220,7 @@ if (!gotLock) {
 
     createWindow();
     createTray();
+    maybeAskTelemetryConsent().catch(err => console.error('[electron] telemetry prompt failed:', err.message));
 
     if (SMOKE) {
       mainWindow.webContents.once('did-finish-load', () => {

@@ -7,6 +7,8 @@
     <link rel="icon" type="image/png" href="/assets/favicon.png">
     <link rel="stylesheet" href="/assets/vendor/tailwind.css">
     <link rel="stylesheet" href="/assets/vendor/fonts/fonts.css">
+    <link rel="stylesheet" href="/assets/css/tokens.css">
+    <script src="/assets/js/theme-toggle.js"></script>
     <style>
         :root {
           /* Existing colors */
@@ -373,7 +375,7 @@
         <header class="header-glass sticky top-0 z-50 flex items-center justify-between whitespace-nowrap px-4 sm:px-6 lg:px-10 py-3 sm:py-4">
             <div class="flex items-center gap-2 sm:gap-4 text-white min-w-0">
                 <a href="/" class="flex items-center gap-2 text-white hover:text-[var(--primary-color)] transition-colors min-w-0">
-                    <img src="/assets/logo.svg" alt="LANStreamer" class="h-12 sm:h-16 w-auto flex-shrink-0" id="logo-image" onerror="this.onerror=null; this.src='/assets/lanstreamer-logo.png';">
+                    <img src="/assets/logo.svg?v=3" alt="LANStreamer" class="h-12 sm:h-16 w-auto flex-shrink-0" id="logo-image" data-theme-logo onerror="this.onerror=null; this.src='/assets/lanstreamer-logo.png';">
                     <div id="logo-fallback" style="display: none;" class="flex items-center">
                         <span class="text-lg sm:text-xl font-bold tracking-wider">LANStreamer</span>
                     </div>
@@ -384,6 +386,13 @@
                     <div id="on-air-indicator" class="on-air-indicator inactive w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full"></div>
                     <span id="on-air-text" class="text-xs sm:text-sm font-semibold tracking-wide text-gray-400">OFF AIR</span>
                 </div>
+                <button data-theme-toggle
+                        class="theme-toggle"
+                        title="Toggle dark/light mode"
+                        aria-label="Switch to light mode"
+                        aria-pressed="false">
+                    <span class="material-symbols-rounded text-sm">light_mode</span>
+                </button>
             </div>
         </header>
 
@@ -448,13 +457,16 @@
                             </div>
                         </div>
 
-                        <!-- Contact & Feedback Section -->
-                        <div id="contact-section" class="bg-[var(--card-bg)] border border-[var(--border-color)] rounded-2xl p-6 shadow-2xl shadow-black/30">
-                            <h3 class="text-lg font-semibold text-white mb-4">📞 Contact & Feedback</h3>
-                            <div id="contact-details" class="space-y-3">
+                        <!-- Contact & Feedback Section (collapsed by default — no sensible defaults for contact data) -->
+                        <details id="contact-section" class="bg-[var(--card-bg)] border border-[var(--border-color)] rounded-2xl p-6 shadow-2xl shadow-black/30">
+                            <summary class="text-lg font-semibold text-white cursor-pointer flex items-center justify-between list-none [&::-webkit-details-marker]:hidden">
+                                <span>📞 Contact &amp; Feedback</span>
+                                <span class="material-symbols-rounded text-xl text-gray-400 transition-transform" aria-hidden="true">expand_more</span>
+                            </summary>
+                            <div id="contact-details" class="space-y-3 pt-4">
                                 <!-- Contact details will be loaded here -->
                             </div>
-                        </div>
+                        </details>
                     </div>
                 </div>
             </div>
@@ -1286,12 +1298,17 @@
                     subtitleElement.textContent = configData.eventSubtitle || 'Click play to listen to any available stream';
                 }
 
-                // Handle event image
+                // Handle event image: configured image, or the brand mark as default
+                // so the layout stays stable when no image is set.
                 if (configData.eventImage && imageContainer && imageElement) {
                     imageElement.src = configData.eventImage;
+                    imageElement.className = 'w-full h-48 object-cover rounded-xl border border-[var(--border-color)]';
                     imageContainer.classList.remove('hidden');
-                } else if (imageContainer) {
-                    imageContainer.classList.add('hidden');
+                } else if (imageContainer && imageElement) {
+                    imageElement.src = '/assets/logo-mark.svg';
+                    imageElement.className = 'w-40 h-40 mx-auto object-contain rounded-2xl';
+                    imageElement.alt = 'LANStreamer';
+                    imageContainer.classList.remove('hidden');
                 }
             }
 

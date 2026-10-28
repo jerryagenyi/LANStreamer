@@ -89,6 +89,9 @@ const app = createApp();
 export function startServer({ port = process.env.PORT || 3001, host = process.env.HOST || '0.0.0.0' } = {}) {
   const server = app.listen(port, host);
 
+  // Voluntary telemetry (no-op unless the user consented and POSTHOG_KEY is set)
+  import('./services/TelemetryService.js').then(m => m.default.init()).catch(() => {});
+
   const shutdown = async ({ timeoutMs = 5000 } = {}) => {
     try {
       const stats = streamingService.getStats();

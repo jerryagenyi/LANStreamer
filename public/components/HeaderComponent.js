@@ -163,10 +163,11 @@ class HeaderComponent {
                 <!-- Logo Section -->
                 <div class="flex items-center gap-4 text-white">
                     <a href="http://localhost:3001" class="flex items-center gap-2 text-white hover:text-[var(--primary-color)] transition-colors">
-                        <img src="/assets/logo.svg"
+                        <img src="/assets/logo.svg?v=3"
                              alt="LANStreamer"
                              class="h-16 w-auto logo-glow"
                              id="logo-image"
+                             data-theme-logo
                              onerror="this.onerror=null; this.src='/assets/lanstreamer-logo.png';">
                         <div id="logo-fallback" style="display: none;" class="flex items-center">
                             <span class="text-xl font-bold tracking-wider">LANStreamer</span>
@@ -182,6 +183,15 @@ class HeaderComponent {
                             title="Check for Updates"
                             aria-label="Check for Updates">
                         <span class="material-symbols-rounded text-sm">system_update</span>
+                    </button>
+
+                    <!-- Theme toggle (dark/light) -->
+                    <button data-theme-toggle
+                            class="theme-toggle"
+                            title="Toggle dark/light mode"
+                            aria-label="Switch to light mode"
+                            aria-pressed="false">
+                        <span class="material-symbols-rounded text-sm">light_mode</span>
                     </button>
 
                     <!-- Admin Navigation Links -->

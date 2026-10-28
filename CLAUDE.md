@@ -54,6 +54,13 @@ Example: `git merge feature/start-all-and-unique-names`. After pushing dev, you 
 - FFmpeg exit codes are unsigned, require conversion to signed
 - Example: 0xA7F00008 needs special handling
 
+## Telemetry (PostHog)
+
+- `src/services/TelemetryService.js` — opt-in only; **never** capture personal data, audio, stream names, or paths. Events: `app_start`, `stream_started` (format), `stream_stopped`, `stream_failed` (error category), `telemetry_enabled/disabled`. Distinct ID = anonymous install UUID from `config/telemetry.json`.
+- Enabled only when user consented (first-run Electron prompt; toggle in tray menu) **and** `POSTHOG_KEY` env is set (`POSTHOG_HOST` optional). No-op otherwise — keep it that way for any new events.
+- Skipped entirely under `NODE_ENV=test`. All calls are fire-and-forget with catch: telemetry must never break the app.
+- Docs: README "Telemetry & Privacy" (user-facing) + this section (dev-facing).
+
 ## Configuration
 
 - `.env` - Environment variables (use `env.example` as template)
