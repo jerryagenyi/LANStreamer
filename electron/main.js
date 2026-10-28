@@ -1,4 +1,4 @@
-import { app, BrowserWindow, Tray, Menu, nativeImage, dialog } from 'electron';
+import { app, BrowserWindow, Tray, Menu, nativeImage, dialog, shell } from 'electron';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { spawn } from 'child_process';
@@ -107,6 +107,23 @@ function createWindow() {
   });
 
   mainWindow.once('ready-to-show', () => mainWindow.show());
+
+  // Links like "Listen to Streams" (and any external URL) open in the user's
+  // system browser, not a child Electron window. The listener page is meant
+  // for phones/other machines anyway.
+  mainWindow.webContents.setWindowOpenHandler(({ url }) => {
+    if (url.startsWith('http://') || url.startsWith('https://')) {
+      shell.openExternal(url);
+    }
+    return { action: 'deny' };
+  });
+  mainWindow.webContents.on('will-navigate', (e, url) => {
+    // Keep in-app navigation confined to our own dashboard
+    if (!url.startsWith(`http://localhost:`)) {
+      e.preventDefault();
+      shell.openExternal(url);
+    }
+  });
 
   mainWindow.loadURL(`http://localhost:${serverHandle.port}/dashboard`);
 

@@ -132,15 +132,19 @@ class StreamingService {
       throw new Error('Invalid stream configuration: deviceId or inputFile is required')
     }
 
-    // SIMPLIFIED: Just check if Icecast process is running (don't require admin interface)
+    // Icecast dependency: if it isn't running, try to START it automatically
+    // instead of failing with a wall of text. Users reasonably expect
+    // "Go Live" to just work; the old "start Icecast from the dashboard first"
+    // error was the top support issue.
     try {
       const isRunning = await IcecastService.isIcecastRunning()
       if (!isRunning) {
-        throw new Error(`🧊 Icecast server is not running - Cannot start stream without Icecast.
-
-✅ QUICK FIX:
-1. Start the Icecast server from the dashboard
-2. Then try starting the stream again`)
+        logger.info('Icecast not running — auto-starting it before starting stream...')
+        const startResult = await IcecastService.start(false).catch(err => ({ success: false, error: err.message }))
+        if (!startResult || startResult.success !== true) {
+          throw new Error(`Icecast server is not running and could not be started automatically (${startResult?.error || 'unknown error'}). Start it from the dashboard Icecast panel, then try again.`)
+        }
+        logger.info('Icecast auto-started successfully')
       }
     } catch (icecastError) {
       // Re-throw with more context

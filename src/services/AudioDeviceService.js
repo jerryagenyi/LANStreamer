@@ -92,7 +92,7 @@ class AudioDeviceService {
    * @returns {Array<{id: string, name: string, type: string, deviceType: string}>} List of Windows audio devices.
    */
   async detectWindowsDevices() {
-    const devices = [];
+    let devices = [];
 
     // Get DirectShow input devices
     const dshowCommand = 'ffmpeg -list_devices true -f dshow -i dummy 2>&1';
@@ -176,29 +176,23 @@ class AudioDeviceService {
       throw new Error('🎤 No Audio Devices Available: FFmpeg and PowerShell could not detect any audio devices. This usually means virtual audio drivers (like VB-Audio Virtual Cable) need to be restarted. Try: 1) Restart VB-Audio Virtual Cable Control Panel, 2) Close other audio applications, 3) Use a physical microphone, or 4) Restart your computer.');
     }
 
-    // Remove duplicates based on device name and ID
-    const uniqueDevices = devices.filter((device, index, self) => {
-      return index === self.findIndex(d =>
-        d.name === device.name &&
-        d.deviceType === device.deviceType &&
-        d.id === device.id
-      );
-    });
-
-    // Additional deduplication by name only (in case same device has different IDs)
-    const finalDevices = uniqueDevices.filter((device, index, self) => {
-      const duplicatesByName = self.filter(d => d.name === device.name && d.deviceType === device.deviceType);
-      if (duplicatesByName.length > 1) {
-        // Keep the first occurrence of devices with same name
-        return index === self.findIndex(d => d.name === device.name && d.deviceType === device.deviceType);
+    // Remove duplicates. FFmpeg 9 exposes the same physical device through BOTH
+    // DirectShow and WASAPI with the same id (sanitized name) but a different
+    // deviceType — so dedupe by device id alone, keeping the FIRST occurrence
+    // (DirectShow entries come first and are what streaming spawns with).
+    const finalDevices = (() => {
+      const byId = new Map();
+      for (const d of devices) {
+        const key = String(d.id || d.name || '').toLowerCase().trim();
+        if (!byId.has(key)) byId.set(key, d); // first occurrence wins (DirectShow)
       }
-      return true;
-    });
+      return [...byId.values()];
+    })();
 
     logger.audio('Windows device detection completed', {
       totalFound: devices.length,
-      uniqueDevices: uniqueDevices.length,
       finalDevices: finalDevices.length,
+      duplicatesRemoved: devices.length - finalDevices.length,
       inputCount: finalDevices.filter(d => d.deviceType === 'input').length,
       outputCount: finalDevices.filter(d => d.deviceType === 'output').length
     });
@@ -304,8 +298,9 @@ class AudioDeviceService {
     logger.audio('Parsing Windows devices output', { outputLength: output.length, lineCount: lines.length });
 
     for (const line of lines) {
-      // Look for DirectShow audio input devices
-      const audioInputMatch = line.match(/\[dshow @ .*\] "([^"]+)" \(audio\)/);
+      // Look for DirectShow audio input devices.
+      // FFmpeg 8: [dshow @ 0x...] "Name" (audio); FFmpeg 9: [in#0 @ 0x...] "Name" (audio)
+      const audioInputMatch = line.match(/\[(?:dshow|in#\d+)[^\]]*\] "([^"]+)" \(audio\)/);
       if (audioInputMatch) {
         const deviceName = audioInputMatch[1];
         logger.audio('Found audio input device', { deviceName });
@@ -320,7 +315,7 @@ class AudioDeviceService {
       }
 
       // Look for DirectShow video devices (some have audio capabilities)
-      const videoMatch = line.match(/\[dshow @ .*\] "([^"]+)" \(video\)/);
+      const videoMatch = line.match(/\[(?:dshow|in#\d+)[^\]]*\] "([^"]+)" \(video\)/);
       if (videoMatch) {
         const deviceName = videoMatch[1];
         // Check if it's likely an audio-capable device (webcam with microphone)
@@ -341,7 +336,7 @@ class AudioDeviceService {
 
       // Look for Windows audio output devices (speakers, headphones)
       // These might appear in different formats, so we'll check for common patterns
-      const outputMatch = line.match(/\[dshow @ .*\] "([^"]+)"/);
+      const outputMatch = line.match(/\[(?:dshow|in#\d+)[^\]]*\] "([^"]+)"/);
       if (outputMatch) {
         const deviceName = outputMatch[1];
         // Check if it's likely an output device
@@ -382,8 +377,9 @@ class AudioDeviceService {
     logger.audio('Parsing WASAPI devices output', { outputLength: output.length, lineCount: lines.length });
 
     for (const line of lines) {
-      // Look for WASAPI audio devices - format: [wasapi @ address] "Device Name" (audio, output)
-      const wasapiMatch = line.match(/\[wasapi @ .*\] "([^"]+)"/);
+      // Look for WASAPI audio devices - FFmpeg 8: [wasapi @ addr] "Name" (audio, output);
+      // FFmpeg 9 uses the generic input prefix: [in#0 @ addr] "Name"
+      const wasapiMatch = line.match(/\[(?:wasapi|in#\d+)[^\]]*\] "([^"]+)"/);
       if (wasapiMatch) {
         const deviceName = wasapiMatch[1];
 

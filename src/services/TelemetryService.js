@@ -59,12 +59,24 @@ class TelemetryService {
     }
     this.installId = state.installId || crypto.randomUUID();
     this.consented = typeof state.consented === 'boolean' ? state.consented : null;
-    // Key/host may come from env (dev) or this config file (packaged Electron,
-    // where a .env next to the exe is not a thing users can rely on):
-    //   { "posthogKey": "phc_...", "posthogHost": "https://eu.i.posthog.com" }
-    this._configKey = state.posthogKey || null;
-    this._configHost = state.posthogHost || null;
+    // Key/host resolution order:
+    //   1. env (dev: POSTHOG_KEY / POSTHOG_HOST, typically via .env)
+    //   2. config/telemetry.json (operator-configurable at runtime)
+    //   3. electron/telemetry-key.json (injected at build time so packaged
+    //      apps ship telemetry with zero user configuration)
+    this._configKey = state.posthogKey || this._readBundledKey()?.posthogKey || null;
+    this._configHost = state.posthogHost || this._readBundledKey()?.posthogHost || null;
     if (!state.installId) this._saveState();
+  }
+
+  _readBundledKey() {
+    try {
+      const bundledPath = path.join(process.cwd(), 'electron', 'telemetry-key.json');
+      if (fs.existsSync(bundledPath)) {
+        return JSON.parse(fs.readFileSync(bundledPath, 'utf8'));
+      }
+    } catch { /* ignore */ }
+    return null;
   }
 
   getKey() {

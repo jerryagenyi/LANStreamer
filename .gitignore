@@ -137,3 +137,4 @@ nul
 .claude/settings.local.json
 .claude-consult-prompt.md
 config/
+electron/telemetry-key.json

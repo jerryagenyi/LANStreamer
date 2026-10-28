@@ -662,10 +662,27 @@ class FFmpegStreamsManager {
             const result = await response.json();
 
             if (response.ok) {
+                const removed = this.activeStreams.find(s => s.id === streamId);
+                const displayName = removed?.name || removed?.config?.name || streamId;
+
                 // Remove from local array
                 this.activeStreams = this.activeStreams.filter(s => s.id !== streamId);
                 this.render();  // Re-render entire component (updates stats and list)
-                this.afterNextPaint(() => this.showNotification('Stream deleted successfully', 'success'));
+
+                // Confirm the stream is really gone before announcing it, then
+                // let the row removal paint first — a delayed toast.
+                setTimeout(async () => {
+                    let reallyGone = true;
+                    try {
+                        const statusRes = await fetch('/api/streams/status');
+                        const statusData = await statusRes.json();
+                        reallyGone = !(statusData.streams || []).some(s => s.id === streamId);
+                    } catch { /* if the check fails, don't suppress the toast */ }
+
+                    if (reallyGone) {
+                        this.afterNextPaint(() => this.showNotification(`Stream "${displayName}" deleted`, 'success'));
+                    }
+                }, 900);
             } else {
                 throw new Error(result.error || 'Failed to delete stream');
             }
@@ -766,7 +783,6 @@ class FFmpegStreamsManager {
                                 <span id="edit-stream-name-counter" class="text-xs text-gray-400">${(stream.name || '').length}/50</span>
                             </div>
                         </div>
-                        <p class="text-xs text-gray-400 mt-1">Maximum 50 characters</p>
                     </div>
 
                     <div>
@@ -1486,14 +1502,21 @@ class FFmpegStreamsManager {
                                     <span id="stream-name-counter" class="text-xs text-gray-400">0/50</span>
                                 </div>
                             </div>
-                            <p class="text-xs text-gray-400 mt-1">Maximum 50 characters</p>
                         </div>
 
                         <div>
                             <label class="block text-sm font-medium text-gray-300 mb-2">
                                 <span class="material-symbols-rounded text-sm mr-1">mic</span>
                                 Audio Input Source
+                                <button type="button" id="audio-source-info" class="text-gray-400 hover:text-white ml-1 align-middle" aria-label="Audio source tips">
+                                    <span class="material-symbols-rounded text-base">info</span>
+                                </button>
                             </label>
+                            <div id="audio-source-info-pop" class="hidden mb-2 p-3 rounded-lg border border-[var(--tok-line-strong,#2F2F2F)] bg-[var(--tok-surface-2,#1A1A1A)] text-xs text-gray-300 leading-relaxed">
+                                <p class="mb-1"><strong>Routing app audio into LANStreamer:</strong> install DVS (Dante Virtual Soundcard) or VB-Audio Virtual Cable, then pick it above.</p>
+                                <p><strong>Virtual devices disappearing?</strong> Driver restarts can drop them — restart your virtual audio software or click Refresh Devices.</p>
+                                <p class="mt-1">Full guide: <a class="underline hover:text-white" href="/manual-setup/README.md" target="_blank" rel="noopener">manual setup docs</a></p>
+                            </div>
                             <select id="stream-device" class="w-full input-glass text-white text-sm rounded-md focus:ring-[var(--primary-color)] focus:border-[var(--primary-color)] block px-3 py-2.5" required>
                                 <option value="">🎯 Select your audio source...</option>
                                 ${this.audioDevices.map(device => `
@@ -1504,7 +1527,6 @@ class FFmpegStreamsManager {
                                     </option>
                                 `).join('')}
                             </select>
-                            <p class="text-xs text-gray-400 mt-1">💡 Install DVS or Virtual Audio Cable for virtual audio routing</p>
                             ${this.showTestTools ? `
                                 <div class="mt-2">
                                     <button type="button" id="test-source-btn" class="inline-flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-amber-300 bg-amber-600/20 hover:bg-amber-600/30 border border-amber-500/30 transition-all duration-300" title="Test if the selected source is available">
@@ -1513,14 +1535,6 @@ class FFmpegStreamsManager {
                                     </button>
                                 </div>
                             ` : ''}
-                            ${this.hasVirtualAudioDevices() ? (
-                                (window.LSNotices && LSNotices.isDismissed('virtual-audio'))
-                                    ? `<div class="mt-2">${LSNotices.hiddenStub('virtual-audio', 'Virtual Audio notice')}</div>`
-                                    : `<div class="mt-2 p-2 bg-yellow-500/10 border border-yellow-500/20 rounded text-xs text-yellow-300 flex items-start justify-between gap-2">
-                                        <span>⚠️ <strong>Virtual Audio Notice:</strong> Virtual devices may occasionally disappear due to driver restarts. If streaming fails, try restarting your virtual audio software or refresh audio devices.</span>
-                                        ${window.LSNotices ? LSNotices.dismissButton('virtual-audio', 'text-yellow-300/70 hover:text-yellow-100') : ''}
-                                    </div>`
-                            ) : ''}
                         </div>
 
                         <div>
@@ -1552,6 +1566,13 @@ class FFmpegStreamsManager {
         `;
 
         document.body.appendChild(modal);
+
+        // Audio source info popover (guidance lives here instead of cluttering the form)
+        const infoBtn = document.getElementById('audio-source-info');
+        const infoPop = document.getElementById('audio-source-info-pop');
+        if (infoBtn && infoPop) {
+            infoBtn.addEventListener('click', () => infoPop.classList.toggle('hidden'));
+        }
 
         // Test source button (only present when showTestTools is true)
         const testSourceBtn = document.getElementById('test-source-btn');
