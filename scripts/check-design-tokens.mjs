@@ -20,6 +20,9 @@
  */
 import { readFileSync, writeFileSync, existsSync, readdirSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
+import { createRequire } from 'node:module';
+
+const require_ = createRequire(import.meta.url);
 
 const ROOT = join(import.meta.dirname, '..');
 const BASELINE_PATH = join(ROOT, 'scripts', 'design-token-baseline.json');
@@ -64,7 +67,30 @@ function collectFiles() {
   return [...new Set(files)];
 }
 
+function assertCleanTree(update) {
+  // A baseline captured from a dirty working tree captures the WRONG tree:
+  // CI checks the commit, not the desk. Refuse --update-baseline when any
+  // scanned-relevant file differs from HEAD (learned the hard way 2026-10-28).
+  if (!update) return;
+  const { execSync } = require_('node:child_process');
+  let dirty;
+  try {
+    dirty = execSync('git status --porcelain', { cwd: ROOT, encoding: 'utf8' })
+      .split('\n').filter((l) => l.trim() && !l.startsWith('??'));
+  } catch {
+    return; // not a git repo (or git missing): proceed
+  }
+  if (dirty.length) {
+    console.error('REFUSING --update-baseline: working tree has uncommitted changes:');
+    dirty.forEach((l) => console.error('  ' + l));
+    console.error('Commit or stash first so the baseline describes the exact tree CI will check.');
+    process.exit(1);
+  }
+}
+
 function main() {
+  const update = process.argv.includes('--update-baseline');
+  assertCleanTree(update);
   const found = {};
   for (const abs of collectFiles()) {
     const rel = relative(ROOT, abs).replaceAll('\\', '/');
