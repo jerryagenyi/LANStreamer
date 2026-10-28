@@ -12,8 +12,33 @@
     "test:coverage": "node --experimental-vm-modules node_modules/jest/bin/jest.js --coverage",
     "build:css": "tailwindcss -i src/tailwind.css -o public/assets/vendor/tailwind.css --minify",
     "vendor:fonts": "node scripts/vendor-fonts.mjs",
+    "electron:dev": "electron electron/main.js",
+    "electron:smoke": "electron electron/main.js --smoke",
+    "electron:build:win": "electron-builder --win nsis portable",
     "setup": "node scripts/setup.js",
     "screenshots": "node scripts/generate-screenshots.js"
+  },
+  "build": {
+    "appId": "com.lanstreamer.app",
+    "productName": "LANStreamer",
+    "main": "electron/main.js",
+    "files": [
+      "electron/**",
+      "src/**",
+      "public/**",
+      "package.json",
+      "README.md"
+    ],
+    "directories": {
+      "output": "release"
+    },
+    "win": {
+      "icon": "public/assets/favicon.png"
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false
+    }
   },
   "keywords": [
     "streaming",
@@ -39,6 +64,8 @@
     "@tailwindcss/forms": "^0.5.11",
     "@types/jest": "^30.0.0",
     "browser-sync": "^3.0.4",
+    "electron": "^45.0.0",
+    "electron-builder": "^26.18.0",
     "jest": "^30.2.0",
     "nodemon": "^2.0.0",
     "puppeteer": "^24.0.0",
