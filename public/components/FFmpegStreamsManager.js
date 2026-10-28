@@ -15,6 +15,9 @@ class FFmpegStreamsManager {
         this.containerId = containerId;
         this.container = null;
 
+        // Test tools: hidden by default; toggle shows Test source button in add-stream modal
+        this.showTestTools = false;
+
         // Dynamic Icecast config (fetched from /api/system/config)
         this.icecastPort = 8000; // Default fallback (Icecast standard port)
         this.serverHost = null; // Will be loaded from config - uses getPreferredLANHost() for correct network IP
@@ -29,11 +32,12 @@ class FFmpegStreamsManager {
     /**
      * Run a callback after the next paint so the UI (e.g. list update) is visible before we show a notification.
      * Use for success notifications that follow state-changing actions (delete, stop, start, etc.).
+     * Uses a small timeout to ensure DOM updates are visually complete.
      */
     afterNextPaint(callback) {
-        requestAnimationFrame(() => {
-            requestAnimationFrame(() => callback());
-        });
+        // Use setTimeout instead of RAF to ensure DOM is visually updated
+        // 100ms is enough for the DOM to paint but short enough to feel responsive
+        setTimeout(() => callback(), 100);
     }
 
     /**
@@ -52,6 +56,7 @@ class FFmpegStreamsManager {
         return msg;
     }
 
+    /**
     /**
      * True if the error is a duplicate name or duplicate source (simple modal, no troubleshooting link).
      */
@@ -88,6 +93,79 @@ class FFmpegStreamsManager {
         const close = () => modal.remove();
         if (ok) ok.addEventListener('click', close);
         modal.addEventListener('click', (e) => { if (e.target === modal) close(); });
+    }
+
+    /**
+     * Show structured stream error (cause + diagnosis). When API returns diagnosis, shows modal with
+     * title, first solutions or link, and expandable Details (description + full solutions).
+     * @param {Object} data - API error response { message, error, code?, cause?, diagnosis?, capacity? }
+     */
+    showStreamError(data) {
+        const diagnosis = data && data.diagnosis;
+        const title = (diagnosis && diagnosis.title) || data?.error || data?.message || 'Stream failed';
+        const linkUrl = TROUBLESHOOTING_GUIDE_URL;
+        const linkText = 'troubleshooting guide';
+
+        if (diagnosis && (diagnosis.description || (diagnosis.solutions && diagnosis.solutions.length > 0))) {
+            // Structured error: show centred modal with title, short solutions, expandable Details
+            const escapedTitle = String(title).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+            const firstSolutions = (diagnosis.solutions || []).slice(0, 2);
+            const solutionsHtml = firstSolutions.length
+                ? '<p class="text-sm mt-2 text-red-100">' + firstSolutions.map(s => `<span class="block mt-1">• ${String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</span>`).join('') + '</p>'
+                : '';
+            const detailsId = 'stream-error-details-' + Date.now();
+            const descEscaped = (diagnosis.description || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>');
+            const allSolutions = (diagnosis.solutions || []).map(s => `<li class="mt-1">${String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</li>`).join('');
+            const modal = document.createElement('div');
+            modal.className = 'fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60';
+            modal.innerHTML = `
+                <div class="bg-[var(--card-bg)] border border-[var(--border-color)] rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+                    <div class="p-6 border-b border-[var(--border-color)] flex items-start gap-3">
+                        <span class="material-symbols-rounded text-2xl text-red-400 flex-shrink-0">error</span>
+                        <div class="flex-1 min-w-0">
+                            <h3 class="text-lg font-semibold text-white">${escapedTitle}</h3>
+                            ${solutionsHtml}
+                            <p class="text-sm mt-2 text-red-200/90">
+                                See the <a href="${linkUrl}" target="_blank" rel="noopener noreferrer" class="underline font-medium hover:opacity-90">${linkText}</a> for more steps.
+                            </p>
+                        </div>
+                        <button class="text-gray-400 hover:text-white transition-colors flex-shrink-0" onclick="this.closest('.fixed').remove()" aria-label="Close">
+                            <span class="material-symbols-rounded text-xl">close</span>
+                        </button>
+                    </div>
+                    <div class="flex-1 overflow-y-auto p-6 pt-0">
+                        <details class="group" id="${detailsId}">
+                            <summary class="cursor-pointer text-sm font-medium text-gray-300 hover:text-white py-2 flex items-center gap-2">
+                                <span class="material-symbols-rounded text-lg transition-transform group-open:rotate-90">expand_more</span>
+                                Details &amp; full solutions
+                            </summary>
+                            <div class="pl-7 mt-2 text-sm text-gray-300 space-y-2">
+                                ${diagnosis.description ? `<p class="text-gray-300">${descEscaped}</p>` : ''}
+                                ${allSolutions ? `<ul class="list-disc list-inside">${allSolutions}</ul>` : ''}
+                            </div>
+                        </details>
+                        ${data && data.stderrSnippet ? `
+                        <details class="group/tech mt-2">
+                            <summary class="cursor-pointer text-xs font-medium text-gray-500 hover:text-gray-300 py-2 flex items-center gap-2">
+                                <span class="material-symbols-rounded text-sm transition-transform group-open/tech:rotate-90">bug_report</span>
+                                Technical details (FFmpeg output)
+                            </summary>
+                            <pre class="pl-7 mt-2 text-xs text-gray-500 bg-black/30 p-3 rounded overflow-x-auto font-mono">${String(data.stderrSnippet).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</pre>
+                        </details>
+                        ` : ''}
+                        ${data && data.capacity ? `<p class="text-xs text-gray-400 mt-3">Streams in use: ${data.capacity.activeStreams ?? '?'}/${data.capacity.sourceLimit ?? '?'}${data.capacity.configPath ? ' (config: ' + data.capacity.configPath + ')' : ''}</p>` : ''}
+                    </div>
+                </div>
+            `;
+            modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
+            document.body.appendChild(modal);
+            const timeout = 60000;
+            setTimeout(() => { if (modal.parentNode) { modal.style.opacity = '0'; setTimeout(() => modal.remove(), 300); } }, timeout);
+            return;
+        }
+
+        // Backward compat: no diagnosis — toast with message + link
+        this.showNotification(title, 'error', { linkUrl, linkText });
     }
 
     /**
@@ -277,13 +355,23 @@ class FFmpegStreamsManager {
 
     /**
      * Start a new stream
+     * @param {Object} streamConfig - Stream configuration
+     * @param {HTMLElement} modalToClose - Optional modal element to close on success
      */
-    async startStream(streamConfig) {
+    async startStream(streamConfig, modalToClose = null) {
         try {
             // First check if Icecast server is running
             const icecastStatus = await this.checkIcecastStatus();
             if (!icecastStatus.running) {
                 this.showNotification('Icecast server is not running. Please start the Icecast server first.', 'error');
+                // Re-enable modal button if modal was provided
+                if (modalToClose) {
+                    const submitBtn = modalToClose.querySelector('button[type="submit"]');
+                    if (submitBtn) {
+                        submitBtn.innerHTML = '<span class="material-symbols-rounded">play_arrow</span> 🔴 Go Live';
+                        submitBtn.disabled = false;
+                    }
+                }
                 return;
             }
 
@@ -299,13 +387,21 @@ class FFmpegStreamsManager {
 
             const data = await response.json();
             console.log('Stream start response:', { status: response.status, ok: response.ok, data });
-            
-            // Check if request was successful (2xx status)
+
             if (!response.ok) {
-                throw new Error(this.formatStreamError(data, 'Failed to start stream'));
+                // Close the add stream modal before showing error modal
+                if (modalToClose) {
+                    modalToClose.remove();
+                }
+                this.showStreamError(data);
+                return;
             }
-            
+
             if (data.message === 'Stream started successfully') {
+                // Close the add stream modal on success
+                if (modalToClose) {
+                    modalToClose.remove();
+                }
                 await this.loadStreams();
                 this.render();
 
@@ -314,10 +410,22 @@ class FFmpegStreamsManager {
                 const streamUrl = `http://${displayHost}:${this.icecastPort}/${streamConfig.id || 'stream'}`;
                 this.afterNextPaint(() => this.showNotification(`Stream started successfully! Stream is now available in the list below.`, 'success'));
             } else {
-                throw new Error(this.formatStreamError(data, 'Failed to start stream'));
+                // Close the add stream modal before showing error modal
+                if (modalToClose) {
+                    modalToClose.remove();
+                }
+                this.showStreamError(data);
             }
         } catch (error) {
             console.error('Failed to start stream:', error);
+            // Re-enable modal button if modal was provided
+            if (modalToClose) {
+                const submitBtn = modalToClose.querySelector('button[type="submit"]');
+                if (submitBtn) {
+                    submitBtn.innerHTML = '<span class="material-symbols-rounded">play_arrow</span> 🔴 Go Live';
+                    submitBtn.disabled = false;
+                }
+            }
             const msg = error.message || 'Failed to start stream';
             if (this.isDuplicateError(msg)) {
                 this.showDuplicateModal('Stream already exists', msg);
@@ -390,9 +498,9 @@ class FFmpegStreamsManager {
             const data = await response.json();
             console.log('Stream restart response:', { status: response.status, ok: response.ok, data });
 
-            // Check if request was successful (2xx status)
             if (!response.ok) {
-                throw new Error(this.formatStreamError(data, 'Failed to restart stream'));
+                this.showStreamError(data);
+                return;
             }
 
             if (data.message === 'Stream restarted successfully') {
@@ -400,10 +508,10 @@ class FFmpegStreamsManager {
                 this.render();
                 setTimeout(() => this.showNotification('Stream started successfully', 'success'), 1000);
             } else {
-                throw new Error(this.formatStreamError(data, 'Failed to restart stream'));
+                this.showStreamError(data);
             }
         } catch (error) {
-            console.error('Failed to start stream:', error);
+            console.error('Failed to restart stream:', error);
             const msg = error.message || 'Failed to restart stream';
             if (this.isDuplicateError(msg)) {
                 this.showDuplicateModal('Stream already exists', msg);
@@ -556,9 +664,8 @@ class FFmpegStreamsManager {
             if (response.ok) {
                 // Remove from local array
                 this.activeStreams = this.activeStreams.filter(s => s.id !== streamId);
-                this.render();
-                // Wait 1 second after row disappears before showing notification
-                setTimeout(() => this.showNotification('Stream deleted successfully', 'success'), 1000);
+                this.render();  // Re-render entire component (updates stats and list)
+                this.afterNextPaint(() => this.showNotification('Stream deleted successfully', 'success'));
             } else {
                 throw new Error(result.error || 'Failed to delete stream');
             }
@@ -967,7 +1074,15 @@ class FFmpegStreamsManager {
                             <div class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
                             <span class="text-xs font-medium text-green-400">${this.getStreamCountStatus()}</span>
                         </div>
-                        <div class="flex items-center gap-2">
+                        <div class="flex items-center gap-2 flex-wrap">
+                            <label class="inline-flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-gray-400 bg-gray-700/30 border border-gray-600/30 cursor-pointer hover:bg-gray-600/30 transition-all duration-300" title="Show or hide test tools (e.g. Test source)">
+                                <input type="checkbox" id="show-test-tools-toggle" class="rounded border-gray-500 bg-gray-700 text-[var(--primary-color)] focus:ring-[var(--primary-color)]" ${this.showTestTools ? 'checked' : ''}>
+                                <span>Show test tools</span>
+                            </label>
+                            <button id="refresh-devices-btn" class="inline-flex items-center justify-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-gray-300 bg-gray-700/50 hover:bg-gray-600/50 transition-all duration-300 border border-gray-600/50" title="Refresh Audio Devices">
+                                <span class="material-symbols-rounded text-sm">refresh</span>
+                                Refresh Devices
+                            </button>
                             ${this.getRunningStreamsCount() > 0 || this.getStoppedStreamsCount() > 0 ? `
                                 <button id="start-stop-all-btn" class="inline-flex items-center justify-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-all duration-300 border ${this.getRunningStreamsCount() > 0 ? 'text-red-300 bg-red-900/30 hover:bg-red-800/40 border-red-700/50' : 'text-green-300 bg-green-900/30 hover:bg-green-800/40 border-green-700/50'}" title="${this.getRunningStreamsCount() > 0 ? 'Stop All Running Streams' : 'Start All Stopped Streams'}">
                                     <span class="material-symbols-rounded text-sm">${this.getRunningStreamsCount() > 0 ? 'stop' : 'play_arrow'}</span>
@@ -1309,6 +1424,21 @@ class FFmpegStreamsManager {
                 }
             });
         }
+
+        const refreshDevicesBtn = document.getElementById('refresh-devices-btn');
+        if (refreshDevicesBtn) {
+            refreshDevicesBtn.addEventListener('click', () => {
+                this.refreshAudioDevices();
+            });
+        }
+
+        const showTestToolsToggle = document.getElementById('show-test-tools-toggle');
+        if (showTestToolsToggle) {
+            showTestToolsToggle.addEventListener('change', () => {
+                this.showTestTools = showTestToolsToggle.checked;
+                this.render();
+            });
+        }
     }
 
     /**
@@ -1372,6 +1502,14 @@ class FFmpegStreamsManager {
                                 `).join('')}
                             </select>
                             <p class="text-xs text-gray-400 mt-1">💡 Install DVS or Virtual Audio Cable for virtual audio routing</p>
+                            ${this.showTestTools ? `
+                                <div class="mt-2">
+                                    <button type="button" id="test-source-btn" class="inline-flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-amber-300 bg-amber-600/20 hover:bg-amber-600/30 border border-amber-500/30 transition-all duration-300" title="Test if the selected source is available">
+                                        <span class="material-symbols-rounded text-sm">science</span>
+                                        Test source
+                                    </button>
+                                </div>
+                            ` : ''}
                             ${this.hasVirtualAudioDevices() ? `
                                 <div class="mt-2 p-2 bg-yellow-500/10 border border-yellow-500/20 rounded text-xs text-yellow-300">
                                     ⚠️ <strong>Virtual Audio Notice:</strong> Virtual devices may occasionally disappear due to driver restarts. If streaming fails, try restarting your virtual audio software or refresh audio devices.
@@ -1408,6 +1546,41 @@ class FFmpegStreamsManager {
         `;
 
         document.body.appendChild(modal);
+
+        // Test source button (only present when showTestTools is true)
+        const testSourceBtn = document.getElementById('test-source-btn');
+        if (testSourceBtn) {
+            testSourceBtn.addEventListener('click', async () => {
+                const deviceSelect = document.getElementById('stream-device');
+                const deviceId = deviceSelect ? deviceSelect.value : '';
+                if (!deviceId) {
+                    this.showNotification('Select an audio source first', 'info');
+                    return;
+                }
+                try {
+                    testSourceBtn.disabled = true;
+                    testSourceBtn.innerHTML = '<span class="material-symbols-rounded text-sm animate-spin">refresh</span> Testing...';
+                    const response = await fetch('/api/system/audio-devices/test', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ deviceId })
+                    });
+                    const data = await response.json();
+                    if (data.accessible) {
+                        this.showNotification(`Source OK: ${data.deviceName || deviceId}`, 'success');
+                    } else {
+                        this.showNotification(`Source not available: ${data.reason || 'Unknown reason'}`, 'error');
+                    }
+                } catch (err) {
+                    this.showNotification(`Test failed: ${err.message || 'Network error'}`, 'error');
+                } finally {
+                    if (testSourceBtn) {
+                        testSourceBtn.disabled = false;
+                        testSourceBtn.innerHTML = '<span class="material-symbols-rounded text-sm">science</span> Test source';
+                    }
+                }
+            });
+        }
 
         // Setup character counter for stream name
         const streamNameInput = document.getElementById('stream-name');
@@ -1449,10 +1622,10 @@ class FFmpegStreamsManager {
 
             try {
                 const streamName = document.getElementById('stream-name').value.trim();
-                
+
                 // Basic sanitization - remove potentially dangerous characters
                 const sanitizedName = streamName.replace(/[<>\"'&]/g, '');
-                
+
                 // Generate clean stream ID from name
                 const cleanId = sanitizedName
                     .toLowerCase()
@@ -1470,8 +1643,8 @@ class FFmpegStreamsManager {
                     id: streamId
                 };
 
-                modal.remove();
-                await this.startStream(streamConfig);
+                // Don't remove modal yet - let startStream handle it on success
+                await this.startStream(streamConfig, modal);
             } catch (error) {
                 // Restore button state on error
                 submitBtn.innerHTML = originalText;

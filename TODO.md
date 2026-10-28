@@ -28,7 +28,7 @@ Context: [CLAUDE.md](CLAUDE.md), [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.
 
 - [x] **Notification types** — For duplicate stream name or duplicate source, use a simple modal ("stream already exists") without troubleshooting link; for real failures, existing error handling with diagnosis/link. Implemented in FFmpegStreamsManager: isDuplicateError(), showDuplicateModal(); used for start, restart, update, start-all.
 
-- [x] **Source validation & clear errors** — On stream failure, backend errorDiagnostics provides category (device, connection, auth, etc.), title, solutions; API returns shortMessage; admin dashboard shows error + troubleshooting link. Optional "Test source" button deferred.
+- [x] **Source validation & clear errors** — On stream failure, backend errorDiagnostics provides category (device, connection, auth, etc.), title, solutions; API returns shortMessage; admin dashboard shows structured error modal (showStreamError) or error + troubleshooting link. "Test source" button implemented behind "Show test tools" toggle (merged from fix/error-handling-refactor; covered by errorScenarios tests).
 
 - [x] **Timing of Modals** — Alert modals should appear only after the action is performed, not before. All success modals now have 1-second delay after UI updates.
 

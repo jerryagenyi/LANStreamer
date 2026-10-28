@@ -563,36 +563,28 @@ class AudioDeviceService {
   }
 
   /**
-   * Tests if a specific audio device is accessible.
-   * This is a lightweight check that verifies the device exists in our device list.
-   * The actual FFmpeg accessibility will be tested when the stream starts.
+   * Tests if a specific audio device is available (exists in device list).
+   * Lightweight check; actual FFmpeg accessibility is tested when the stream starts.
    * @param {string} deviceId - Device ID to test
-   * @returns {boolean} True if device is accessible
+   * @returns {{ ok: boolean, reason?: string, deviceName?: string }}
    */
   async testDevice(deviceId) {
     try {
-      logger.audio('Testing device accessibility (lightweight check)', { deviceId });
-      
-      // Get fresh device list (bypasses cache if expired)
+      logger.audio('Testing device availability (lightweight check)', { deviceId });
+
       const devices = await this.getAudioDevices();
       const device = devices.find(d => d.id === deviceId);
-      
+
       if (!device) {
         logger.audio('Device not found in device list', { deviceId, availableDevices: devices.map(d => d.id) });
-        return false;
+        return { ok: false, reason: 'Device not in list. It may be disconnected, in use, or the list may be stale. Try "Refresh Devices".' };
       }
 
-      logger.audio('Device found and accessible', { deviceId, deviceName: device.name });
-      
-      // Device exists in the list - assume it's accessible
-      // The actual FFmpeg test will happen when the stream starts
-      // This avoids hanging on slow device tests
-      return true;
-      
+      logger.audio('Device found and available', { deviceId, deviceName: device.name });
+      return { ok: true, deviceName: device.name };
     } catch (error) {
       logger.audio('Device test failed with exception', { deviceId, error: error.message });
-      // If we can't even check the device list, assume it's not accessible
-      return false;
+      return { ok: false, reason: error.message || 'Could not check device list.' };
     }
   }
 }

@@ -172,7 +172,31 @@ export const ErrorCodes = {
   // Audio
   AUDIO_DEVICE_NOT_FOUND: 'AUDIO_DEVICE_NOT_FOUND',
   AUDIO_DEVICE_BUSY: 'AUDIO_DEVICE_BUSY',
-  AUDIO_FORMAT_UNSUPPORTED: 'AUDIO_FORMAT_UNSUPPORTED'
+  AUDIO_FORMAT_UNSUPPORTED: 'AUDIO_FORMAT_UNSUPPORTED',
+
+  // Stream start/restart
+  STREAM_START_FAILED: 'STREAM_START_FAILED',
+  STREAM_RESTART_FAILED: 'STREAM_RESTART_FAILED'
+};
+
+/**
+ * Stream failure causes (maps from errorDiagnostics category to API/client).
+ * Used for cause attribution so logs and UI can say "this is why it failed".
+ */
+export const StreamFailureCause = {
+  CONNECTION_REFUSED: 'connection',
+  PORT_CONFLICT: 'port_conflict',
+  AUTH_FAILED: 'authentication',
+  MOUNT_POINT_FULL: 'mount_point',
+  DEVICE_NOT_FOUND: 'device_not_found',
+  DEVICE_BUSY: 'device_busy',
+  VIRTUAL_AUDIO: 'virtual_audio',
+  DIRECTSHOW: 'directshow',
+  CODEC_ERROR: 'codec',
+  FORMAT_ERROR: 'format',
+  RESOURCE_ERROR: 'resource',
+  TIMEOUT_ERROR: 'timeout',
+  UNKNOWN: 'unknown'
 };
 
 /**
