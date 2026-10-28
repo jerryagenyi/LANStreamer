@@ -4,7 +4,6 @@ import { dirname, join } from 'path'
 import fs from 'fs'
 import logger from '../utils/logger.js'
 import errorDiagnostics from '../utils/errorDiagnostics.js'
-import FFmpegService from './FFmpegService.js'
 import IcecastService from './IcecastService.js'
 import AudioDeviceService from './AudioDeviceService.js'
 import config from '../config/index.js'
@@ -42,7 +41,6 @@ class StreamingService {
     this.activeStreams = {}
     /** @type {string[]} Display order of stream IDs (S1=first, S2=second, etc.). Persisted in streams.json as _order. */
     this.streamOrder = []
-    this.ffmpegService = FFmpegService
     this.streamsConfigPath = join(process.cwd(), 'config', 'streams.json')
     this.lastIcecastStatus = 'unknown'
     this.icecastDownSince = null // Track when Icecast went down
