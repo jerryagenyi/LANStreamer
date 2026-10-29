@@ -842,7 +842,7 @@
                             : isCurrent
                                 ? '<span class="eq" style="color:var(--tok-accent);" aria-hidden="true"><i></i><i></i><i></i><i></i></span>'
                                 : '<span class="chip chip-live"><span class="pip" aria-hidden="true"></span>LIVE</span>'}
-                        <span class="chplay" aria-hidden="true"><span class="material-symbols-rounded">${isCurrent ? 'pause' : 'play_arrow'}</span></span>
+                        <span class="chplay" aria-hidden="true"><span class="material-symbols-rounded">${isCurrent && !this.audioPlayer.paused ? 'pause' : 'play_arrow'}</span></span>
                     </button>`;
             }
 
