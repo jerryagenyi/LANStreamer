@@ -91,10 +91,9 @@
 
         /* Glass header (v2 §7) — the only shadowed surface */
         .header-glass {
-          background: rgba(15, 12, 41, 0.7);
-          backdrop-filter: blur(20px) saturate(180%);
-          -webkit-backdrop-filter: blur(20px) saturate(180%);
-          border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+          /* opaque, like the admin header — scrolled content must not ghost through */
+          background: var(--tok-surface-1);
+          border-bottom: 1px solid var(--tok-line);
           box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
         }
 
@@ -386,7 +385,8 @@
         <div style="font-size:.85rem;color:#5D6570;">Loading…</div>
       </div>
     </div>
-    <div class="relative flex size-full min-h-screen flex-col body-bg dark group/design-root overflow-x-hidden" style='font-family: var(--tok-font);'>
+    <!-- no overflow-x on this wrapper: it would become the sticky containing block and kill the sticky header -->
+    <div class="relative flex size-full min-h-screen flex-col body-bg dark group/design-root" style='font-family: var(--tok-font);'>
         <!-- Top bar: brand · ON AIR pill · theme -->
         <header class="header-glass sticky top-0 z-50">
             <div class="mx-auto max-w-6xl flex items-center gap-4 px-4 sm:px-6" style="height:64px;">
