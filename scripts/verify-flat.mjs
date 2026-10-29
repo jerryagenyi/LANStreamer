@@ -15,13 +15,17 @@ async function sweep(page, label) {
     const header = document.querySelector('.header-glass');
     const chevrons = [...document.querySelectorAll('.ls-collapse-chevron')];
     const chevStillAnimating = chevrons.filter(c => getComputedStyle(c).transitionDuration !== '0s');
+    // drop-shadow FILTERS are shadows too (the logo-glow bug slipped past the box-shadow check)
+    const imgs = [...document.querySelectorAll('img')];
+    const filteredImgs = imgs.filter(i => getComputedStyle(i).filter !== 'none');
     return {
       cards: cards.length,
       shadowedCards: shadowed.length,
       animatedCards: animated.length,
       headerShadow: header ? getComputedStyle(header).boxShadow.slice(0, 60) : 'no header',
       chevrons: chevrons.length,
-      chevronsStillAnimated: chevStillAnimating.length
+      chevronsStillAnimated: chevStillAnimating.length,
+      filteredImgs: filteredImgs.length
     };
   });
 }
@@ -55,6 +59,6 @@ await lp.screenshot({ path: 'screenshots/round10-flat-listener-light.png' });
 
 await browser.close();
 console.log(JSON.stringify(out, null, 1));
-const ok = Object.values(out).every(r => r.shadowedCards === 0 && r.chevronsStillAnimated === 0 && r.headerShadow.includes('8px'));
+const ok = Object.values(out).every(r => r.shadowedCards === 0 && r.chevronsStillAnimated === 0 && r.filteredImgs === 0 && r.headerShadow.includes('8px'));
 console.log(ok ? 'PASS' : 'FAIL');
 process.exit(ok ? 0 : 1);

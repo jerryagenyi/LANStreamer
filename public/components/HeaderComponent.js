@@ -78,7 +78,7 @@ class HeaderComponent {
                     <a href="http://localhost:3001" class="flex items-center gap-2 text-white hover:text-[var(--primary-color)] transition-colors">
                         <img src="/assets/logo.svg?v=3"
                              alt="LANStreamer"
-                             class="h-16 w-auto logo-glow"
+                             class="h-16 w-auto"
                              id="logo-image"
                              data-theme-logo
                              onerror="this.onerror=null; this.src='/assets/lanstreamer-logo.png';">
