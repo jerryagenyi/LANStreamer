@@ -347,7 +347,9 @@ class EventManager {
                                 <div class="relative group">
                                     <img src="${this.eventDetails.eventImage}"
                                          alt="Event Image"
-                                         class="w-full max-w-md h-48 object-cover rounded-lg border border-[var(--border-color)]">
+                                         data-lightbox
+                                         title="Click to view the full image"
+                                         style="width:100%;max-width:448px;aspect-ratio:16/9;object-fit:cover;display:block;border-radius:10px;border:1px solid var(--tok-line);cursor:zoom-in;">
                                     <button id="remove-event-image"
                                             type="button"
                                             class="absolute top-2 right-2 bg-red-500 hover:bg-red-600 text-white rounded-full p-2 transition-all duration-200 opacity-80 hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-red-400 focus:ring-offset-2 focus:ring-offset-[var(--card-bg)]"

@@ -476,7 +476,8 @@
                     <!-- Right: artwork + about + contact -->
                     <aside style="display:flex;flex-direction:column;gap:16px;">
                         <div id="event-image-container" class="glass-card hidden" style="overflow:hidden;padding:0;">
-                            <img id="event-image" src="" alt="Event artwork" style="width:100%;aspect-ratio:4/3;object-fit:cover;display:block;">
+                            <img id="event-image" src="" alt="Event artwork" data-lightbox title="Tap to view the full image"
+                                 style="width:100%;aspect-ratio:4/3;object-fit:cover;display:block;cursor:zoom-in;">
                         </div>
                         <details class="glass-card" id="about-section" open style="padding:0;">
                             <summary style="list-style:none;cursor:pointer;display:flex;align-items:center;padding:16px 18px;font-weight:600;color:var(--tok-text-1);">About this event</summary>
@@ -529,6 +530,7 @@
 
     <script src="/assets/js/boot.js?v=5"></script>
     <script src="/assets/js/toasts.js?v=5"></script>
+    <script src="/assets/js/lightbox.js?v=1"></script>
     <script>
         class StreamListener {
             constructor() {
@@ -1553,11 +1555,11 @@
                 if (configData.eventImage && imageContainer && imageElement) {
                     imageElement.src = configData.eventImage;
                     imageElement.removeAttribute('style');
-                    imageElement.style.cssText = 'width:100%;aspect-ratio:4/3;object-fit:cover;display:block;';
+                    imageElement.style.cssText = 'width:100%;aspect-ratio:4/3;object-fit:cover;display:block;cursor:zoom-in;';
                     imageContainer.classList.remove('hidden');
                 } else if (imageContainer && imageElement) {
                     imageElement.src = '/assets/logo-mark.svg';
-                    imageElement.style.cssText = 'width:100%;aspect-ratio:4/3;object-fit:contain;padding:12%;display:block;background:var(--tok-accent-soft);';
+                    imageElement.style.cssText = 'width:100%;aspect-ratio:4/3;object-fit:contain;padding:12%;display:block;background:var(--tok-accent-soft);cursor:default;';
                     imageElement.alt = 'LANStreamer';
                     imageContainer.classList.remove('hidden');
                 }
