@@ -412,6 +412,7 @@ class FFmpegStreamsManager {
             console.log('Starting stream with config:', streamConfig);
 
             const response = await fetch('/api/streams/start', {
+                signal: AbortSignal.timeout(25000),
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -492,6 +493,7 @@ class FFmpegStreamsManager {
     async stopStream(streamId) {
         try {
             const response = await fetch('/api/streams/stop', {
+                    signal: AbortSignal.timeout(15000),
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -522,6 +524,7 @@ class FFmpegStreamsManager {
             console.log('Restarting stream:', streamId);
 
             const response = await fetch('/api/streams/restart', {
+                signal: AbortSignal.timeout(25000),
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -693,6 +696,7 @@ class FFmpegStreamsManager {
     async deleteStream(streamId) {
         try {
             const response = await fetch('/api/streams/delete', {
+                    signal: AbortSignal.timeout(15000),
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -911,6 +915,7 @@ class FFmpegStreamsManager {
 
                 // Update stream via API
                 const response = await fetch('/api/streams/update', {
+                    signal: AbortSignal.timeout(25000),
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
@@ -1189,6 +1194,7 @@ class FFmpegStreamsManager {
         if (!src) return;
         try {
             const response = await fetch('/api/streams/create', {
+                signal: AbortSignal.timeout(15000),
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -1466,29 +1472,18 @@ class FFmpegStreamsManager {
             this.activeStreams.map(s => s.deviceId).filter(id => id && !knownIds.has(id))
         )];
 
-        const sourceCards = [
+        // Source options as a dropdown (compact — no need to see every device at once)
+        const sourceOptions = [
+            `<option value="">Select an audio source…</option>`,
             ...this.audioDevices.map(d => {
                 const used = usedBy[d.id];
-                const sub = used ? `Used by ${used.join(', ')} · can share` : (d.virtual ? 'Virtual device' : 'Idle');
-                return `
-                    <label class="src-opt">
-                        <input type="radio" name="drawer-src" value="${this.escapeHtml(d.id)}">
-                        <div class="t">
-                            <div>${this.escapeHtml(d.name)}</div>
-                            <div class="faint mono" style="font-size:11px;">${this.escapeHtml(sub)}</div>
-                        </div>
-                        ${used ? '<span class="chip chip-live" style="height:20px;">IN USE</span>' : ''}
-                    </label>`;
+                const label = used
+                    ? `${d.name} — used by ${used.join(', ')}`
+                    : `${d.name}${d.virtual ? ' (virtual)' : ''}`;
+                return `<option value="${this.escapeHtml(d.id)}">${this.escapeHtml(label)}</option>`;
             }),
-            ...missingDevices.map(id => `
-                    <label class="src-opt" style="opacity:.5;" title="This device is configured on a stream but not detected on the system">
-                        <input type="radio" name="drawer-src" value="${this.escapeHtml(id)}" disabled>
-                        <div class="t">
-                            <div>${this.escapeHtml(id)}</div>
-                            <div class="faint mono" style="font-size:11px;">Missing — not detected</div>
-                        </div>
-                        <span class="chip chip-err" style="height:20px;">MISSING</span>
-                    </label>`)
+            ...missingDevices.map(id =>
+                `<option value="" disabled>${this.escapeHtml(id)} — MISSING (not detected)</option>`)
         ].join('');
 
         root.innerHTML = `
@@ -1509,8 +1504,8 @@ class FFmpegStreamsManager {
                         <span class="hint" style="font-size:12px;color:var(--tok-text-3);">Listeners see this. Use the room or language.</span>
                     </div>
                     <div style="display:flex;flex-direction:column;gap:6px;">
-                        <label style="font-size:13px;font-weight:600;color:var(--tok-text-1);">Audio input</label>
-                        <div style="display:flex;flex-direction:column;gap:8px;">${sourceCards}</div>
+                        <label for="stream-device" style="font-size:13px;font-weight:600;color:var(--tok-text-1);">Audio input</label>
+                        <select id="stream-device" style="height:40px;padding:0 12px;border-radius:10px;background:var(--tok-surface-inset);border:1px solid var(--tok-line-strong);color:var(--tok-text-1);font:inherit;font-size:14px;width:100%;">${sourceOptions}</select>
                     </div>
                     <div style="display:flex;flex-direction:column;gap:6px;">
                         <label style="font-size:13px;font-weight:600;color:var(--tok-text-1);">Quality</label>
@@ -1561,7 +1556,7 @@ class FFmpegStreamsManager {
 
         const collect = () => {
             const name = nameInput.value.trim().replace(/[<>"'&]/g, '');
-            const deviceId = root.querySelector('input[name="drawer-src"]:checked')?.value || '';
+            const deviceId = root.querySelector('#stream-device')?.value || '';
             const bitrate = parseInt(root.querySelector('input[name="drawer-q"]:checked')?.value || '192', 10);
             const autoStart = root.querySelector('#drawer-autostart').getAttribute('aria-checked') === 'true';
             if (!name || !deviceId) {

@@ -1,4 +1,4 @@
-import { spawn, execSync } from 'child_process'
+import { spawn, exec, execSync } from 'child_process'
 import { fileURLToPath } from 'url'
 import { dirname, join } from 'path'
 import fs from 'fs'
@@ -105,6 +105,15 @@ class StreamingService {
     } catch (error) {
       logger.error('Failed to load persistent streams:', error)
     }
+  }
+
+  /**
+   * Generate a stream id when the caller doesn't supply one.
+   * (startStream referenced this forever but the UI always sent an id, so the
+   * missing method only surfaced with createStoppedStream.)
+   */
+  generateUniqueStreamId() {
+    return `stream_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`
   }
 
   /**
@@ -831,16 +840,8 @@ class StreamingService {
       import('./TelemetryService.js').then(m => m.default.capture('stream_stopped', {})).catch(() => {})
       
       if (stream.ffmpegProcess) {
-        // Kill the FFmpeg process gracefully
-        stream.ffmpegProcess.kill('SIGTERM')
-        
-        // Force kill after 5 seconds if still running
-        setTimeout(() => {
-          if (stream.ffmpegProcess && !stream.ffmpegProcess.killed) {
-            logger.warn(`Force killing FFmpeg process for stream ${streamId}`)
-            stream.ffmpegProcess.kill('SIGKILL')
-          }
-        }, 5000)
+        // Kill the whole tree (shell wrapper + ffmpeg) — see killProcessTree
+        this.killProcessTree(stream.ffmpegProcess, streamId)
       }
 
       // Mark as intentionally stopped to prevent handleProcessExit from marking it as error
@@ -921,6 +922,10 @@ class StreamingService {
       stream.ffmpegProcess = ffmpegProcess
       stream.startedAt = new Date()
       stream.needsRestart = false
+      // A successful (re)start clears any previous failure — stale error text
+      // on a running row reads as "it failed" and confuses operators.
+      stream.error = undefined
+      stream.errorShort = undefined
 
       // Save to persistent storage
       this.savePersistentStreams()
@@ -932,12 +937,37 @@ class StreamingService {
       logger.error(`Failed to restart stream ${streamId}:`, error)
       // Surface the failure on the row itself (short summary + expandable detail)
       if (this.activeStreams[streamId]) {
+        // A failed restart can leave a spawned FFmpeg alive while the stream
+        // reads as errored — a zombie holding the audio device. Kill the tree.
+        this.killProcessTree(this.activeStreams[streamId].ffmpegProcess, streamId)
+        this.activeStreams[streamId].ffmpegProcess = null
         this.activeStreams[streamId].status = 'error'
         this.activeStreams[streamId].error = error.message
         this.activeStreams[streamId].errorShort = error.shortMessage || String(error.message || '').split('\n')[0]
         this.savePersistentStreams()
       }
       throw error
+    }
+  }
+
+  /**
+   * Kill an FFmpeg process AND its children. Streams are spawned with
+   * shell:true on Windows (needed to resolve ffmpeg from PATH), so a plain
+   * .kill() only ends the cmd wrapper — the ffmpeg child survives and keeps
+   * the audio device exclusively, which blocks every later start.
+   */
+  killProcessTree(childProcess, streamId = 'unknown') {
+    if (!childProcess || childProcess.exitCode !== null) return
+    const pid = childProcess.pid
+    try { childProcess.kill('SIGTERM') } catch (e) { /* already dead */ }
+    if (!pid) return
+    if (process.platform === 'win32') {
+      exec(`taskkill /PID ${pid} /T /F`, { windowsHide: true }, (err) => {
+        if (err) logger.warn(`taskkill tree failed for stream ${streamId} (pid ${pid}): ${err.message}`)
+        else logger.info(`Killed FFmpeg process tree for stream ${streamId} (pid ${pid})`)
+      })
+    } else {
+      try { process.kill(-pid, 'SIGKILL') } catch (e) { try { process.kill(pid, 'SIGKILL') } catch (e2) { /* dead */ } }
     }
   }
 

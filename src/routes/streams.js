@@ -119,15 +119,17 @@ router.post('/start-all', async (req, res) => {
  * @access Public
  */
 router.post('/restart', async (req, res) => {
+  let id; // declared OUTSIDE try: the catch logs it, and a ReferenceError inside
+          // catch would hang the response forever (unhandledRejection in express 4)
   try {
-    const { id } = req.body;
+    id = req.body?.id;
     logger.info('Received stream restart request:', { streamId: id });
-    
+
     const result = await streamingService.restartStream(id);
     logger.info('Stream restarted successfully:', { streamId: id });
-    
-    res.status(200).json({ 
-      message: 'Stream restarted successfully', 
+
+    res.status(200).json({
+      message: 'Stream restarted successfully',
       streamId: id,
       result: result
     });

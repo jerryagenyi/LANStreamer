@@ -607,19 +607,18 @@
                 <div style="display:flex;align-items:center;gap:10px;padding:16px 18px;border-bottom:1px solid var(--tok-line);">
                     <h3 style="font-size:15px;font-weight:600;color:var(--tok-text-1);">Share with listeners</h3>
                 </div>
-                <!-- Default view: address + copy + show-QR -->
+                <!-- Default view: address + copy + QR icon (QR panel on demand) -->
                 <div id="share-body-default" style="padding:16px 18px;display:flex;flex-direction:column;gap:10px;">
-                    <p style="font-size:13px;color:var(--tok-text-2);">Open on any device on this network, or show a QR code to scan.</p>
+                    <p style="font-size:13px;color:var(--tok-text-2);">Open on any device on this network, or scan the QR code.</p>
                     <div class="share-url">
                         <code id="share-url-text"></code>
                         <button type="button" class="iconbtn" id="share-copy" style="width:28px;height:28px;" aria-label="Copy link" title="Copy listener link">
                             <span class="material-symbols-rounded" style="font-size:15px;">content_copy</span>
                         </button>
+                        <button type="button" class="iconbtn" id="share-show-qr" style="width:28px;height:28px;" aria-label="Show QR code" title="Show QR code">
+                            <span class="material-symbols-rounded" style="font-size:15px;">qr_code_2</span>
+                        </button>
                     </div>
-                    <button type="button" class="btn btn-secondary" id="share-show-qr" style="align-self:flex-start;height:30px;padding:0 10px;font-size:13px;">
-                        <span class="material-symbols-rounded" style="font-size:15px;">qr_code_2</span>
-                        Show QR code
-                    </button>
                 </div>
                 <!-- QR view: large code + close -->
                 <div id="share-body-qr" class="hidden" style="padding:16px 18px;position:relative;">
@@ -632,6 +631,10 @@
                     </div>
                     <p style="font-size:12px;color:var(--tok-text-3);text-align:center;margin-top:8px;">Scan with a phone camera</p>
                 </div>
+                <style>
+                    /* The QR endpoint returns a bare viewBox svg — give it real size */
+                    #share-qr svg { width: 100%; height: auto; display: block; }
+                </style>
             </div>
 
             <!-- Audio inputs: always visible, with IN USE / IDLE / MISSING status -->
@@ -1209,7 +1212,8 @@
                         qrBody.classList.remove('hidden');
                         if (qrEl && !qrEl.dataset.loaded) {
                             try {
-                                const res = await fetch(`/api/system/qr?url=${encodeURIComponent(url)}`);
+                                // Hard cap so a stuck request can't spin forever
+                                const res = await fetch(`/api/system/qr?url=${encodeURIComponent(url)}`, { signal: AbortSignal.timeout(5000) });
                                 if (res.ok) {
                                     qrEl.innerHTML = await res.text();
                                     qrEl.dataset.loaded = '1';
