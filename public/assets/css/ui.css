@@ -302,7 +302,7 @@
 
 /* Admin stream rows (dashboard list) — actions pinned top-right so wrapping
    meta text never shifts them, and rows never jump between renders */
-.arow{display:grid;grid-template-columns:auto auto minmax(0,1fr) auto;align-items:start;gap:14px;padding:12px 18px;border-top:1px solid var(--tok-line);position:relative}
+.arow{display:grid;grid-template-columns:80px auto minmax(0,1fr);align-items:start;gap:14px;padding:12px 18px;border-top:1px solid var(--tok-line);position:relative}
 .arow:hover{background:color-mix(in oklab,var(--tok-surface-2) 55%,transparent)}
 .arow > div:has(> .name){margin-top:8px}
 .arow.is-live::before,.arow.is-err::before{content:"";position:absolute;left:0;top:10px;bottom:10px;width:3px;border-radius:0 3px 3px 0;background:var(--tok-live)}
@@ -319,17 +319,20 @@
 .playbtn.stop:hover{background:var(--tok-danger);color:#fff}
 .rowactions{display:flex;align-items:center;gap:4px}
 .menu{position:relative}
-.menu-pop{position:absolute;right:0;top:40px;min-width:190px;padding:6px;z-index:30;display:none;background:var(--tok-surface-1);border:1px solid var(--tok-line-strong);border-radius:12px;box-shadow:var(--tok-shadow-pop)}
+/* ⋯ sits at the row's far left — the popup must extend RIGHTWARD or it would
+   overflow the card edge (was right:0 when the menu lived on the right). */
+.menu-pop{position:absolute;left:0;top:42px;min-width:190px;padding:6px;z-index:30;display:none;background:var(--tok-surface-1);border:1px solid var(--tok-line-strong);border-radius:12px;box-shadow:var(--tok-shadow-pop)}
 .menu.open .menu-pop{display:block}
 .menu-pop button{display:flex;width:100%;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;font-size:14px;text-align:left;color:var(--tok-text-1)}
 .menu-pop button:hover{background:var(--tok-surface-2)}
 .menu-pop .del{color:var(--tok-danger)}
-.errbox{grid-column:3/-1;margin-top:4px;padding:10px 12px;border-radius:10px;background:var(--tok-danger-dim);font-size:13px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.errbox{grid-column:1/-1;margin-top:4px;padding:10px 12px;border-radius:10px;background:var(--tok-danger-dim);font-size:13px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
 .errbox b{color:var(--tok-danger)}
 .errbox .grow{flex:1;min-width:200px;color:var(--tok-text-2)}
 .group-label{padding:12px 18px 6px;display:flex;align-items:center;gap:8px}
 @media (max-width:560px){
-    .arow{grid-template-columns:auto minmax(0,1fr) auto;gap:12px;padding:12px 16px}
+    .arow{grid-template-columns:80px minmax(0,1fr);gap:10px;padding:12px 16px}
+    .arow .sid2{display:none}
     .errbox{grid-column:1/-1}
     .arow .meta .src{flex-basis:100%;max-width:100%}
     .arow .meta .src + .dotsep{display:none}

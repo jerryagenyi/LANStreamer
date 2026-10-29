@@ -1304,19 +1304,6 @@ class FFmpegStreamsManager {
 
         return `
             <div class="arow ${live ? 'is-live' : ''} ${err ? 'is-err' : ''}" data-stream-row="${stream.id}">
-                <span class="sid2" aria-hidden="true">${stream.label || 'S' + (index + 1)}</span>
-                <div style="min-width:0;">
-                    <div class="name">${this.escapeHtml(stream.name || stream.id)}</div>
-                    <div class="meta">
-                        ${statusChip}
-                        <span class="src" title="${this.escapeHtml(deviceName)}">
-                            <span class="material-symbols-rounded" style="font-size:13px;" aria-hidden="true">mic</span>${this.escapeHtml(deviceName)}
-                        </span>
-                        <span class="dotsep" aria-hidden="true"></span>
-                        <span class="mono">${stream.config?.bitrate || 192}k</span>
-                        ${metaExtras}
-                    </div>
-                </div>
                 <div class="rowactions">
                     ${live ? `
                         <button class="playbtn stop" onclick="ffmpegStreamsManager.stopStream('${stream.id}')" title="Stop stream" aria-label="Stop ${this.escapeHtml(stream.name || stream.id)}">
@@ -1339,6 +1326,19 @@ class FFmpegStreamsManager {
                             <button type="button" onclick="ffmpegStreamsManager.duplicateStream('${stream.id}')"><span class="material-symbols-rounded text-base">content_copy</span>Duplicate</button>
                             <button type="button" class="del" onclick="ffmpegStreamsManager.deleteStream('${stream.id}')"><span class="material-symbols-rounded text-base">delete</span>Delete</button>
                         </div>
+                    </div>
+                </div>
+                <span class="sid2" aria-hidden="true">${stream.label || 'S' + (index + 1)}</span>
+                <div style="min-width:0;">
+                    <div class="name">${this.escapeHtml(stream.name || stream.id)}</div>
+                    <div class="meta">
+                        ${statusChip}
+                        <span class="src" title="${this.escapeHtml(deviceName)}">
+                            <span class="material-symbols-rounded" style="font-size:13px;" aria-hidden="true">mic</span>${this.escapeHtml(deviceName)}
+                        </span>
+                        <span class="dotsep" aria-hidden="true"></span>
+                        <span class="mono">${stream.config?.bitrate || 192}k</span>
+                        ${metaExtras}
                     </div>
                 </div>
                 ${errBox}
