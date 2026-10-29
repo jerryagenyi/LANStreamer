@@ -1540,17 +1540,19 @@
                     subtitleElement.textContent = configData.eventSubtitle || 'Click play to listen to any available stream';
                 }
 
-                // Handle event artwork: configured image, or a token-themed
-                // default (accent ripples) so the card never looks broken.
+                // Handle event artwork: configured image, or the bundled default
+                // banner (/assets/default-event.jpg — NOT the logo) whenever no
+                // custom image is set, including after the operator removes theirs.
                 if (configData.eventImage && imageContainer && imageElement) {
                     imageElement.src = configData.eventImage;
                     imageElement.removeAttribute('style');
                     imageElement.style.cssText = 'width:100%;aspect-ratio:4/3;object-fit:cover;display:block;cursor:zoom-in;';
                     imageContainer.classList.remove('hidden');
                 } else if (imageContainer && imageElement) {
-                    imageElement.src = '/assets/logo-mark.svg';
-                    imageElement.style.cssText = 'width:100%;aspect-ratio:4/3;object-fit:contain;padding:12%;display:block;background:var(--tok-accent-soft);cursor:default;';
-                    imageElement.alt = 'LANStreamer';
+                    imageElement.src = '/assets/default-event.jpg';
+                    imageElement.removeAttribute('style');
+                    imageElement.style.cssText = 'width:100%;aspect-ratio:4/3;object-fit:cover;display:block;cursor:zoom-in;';
+                    imageElement.alt = 'Event artwork';
                     imageContainer.classList.remove('hidden');
                 }
             }
