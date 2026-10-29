@@ -2,6 +2,8 @@
 
 **LAN audio streaming for language interpretation, meetings, and events.** LANStreamer is a desktop app that turns an ordinary PC into a multi-channel audio streaming server for your local network (LAN) — it orchestrates **FFmpeg** and **Icecast** behind the scenes, so a whole room can listen to live, low-latency audio on their phones.
 
+> **Status:** the Electron desktop app is in active development on the `dev` branch. There is **no downloadable installer yet** — until the first packaged release, run it from source (`npm run electron:dev`, or the server-only `Start LANStreamer Server.bat` for a source/ZIP copy). FFmpeg and Icecast are installed separately for now. The path to the first bundled release lives in [docs/GO-LIVE-CHECKLIST.md](docs/GO-LIVE-CHECKLIST.md).
+
 ---
 
 ## 🎯 What is LANStreamer?
@@ -122,6 +124,8 @@ Restart LANStreamer afterwards. (Logins stay valid for 7 days, or set `JWT_EXPIR
 
 ## 🔄 Updating
 
+**Packaged installs (once released):** download the new installer from [GitHub Releases](https://github.com/jerryagenyi/LANStreamer/releases) and run it — your stream configuration is kept.
+
 **ZIP/source installs:** double-click `Update LANStreamer.bat` in your installation folder.
 
 ---
@@ -160,7 +164,7 @@ LANStreamer is **free and open source — no one makes money from it, and no one
 
 ## 🧑‍💻 For Developers
 
-Building from source, running the test suite, architecture notes, and the contribution workflow (branch model, CI, UI rules, telemetry internals) all live in the **[Developer Guide](docs/README-DEVELOPERS.md)**. See also [CLAUDE.md](CLAUDE.md) for enforced code patterns.
+Building from source, running the test suite, architecture notes, and the contribution workflow (branch model, CI, UI rules, telemetry internals) all live in the **[Developer Guide](docs/README-DEVELOPERS.md)**. Preparing a release? Follow **[docs/GO-LIVE-CHECKLIST.md](docs/GO-LIVE-CHECKLIST.md)** (test matrix, packaging, versioning, GitHub release notes). See also [CLAUDE.md](CLAUDE.md) for enforced code patterns.
 
 ---
 

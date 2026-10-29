@@ -1,6 +1,6 @@
 # LANStreamer — Developer Guide
 
-Technical documentation for anyone working **on** LANStreamer (running from source, testing, contributing). If you just want to install and use the app, see the main [README](../README.md).
+Technical documentation for anyone working **on** LANStreamer (running from source, testing, contributing). If you just want to install and use the app, see the main [README](../README.md). Shipping a release? Follow **[GO-LIVE-CHECKLIST.md](./GO-LIVE-CHECKLIST.md)**.
 
 ---
 

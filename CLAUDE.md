@@ -4,8 +4,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Context
 
-**Project Type:** Node.js audio streaming server
-**Key Technologies:** FFmpeg, Icecast, Express.js, Socket.io
+**Project Type:** Electron desktop app (LAN audio streaming; Express server embedded in the Electron main process)
+**Key Technologies:** Electron, FFmpeg, Icecast, Express.js, PostHog (voluntary telemetry)
 
 **Architecture:**
 - `src/services/StreamingService.js` → Core FFmpeg process management

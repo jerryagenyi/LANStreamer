@@ -5,15 +5,25 @@ All notable changes to LANStreamer will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [Unreleased] — development on `dev` branch (target: next packaged release)
 
-### Planned
-- Stream configuration and mount point management
-- FFmpeg integration for audio streaming
-- Listener web player interface
-- QR code generation for listener access
-- Real-time stream monitoring and statistics
-- Final packaging as standalone `.exe`
+Everything below is shipped in the working tree but **not yet bundled into an installer** — the app currently runs from source (`npm run electron:dev`). Release process: see [GO-LIVE-CHECKLIST.md](./GO-LIVE-CHECKLIST.md).
+
+### Added — the Electron desktop app
+- Full Electron shell: dashboard window, tray icon (hide-to-tray, Stop All & Quit), single-instance lock, first-run telemetry consent prompt, graceful shutdown that stops streams + Icecast
+- Admin authentication: login page, JWT session (7-day), localhost lock so admin APIs/dashboard refuse non-localhost connections; default-credentials banner with change instructions; logout
+- Voluntary PostHog telemetry (opt-in): server events (app start, stream started/stopped/failed with error category) and **listener failure reports** (playback error with media code + browser, buffer stalls, off-air grace/give-up, page-load failures) relayed through the operator's server; distributed installs get telemetry via a bundled build key after their own consent prompt
+- Event banner system: operator-uploaded artwork with lightbox, bundled default banner when none set
+- In-app guide page (`/docs`), QR code sharing, share card that tracks the PC's current LAN address
+
+### Changed — 2026 redesign
+- Complete UI redesign (operator dashboard + listener page): token-based design system, status strip, grouped stream rows with pinned-right row actions, side drawer for stream creation, listener hero + channel picker with visible play affordances, sticky opaque headers, flat surfaces (no card shadows/hover/animations), full light/dark themes, fully offline (all fonts/assets vendored)
+- Process management hardened: Windows process-tree kills in the right order (no more orphaned FFmpeg holding audio devices), icecast self-healing on stream start/restart, stale LAN IP detection when the network changes
+
+### Known gaps before first packaged release
+- No downloadable installer yet (NSIS packaging is wired: `npm run electron:build:win`) — see the go-live checklist
+- FFmpeg and Icecast still installed separately (bundling planned)
+- macOS/Linux support is source-only
 
 ---
 
