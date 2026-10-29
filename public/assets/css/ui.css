@@ -186,9 +186,11 @@
 @media (prefers-reduced-motion: reduce) { .lsn-badge::after { animation: none; } }
 
 .lsn-panel {
+    /* the header carries whitespace-nowrap; the panel's text must wrap */
+    white-space: normal;
     position: absolute; top: calc(100% + 10px); right: 0;
     width: min(360px, calc(100vw - 2rem));
-    max-height: 420px; overflow-y: auto;
+    max-height: 420px; overflow-y: auto; overflow-x: hidden;
     background: var(--tok-surface-1);
     border: 1px solid var(--tok-line-strong);
     border-radius: var(--tok-radius-card, 14px);
@@ -218,7 +220,7 @@
 .lsn-item-msg { font-size: 0.75rem; color: var(--tok-text-2); margin-top: 0.125rem; line-height: 1.4; }
 .lsn-item-time { font-size: 0.6875rem; color: var(--tok-text-3); margin-top: 0.25rem; }
 .lsn-empty { padding: 2rem 1.5rem; text-align: center; color: var(--tok-text-2); font-size: 0.85rem; }
-.lsn-empty .material-symbols-rounded { font-size: 2rem; color: var(--tok-text-3); }
+.lsn-empty .material-symbols-rounded { font-size: 2rem; color: var(--tok-text-3); display: inline-block; width: 2rem; height: 2rem; overflow: hidden; white-space: nowrap; }
 .lsn-empty-sub { font-size: 0.75rem; color: var(--tok-text-3); margin-top: 0.375rem; }
 
 /* ========================================
