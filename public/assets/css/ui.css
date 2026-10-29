@@ -301,11 +301,14 @@
 .seg button{height:28px;padding:0 10px;border-radius:7px;font-size:13px;font-weight:500;color:var(--tok-text-2)}
 .seg button[aria-pressed="true"]{background:var(--tok-surface-1);color:var(--tok-text-1);box-shadow:0 1px 2px rgba(0,0,0,.08)}
 
-/* Admin stream rows (dashboard list) — actions pinned top-right so wrapping
-   meta text never shifts them, and rows never jump between renders */
-.arow{display:grid;grid-template-columns:80px auto minmax(0,1fr);align-items:start;gap:14px;padding:12px 18px;border-top:1px solid var(--tok-line);position:relative}
+/* Admin stream rows (dashboard list) — actions pinned in a FIXED right column
+   so wrapping meta text never shifts them, and rows never jump between renders.
+   Children get explicit grid-column so the mobile sid2:hidden can't reshuffle tracks. */
+.arow{display:grid;grid-template-columns:auto minmax(0,1fr) 80px;align-items:start;gap:14px;padding:12px 18px;border-top:1px solid var(--tok-line);position:relative}
 .arow:hover{background:color-mix(in oklab,var(--tok-surface-2) 55%,transparent)}
-.arow > div:has(> .name){margin-top:8px}
+.arow > .sid2{grid-column:1}
+.arow > div:has(> .name){grid-column:2;margin-top:8px}
+.arow .rowactions{grid-column:3}
 .arow.is-live::before,.arow.is-err::before{content:"";position:absolute;left:0;top:10px;bottom:10px;width:3px;border-radius:0 3px 3px 0;background:var(--tok-live)}
 .arow.is-err::before{background:var(--tok-danger)}
 .sid2{width:38px;height:38px;border-radius:10px;border:1px solid var(--tok-line-strong);display:grid;place-items:center;font-family:var(--tok-mono);font-size:13px;font-weight:500;color:var(--tok-text-2)}
@@ -318,14 +321,14 @@
 .playbtn:hover{background:var(--tok-accent);color:var(--tok-accent-contrast);border-color:var(--tok-accent)}
 .playbtn.stop{background:var(--tok-danger-dim);color:var(--tok-danger);border-color:color-mix(in oklab,var(--tok-danger) 30%,transparent)}
 .playbtn.stop:hover{background:var(--tok-danger);color:#fff}
-.rowactions{display:flex;align-items:center;gap:4px}
+.rowactions{display:flex;align-items:center;justify-content:flex-end;gap:4px}
 /* Native dropdown rows: paint them from tokens so the open list can never
    come up black-on-black on any platform (pairs with color-scheme). */
 select option{background:var(--tok-surface-1);color:var(--tok-text-1)}
 .menu{position:relative}
-/* ⋯ sits at the row's far left — the popup must extend RIGHTWARD or it would
-   overflow the card edge (was right:0 when the menu lived on the right). */
-.menu-pop{position:absolute;left:0;top:42px;min-width:190px;padding:6px;z-index:120;display:none;background:var(--tok-surface-1);border:1px solid var(--tok-line-strong);border-radius:12px}
+/* ⋯ sits at the row's far right — the popup must extend LEFTWARD (right:0) or it
+   would overflow the card edge (was left:0 when the menu lived on the left). */
+.menu-pop{position:absolute;right:0;top:42px;min-width:190px;padding:6px;z-index:120;display:none;background:var(--tok-surface-1);border:1px solid var(--tok-line-strong);border-radius:12px}
 .menu.open .menu-pop{display:block}
 .menu-pop button{display:flex;width:100%;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;font-size:14px;text-align:left;color:var(--tok-text-1)}
 .menu-pop button:hover{background:var(--tok-surface-2)}
@@ -335,8 +338,10 @@ select option{background:var(--tok-surface-1);color:var(--tok-text-1)}
 .errbox .grow{flex:1;min-width:200px;color:var(--tok-text-2)}
 .group-label{padding:12px 18px 6px;display:flex;align-items:center;gap:8px}
 @media (max-width:560px){
-    .arow{grid-template-columns:80px minmax(0,1fr);gap:10px;padding:12px 16px}
+    .arow{grid-template-columns:minmax(0,1fr) 80px;gap:10px;padding:12px 16px}
     .arow .sid2{display:none}
+    .arow > div:has(> .name){grid-column:1}
+    .arow .rowactions{grid-column:2}
     .errbox{grid-column:1/-1}
     .arow .meta .src{flex-basis:100%;max-width:100%}
     .arow .meta .src + .dotsep{display:none}

@@ -134,7 +134,7 @@ Puppeteer-driven checks against the live app (start the server first) — each w
 - `verify-flat.mjs`, `verify-header.mjs` — flat cards (no shadow/hover/animation) and sticky-header layering (toasts/menus above the bar, opaque bg)
 - `verify-sticky-scroll.mjs` — BEHAVIORAL sticky check (computed-style checks pass even when sticky is dead): scrolls both pages, asserts header `top === 0` and no horizontal overflow
 - `verify-host.mjs`, `verify-offline.mjs` — LAN-IP detection overrides stale saved hosts; app renders with ALL non-localhost requests aborted (offline proof)
-- `verify-lightselect.mjs`, `verify-rowalign.mjs` — light-mode dropdown contrast; stream-row action icons at a fixed x across data changes
+- `verify-lightselect.mjs`, `verify-rowalign.mjs` — light-mode dropdown contrast; stream-row action icons pinned in a fixed RIGHT column (stable right edge across rows and live→stopped flips; ⋯ popup opens leftward inside the card)
 - `verify-fixes.mjs`, `verify-p2p3.mjs`, `verify-p4.mjs`, `verify-round3.mjs` — earlier redesign/fix rounds
 - `diag-listener.mjs`, `diag-toggle.mjs`, `diag-processes.ps1` — console/network forensics on the listener page, collapse-toggle timing, and stray FFmpeg/Icecast process inspection
 - `check-design-tokens.mjs` — the CI-enforced UI integrity linter (see below)
