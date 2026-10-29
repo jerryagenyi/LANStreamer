@@ -111,7 +111,7 @@ Restart LANStreamer afterwards. (Logins stay valid for 7 days, or set `JWT_EXPIR
 | Stream won't start | Make sure the audio device isn't already in use by another app; rescan devices in the dashboard |
 | Listeners can't connect | Check everyone is on the **same Wi-Fi/network** as the operator PC, and the link uses the PC's LAN IP (not `localhost`). Also see [Firewall Issues](docs/TROUBLESHOOTING.md#firewall-issues) |
 | "This site can't be reached" | Likely subnet mismatch — see [Network Troubleshooting](docs/TROUBLESHOOTING.md#network-connectivity-issues) |
-| "Port 3001 already in use" | Close other apps using port 3001, or change `PORT` in `.env` |
+| "Port 3001 already in use" | A leftover server instance is running — close its terminal window (or quit the app from the tray), or end `node.exe` in Task Manager, then relaunch. The dashboard's stop buttons end streams and Icecast, but no button can stop the server itself |
 | "No audio devices detected" | Ensure device is connected and not in use by another app |
 | "Stream format not supported" | See [Stream Playback Issues](docs/TROUBLESHOOTING.md#stream-playback-issues) |
 | Link/QR stopped working after moving networks | The share card always shows the PC's **current** network address — re-share the link/QR after the network changes; old links point at the old address |

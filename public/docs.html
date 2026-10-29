@@ -128,6 +128,19 @@
             <li>Windows Firewall: allow icecast.exe on private networks.</li>
         </ol>
 
+        <h3>The app opened on port 3002, or “port 3001 already in use”</h3>
+        <p>Another LANStreamer server instance is still running — usually a leftover <code>node</code> server
+        from a terminal (the window with the <em>“DO NOT CLOSE THIS TERMINAL”</em> message), or a second copy
+        of the app. Two instances share the same stream settings and fight over audio devices, so stop one:</p>
+        <ol class="doc-steps">
+            <li>On the dashboard of the instance you're keeping, <strong>stop every stream and the Icecast
+            server</strong> — that frees the audio devices cleanly (the stop buttons end the encoders properly).</li>
+            <li>Note: there is deliberately no “stop server” button — a web server cannot stop itself over HTTP.
+            To end the server process itself, close its terminal window (or quit the Electron app from the tray),
+            or kill it from Task Manager (<code>node.exe</code> listening on port 3001).</li>
+            <li>Relaunch the app — it takes port 3001 back and starts clean.</li>
+        </ol>
+
         <h3>Stream stuck on “starting” / listener can't hear anything</h3>
         <p>The stream row status refreshes every 5&nbsp;seconds. If a stream shows an error or stopped:</p>
         <ol class="doc-steps">
