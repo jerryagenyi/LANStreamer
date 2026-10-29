@@ -157,7 +157,6 @@ LANStreamer is **free and open source — no one makes money from it, and no one
 | [Network Setup](docs/NETWORK-SETUP.md) | Static IP configuration for live events |
 | [Latency Guide](docs/LATENCY.md) | Getting the lowest latency for listeners |
 | [Manual Setup](manual-setup/README.md) | Hardware-specific configuration guides |
-| [System Architecture](docs/LANSTREAMER_SYSTEM_ARCHITECTURE.md) | Complete technical documentation (advanced) |
 | [Changelog](docs/CHANGELOG.md) | Version history and release notes |
 
 ---

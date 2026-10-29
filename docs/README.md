@@ -1,76 +1,39 @@
 # LANStreamer Documentation
 
-LANStreamer is an **Electron desktop app in active development** — the operator runs the desktop app; listeners use their phones' browsers on the same LAN. This directory holds the project's documentation.
+LANStreamer is an **Electron desktop app in active development** — most people will install the packaged app; it also runs straight from this repo for contributors and source users. Documentation below is split the same way. Current status: no installer released yet — see the status block in the [main README](../README.md).
 
-## 📚 Documentation Index
+## 📦 Using the app
 
-### Core Documentation
+| Document | Description |
+|----------|-------------|
+| **[../README.md](../README.md)** | Start here — quick start (desktop app or source), admin login, telemetry & privacy |
+| **[TROUBLESHOOTING.md](./TROUBLESHOOTING.md)** | Common issues — subnet, firewall, playback (plus the in-app guide at `/docs`) |
+| **[NETWORK-SETUP.md](./NETWORK-SETUP.md)** | Static-IP setup for events and conferences |
+| **[LATENCY.md](./LATENCY.md)** | Where audio delay comes from and how to cut it |
+| **[CHANGELOG.md](./CHANGELOG.md)** | Version history and release notes |
+| **[manual-setup/](../manual-setup/)** | Hardware-specific guides (Behringer DVS, XR18, and friends) |
+| **[guides/](./guides/)** | FFmpeg / Icecast installation — **packaged app: not needed (binaries are bundled)**; source/server-only installs: required |
 
-| Document | Description | Audience |
-|----------|-------------|----------|
-| **[README-DEVELOPERS.md](./README-DEVELOPERS.md)** | ⭐ **Start here for development** — dev loop (`electron:dev`), tests, architecture notes, UI rules, telemetry internals, verify-script inventory | Developers |
-| **[GO-LIVE-CHECKLIST.md](./GO-LIVE-CHECKLIST.md)** | ⭐ **Pre-release checklist** — everything to test/check before bundling and shipping, incl. the GitHub release process (version, tag, release notes) | Maintainers, QA |
-| **[LANSTREAMER_SYSTEM_ARCHITECTURE.md](./LANSTREAMER_SYSTEM_ARCHITECTURE.md)** | Complete system architecture — all services, startup sequence, configuration | Developers, AI assistants, advanced users |
-| **[APP-FLOW.md](./APP-FLOW.md)** | Every page, user flow (mermaid), wireframe, and component — the map used for UI work; view on GitHub for rendered diagrams | Developers, designers |
-| **[TROUBLESHOOTING.md](./TROUBLESHOOTING.md)** | Common issues and solutions — subnet, firewall, playback | All users |
-| **[NETWORK-SETUP.md](./NETWORK-SETUP.md)** | Network configuration — static IP setup for events | Event organisers, network admins |
-| **[LATENCY.md](./LATENCY.md)** | Getting the lowest latency for listeners | Operators |
-| **[TEST-PLAN.md](./TEST-PLAN.md)** | Manual + automated test plan | Developers, QA |
-| **[CHANGELOG.md](./CHANGELOG.md)** | Version history and release notes | All users |
+## 🛠️ Developing & running from source
 
-The user-facing guide lives in the root: **[../README.md](../README.md)** (quick start, admin login, telemetry & privacy). Hardware-specific setups: **[../manual-setup/](../manual-setup/)**.
-
-### Installation Guides
-
-| Guide | Description |
-|-------|-------------|
-| **[guides/README.md](./guides/README.md)** | Installation guides index |
-| **[guides/ffmpeg-installation.md](./guides/ffmpeg-installation.md)** | FFmpeg installation and setup |
-| **[guides/icecast-installation.md](./guides/icecast-installation.md)** | Icecast server installation |
-| **[guides/audio-pipeline-simple.md](./guides/audio-pipeline-simple.md)** | Simple audio pipeline setup |
-
-> FFmpeg and Icecast are **installed separately today** (bundling with the installer is planned). Until then, these guides are required reading for a fresh machine.
-
-### Archived Documentation
-
-Old documentation files are preserved in the `archive/` folder for reference.
-
----
-
-## 🚀 Quick Start (Development)
+| Document | Description |
+|----------|-------------|
+| **[README-DEVELOPERS.md](./README-DEVELOPERS.md)** | ⭐ Start here — dev loop (`electron:dev`), tests, architecture notes, UI rules, telemetry internals |
+| **[GO-LIVE-CHECKLIST.md](./GO-LIVE-CHECKLIST.md)** | Pre-release checklist — test matrix, packaging, security blockers, GitHub release process |
+| **[APP-FLOW.md](./APP-FLOW.md)** | Every page, user flow (mermaid), and component — the UI map |
+| **[pressure-checklist.md](./pressure-checklist.md)** | PR review gate for streaming-behavior changes |
+| **[benchmark-report-v1.md](./benchmark-report-v1.md)** | Performance baseline (kept current until the latency round lands v2) |
+| **[../CLAUDE.md](../CLAUDE.md)** | Code conventions for AI-assisted contributors |
 
 ```bash
 npm install                # dependencies
-npm run electron:dev       # run the DESKTOP APP (what users run)
-# ...or, for server-only work (no Electron shell):
-npm run dev                # Express server with live reload → http://localhost:3001
+npm run electron:dev       # the DESKTOP APP (what users run)
+npm run dev                # server-only (no Electron shell) → http://localhost:3001
+npm test                   # Jest suite
 ```
 
-- The desktop app opens the dashboard window itself — you rarely need the raw server URL.
-- `npm test` runs the full Jest suite; `npm run electron:smoke` smoke-tests the Electron shell.
-- Login for the dashboard: `admin` / `lanstreamer123` by default (see README → Security Setup).
-- Full developer workflow (branch model, CI, UI rules, verification scripts): **[README-DEVELOPERS.md](./README-DEVELOPERS.md)**.
+Dashboard login: `admin` / `lanstreamer123` by default (README → Security Setup).
 
----
+## 🗄️ Archive
 
-## 🎯 Finding What You Need
-
-### For Users
-- **Getting started?** → main [README.md](../README.md)
-- **Having problems?** → [TROUBLESHOOTING.md](./TROUBLESHOOTING.md) or the in-app guide (`http://localhost:3001/docs`)
-- **Setting up network?** → [NETWORK-SETUP.md](./NETWORK-SETUP.md)
-- **Installing components?** → [guides/](./guides/)
-
-### For Developers
-- **Day-to-day development?** → [README-DEVELOPERS.md](./README-DEVELOPERS.md)
-- **Preparing a release?** → [GO-LIVE-CHECKLIST.md](./GO-LIVE-CHECKLIST.md)
-- **Understanding the system?** → [LANSTREAMER_SYSTEM_ARCHITECTURE.md](./LANSTREAMER_SYSTEM_ARCHITECTURE.md)
-- **Code conventions enforced in this repo?** → [CLAUDE.md](../CLAUDE.md)
-
-### For AI Assistants
-- **System architecture?** → [LANSTREAMER_SYSTEM_ARCHITECTURE.md](./LANSTREAMER_SYSTEM_ARCHITECTURE.md)
-- **Dev conventions + verify scripts?** → [README-DEVELOPERS.md](./README-DEVELOPERS.md)
-
----
-
-**Last Updated:** 2026-10-29 — aligned with the Electron app development cycle (post-1.2.4)
+Superseded docs (pre-Electron architecture, shipped redesign plans, old test plans) live in **[archive/](./archive/)** with an index stating what replaced each one.

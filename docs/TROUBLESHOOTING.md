@@ -522,7 +522,7 @@ When troubleshooting, check these in order:
 
 ## Still Having Issues?
 
-1. Check the [System Architecture Documentation](LANSTREAMER_SYSTEM_ARCHITECTURE.md) for detailed technical information
+1. Check the [developer guide](README-DEVELOPERS.md) for architecture notes and the diagnostic script inventory
 2. Review [Network Setup Guide](NETWORK-SETUP.md) for network configuration
 3. Check [Installation Guides](guides/README.md) for component setup
 4. Create an issue on GitHub with:

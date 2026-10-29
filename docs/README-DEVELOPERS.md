@@ -87,7 +87,7 @@ Key modules:
 - `src/utils/errorDiagnostics.js` — error pattern matching → user-friendly messages (first-match-wins order is load-bearing)
 - `electron/main.js` — desktop shell: runs the Express server **in-process**, opens the dashboard window, hides to tray on window close (streams keep running for listeners), tree-kills FFmpeg/Icecast on quit, port fallback (3001 → 3002 …) if the port is busy, first-run telemetry consent dialog
 
-Deep dives: [System Architecture](LANSTREAMER_SYSTEM_ARCHITECTURE.md) (all services, flows, configuration) and [APP-FLOW.md](APP-FLOW.md) (every page, user flow, and component). [CLAUDE.md](../CLAUDE.md) holds the enforced patterns and UI rules you must follow when changing code.
+Deep dives: [APP-FLOW.md](APP-FLOW.md) (every page, user flow, and component) — plus the service sources themselves, which are the current architectural truth. (The old pre-Electron System Architecture doc is in [archive/](./archive/).) [CLAUDE.md](../CLAUDE.md) holds the enforced patterns and UI rules you must follow when changing code.
 
 ---
 
@@ -145,7 +145,7 @@ Puppeteer-driven checks against the live app (start the server first) — each w
 
 Also in `scripts/`: `setup.js` (first-run setup), `generate-screenshots.js` / `generate-screenshot-suite.mjs` (screenshot suite), `stitch-screenshot-pdf.py`, `vendor-fonts.mjs`, `prepare-telemetry-key.mjs` (build step for the Windows package).
 
-The manual test plan lives in [TEST-PLAN.md](TEST-PLAN.md).
+The manual pre-release test pass lives in [GO-LIVE-CHECKLIST.md](./GO-LIVE-CHECKLIST.md) (the old manual TEST-PLAN is archived).
 
 ---
 
@@ -203,7 +203,7 @@ The full, current rules are in [CLAUDE.md](../CLAUDE.md) — read them before to
 - **Port detection:** Icecast port is auto-detected from config, default 8000.
 - **Zombie processes:** on Windows, killing the server does not kill FFmpeg/Icecast children — the Electron shell tree-kills them (`taskkill /T /F`); when testing from source, check Task Manager or run `scripts/diag-processes.ps1`.
 - **Kill order invariant:** `killProcessTree` must run `taskkill /PID <pid> /T /F` BEFORE any `.kill()` on the child — a lone SIGTERM only ends the `cmd.exe` wrapper (streams spawn with `shell:true`) and orphans FFmpeg holding the audio device exclusively. Every path that stops a stream (stop, restart-failure, update, delete) must go through `killProcessTree`, never a bare `.kill()`. `verify-conflict.mjs` asserts zero orphans after its run.
-- **Step-by-step server boot order** for `npm run dev` is documented in [STARTUP-SEQUENCE.md](STARTUP-SEQUENCE.md).
+- **Startup is owned by the Electron shell** (`electron/main.js`: port fallback, orphan sweep, ordered teardown). The old server-only boot sequence doc is archived.
 
 ---
 
@@ -211,13 +211,12 @@ The full, current rules are in [CLAUDE.md](../CLAUDE.md) — read them before to
 
 | Document | Description |
 |----------|-------------|
-| [System Architecture](LANSTREAMER_SYSTEM_ARCHITECTURE.md) | ⭐ Complete technical documentation — all services, flows, and architecture |
+| [GO-LIVE-CHECKLIST.md](GO-LIVE-CHECKLIST.md) | Pre-release checklist — test matrix, packaging, security blockers, release process |
 | [APP-FLOW.md](APP-FLOW.md) | Every page, user flow (mermaid), wireframe, and component |
-| [STARTUP-SEQUENCE.md](STARTUP-SEQUENCE.md) | Process order for `npm run dev`; troubleshoot each step |
-| [TEST-PLAN.md](TEST-PLAN.md) | Manual + automated test plan |
 | [pressure-checklist.md](pressure-checklist.md) | Pre-review gate for streaming PRs |
 | [TROUBLESHOOTING.md](TROUBLESHOOTING.md) | Deep troubleshooting (network, firewall, Icecast, playback) |
 | [CLAUDE.md](../CLAUDE.md) | Enforced patterns, UI rules, and contribution workflow |
+| [archive/](./archive/) | Superseded docs (pre-Electron architecture, shipped plans) — indexed, not current |
 | [docs index](README.md) | Full documentation index |
 
 ---
