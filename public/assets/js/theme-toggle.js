@@ -47,6 +47,13 @@
     });
   }
 
+  // For components rendered AFTER init() ran (the dashboard header is injected
+  // post-boot, so apply()'s one-time swap misses it): ask for the right logo
+  // at render time. Attribute is the source of truth (set by every apply()).
+  window.LSTheme = {
+    logoSrc: () => (document.documentElement.getAttribute('data-theme') === 'light' ? LIGHT_LOGO : DARK_LOGO)
+  };
+
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init);
   } else {

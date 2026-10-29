@@ -76,7 +76,7 @@ class HeaderComponent {
                 <!-- Logo Section -->
                 <div class="flex items-center gap-4 text-white">
                     <a href="http://localhost:3001" class="flex items-center gap-2 text-white hover:text-[var(--primary-color)] transition-colors">
-                        <img src="/assets/logo.svg?v=3"
+                        <img src="${window.LSTheme?.logoSrc?.() || '/assets/logo.svg?v=3'}"
                              alt="LANStreamer"
                              class="h-16 w-auto"
                              id="logo-image"
