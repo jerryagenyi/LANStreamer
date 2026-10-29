@@ -108,6 +108,15 @@ class HeaderComponent {
                         <span class="material-symbols-rounded text-sm">light_mode</span>
                     </button>
 
+                    <!-- Sign out of the admin dashboard -->
+                    <button type="button"
+                            class="theme-toggle"
+                            title="Sign out"
+                            aria-label="Sign out"
+                            onclick="window.LSAdminAuth && window.LSAdminAuth.logout()">
+                        <span class="material-symbols-rounded text-sm">logout</span>
+                    </button>
+
                     <!-- Open listener page (sharing lives in the dashboard sidebar card) -->
                     <a href="${streamsUrl}" target="_blank" rel="noopener" class="btn btn-secondary" style="height:30px;padding:0 10px;font-size:13px;" title="Open the listener page">
                         <span class="material-symbols-rounded" style="font-size:15px;">headphones</span>

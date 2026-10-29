@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin login — LANStreamer</title>
+    <link rel="stylesheet" href="/assets/vendor/tailwind.css">
+    <link rel="stylesheet" href="/assets/vendor/fonts/fonts.css?v=5">
+    <link rel="stylesheet" href="/assets/css/tokens.css?v=5">
+    <link rel="stylesheet" href="/assets/css/ui.css?v=5">
+    <script src="/assets/js/theme-toggle.js?v=5"></script>
+    <style>
+        body {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--tok-bg);
+            padding: 24px;
+        }
+        .login-card {
+            width: 100%;
+            max-width: 380px;
+        }
+        .login-field {
+            width: 100%;
+            padding: 11px 14px;
+            border-radius: 10px;
+            border: 1px solid var(--tok-line);
+            background: var(--tok-field);
+            color: var(--tok-text-1);
+            font-size: 14px;
+            outline: none;
+            transition: border-color .15s ease;
+        }
+        .login-field:focus { border-color: var(--tok-accent); }
+        .login-field::placeholder { color: var(--tok-text-3); }
+        #login-error {
+            display: none;
+            font-size: 13px;
+            color: var(--tok-danger, #f87171);
+            background: color-mix(in srgb, var(--tok-danger, #f87171) 12%, transparent);
+            border: 1px solid color-mix(in srgb, var(--tok-danger, #f87171) 35%, transparent);
+            border-radius: 8px;
+            padding: 9px 12px;
+        }
+    </style>
+</head>
+<body>
+    <main class="login-card glass-card" style="padding:28px;">
+        <div class="flex flex-col items-center gap-3" style="margin-bottom:22px;">
+            <img src="/assets/logo.svg?v=3" alt="LANStreamer" data-theme-logo class="h-12 w-auto"
+                 onerror="this.onerror=null; this.src='/assets/lanstreamer-logo.png';">
+            <div style="text-align:center;">
+                <div style="font-size:16px;font-weight:600;color:var(--tok-text-1);">Admin sign in</div>
+                <div class="tok-label" style="margin-top:2px;">The listener page needs no login — this is for the dashboard.</div>
+            </div>
+        </div>
+
+        <form id="login-form" class="flex flex-col" style="gap:14px;" novalidate>
+            <label class="flex flex-col" style="gap:6px;">
+                <span class="tok-label">Username</span>
+                <input id="login-username" class="login-field" type="text" autocomplete="username"
+                       placeholder="admin" autocapitalize="none" spellcheck="false" required>
+            </label>
+            <label class="flex flex-col" style="gap:6px;">
+                <span class="tok-label">Password</span>
+                <input id="login-password" class="login-field" type="password" autocomplete="current-password"
+                       placeholder="••••••••" required>
+            </label>
+            <div id="login-error" role="alert"></div>
+            <button id="login-submit" type="submit" class="btn btn-primary" style="width:100%;padding:11px 16px;">
+                Sign in
+            </button>
+        </form>
+
+        <p class="tok-label" style="text-align:center;margin-top:18px;">
+            Default credentials are listed in the project README (README → “Admin access”).
+        </p>
+    </main>
+
+    <script>
+        (function () {
+            const form = document.getElementById('login-form');
+            const errBox = document.getElementById('login-error');
+            const submit = document.getElementById('login-submit');
+
+            // Already signed in? Straight to the dashboard.
+            const existing = localStorage.getItem('lsAdminToken');
+            if (existing) {
+                fetch('/api/auth/verify', { headers: { Authorization: 'Bearer ' + existing } })
+                    .then(r => { if (r.ok) window.location.href = '/dashboard'; })
+                    .catch(() => {});
+            }
+
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                errBox.style.display = 'none';
+                submit.disabled = true;
+                submit.textContent = 'Signing in…';
+                try {
+                    const res = await fetch('/api/auth/login', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            username: document.getElementById('login-username').value.trim(),
+                            password: document.getElementById('login-password').value
+                        }),
+                        signal: AbortSignal.timeout(10000)
+                    });
+                    const data = await res.json().catch(() => ({}));
+                    if (res.ok && data.token) {
+                        localStorage.setItem('lsAdminToken', data.token);
+                        window.location.href = '/dashboard';
+                        return;
+                    }
+                    errBox.textContent = data.message || 'Login failed — check username and password.';
+                    errBox.style.display = 'block';
+                } catch {
+                    errBox.textContent = 'Could not reach the server — is LANStreamer running?';
+                    errBox.style.display = 'block';
+                } finally {
+                    submit.disabled = false;
+                    submit.textContent = 'Sign in';
+                }
+            });
+        })();
+    </script>
+</body>
+</html>

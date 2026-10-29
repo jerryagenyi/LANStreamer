@@ -90,7 +90,7 @@ class StreamingService {
         // Auto-start: streams saved with autoStart=true come up with the app.
         // Fire-and-forget with a small stagger so devices/limits settle; failures
         // surface on the row like any other start.
-        const autoStartIds = streamIds.filter(id => persistentStreams[streamId]?.config?.autoStart === true)
+        const autoStartIds = streamIds.filter(id => persistentStreams[id]?.config?.autoStart === true)
         if (autoStartIds.length > 0) {
           logger.info(`Auto-starting ${autoStartIds.length} stream(s) on boot: ${autoStartIds.join(', ')}`)
           autoStartIds.forEach((id, i) => {
@@ -959,15 +959,25 @@ class StreamingService {
   killProcessTree(childProcess, streamId = 'unknown') {
     if (!childProcess || childProcess.exitCode !== null) return
     const pid = childProcess.pid
-    try { childProcess.kill('SIGTERM') } catch (e) { /* already dead */ }
-    if (!pid) return
-    if (process.platform === 'win32') {
+    if (process.platform === 'win32' && pid) {
+      // ORDER MATTERS: taskkill /T must run BEFORE any .kill(). Killing the
+      // cmd wrapper first (synchronous TerminateProcess) severs the parent
+      // link, so the later /T sweep finds a dead PID and no children — ffmpeg
+      // gets orphaned and keeps the audio device exclusively (the classic
+      // "device busy after stop" bug).
       exec(`taskkill /PID ${pid} /T /F`, { windowsHide: true }, (err) => {
-        if (err) logger.warn(`taskkill tree failed for stream ${streamId} (pid ${pid}): ${err.message}`)
-        else logger.info(`Killed FFmpeg process tree for stream ${streamId} (pid ${pid})`)
+        if (err) {
+          logger.warn(`taskkill tree failed for stream ${streamId} (pid ${pid}): ${err.message}; falling back to kill()`)
+          try { childProcess.kill('SIGKILL') } catch (e) { /* already dead */ }
+        } else {
+          logger.info(`Killed FFmpeg process tree for stream ${streamId} (pid ${pid})`)
+        }
       })
     } else {
-      try { process.kill(-pid, 'SIGKILL') } catch (e) { try { process.kill(pid, 'SIGKILL') } catch (e2) { /* dead */ } }
+      try { childProcess.kill('SIGTERM') } catch (e) { /* already dead */ }
+      if (pid) {
+        try { process.kill(-pid, 'SIGKILL') } catch (e) { try { process.kill(pid, 'SIGKILL') } catch (e2) { /* dead */ } }
+      }
     }
   }
 
@@ -1016,7 +1026,7 @@ class StreamingService {
       if (stream.status === 'running' && stream.ffmpegProcess) {
         logger.info(`Stopping running stream ${streamId} to update with new ID ${newStreamId}`)
         try {
-          stream.ffmpegProcess.kill('SIGTERM')
+          this.killProcessTree(stream.ffmpegProcess, streamId)
           stream.intentionallyStopped = true
         } catch (e) { /* ignore */ }
       }
@@ -1059,9 +1069,11 @@ class StreamingService {
 
     if (deviceChanged || currentStream.status === 'error' || nameChanged) {
       logger.info(`Resetting stream state after update (deviceChanged=${deviceChanged}, nameChanged=${nameChanged}, previousStatus=${currentStream.status})`)
-      // Ensure any running process is cleared
+      // Ensure any running process is cleared — killProcessTree, NOT bare
+      // .kill(): a lone SIGTERM only ends the cmd wrapper and orphans ffmpeg
+      // (which keeps the audio device exclusively).
       if (currentStream.ffmpegProcess && typeof currentStream.ffmpegProcess.kill === 'function') {
-        try { currentStream.ffmpegProcess.kill('SIGTERM') } catch (e) { /* ignore */ }
+        try { this.killProcessTree(currentStream.ffmpegProcess, newStreamId) } catch (e) { /* ignore */ }
       }
       currentStream.ffmpegProcess = null
       currentStream.status = 'stopped'

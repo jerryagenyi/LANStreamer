@@ -7,8 +7,18 @@ import puppeteer from 'puppeteer';
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const browser = await puppeteer.launch({ headless: 'new', defaultViewport: { width: 1360, height: 950 }, protocolTimeout: 180000, args: ['--no-sandbox', '--disable-gpu'] });
 const page = await browser.newPage();
+// Admin APIs need a login token (README: admin / lanstreamer123)
+const loginRes = await fetch('http://localhost:3001/api/auth/login', {
+  method: 'POST', headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ username: process.env.ADMIN_USERNAME || 'admin', password: process.env.ADMIN_PASSWORD || 'lanstreamer123' })
+});
+const authToken = (await loginRes.json().catch(() => null))?.token;
 const api = (p, m = 'POST', b = null) =>
-  fetch('http://localhost:3001' + p, { method: m, headers: { 'Content-Type': 'application/json' }, body: b ? JSON.stringify(b) : undefined }).then(r => r.json().catch(() => null));
+  fetch('http://localhost:3001' + p, {
+    method: m,
+    headers: { 'Content-Type': 'application/json', ...(authToken ? { Authorization: 'Bearer ' + authToken } : {}) },
+    body: b ? JSON.stringify(b) : undefined
+  }).then(r => r.json().catch(() => null));
 const results = {};
 
 await api('/api/streams/stop-all');
@@ -40,7 +50,16 @@ const bRes = await api('/api/streams/create', 'POST', { name: 'Conflict B', devi
 const a = aRes, b = bRes;
 results.created = { a: a?.streamId || a, b: b?.streamId || b };
 
+// Log the dashboard in (admin auth): quick form submit, then land on /dashboard
 await page.goto('http://localhost:3001/dashboard', { waitUntil: 'domcontentloaded' });
+await sleep(1500);
+if (new URL(page.url()).pathname === '/login') {
+  await page.waitForSelector('#login-form', { timeout: 10000 });
+  await page.type('#login-username', process.env.ADMIN_USERNAME || 'admin');
+  await page.type('#login-password', process.env.ADMIN_PASSWORD || 'lanstreamer123');
+  await page.click('#login-submit');
+  await page.waitForFunction(() => window.location.pathname === '/dashboard', { timeout: 20000 });
+}
 await sleep(8000);
 
 // Start A via GUI play button

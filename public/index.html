@@ -9,12 +9,13 @@
     <link rel="icon" type="image/png" href="/assets/favicon.png">
     <link rel="icon" type="image/svg+xml" href="/assets/logo-mark.svg">
     <link rel="stylesheet" href="/assets/vendor/tailwind.css">
-    <link rel="stylesheet" href="/assets/vendor/fonts/fonts.css?v=5">
-    <link rel="stylesheet" href="/assets/css/tokens.css?v=5">
-    <link rel="stylesheet" href="/assets/css/ui.css?v=5">
-    <script src="/assets/js/theme-toggle.js?v=5"></script>
-    <script src="/assets/js/qr-share.js?v=5"></script>
-    <script src="/assets/js/marquee.js?v=5"></script>
+    <link rel="stylesheet" href="/assets/vendor/fonts/fonts.css?v=6">
+    <link rel="stylesheet" href="/assets/css/tokens.css?v=6">
+    <link rel="stylesheet" href="/assets/css/ui.css?v=6">
+    <script src="/assets/js/theme-toggle.js?v=6"></script>
+    <script src="/assets/js/admin-auth.js?v=6"></script>
+    <script src="/assets/js/qr-share.js?v=6"></script>
+    <script src="/assets/js/marquee.js?v=6"></script>
     <style>
         :root {
           /* Existing colors */
@@ -637,17 +638,25 @@
                 </style>
             </div>
 
-            <!-- Audio inputs: always visible, with IN USE / IDLE / MISSING status -->
-            <div class="glass-card" style="padding:0;">
-                <div style="display:flex;align-items:center;gap:10px;padding:16px 18px;border-bottom:1px solid var(--tok-line);">
-                    <h3 style="font-size:15px;font-weight:600;color:var(--tok-text-1);">Audio inputs</h3>
-                    <span class="chip chip-off" id="audio-inputs-count"></span>
-                    <span style="flex:1;"></span>
-                    <button type="button" class="iconbtn" id="refresh-audio-devices" style="width:30px;height:30px;" aria-label="Rescan inputs" title="Rescan inputs">
-                        <span class="material-symbols-rounded" style="font-size:15px;">refresh</span>
-                    </button>
+            <!-- Audio inputs: collapsible (default collapsed, state remembered), IN USE / IDLE / MISSING status -->
+            <div class="ls-collapse glass-card" data-ls-collapse="audio-inputs" style="padding:0;">
+                <button type="button" class="ls-collapse-toggle" data-ls-collapse-toggle="audio-inputs" aria-expanded="false"
+                        style="width:100%;display:flex;align-items:center;gap:10px;padding:16px 18px;border-bottom:1px solid var(--tok-line);">
+                    <span class="flex items-center gap-2.5 min-w-0">
+                        <span class="material-symbols-rounded ls-collapse-icon" aria-hidden="true" style="font-size:18px;">settings_input_component</span>
+                        <span class="ls-collapse-title" style="font-size:15px;font-weight:600;color:var(--tok-text-1);">Audio inputs</span>
+                        <span class="chip chip-off" id="audio-inputs-count"></span>
+                    </span>
+                    <span class="flex items-center gap-2" style="margin-left:auto;">
+                        <button type="button" class="iconbtn" id="refresh-audio-devices" style="width:30px;height:30px;" aria-label="Rescan inputs" title="Rescan inputs">
+                            <span class="material-symbols-rounded" style="font-size:15px;">refresh</span>
+                        </button>
+                        <span class="material-symbols-rounded ls-collapse-chevron" aria-hidden="true">expand_more</span>
+                    </span>
+                </button>
+                <div class="ls-collapse-body is-closed" data-ls-collapse-body="audio-inputs">
+                    <ul class="devices" id="audio-devices" style="margin:0;"></ul>
                 </div>
-                <ul class="devices" id="audio-devices" style="padding:12px 18px;margin:0;"></ul>
             </div>
 
             <!-- Event Manager - Component -->
@@ -877,21 +886,21 @@
     </div>
 
     <!-- Include Components -->
-    <script src="/assets/js/notice-dismiss.js?v=5"></script>
-    <script src="/assets/js/boot.js?v=5"></script>
-    <script src="/assets/js/toasts.js?v=5"></script>
-    <script src="/assets/js/collapsible.js?v=5"></script>
-    <script src="/assets/js/notifications.js?v=5"></script>
-    <script src="/components/ComponentManager.js?v=5"></script>
-    <script src="/components/LobbyMusicPlayer.js?v=5"></script>
-    <script src="/components/FileBrowser.js?v=5"></script>
-    <script src="/components/IcecastManager.js?v=5"></script>
-    <script src="/components/FFmpegStreamsManager.js?v=5"></script>
-    <script src="/components/EventManager.js?v=5"></script>
-    <script src="/components/ContactManager.js?v=5"></script>
-    <script src="/components/HeaderComponent.js?v=5"></script>
-    <script src="/components/FooterComponent.js?v=5"></script>
-    <script src="/components/UpdateNotification.js?v=5"></script>
+    <script src="/assets/js/notice-dismiss.js?v=6"></script>
+    <script src="/assets/js/boot.js?v=6"></script>
+    <script src="/assets/js/toasts.js?v=6"></script>
+    <script src="/assets/js/collapsible.js?v=6"></script>
+    <script src="/assets/js/notifications.js?v=6"></script>
+    <script src="/components/ComponentManager.js?v=6"></script>
+    <script src="/components/LobbyMusicPlayer.js?v=6"></script>
+    <script src="/components/FileBrowser.js?v=6"></script>
+    <script src="/components/IcecastManager.js?v=6"></script>
+    <script src="/components/FFmpegStreamsManager.js?v=6"></script>
+    <script src="/components/EventManager.js?v=6"></script>
+    <script src="/components/ContactManager.js?v=6"></script>
+    <script src="/components/HeaderComponent.js?v=6"></script>
+    <script src="/components/FooterComponent.js?v=6"></script>
+    <script src="/components/UpdateNotification.js?v=6"></script>
 
     <!-- Debug script loading -->
     <script>

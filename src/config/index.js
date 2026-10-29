@@ -52,8 +52,10 @@ const config = {
   // Security Configuration
   security: {
     jwtSecret: process.env.JWT_SECRET || 'default-secret-change-in-production',
-    jwtExpiresIn: process.env.JWT_EXPIRES_IN || '24h',
-    adminPassword: process.env.ADMIN_PASSWORD || 'admin123',
+    jwtExpiresIn: process.env.JWT_EXPIRES_IN || '7d',
+    // Single source of truth for admin credentials (README documents these).
+    adminUsername: process.env.ADMIN_USERNAME || 'admin',
+    adminPassword: process.env.ADMIN_PASSWORD || 'lanstreamer123',
     sessionSecret: process.env.SESSION_SECRET || 'session-secret',
     enableHelmet: process.env.ENABLE_HELMET === 'true',
     enableCompression: process.env.ENABLE_COMPRESSION === 'true'

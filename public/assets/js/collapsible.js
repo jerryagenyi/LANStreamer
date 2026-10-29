@@ -69,5 +69,26 @@
     save(key, willOpen);
   });
 
+  // Hydrate statically-authored collapsibles (not built via wrap()) from the
+  // remembered state, so a saved "open" survives reloads.
+  function hydrateStatic() {
+    document.querySelectorAll('[data-ls-collapse]').forEach(el => {
+      const key = el.getAttribute('data-ls-collapse');
+      const open = isOpen(key, el.hasAttribute('data-ls-default-open'));
+      const body = el.querySelector(`[data-ls-collapse-body="${key}"]`);
+      const btn = el.querySelector(`[data-ls-collapse-toggle="${key}"]`);
+      if (!body || !btn) return;
+      body.classList.toggle('is-closed', !open);
+      btn.setAttribute('aria-expanded', String(open));
+      const chevron = btn.querySelector('.ls-collapse-chevron');
+      if (chevron) chevron.classList.toggle('is-open', open);
+    });
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', hydrateStatic);
+  } else {
+    hydrateStatic();
+  }
+
   window.LSCollapse = { wrap, isOpen, save };
 })();

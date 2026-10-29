@@ -67,8 +67,6 @@
             <button data-theme-toggle class="theme-toggle" title="Toggle dark/light mode" aria-label="Toggle dark/light mode">
                 <span class="material-symbols-rounded text-sm">light_mode</span>
             </button>
-            <a href="/streams" class="btn btn-secondary">Listener page</a>
-            <a href="/dashboard" class="btn btn-primary">Dashboard</a>
         </div>
     </header>
 
@@ -83,11 +81,15 @@
 
     <section class="doc-section" id="access">
         <h2><span class="material-symbols-rounded">lock</span>Admin access</h2>
-        <p><strong>There is no admin password.</strong> LANStreamer intentionally has no login: the admin dashboard is
-        restricted to <strong>localhost</strong> (the computer running LANStreamer), while everyone else on the network
-        only ever sees the listener page.</p>
+        <p>The admin dashboard is protected by a login. <strong>The listener page has no login</strong> —
+        phones on the network just open the shared <code>/streams</code> link.</p>
         <ul>
-            <li>Open the dashboard from the machine running LANStreamer: <code>http://localhost:3001/dashboard</code> (or the Electron app window).</li>
+            <li>Sign in at <code>http://localhost:3001/dashboard</code> (or in the Electron app window) with your
+            admin username and password — the defaults ship in the project <code>README.md</code> under
+            “Admin access”, and can be changed with the <code>ADMIN_USERNAME</code> / <code>ADMIN_PASSWORD</code>
+            environment variables.</li>
+            <li>Admin is also locked to <strong>localhost</strong>: other machines on the network only ever see
+            the listener page, even with valid credentials.</li>
             <li>Never port-forward ports 3001/8200 to the internet — the localhost lock only protects you on your LAN.</li>
             <li>Remote admin over the internet: use a VPN like Tailscale instead of exposing ports.</li>
         </ul>

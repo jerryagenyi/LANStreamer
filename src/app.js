@@ -6,7 +6,7 @@ import streamsRouter from './routes/streams.js';
 import settingsRouter from './routes/settings.js';
 import contactRouter from './routes/contact.js';
 import authRouter from './routes/auth.js';
-import { optionalAuth } from './middleware/auth.js';
+import { optionalAuth, authenticateToken } from './middleware/auth.js';
 import { requireLocalhostAdmin } from './middleware/requireLocalhost.js';
 import streamingService from './services/StreamingService.js';
 import icecastService from './services/IcecastService.js';
@@ -27,6 +27,26 @@ export function createApp() {
   // Lock admin to localhost: block admin UI and admin APIs from non-localhost (listener page and APIs stay allowed)
   app.use(requireLocalhostAdmin);
 
+  // Admin auth: the listener surface below stays public; every other /api call
+  // (all mutations + admin-only reads) requires a Bearer token from
+  // POST /api/auth/login. Default credentials are documented in the README.
+  const PUBLIC_GET_API = new Set([
+    '/health',
+    '/info',
+    '/streams/status',
+    '/system/config',      // listener page reads event details from it
+    '/system/icecast-status',
+    '/system/qr',
+    '/contact-details'     // listener page shows the feedback contact
+  ]);
+  const PLAY_PROXY_RE = /^\/streams\/play\/[^/]+$/;
+  app.use('/api', (req, res, next) => {
+    if (process.env.NODE_ENV === 'test' && process.env.AUTH_DISABLED === '1') return next();
+    if (req.path === '/auth/login' || req.path === '/auth/csrf-token') return next();
+    if (req.method === 'GET' && (PUBLIC_GET_API.has(req.path) || PLAY_PROXY_RE.test(req.path))) return next();
+    return authenticateToken(req, res, next);
+  });
+
   app.get('/api/health', (req, res) => {
     res.status(200).json({ status: 'OK', message: 'Server is running' });
   });
@@ -38,10 +58,9 @@ export function createApp() {
   app.use('/api/settings', settingsRouter);
   app.use('/api', contactRouter); // Contact routes can be public
 
-  // No login page: the Electron app / localhost lock IS the admin boundary.
-  // /login is kept only as a redirect for old bookmarks.
+  // Login page for the admin dashboard (see README for default credentials)
   app.get('/login', (req, res) => {
-    res.redirect('/dashboard');
+    res.sendFile(path.join(__dirname, '../public/login.html'));
   });
 
   // Serve dashboard page (admin UI; localhost-only via requireLocalhostAdmin)

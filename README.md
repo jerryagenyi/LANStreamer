@@ -68,8 +68,8 @@ LANStreamer creates a complete audio streaming ecosystem with two main interface
 
 | Interface | Purpose | Access |
 |-----------|---------|--------|
-| **Admin Dashboard** | Control center for managing streams | `http://localhost:3001/` (auth required) |
-| **Listener Interface** | User-friendly page for browsing and playing streams | `http://localhost:3001/streams` (public) |
+| **Admin Dashboard** | Control center for managing streams | `http://localhost:3001/dashboard` (login: `admin` / `lanstreamer123` by default) |
+| **Listener Interface** | User-friendly page for browsing and playing streams | `http://localhost:3001/streams` (public, no login) |
 
 ### Core Components
 
@@ -121,17 +121,32 @@ LANStreamer/
 
 ---
 
-## 🔐 Security Setup
+## 🔐 Security Setup — Admin Login
 
-**⚠️ CRITICAL: Change Default Credentials Immediately!**
+**Default admin credentials:**
 
-1. Copy `env.example` to `.env`
-2. Edit `.env` and change:
-   - `ADMIN_USERNAME=your-new-username`
-   - `ADMIN_PASSWORD=your-strong-password`
-   - `JWT_SECRET=your-jwt-secret`
-   - `SESSION_SECRET=your-session-secret`
-3. Restart LANStreamer
+| Setting | Value |
+|---------|-------|
+| Username | `admin` |
+| Password | `lanstreamer123` |
+
+Sign in at `http://localhost:3001/dashboard` (or the Electron app window) — the login appears automatically when the dashboard is opened. The **listener page (`/streams`) has no login**; phones on the LAN just open the shared link.
+
+Admin access has two layers:
+
+1. **Login (username + password)** — every admin API call requires a session token from signing in.
+2. **Localhost lock** — the dashboard and admin APIs refuse connections from other machines, so even someone on your LAN with the password cannot reach admin.
+
+To change the defaults, copy `env.example` to `.env`, then edit:
+
+```env
+ADMIN_USERNAME=your-new-username
+ADMIN_PASSWORD=your-strong-password
+JWT_SECRET=your-jwt-secret
+SESSION_SECRET=your-session-secret
+```
+
+Restart LANStreamer afterwards. (Logins stay valid for 7 days, or set `JWT_EXPIRES_IN` to change that.)
 
 ---
 

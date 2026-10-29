@@ -1,8 +1,11 @@
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
+import config from '../config/index.js';
 
 /**
- * Authentication middleware for protecting admin routes
+ * Authentication middleware for protecting admin routes.
+ * Secret/expiry come from config so env overrides work and the fallback is
+ * stable across restarts (see config.security.jwtSecret / config.security.jwtExpiresIn).
  */
 export const authenticateToken = (req, res, next) => {
     const authHeader = req.headers['authorization'];
@@ -16,7 +19,7 @@ export const authenticateToken = (req, res, next) => {
     }
 
     try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        const decoded = jwt.verify(token, config.security.jwtSecret);
         req.user = decoded;
         next();
     } catch (error) {
@@ -37,7 +40,7 @@ export const optionalAuth = (req, res, next) => {
 
     if (token) {
         try {
-            const decoded = jwt.verify(token, process.env.JWT_SECRET);
+            const decoded = jwt.verify(token, config.security.jwtSecret);
             req.user = decoded;
         } catch (error) {
             // Token invalid, but continue without user
@@ -56,8 +59,8 @@ export const optionalAuth = (req, res, next) => {
 export const generateToken = (username) => {
     return jwt.sign(
         { username, type: 'admin' },
-        process.env.JWT_SECRET,
-        { expiresIn: process.env.JWT_EXPIRES_IN || '24h' }
+        config.security.jwtSecret,
+        { expiresIn: config.security.jwtExpiresIn }
     );
 };
 
@@ -65,10 +68,7 @@ export const generateToken = (username) => {
  * Verify admin credentials
  */
 export const verifyCredentials = (username, password) => {
-    const adminUsername = process.env.ADMIN_USERNAME || 'admin';
-    const adminPassword = process.env.ADMIN_PASSWORD || 'lanstreamer123';
-
-    return username === adminUsername && password === adminPassword;
+    return username === config.security.adminUsername && password === config.security.adminPassword;
 };
 
 // Store for CSRF tokens (in production, use Redis or database)
