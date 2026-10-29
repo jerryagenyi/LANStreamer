@@ -3,7 +3,18 @@
 Working document for the first packaged release of the **Electron desktop app**. Current version: `1.2.4` (package.json) — target for the next release: **1.3.0**. Work through every section; tick items only with evidence (test run, screenshot, command output).
 
 > Run the automated suite first — it clears most regressions in minutes:
-> `npm test` (85 tests) → then `npm run electron:smoke` → then the verify scripts in [README-DEVELOPERS.md](./README-DEVELOPERS.md) against a fresh server.
+> `npm test` → then `npm run electron:smoke` → then the verify scripts in [README-DEVELOPERS.md](./README-DEVELOPERS.md) against a fresh server.
+
+---
+
+## 0. Security must-fixes (external review 2026-10-29 — block shipping until done)
+
+1. **Bind bundled Icecast to loopback + random per-install passwords.** Stock `hackme` on `0.0.0.0:8200` hands the LAN Icecast's admin plane (kill source/client, harvest listener IPs, publish over our audio). Listeners only ever use the :3001 play proxy — bind `<bind-address>127.0.0.1</bind-address>` in the generated config and mint random source/admin passwords at generation (the app already parses them). Bonus: one firewall rule (3001), no firewall prompt for icecast.exe.
+2. **Binary provenance:** pin SHA256 for the FFmpeg download (fail build on mismatch); replace "copy Icecast kit from maintainer's machine" with a pinned official-kit download + hash; switch to the gyan **essentials** build (clean GPL redistribution, ~48 MB).
+3. **Icecast 2.4.4 is end-of-support 2026-12-31** (and has CVE history) — bundle 2.5.x.
+4. **Packaged installs cannot use `.env`** — the "change admin credentials" path is impossible there, so the default-creds banner can never retire. Generate a random admin password + JWT secret per install at first run (data dir), display once.
+5. **GPL artifacts inside the installer:** ship FFmpeg/Icecast license texts + source-offer, not just release-note credit.
+6. Ship **SHA256SUMS** alongside release artifacts (cheap unsigned-installer mitigation).
 
 ---
 
@@ -18,6 +29,9 @@ Start from a pristine state — most "bugs" this project has hit were dirty-stat
 - [ ] Stream lifecycle: **Add stream** (Save, stays stopped) → **Go live** → status LIVE + uptime ticking → **Stop** → **Retry** → edit (change input) → duplicate → reorder (Move up/down) → delete. No button ever hangs (all mutating calls have timeouts)
 - [ ] Start All / Stop All with 2+ streams
 - [ ] Every stop/quit leaves **zero orphaned `ffmpeg.exe`** in Task Manager (this was the zombie-device bug — verify after every stop path, including edit-while-live and quit-while-live)
+- [ ] **Crash-path orphan test:** Task Manager → End task on LANStreamer mid-stream → no orphaned children survive (Windows doesn't reap them). Add a startup sweep that kills stale ffmpeg/icecast **matched by vendored path**, not by process name (never kill the user's own ffmpeg)
+- [ ] **Sleep/hibernate mid-broadcast:** laptop suspends while LIVE → stream dies silently. Prevent sleep while any stream is live (or document loudly)
+- [ ] **Non-ASCII paths:** test with a Windows username containing spaces + non-ASCII (e.g. `José Müller`) and a Unicode dshow device name — spawn quoting and icecast config paths are classic failure points
 - [ ] Error path: start a stream on a device already held by another app → friendly busy error with **Change input** / **Retry**, full diagnostic collapsed behind a link to /docs
 - [ ] Audio inputs card (under the streams card): collapsed by default, opens/closes, rescan works without toggling the card, IN USE / IDLE / MISSING statuses correct
 - [ ] Event details + feedback contact cards save and show on the listener page; banner upload → cover display → lightbox; remove image → bundled default banner appears
@@ -26,6 +40,7 @@ Start from a pristine state — most "bugs" this project has hit were dirty-stat
 ## 2. Listener experience (real devices, not just devtools)
 
 - [ ] Open `http://<LAN-IP>:3001/streams` on **Android Chrome, iOS Safari, and a desktop browser**
+- [ ] **iOS specifics:** audio continues on lock screen? Silent-switch behavior? MediaSession/now-playing metadata (nice-to-have)
 - [ ] Channel rows show LIVE chips, uptime, bitrate; visible play circles; icon flips play ⇄ pause correctly on every tap (pause→play flip was a real bug — test the cycle)
 - [ ] Switching channels mid-play; big player reflects the change; mini-player on mobile while scrolled
 - [ ] Kill the stream on the dashboard while a listener is playing → listener sees "went off air — waiting…", grace countdown, then "off air, will resume"; restart the stream → auto-resumes without user action
@@ -57,6 +72,8 @@ Start from a pristine state — most "bugs" this project has hit were dirty-stat
 - [ ] Change network (different subnet / hotspot): share card + QR update to the new LAN IP; old links fail gracefully
 - [ ] Port collision: start a second instance → it must not corrupt the first (single-instance lock) and the "port in use" guidance appears in /docs
 - [ ] Windows Firewall prompt on first run: accept for **Private networks**; listener on another device confirms reachability
+- [ ] **Public-profile gotcha:** café/conference/hotspot networks default to the Public profile → inbound 3001 silently blocked. Verify reachability on a hotspot; document "set network profile to Private" for operators
+- [ ] **AV/MOTW pass:** clean-VM test with Defender real-time protection ON — unsigned vendored exes spawning from `resources\` are false-positive territory; verify the downloaded-from-GitHub flow end-to-end (Mark-of-the-Web can block child exes from extracted archives)
 - [ ] Offline check: `node scripts/verify-offline.mjs` — app fully renders with all non-localhost requests blocked (fonts/assets vendored)
 - [ ] Reboot the operator PC with the app configured: relaunch and confirm streams/config persist (config/ survives)
 
@@ -73,7 +90,11 @@ The installer carries everything: `electron:build:win` auto-runs `fetch-vendor-b
   - [ ] All config/uploads land in `%APPDATA%/LANStreamer` (delete + reinstall the app → streams and settings survive)
 - [ ] Confirm the build does NOT contain `.env`, the dev machine's `config/`, `public/uploads/`, or a real-credential icecast.xml (inspect the installer's resources)
 - [ ] SmartScreen will warn on an unsigned exe — decide: accept for now (document in release notes: "More info → Run anyway") or invest in code signing later
-- [ ] Portable build: runs from a folder without installing; config lands somewhere sensible and persists between runs
+- [ ] Portable build: runs from a folder without installing; config lands somewhere sensible and persists between runs (decide: true-portable via `PORTABLE_EXECUTABLE_DIR` vs `%APPDATA%`, and document)
+- [ ] **Upgrade path:** build two dummy versions, NSIS over-install test (old → new: settings survive, no duplicate entries)
+- [ ] **Uninstall story:** what uninstall leaves behind (`%APPDATA%/LANStreamer` stays — intentional? document)
+- [ ] **Source-install migration:** existing source/ZIP users have config in `./config/` — either migrate to `%APPDATA%` on first packaged run or document "not migrated, set streams up again"
+- [ ] **Build the release artifact the way CI would** (or add CI packaging) — don't ship from an environment CI never exercised
 - [ ] Release notes must credit the bundled GPL binaries (FFmpeg gyan.dev build, Icecast) with their licenses
 
 ## 7. Release: version, tag, notes on GitHub
@@ -85,11 +106,12 @@ The installer carries everything: `electron:build:win` auto-runs `fetch-vendor-b
 - [ ] Tag and push: `git tag v1.3.0 && git push origin v1.3.0`
 - [ ] Create the GitHub release with the installers attached and real release notes:
   ```bash
-  gh release create v1.3.0 dist/*.exe dist/*.yml \
+  gh release create v1.3.0 release/*.exe release/*.yml SHA256SUMS.txt \
     --title "LANStreamer v1.3.0 — desktop app" \
     --notes-file release-notes-v1.3.0.md
   ```
-- [ ] Release notes template (user-facing, non-technical): **What's new** (5–8 bullets) · **Installing** (nothing to pre-install — FFmpeg + Icecast come bundled; SmartScreen note) · **Upgrading from a source/ZIP install** · **Known issues** · **Telemetry disclosure** (opt-in, what's collected, how to decline) · **Licenses** (bundled FFmpeg/Icecast are GPL)
+- [ ] Generate and attach **SHA256SUMS.txt** for all release artifacts (partial SmartScreen mitigation for an unsigned installer)
+- [ ] Release notes template (user-facing, non-technical): **What's new** (5–8 bullets) · **Installing** (nothing to pre-install — FFmpeg + Icecast come bundled; SmartScreen note) · **Upgrading from a source/ZIP install** · **Known issues** · **Telemetry disclosure** (opt-in, what's collected, how to decline; Decline must persist across app updates) · **Licenses** (bundled FFmpeg/Icecast are GPL — offer in notes, texts inside the installer)
 - [ ] Smoke the release as a stranger would: fresh VM, download the installer **from the GitHub release page**, install, run one stream end-to-end
 - [ ] Post-release: watch PostHog for `app_start` from install IDs that aren't yours; triage `stream_failed` / `lanstreamer_client_*` events as user reports come in
 
