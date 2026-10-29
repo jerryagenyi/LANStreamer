@@ -1,4 +1,5 @@
 import express from 'express';
+import config from '../config/index.js';
 import { generateToken, verifyCredentials, authenticateToken, generateCSRFToken } from '../middleware/auth.js';
 
 const router = express.Router();
@@ -44,7 +45,12 @@ router.post('/login', async (req, res) => {
 router.get('/verify', authenticateToken, (req, res) => {
     res.json({
         message: 'Token is valid',
-        user: req.user
+        user: req.user,
+        // First-run hint: tells the dashboard to show the default-credentials
+        // banner (what the login is + how to change it) until they're changed.
+        usingDefaultCredentials:
+            config.security.adminUsername === 'admin' &&
+            config.security.adminPassword === 'lanstreamer123'
     });
 });
 
