@@ -1,81 +1,19 @@
 # LANStreamer
 
-A comprehensive solution that turns a standard PC into a multi-channel audio streaming server for local area networks (LAN). This project provides a **web-based application** that orchestrates **FFmpeg** and **Icecast** to deliver local, live, low-latency audio broadcasts for events like language interpretation, meetings, or conferences.
-
-## 📋 Documentation
-
-| Documentation | Description |
-|--------------|-------------|
-| **Quick Start** | This README - get up and running quickly |
-| **[Startup sequence](docs/STARTUP-SEQUENCE.md)** | Step-by-step process order for `npm run dev`; troubleshoot each step |
-| **[Troubleshooting](docs/TROUBLESHOOTING.md)** | Common issues: network, firewall, playback problems |
-| **[System Architecture](docs/LANSTREAMER_SYSTEM_ARCHITECTURE.md)** | ⭐ Complete technical documentation - all services, flows, and architecture |
-| [Installation Guides](docs/guides/README.md) | FFmpeg, Icecast setup guides |
-| [Network Setup](docs/NETWORK-SETUP.md) | Static IP configuration for events |
-| [Developer Guide](CLAUDE.md) | Architecture and contribution guide |
-
----
-
-## 🚀 Quick Start
-
-### For Non-Technical Users
-
-**Step 1: Install Prerequisites**
-- **Node.js**: Download from https://nodejs.org/ (choose "LTS" version)
-- **FFmpeg & Icecast**: See [Installation Guides](docs/guides/README.md)
-
-**Step 2: Download & Extract**
-1. Go to https://github.com/jerryagenyi/LANStreamer
-2. Click **"Code"** → **"Download ZIP"**
-3. Extract the ZIP file and open the `LANStreamer` folder
-
-**Step 3: One-Click Start**
-1. Double-click `Start LANStreamer Server.bat`
-2. Wait for dependencies to install and the server to start
-3. Note the URLs shown in the terminal
-
-**Step 4: Access Your Streaming Server**
-- **Admin Dashboard**: `http://YOUR-IP:3001` (login required)
-- **Listener Page**: `http://YOUR-IP:3001/streams` (public access)
-
-**Default Admin Credentials** (change these immediately in `.env`):
-- **Username**: `admin`
-- **Password**: `lanstreamer123`
-
-### For Technical Users
-
-```bash
-# Clone and install
-git clone https://github.com/jerryagenyi/LANStreamer.git
-cd LANStreamer
-npm install
-
-# Start the server
-npm start
-```
-
-Then visit `http://localhost:3001` for the admin dashboard.
-
-> **Need more detail?** See [System Architecture](docs/LANSTREAMER_SYSTEM_ARCHITECTURE.md) or [Installation Guides](docs/guides/README.md)
+**LAN audio streaming for language interpretation, meetings, and events.** LANStreamer is a desktop app that turns an ordinary PC into a multi-channel audio streaming server for your local network (LAN) — it orchestrates **FFmpeg** and **Icecast** behind the scenes, so a whole room can listen to live, low-latency audio on their phones.
 
 ---
 
 ## 🎯 What is LANStreamer?
 
-LANStreamer creates a complete audio streaming ecosystem with two main interfaces and three core components:
+Think "wireless interpretation booth": the interpreter's PC captures audio (microphone, audio interface, or virtual audio cable) and broadcasts it over Wi-Fi. Anyone on the same network opens a link in their browser and listens — nothing to install.
 
 ### Interfaces
 
 | Interface | Purpose | Access |
 |-----------|---------|--------|
-| **Admin Dashboard** | Control center for managing streams | `http://localhost:3001/dashboard` (login: `admin` / `lanstreamer123` by default) |
-| **Listener Interface** | User-friendly page for browsing and playing streams | `http://localhost:3001/streams` (public, no login) |
-
-### Core Components
-
-1. **Audio Input** - Any detected audio device (microphone, audio interface, virtual audio cable)
-2. **FFmpeg** - Reads audio channels, encodes, and pushes to streaming server
-3. **Icecast** - Open-source streaming server that broadcasts to network clients
+| **Admin Dashboard** | Control center for managing streams | `http://localhost:3001/dashboard` on the operator PC (login: `admin` / `lanstreamer123` by default) |
+| **Listener Interface** | User-friendly page for browsing and playing streams | `http://YOUR-PC-IP:3001/streams` (public, no login) |
 
 ### Use Cases
 
@@ -86,38 +24,36 @@ LANStreamer creates a complete audio streaming ecosystem with two main interface
 
 ---
 
-## 📁 Project Structure
+## 🚀 Quick Start (Desktop App)
 
-```
-LANStreamer/
-├── Start LANStreamer Server.bat    # Windows startup (double-click to start)
-├── Update LANStreamer.bat          # Update script
-├── src/                            # Backend (Node.js/Express)
-├── public/                         # Frontend (web interface)
-├── config/                         # Runtime config (auto-generated)
-├── docs/                           # Documentation
-└── manual-setup/                   # Hardware-specific guides
-```
+**Step 1: Launch LANStreamer**
+Start the LANStreamer app on the operator PC. It starts the streaming server and opens the dashboard window automatically — no terminal windows to babysit. Closing the window only hides it to the tray: streams keep running for your listeners. To stop for real, use the tray icon → **Stop All & Quit**.
 
-> **For developers:** See [CLAUDE.md](CLAUDE.md) for detailed architecture and code structure.
+> No app package? You can run the same server from a source/ZIP copy: double-click `Start LANStreamer Server.bat` (requires [Node.js](https://nodejs.org/) LTS, plus FFmpeg & Icecast — see the [Installation Guides](docs/guides/README.md)). Building the desktop package from source is covered in the [Developer Guide](docs/README-DEVELOPERS.md).
+
+**Step 2: Sign In**
+The dashboard asks you to sign in when it opens.
+
+- **Username**: `admin`
+- **Password**: `lanstreamer123`
+
+Change these before your event — see [Security Setup](#-security-setup--admin-login) below.
+
+**Step 3: Create a Stream**
+Click **Add stream**, pick an audio source (your microphone, audio interface, or virtual audio cable), choose a quality, and click **Go live**. Repeat for more channels (e.g. one per language). You can also use **Start All / Stop All**.
+
+**Step 4: Share with Listeners**
+The dashboard's **Share with listeners** card shows the listener link (e.g. `http://192.168.x.x:3001/streams`). Copy it, or tap the QR icon and let people scan it. Share it once — by chat, email, projector slide, or QR on paper.
 
 ---
 
-## ⚙️ System Requirements
+## 🎧 For Listeners
 
-**Minimum (operator PC)**
-- Windows 10/11 64-bit (macOS/Linux supported from source)
-- 4 GB RAM, dual-core CPU — encoding one stream uses ~2–5% of a modern CPU
-- Any audio input (built-in mic, USB, or virtual audio cable)
-- FFmpeg + Icecast (bundling planned; today installed separately — see guides)
+1. Join the **same Wi-Fi/network** as the operator PC
+2. Open the shared link (or scan the QR code) — no app, no account, no login
+3. Tap the stream they want and press play
 
-**Listeners:** any phone/PC with a browser and WiFi — nothing to install. ~20–25 listeners per consumer WiFi access point for stable audio; larger events should add access points.
-
-**Recommended:** 8 GB RAM for 4+ simultaneous streams, wired Ethernet from the operator PC to the router, 5 GHz WiFi for listeners (see [Latency guide](docs/LATENCY.md)).
-
-**Running from source additionally needs:** Node.js 18+ (the packaged desktop app drops this requirement).
-
-**Cross-OS testing:** the automated suite + Electron smoke test run on Windows/macOS/Linux via CI (GitHub Actions matrix), and the web pages are verified with Playwright on all three engines — that's the "test it across major OSes" story; there's no credible downloadable tool that substitutes for real devices beyond VMs and the CI matrix.
+The listener page is forgiving: it **auto-resumes** a stream that drops and comes back on air (unless they paused it themselves), and on reload it remembers the stream they played last.
 
 ---
 
@@ -150,19 +86,17 @@ Restart LANStreamer afterwards. (Logins stay valid for 7 days, or set `JWT_EXPIR
 
 ---
 
-## 🔄 Updating
+## ⚙️ System Requirements
 
-**For ZIP Users:**
-```bash
-# Double-click this file in your installation folder
-Update LANStreamer.bat
-```
+**Minimum (operator PC)**
+- Windows 10/11 64-bit (macOS/Linux supported from source)
+- 4 GB RAM, dual-core CPU — encoding one stream uses ~2–5% of a modern CPU
+- Any audio input (built-in mic, USB, or virtual audio cable)
+- FFmpeg + Icecast (bundling planned; today installed separately — see [guides](docs/guides/README.md))
 
-**For Git Users:**
-```bash
-git pull origin main
-npm install  # If dependencies changed
-```
+**Listeners:** any phone/PC with a browser and WiFi — nothing to install. ~20–25 listeners per consumer WiFi access point for stable audio; larger events should add access points.
+
+**Recommended:** 8 GB RAM for 4+ simultaneous streams, wired Ethernet from the operator PC to the router, 5 GHz WiFi for listeners (see [Latency guide](docs/LATENCY.md)).
 
 ---
 
@@ -172,29 +106,20 @@ npm install  # If dependencies changed
 
 | Problem | Quick Fix |
 |---------|-----------|
-| "npm not found" | Install Node.js from [nodejs.org](https://nodejs.org/) |
+| Stream won't start | Make sure the audio device isn't already in use by another app; rescan devices in the dashboard |
+| Listeners can't connect | Check everyone is on the **same Wi-Fi/network** as the operator PC, and the link uses the PC's LAN IP (not `localhost`). Also see [Firewall Issues](docs/TROUBLESHOOTING.md#firewall-issues) |
+| "This site can't be reached" | Likely subnet mismatch — see [Network Troubleshooting](docs/TROUBLESHOOTING.md#network-connectivity-issues) |
 | "Port 3001 already in use" | Close other apps using port 3001, or change `PORT` in `.env` |
-| "This site can't be reached" | Check [Network Troubleshooting](docs/TROUBLESHOOTING.md#network-connectivity-issues) - likely subnet mismatch |
-| "Connection refused" | Check [Firewall Setup](docs/TROUBLESHOOTING.md#firewall-issues) |
 | "No audio devices detected" | Ensure device is connected and not in use by another app |
 | "Stream format not supported" | See [Stream Playback Issues](docs/TROUBLESHOOTING.md#stream-playback-issues) |
 
-> **📖 Full Troubleshooting Guide:** See [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) for detailed solutions including subnet issues, firewall configuration, and network diagnostics.
+> **📖 In-app guide:** LANStreamer ships with a built-in troubleshooting page at `http://localhost:3001/docs` — open it from any browser on the operator PC. For the full guide see [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) (subnet issues, firewall configuration, network diagnostics).
 
 ---
 
-## 📚 Documentation
+## 🔄 Updating
 
-| Document | Description |
-|----------|-------------|
-| **[Startup sequence](docs/STARTUP-SEQUENCE.md)** | Process order for `npm run dev`; troubleshoot step-by-step |
-| **[Troubleshooting Guide](docs/TROUBLESHOOTING.md)** | Common issues and solutions (subnet, firewall, playback) |
-| [Network Setup](docs/NETWORK-SETUP.md) | Static IP configuration for live events |
-| [Installation Guides](docs/guides/README.md) | FFmpeg and Icecast setup guides |
-| [Comprehensive Docs](docs/LANStreamer-Documentation.md) | Complete technical documentation |
-| [Developer Guide](CLAUDE.md) | Architecture and development workflow |
-| [Manual Setup](manual-setup/README.md) | Hardware-specific configuration guides |
-| [Changelog](docs/CHANGELOG.md) | Version history and release notes |
+**ZIP/source installs:** double-click `Update LANStreamer.bat` in your installation folder.
 
 ---
 
@@ -212,13 +137,24 @@ LANStreamer is **free and open source — no one makes money from it, and no one
 
 ---
 
-## 🤝 Contributing
+## 📚 Documentation
 
-We welcome contributions! See [CLAUDE.md](CLAUDE.md) for the development workflow and architecture guide.
+| Document | Description |
+|----------|-------------|
+| [In-app Guide](http://localhost:3001/docs) | Troubleshooting & guide page built into the app |
+| **[Troubleshooting Guide](docs/TROUBLESHOOTING.md)** | Common issues and solutions (subnet, firewall, playback) |
+| [Installation Guides](docs/guides/README.md) | FFmpeg and Icecast setup guides |
+| [Network Setup](docs/NETWORK-SETUP.md) | Static IP configuration for live events |
+| [Latency Guide](docs/LATENCY.md) | Getting the lowest latency for listeners |
+| [Manual Setup](manual-setup/README.md) | Hardware-specific configuration guides |
+| [System Architecture](docs/LANSTREAMER_SYSTEM_ARCHITECTURE.md) | Complete technical documentation (advanced) |
+| [Changelog](docs/CHANGELOG.md) | Version history and release notes |
 
-**Branch workflow:** We never add to `main` directly. Pull from `main` when starting work; do work on a feature branch; merge into `dev` first; only then does change go to `main`. See [CLAUDE.md](CLAUDE.md) for the full flow.
+---
 
-For bug reports, include your OS, Node.js version, and steps to reproduce.
+## 🧑‍💻 For Developers
+
+Building from source, running the test suite, architecture notes, and the contribution workflow (branch model, CI, UI rules, telemetry internals) all live in the **[Developer Guide](docs/README-DEVELOPERS.md)**. See also [CLAUDE.md](CLAUDE.md) for enforced code patterns.
 
 ---
 
@@ -230,9 +166,9 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 🆘 Support
 
-1. Check the [Troubleshooting Guide](docs/TROUBLESHOOTING.md) first
-2. Review the [Installation Guides](docs/guides/README.md)
-3. See [Comprehensive Documentation](docs/LANStreamer-Documentation.md) for advanced topics
+1. Check the in-app guide at `http://localhost:3001/docs`
+2. See the [Troubleshooting Guide](docs/TROUBLESHOOTING.md)
+3. Review the [Installation Guides](docs/guides/README.md)
 4. Create an issue on GitHub with detailed information
 
 ---
