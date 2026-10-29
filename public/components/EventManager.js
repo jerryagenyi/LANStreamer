@@ -388,7 +388,7 @@ class EventManager {
 
         // Collapsed by default; remembers the user's last open/closed choice
         container.innerHTML = window.LSCollapse
-            ? LSCollapse.wrap('event-details', { icon: 'event', title: 'Edit Event Details' }, inner, false)
+            ? LSCollapse.wrap('event-details', { title: 'Edit Event Details' }, inner, false)
             : `<div class="glass-card p-6"><h2 class="text-lg font-bold text-white mb-4">🎯 Edit Event Details</h2>${inner}</div>`;
 
         // Re-setup dynamic event listeners after DOM update

@@ -459,7 +459,7 @@ class IcecastManager {
                 </div>
 
                 <!-- Server info: collapsed by default, remembers choice (plain row, no card-in-card) -->
-                ${window.LSCollapse ? LSCollapse.wrap('icecast-info', { icon: 'info', title: 'Icecast server info', plain: true }, `
+                ${window.LSCollapse ? LSCollapse.wrap('icecast-info', { title: 'Icecast server info', plain: true }, `
                     <div class="text-xs space-y-1" style="color:var(--tok-text-3)">
                         <p><strong>Host:</strong> ${this.status.host || 'localhost'}</p>
                         <p><strong>Port:</strong> ${this.status.port || '8000'}</p>

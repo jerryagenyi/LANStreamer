@@ -429,7 +429,7 @@ class ContactManager {
 
         // Collapsed by default; remembers the user's last open/closed choice
         container.innerHTML = window.LSCollapse
-            ? LSCollapse.wrap('feedback-contact', { icon: 'contact_phone', title: 'Your Feedback Contact' }, inner, false)
+            ? LSCollapse.wrap('feedback-contact', { title: 'Your Feedback Contact' }, inner, false)
             : `<div class="glass-card p-6"><h2 class="text-lg font-bold text-white mb-4">📞 Your Feedback Contact</h2>${inner}</div>`;
     }
 
