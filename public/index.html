@@ -561,6 +561,8 @@
     <div class="strip" id="status-strip" aria-label="System status"></div>
     <!-- Security Warning Banner (will be populated by JavaScript) -->
     <div id="security-warning-banner"></div>
+    <!-- First-run admin credentials banner (shows while defaults are active) -->
+    <div id="admin-creds-banner"></div>
     <div class="grid grid-cols-1 xl:grid-cols-3 gap-8">
         <!-- Left Column (Primary Controls) -->
         <div class="xl:col-span-2 space-y-8">
@@ -931,11 +933,16 @@
                 this.lobbyMusicPlayer = null;
                 document.addEventListener('lsnotice-restored', (e) => {
                     if (e.detail.id === 'security-warning') this.checkSecurityWarning();
+                    if (e.detail.id === 'default-admin-creds') this.checkAdminCredsBanner();
                 });
                 document.addEventListener('lsnotice-dismissed', (e) => {
                     if (e.detail.id === 'security-warning') {
                         const banner = document.getElementById('security-warning-banner');
                         if (banner && window.LSNotices) banner.innerHTML = LSNotices.hiddenStub('security-warning', 'Security warning');
+                    }
+                    if (e.detail.id === 'default-admin-creds') {
+                        const banner = document.getElementById('admin-creds-banner');
+                        if (banner && window.LSNotices) banner.innerHTML = LSNotices.hiddenStub('default-admin-creds', 'Admin login info');
                     }
                 });
                 this.init();
@@ -963,6 +970,9 @@
 
                 // Check for security vulnerabilities
                 await this.checkSecurityWarning();
+
+                // First-run hint: default admin login + how to change it
+                await this.checkAdminCredsBanner();
 
                 // Initialize Contact Manager
                 await this.initializeContactManager();
@@ -1304,6 +1314,35 @@
                     console.error('❌ Error auto-starting Icecast:', error);
                     this.updateHeaderTooltip('icecast-status-text', 'Auto-start Failed - Click to start manually');
                 }
+            }
+
+            /**
+             * First-run hint (authed): while the DEFAULT admin credentials are
+             * active, tell the operator what they are and how to change them.
+             * Auto-disappears once ADMIN_USERNAME/ADMIN_PASSWORD are changed.
+             */
+            async checkAdminCredsBanner() {
+                const el = document.getElementById('admin-creds-banner');
+                if (!el) return;
+                try {
+                    const res = await fetch('/api/auth/verify');
+                    const data = await res.json();
+                    if (!data.usingDefaultCredentials) { el.innerHTML = ''; return; }
+                    if (window.LSNotices && LSNotices.isDismissed('default-admin-creds')) {
+                        el.innerHTML = LSNotices.hiddenStub('default-admin-creds', 'Admin login info');
+                        return;
+                    }
+                    el.innerHTML = `
+                        <div class="banner" role="status" style="margin-bottom:20px;">
+                            <span class="material-symbols-rounded" style="color:var(--tok-warning);" aria-hidden="true">key</span>
+                            <div class="grow">
+                                <b>Default admin login in use</b>
+                                <span style="color:var(--tok-text-2);"> — username <code>admin</code>, password <code>lanstreamer123</code>.
+                                To change them: set <code>ADMIN_USERNAME</code> and <code>ADMIN_PASSWORD</code> in the <code>.env</code> file next to the app, then restart LANStreamer (README → “Security Setup — Admin Login”).</span>
+                            </div>
+                            ${window.LSNotices ? LSNotices.dismissButton('default-admin-creds') : ''}
+                        </div>`;
+                } catch { el.innerHTML = ''; }
             }
 
             async checkSecurityWarning() {

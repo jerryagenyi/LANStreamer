@@ -65,6 +65,14 @@ describe('Admin auth gate', () => {
     expect(stopStreamMock).toHaveBeenCalled();
   });
 
+  it('verify reports when default admin credentials are active (first-run banner)', async () => {
+    const res = await request(app)
+      .get('/api/auth/verify')
+      .set('Authorization', `Bearer ${token}`);
+    expect(res.status).toBe(200);
+    expect(res.body.usingDefaultCredentials).toBe(true);
+  });
+
   it('keeps listener-facing reads public', async () => {
     const res = await request(app).get('/api/streams/status');
     expect(res.status).toBe(200);
