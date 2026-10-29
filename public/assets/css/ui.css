@@ -43,13 +43,18 @@
             color: var(--tok-live);
         }
 
-        /* Equalizer bars — the one animated element; answers "is it playing" */
+        /* Equalizer bars — the one animated element; answers "is it playing".
+           LISTENER page only: freeze to a static silhouette while paused
+           (body.playing is toggled by updatePlayerUi). Admin rows keep
+           animating — there the eq means "stream is live", independent
+           of whether anyone is listening. */
         .eq { display: inline-flex; align-items: flex-end; gap: 2px; height: 0.75rem; }
         .eq span, .eq i { width: 3px; border-radius: 1px; background: currentColor; animation: eq-bounce 1s ease-in-out infinite; }
         .eq span:nth-child(1), .eq i:nth-child(1) { height: 40%; animation-delay: 0s; }
         .eq span:nth-child(2), .eq i:nth-child(2) { height: 90%; animation-delay: 0.15s; }
         .eq span:nth-child(3), .eq i:nth-child(3) { height: 60%; animation-delay: 0.3s; }
         .eq span:nth-child(4), .eq i:nth-child(4) { height: 100%; animation-delay: 0.1s; }
+        body.listener:not(.playing) .eq span, body.listener:not(.playing) .eq i { animation: none; }
         @keyframes eq-bounce { 0%, 100% { transform: scaleY(0.4); } 50% { transform: scaleY(1); } }
         @media (prefers-reduced-motion: reduce) { .eq span, .eq i { animation: none; } }
 
