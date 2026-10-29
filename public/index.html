@@ -571,6 +571,32 @@
             <!-- FFmpeg Streams - Component or Static -->
             <div id="ffmpeg-streams"></div>
 
+            <!-- Audio inputs: collapsible (default collapsed, state remembered), IN USE / IDLE / MISSING status -->
+            <div class="ls-collapse glass-card" data-ls-collapse="audio-inputs" style="padding:0;">
+                <button type="button" class="ls-collapse-toggle" data-ls-collapse-toggle="audio-inputs" aria-expanded="false"
+                        style="width:100%;display:flex;align-items:center;gap:10px;padding:16px 18px;border-bottom:1px solid var(--tok-line);">
+                    <span class="flex items-center gap-2.5 min-w-0">
+                        <span class="ls-collapse-title" style="font-size:15px;font-weight:600;color:var(--tok-text-1);">Audio inputs</span>
+                        <span class="chip chip-off" id="audio-inputs-count"></span>
+                    </span>
+                    <span class="flex items-center gap-2" style="margin-left:auto;">
+                        <!-- span, NOT a nested <button>: buttons cannot nest, the parser
+                             ejects them from the row (that was the misplaced-icons bug).
+                             stopPropagation keeps rescan from toggling the collapse. -->
+                        <span role="button" tabindex="0" class="iconbtn" id="refresh-audio-devices" style="width:30px;height:30px;"
+                              aria-label="Rescan inputs" title="Rescan inputs"
+                              onclick="event.stopPropagation()"
+                              onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();event.stopPropagation();this.click();}">
+                            <span class="material-symbols-rounded" style="font-size:15px;">refresh</span>
+                        </span>
+                        <span class="material-symbols-rounded ls-collapse-chevron" aria-hidden="true">expand_more</span>
+                    </span>
+                </button>
+                <div class="ls-collapse-body is-closed" data-ls-collapse-body="audio-inputs">
+                    <ul class="devices" id="audio-devices" style="margin:0;"></ul>
+                </div>
+            </div>
+
             <!-- Video Sources - Collapsible Panel (Hidden by default) -->
             <div class="collapsible-section hidden">
                 <button id="video-sources-toggle" class="w-full flex items-center justify-between p-3 bg-[var(--card-bg)] border border-[var(--border-color)] rounded-xl hover:bg-[var(--card-bg)]/80 transition-all duration-300">
@@ -628,32 +654,6 @@
                     /* The QR endpoint returns a bare viewBox svg — give it real size */
                     #share-qr svg { width: 100%; height: auto; display: block; }
                 </style>
-            </div>
-
-            <!-- Audio inputs: collapsible (default collapsed, state remembered), IN USE / IDLE / MISSING status -->
-            <div class="ls-collapse glass-card" data-ls-collapse="audio-inputs" style="padding:0;">
-                <button type="button" class="ls-collapse-toggle" data-ls-collapse-toggle="audio-inputs" aria-expanded="false"
-                        style="width:100%;display:flex;align-items:center;gap:10px;padding:16px 18px;border-bottom:1px solid var(--tok-line);">
-                    <span class="flex items-center gap-2.5 min-w-0">
-                        <span class="ls-collapse-title" style="font-size:15px;font-weight:600;color:var(--tok-text-1);">Audio inputs</span>
-                        <span class="chip chip-off" id="audio-inputs-count"></span>
-                    </span>
-                    <span class="flex items-center gap-2" style="margin-left:auto;">
-                        <!-- span, NOT a nested <button>: buttons cannot nest, the parser
-                             ejects them from the row (that was the misplaced-icons bug).
-                             stopPropagation keeps rescan from toggling the collapse. -->
-                        <span role="button" tabindex="0" class="iconbtn" id="refresh-audio-devices" style="width:30px;height:30px;"
-                              aria-label="Rescan inputs" title="Rescan inputs"
-                              onclick="event.stopPropagation()"
-                              onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();event.stopPropagation();this.click();}">
-                            <span class="material-symbols-rounded" style="font-size:15px;">refresh</span>
-                        </span>
-                        <span class="material-symbols-rounded ls-collapse-chevron" aria-hidden="true">expand_more</span>
-                    </span>
-                </button>
-                <div class="ls-collapse-body is-closed" data-ls-collapse-body="audio-inputs">
-                    <ul class="devices" id="audio-devices" style="margin:0;"></ul>
-                </div>
             </div>
 
             <!-- Event Manager - Component -->
