@@ -11,7 +11,7 @@
     <link rel="stylesheet" href="/assets/vendor/tailwind.css">
     <link rel="stylesheet" href="/assets/vendor/fonts/fonts.css?v=6">
     <link rel="stylesheet" href="/assets/css/tokens.css?v=10">
-    <link rel="stylesheet" href="/assets/css/ui.css?v=10">
+    <link rel="stylesheet" href="/assets/css/ui.css?v=11">
     <script src="/assets/js/theme-toggle.js?v=6"></script>
     <script src="/assets/js/admin-auth.js?v=6"></script>
     <script src="/assets/js/qr-share.js?v=6"></script>
@@ -304,9 +304,9 @@
           position: sticky;
           top: 0;
           z-index: 100;
-          background: rgba(15, 12, 41, 0.7);
-          backdrop-filter: blur(20px) saturate(180%);
-          border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+          /* Opaque: scrolled content must not ghost through the sticky bar */
+          background: var(--tok-surface-1);
+          border-bottom: 1px solid var(--tok-line);
           box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
         }
 
