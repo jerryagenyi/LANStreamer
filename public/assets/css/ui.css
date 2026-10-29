@@ -318,6 +318,9 @@
 .playbtn.stop{background:var(--tok-danger-dim);color:var(--tok-danger);border-color:color-mix(in oklab,var(--tok-danger) 30%,transparent)}
 .playbtn.stop:hover{background:var(--tok-danger);color:#fff}
 .rowactions{display:flex;align-items:center;gap:4px}
+/* Native dropdown rows: paint them from tokens so the open list can never
+   come up black-on-black on any platform (pairs with color-scheme). */
+select option{background:var(--tok-surface-1);color:var(--tok-text-1)}
 .menu{position:relative}
 /* ⋯ sits at the row's far left — the popup must extend RIGHTWARD or it would
    overflow the card edge (was right:0 when the menu lived on the right). */

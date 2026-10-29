@@ -834,7 +834,7 @@ class FFmpegStreamsManager {
                         <label class="block text-sm font-medium text-gray-300 mb-2">Audio Source</label>
                         <select
                             id="editStreamDevice"
-                            class="w-full px-3 py-2 bg-[#1a1a1a] border border-[var(--border-color)] rounded-lg text-white focus:outline-none focus:border-[var(--primary-color)] transition-colors"
+                            style="height:40px;padding:0 12px;border-radius:10px;background:var(--tok-surface-inset);border:1px solid var(--tok-line-strong);color:var(--tok-text-1);font:inherit;font-size:14px;width:100%;"
                             required
                         >
                             <option value="">Select audio device...</option>

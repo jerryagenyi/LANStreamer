@@ -12,6 +12,9 @@
    ========================================================================== */
 
 :root {
+  /* Native form controls (select popups, scrollbars) follow the active theme;
+     without this Windows renders dark-styled dropdowns as black-on-black. */
+  color-scheme: dark;
   /* Surfaces (designer palette, 2026-10-28 redesign) */
   --tok-bg: #07090D;            /* app background — near black */
   --tok-surface-1: #0E1117;     /* cards */
@@ -69,6 +72,7 @@
    Light theme
    -------------------------------------------------------------------------- */
 [data-theme="light"] {
+  color-scheme: light;
   --tok-bg: #F4F5F8;
   --tok-surface-1: #FFFFFF;
   --tok-surface-2: #EEF0F3;
