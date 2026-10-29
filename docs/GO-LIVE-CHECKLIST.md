@@ -29,8 +29,8 @@ Start from a pristine state — most "bugs" this project has hit were dirty-stat
 - [ ] Stream lifecycle: **Add stream** (Save, stays stopped) → **Go live** → status LIVE + uptime ticking → **Stop** → **Retry** → edit (change input) → duplicate → reorder (Move up/down) → delete. No button ever hangs (all mutating calls have timeouts)
 - [ ] Start All / Stop All with 2+ streams
 - [ ] Every stop/quit leaves **zero orphaned `ffmpeg.exe`** in Task Manager (this was the zombie-device bug — verify after every stop path, including edit-while-live and quit-while-live)
-- [ ] **Crash-path orphan test:** Task Manager → End task on LANStreamer mid-stream → no orphaned children survive (Windows doesn't reap them). Add a startup sweep that kills stale ffmpeg/icecast **matched by vendored path**, not by process name (never kill the user's own ffmpeg)
-- [ ] **Sleep/hibernate mid-broadcast:** laptop suspends while LIVE → stream dies silently. Prevent sleep while any stream is live (or document loudly)
+- [ ] **Crash-path orphan test:** Task Manager → End task on LANStreamer mid-stream → relaunch → stale children are cleaned. *(Startup sweep SHIPPED: Electron main kills orphaned ffmpeg/icecast matched by vendored executable path — never by process name. This item now just verifies it works.)*
+- [x] **Sleep/hibernate mid-broadcast:** SHIPPED — `powerSaveBlocker` (prevent-app-suspension) engages while any stream is live and releases when none are; on resume, streams that were live before suspend are auto-restored after a 5s device-settle delay
 - [ ] **Non-ASCII paths:** test with a Windows username containing spaces + non-ASCII (e.g. `José Müller`) and a Unicode dshow device name — spawn quoting and icecast config paths are classic failure points
 - [ ] Error path: start a stream on a device already held by another app → friendly busy error with **Change input** / **Retry**, full diagnostic collapsed behind a link to /docs
 - [ ] Audio inputs card (under the streams card): collapsed by default, opens/closes, rescan works without toggling the card, IN USE / IDLE / MISSING statuses correct

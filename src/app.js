@@ -126,17 +126,22 @@ export function startServer({ port = process.env.PORT || 3001, host = process.en
   // Voluntary telemetry (no-op unless the user consented and POSTHOG_KEY is set)
   import('./services/TelemetryService.js').then(m => m.default.init()).catch(() => {});
 
-  const shutdown = async ({ timeoutMs = 5000 } = {}) => {
+  // stopStreams=false lets a caller that already stopped streams/icecast (the
+  // Electron shell does its own ordered teardown) skip the duplicate pass —
+  // a second stopAllStreams doubles quit latency and can throw on dead state.
+  const shutdown = async ({ timeoutMs = 5000, stopStreams = true } = {}) => {
     try {
-      const stats = streamingService.getStats();
-      const running = stats.streams.filter(s => s.status === 'running');
-      if (running.length > 0) {
-        logger.info(`Shutdown: stopping ${running.length} active stream(s)...`);
-        await streamingService.stopAllStreams();
-      }
-      if (icecastService.process && !icecastService.process.killed) {
-        logger.info('Shutdown: stopping Icecast...');
-        await icecastService.stop(false).catch(err => logger.warn(`Icecast stop failed: ${err.message}`));
+      if (stopStreams) {
+        const stats = streamingService.getStats();
+        const running = stats.streams.filter(s => s.status === 'running');
+        if (running.length > 0) {
+          logger.info(`Shutdown: stopping ${running.length} active stream(s)...`);
+          await streamingService.stopAllStreams();
+        }
+        if (icecastService.process && !icecastService.process.killed) {
+          logger.info('Shutdown: stopping Icecast...');
+          await icecastService.stop(false).catch(err => logger.warn(`Icecast stop failed: ${err.message}`));
+        }
       }
     } catch (error) {
       logger.error('Error stopping services during shutdown:', error);
