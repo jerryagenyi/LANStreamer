@@ -183,11 +183,6 @@ html .glass-card {
   background: var(--tok-surface-1);
   border-color: var(--tok-line);
 }
-[data-theme="light"] html .glass-card:hover,
-html [data-theme="light"] .glass-card:hover {
-  background: var(--tok-surface-1);
-  border-color: var(--tok-line-strong);
-}
 
 /* Theme toggle button */
 .theme-toggle {

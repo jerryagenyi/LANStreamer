@@ -20,7 +20,7 @@
       'border:1px solid rgba(255,255,255,.25);background:rgba(15,18,26,.7);color:#fff;display:grid;place-items:center;cursor:pointer;">' +
       '<span class="material-symbols-rounded" style="font-size:20px;">close</span></button>' +
       '<img src="' + src + '" alt="' + (alt || 'Full image') + '" style="max-width:min(94vw,1600px);max-height:88vh;' +
-      'object-fit:contain;display:block;border-radius:8px;box-shadow:0 24px 80px rgba(0,0,0,.6);cursor:default;">';
+      'object-fit:contain;display:block;border-radius:8px;cursor:default;">';
     overlay.addEventListener('click', (e) => { if (e.target === overlay || e.target.closest('button')) close(); });
     document.body.appendChild(overlay);
     document.addEventListener('keydown', escClose);

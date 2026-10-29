@@ -10,8 +10,8 @@
     <link rel="icon" type="image/svg+xml" href="/assets/logo-mark.svg">
     <link rel="stylesheet" href="/assets/vendor/tailwind.css">
     <link rel="stylesheet" href="/assets/vendor/fonts/fonts.css?v=6">
-    <link rel="stylesheet" href="/assets/css/tokens.css?v=9">
-    <link rel="stylesheet" href="/assets/css/ui.css?v=9">
+    <link rel="stylesheet" href="/assets/css/tokens.css?v=10">
+    <link rel="stylesheet" href="/assets/css/ui.css?v=10">
     <script src="/assets/js/theme-toggle.js?v=6"></script>
     <script src="/assets/js/admin-auth.js?v=6"></script>
     <script src="/assets/js/qr-share.js?v=6"></script>
@@ -65,36 +65,25 @@
            GLASS CARD SYSTEM (Foundation)
            ======================================== */
 
-        /* Premium glass card base */
+        /* Premium glass card base — flat: no shadow, no hover lift, no transition */
         .glass-card {
           background: var(--glass-bg-subtle);
           border: 1px solid var(--glass-border-subtle);
           border-radius: 16px;
           backdrop-filter: blur(20px) saturate(180%);
           -webkit-backdrop-filter: blur(20px) saturate(180%);
-          box-shadow: var(--shadow-glass);
-          transition: all 0.3s var(--ease-emphasized);
-        }
-
-        .glass-card:hover {
-          background: var(--glass-bg-mid);
-          border-color: var(--glass-border-mid);
-          box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.08);
-          transform: translateY(-2px);
         }
 
         /* Elevated variant (for key cards) */
         .glass-card-elevated {
           background: linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.03) 100%);
           border: 1px solid rgba(255, 255, 255, 0.1);
-          box-shadow: 0 8px 32px rgba(102, 126, 234, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.1);
         }
 
         /* Inset variant (for nested content) */
         .glass-card-inset {
           background: rgba(0, 0, 0, 0.2);
           border: 1px solid rgba(255, 255, 255, 0.05);
-          box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.3), 0 1px 0 rgba(255, 255, 255, 0.05);
         }
 
         /* ========================================
@@ -318,7 +307,7 @@
           background: rgba(15, 12, 41, 0.7);
           backdrop-filter: blur(20px) saturate(180%);
           border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-          box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
         }
 
         .logo-glow {

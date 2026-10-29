@@ -19,8 +19,8 @@
     </style>
     <link rel="stylesheet" href="/assets/vendor/tailwind.css">
     <link rel="stylesheet" href="/assets/vendor/fonts/fonts.css?v=5">
-    <link rel="stylesheet" href="/assets/css/tokens.css?v=9">
-    <link rel="stylesheet" href="/assets/css/ui.css?v=9">
+    <link rel="stylesheet" href="/assets/css/tokens.css?v=10">
+    <link rel="stylesheet" href="/assets/css/ui.css?v=10">
     <script src="/assets/js/theme-toggle.js?v=5"></script>
     <script src="/assets/js/qr-share.js?v=5"></script>
     <script src="/assets/js/marquee.js?v=5"></script>
@@ -81,31 +81,21 @@
           border-radius: 16px;
           backdrop-filter: blur(20px) saturate(180%);
           -webkit-backdrop-filter: blur(20px) saturate(180%);
-          box-shadow: var(--shadow-glass);
-          transition: all 0.3s var(--ease-emphasized);
-        }
-
-        .glass-card:hover {
-          background: var(--glass-bg-mid);
-          border-color: var(--glass-border-mid);
-          box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.08);
-          transform: translateY(-2px);
         }
 
         /* Inset variant (for nested content) */
         .glass-card-inset {
           background: rgba(0, 0, 0, 0.2);
           border: 1px solid rgba(255, 255, 255, 0.05);
-          box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.3), 0 1px 0 rgba(255, 255, 255, 0.05);
         }
 
-        /* Glass header (v2 §7) */
+        /* Glass header (v2 §7) — the only shadowed surface */
         .header-glass {
           background: rgba(15, 12, 41, 0.7);
           backdrop-filter: blur(20px) saturate(180%);
           -webkit-backdrop-filter: blur(20px) saturate(180%);
           border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-          box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
         }
 
         /* Primary/secondary glass buttons for streams page */
@@ -262,7 +252,7 @@
 
         .on-air-button.inactive {
             background: var(--glass-bg-mid);
-            box-shadow: var(--shadow-glass);
+            box-shadow: none;
             border-color: var(--glass-border-subtle);
         }
 
