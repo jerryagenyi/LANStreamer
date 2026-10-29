@@ -60,19 +60,21 @@ Start from a pristine state — most "bugs" this project has hit were dirty-stat
 - [ ] Offline check: `node scripts/verify-offline.mjs` — app fully renders with all non-localhost requests blocked (fonts/assets vendored)
 - [ ] Reboot the operator PC with the app configured: relaunch and confirm streams/config persist (config/ survives)
 
-## 6. Packaging (NSIS installer + portable)
+## 6. Packaging (NSIS installer + portable — bundles FFmpeg + Icecast)
+
+The installer carries everything: `electron:build:win` auto-runs `fetch-vendor-binaries.mjs` (fills gitignored `vendor/` with FFmpeg + the Icecast kit and a **clean stock** icecast.xml — never the local machine's passwords) then `prepare-telemetry-key.mjs`, then electron-builder packs `vendor/` as extraResources. At runtime the app prefers the bundled binaries (explicit `FFMPEG_PATH` / `ICECAST_EXE_PATH` env still wins) and keeps all mutable state in `%APPDATA%/LANStreamer` — nothing writes next to the exe.
 
 - [ ] `npm test` green immediately before building
-- [ ] `node scripts/prepare-telemetry-key.mjs` run in the same session (no stale key)
-- [ ] `npm run electron:build:win` → produces installer + portable in `dist/`
-- [ ] **Install on a clean Windows machine (or VM) that has never run the project** — this is the single most important check. Then on that machine:
+- [ ] `npm run electron:build:win` → installer + portable in `release/`; installer size sane (~250 MB with vendored binaries)
+- [ ] **Install on a clean Windows machine (or VM) with NOTHING pre-installed** — no Node, no FFmpeg, no Icecast. This is the single most important check ("works on my PC" insurance). On that machine:
   - [ ] App launches, dashboard opens, login works, version shows correctly (from package.json, not "unknown")
   - [ ] First-run telemetry consent dialog appears (bundled key resolves) — test BOTH Allow and Decline paths
-  - [ ] With FFmpeg + Icecast installed per the guides: create a stream and go live; a phone plays it
-  - [ ] FFmpeg/Icecast missing → errors are the friendly classified kind pointing at the guides (not stack traces)
-- [ ] Confirm the build does NOT contain `.env`, `config/` from the dev machine, or `public/uploads/` (inspect the NSIS contents or a fresh install's resources)
+  - [ ] Create a stream and go live **using only the bundled binaries**; a phone plays it (check Task Manager: ffmpeg.exe and icecast.exe run from the install's `resources\vendor\`)
+  - [ ] All config/uploads land in `%APPDATA%/LANStreamer` (delete + reinstall the app → streams and settings survive)
+- [ ] Confirm the build does NOT contain `.env`, the dev machine's `config/`, `public/uploads/`, or a real-credential icecast.xml (inspect the installer's resources)
 - [ ] SmartScreen will warn on an unsigned exe — decide: accept for now (document in release notes: "More info → Run anyway") or invest in code signing later
 - [ ] Portable build: runs from a folder without installing; config lands somewhere sensible and persists between runs
+- [ ] Release notes must credit the bundled GPL binaries (FFmpeg gyan.dev build, Icecast) with their licenses
 
 ## 7. Release: version, tag, notes on GitHub
 
@@ -87,14 +89,13 @@ Start from a pristine state — most "bugs" this project has hit were dirty-stat
     --title "LANStreamer v1.3.0 — desktop app" \
     --notes-file release-notes-v1.3.0.md
   ```
-- [ ] Release notes template (user-facing, non-technical): **What's new** (5–8 bullets) · **Installing** (prereqs: FFmpeg + Icecast with guide links; SmartScreen note) · **Upgrading from a source/ZIP install** · **Known issues** · **Telemetry disclosure** (opt-in, what's collected, how to decline)
+- [ ] Release notes template (user-facing, non-technical): **What's new** (5–8 bullets) · **Installing** (nothing to pre-install — FFmpeg + Icecast come bundled; SmartScreen note) · **Upgrading from a source/ZIP install** · **Known issues** · **Telemetry disclosure** (opt-in, what's collected, how to decline) · **Licenses** (bundled FFmpeg/Icecast are GPL)
 - [ ] Smoke the release as a stranger would: fresh VM, download the installer **from the GitHub release page**, install, run one stream end-to-end
 - [ ] Post-release: watch PostHog for `app_start` from install IDs that aren't yours; triage `stream_failed` / `lanstreamer_client_*` events as user reports come in
 
 ## 8. Deferred (explicitly NOT blocking this release)
 
 - Code signing certificate (SmartScreen reputation builds over time; signing is a follow-up)
-- Bundling FFmpeg + Icecast into the installer
 - macOS/Linux packaging (source-only for now)
 - Auto-update via electron-updater (update checks point at GitHub releases today)
 - PWA for listeners (deliberately removed — DHCP IP changes break it; see docs)

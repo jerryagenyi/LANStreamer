@@ -7,6 +7,7 @@ import errorDiagnostics from '../utils/errorDiagnostics.js'
 import IcecastService from './IcecastService.js'
 import AudioDeviceService from './AudioDeviceService.js'
 import config from '../config/index.js'
+import { vendoredFfmpegPath, dataDir } from '../utils/vendorPaths.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
@@ -41,7 +42,7 @@ class StreamingService {
     this.activeStreams = {}
     /** @type {string[]} Display order of stream IDs (S1=first, S2=second, etc.). Persisted in streams.json as _order. */
     this.streamOrder = []
-    this.streamsConfigPath = join(process.cwd(), 'config', 'streams.json')
+    this.streamsConfigPath = join(dataDir(), 'streams.json')
     this.lastIcecastStatus = 'unknown'
     this.icecastDownSince = null // Track when Icecast went down
     this.ICECAST_GRACE_PERIOD_SECONDS = 30 // Wait 30 seconds before stopping streams
@@ -378,7 +379,11 @@ class StreamingService {
     logger.info(`FFmpeg executable path: ${ffmpegPath}`)
     logger.info(`Full command: ${ffmpegPath} ${args.join(' ')}`)
 
-    const process = spawn(ffmpegPath, args, {
+    // shell:true lets 'ffmpeg' resolve from PATH — but an absolute vendored
+    // path (which may contain spaces, e.g. C:\Users\John Doe\...) must be
+    // quoted or cmd.exe splits it. Bare 'ffmpeg' must NOT be quoted.
+    const spawnCommand = ffmpegPath === 'ffmpeg' ? ffmpegPath : `"${ffmpegPath}"`
+    const process = spawn(spawnCommand, args, {
       stdio: ['ignore', 'pipe', 'pipe'],
       detached: false,
       shell: true  // Required on Windows to resolve 'ffmpeg' from PATH
@@ -1386,17 +1391,23 @@ class StreamingService {
    * @returns {string} Path to FFmpeg
    */
   findFFmpegPath() {
-    // Check if FFmpeg is in PATH
+    // 1. Explicit user configuration
+    if (process.env.FFMPEG_PATH) return process.env.FFMPEG_PATH
+    // 2. Vendored binary (bundled with the installer — same engine on every
+    //    machine, beats whatever happens to be on PATH)
+    const vendored = vendoredFfmpegPath()
+    if (vendored) return vendored
+    // 3. System PATH
     try {
       execSync('ffmpeg -version', { stdio: 'ignore' })
       return 'ffmpeg'
     } catch (error) {
-      // Check for bundled FFmpeg in the project
+      // 4. Legacy project-local fallback
       const bundledPath = join(__dirname, '../../bin/ffmpeg.exe')
       if (fs.existsSync(bundledPath)) {
         return bundledPath
       }
-      
+
       // Fallback to system PATH
       return 'ffmpeg'
     }

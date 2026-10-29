@@ -14,7 +14,7 @@
     "vendor:fonts": "node scripts/vendor-fonts.mjs",
     "electron:dev": "electron electron/main.js",
     "electron:smoke": "electron electron/main.js --smoke",
-    "electron:build:win": "node scripts/prepare-telemetry-key.mjs && electron-builder --win nsis portable",
+    "electron:build:win": "node scripts/fetch-vendor-binaries.mjs && node scripts/prepare-telemetry-key.mjs && electron-builder --win nsis portable",
     "setup": "node scripts/setup.js",
     "screenshots": "node scripts/generate-screenshots.js"
   },
@@ -28,6 +28,12 @@
       "public/**",
       "package.json",
       "README.md"
+    ],
+    "extraResources": [
+      {
+        "from": "vendor",
+        "to": "vendor"
+      }
     ],
     "directories": {
       "output": "release"

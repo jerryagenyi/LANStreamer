@@ -4,6 +4,7 @@ import os from 'os';
 import crypto from 'crypto';
 import { createRequire } from 'module';
 import logger from '../utils/logger.js';
+import { dataDir } from '../utils/vendorPaths.js';
 
 const require = createRequire(import.meta.url);
 
@@ -29,7 +30,7 @@ const require = createRequire(import.meta.url);
  */
 class TelemetryService {
   constructor() {
-    this.configPath = path.join(process.cwd(), 'config', 'telemetry.json');
+    this.configPath = path.join(dataDir(), 'telemetry.json');
     this.client = null;
     this.installId = null;
     this.consented = null; // null = undecided, true/false = user choice

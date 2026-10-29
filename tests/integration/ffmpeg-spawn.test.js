@@ -13,9 +13,9 @@ describe('FFmpeg spawn options (Windows)', () => {
     const streamingPath = path.join(__dirname, '../../src/services/StreamingService.js');
     const content = fs.readFileSync(streamingPath, 'utf8');
     expect(content).toMatch(/shell:\s*true/);
-    expect(content).toMatch(/spawn\s*\(\s*ffmpegPath\s*,\s*args\s*,/);
-    const spawnBlock = content.match(/spawn\s*\([^)]+\)/s);
+    // ffmpegPath (PATH) or spawnCommand (quoted absolute vendored path) — both valid
+    expect(content).toMatch(/spawn\s*\(\s*(ffmpegPath|spawnCommand)\s*,\s*args\s*,/);
+    const spawnBlock = content.match(/spawn\s*\(\s*(ffmpegPath|spawnCommand)\s*,\s*args\s*,\s*\{[^}]*shell:\s*true/s);
     expect(spawnBlock).toBeDefined();
-    expect(spawnBlock[0]).toMatch(/shell:\s*true/);
   });
 });

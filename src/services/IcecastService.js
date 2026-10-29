@@ -15,6 +15,7 @@ import {
   ErrorFactory,
   ErrorHandler
 } from '../utils/errors.js'
+import { vendoredIcecastExePath, ensureVendoredIcecastConfig, dataDir } from '../utils/vendorPaths.js'
 
 const execAsync = promisify(exec)
 
@@ -75,8 +76,9 @@ class IcecastService {
    * Get the device config file path
    */
   getDeviceConfigPath() {
-    // Use project-based config directory for better visibility and debugging
-    return path.join(process.cwd(), 'config', 'device-config.json')
+    // Data dir (userData in packaged apps, repo config/ in dev) — a packaged
+    // app must never depend on cwd, which is the install dir there.
+    return path.join(dataDir(), 'device-config.json')
   }
 
   /**
@@ -293,7 +295,8 @@ class IcecastService {
     }
     const result = await ErrorHandler.handle(async () => {
       const strategies = [
-        () => this._checkEnvironmentPaths(),
+        () => this._checkEnvironmentPaths(),  // explicit user config always wins
+        () => this._checkVendoredPaths(),     // bundled kit: fresh machines need nothing installed
         () => this._checkStandardPaths(),
         () => this._checkSystemPath(),
         () => this._checkLegacyPaths()
@@ -351,7 +354,26 @@ class IcecastService {
   }
 
   /**
-   * Check environment variable paths (highest priority)
+   * Vendored Icecast kit (bundled with the installer — wins over every
+   * auto-detected system install so a fresh machine needs nothing installed;
+   * explicit env config still outranks it). Creates the writable config +
+   * logdir in the data dir on first use; web/admin assets stay on the kit.
+   */
+  async _checkVendoredPaths() {
+    try {
+      const exe = vendoredIcecastExePath();
+      if (!exe) return null;
+      const vendoredConfig = ensureVendoredIcecastConfig();
+      if (!vendoredConfig) return null;
+      return await this._validatePathSet({ exe, config: vendoredConfig }, 'vendored');
+    } catch (error) {
+      logger.debug(`Vendored icecast check failed: ${error.message}`);
+      return null;
+    }
+  }
+
+  /**
+   * Check environment variable paths (explicit user configuration — highest priority)
    */
   async _checkEnvironmentPaths() {
     const paths = config.icecast?.paths;
@@ -1393,9 +1415,9 @@ class IcecastService {
       // Try multiple config path sources
       let configPath = this.paths?.config || this.configPath;
 
-      // If no path found, try the project's config directory
+      // If no path found, try the data directory (repo config/ in dev)
       if (!configPath || !await fs.pathExists(configPath)) {
-        const projectConfigPath = path.join(process.cwd(), 'config', 'icecast.xml');
+        const projectConfigPath = path.join(dataDir(), 'icecast.xml');
         if (await fs.pathExists(projectConfigPath)) {
           configPath = projectConfigPath;
           logger.icecast('Using project config file for security check', { path: configPath });

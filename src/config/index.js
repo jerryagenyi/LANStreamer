@@ -16,6 +16,7 @@
 import dotenv from 'dotenv'
 import path from 'path'
 import fs from 'fs'
+import { dataDir } from '../utils/vendorPaths.js'
 
 // Load environment variables (only for non-Icecast configs)
 dotenv.config()
@@ -26,7 +27,7 @@ dotenv.config()
  */
 function getIcecastPortFromDeviceConfig() {
   try {
-    const deviceConfigPath = path.join(process.cwd(), 'config', 'device-config.json')
+    const deviceConfigPath = path.join(dataDir(), 'device-config.json')
     if (fs.existsSync(deviceConfigPath)) {
       const deviceConfig = JSON.parse(fs.readFileSync(deviceConfigPath, 'utf8'))
       if (deviceConfig.port) {

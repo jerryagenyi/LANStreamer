@@ -2,7 +2,7 @@
 
 **LAN audio streaming for language interpretation, meetings, and events.** LANStreamer is a desktop app that turns an ordinary PC into a multi-channel audio streaming server for your local network (LAN) — it orchestrates **FFmpeg** and **Icecast** behind the scenes, so a whole room can listen to live, low-latency audio on their phones.
 
-> **Status:** the Electron desktop app is in active development on the `dev` branch. There is **no downloadable installer yet** — until the first packaged release, run it from source (`npm run electron:dev`, or the server-only `Start LANStreamer Server.bat` for a source/ZIP copy). FFmpeg and Icecast are installed separately for now. The path to the first bundled release lives in [docs/GO-LIVE-CHECKLIST.md](docs/GO-LIVE-CHECKLIST.md).
+> **Status:** the Electron desktop app is in active development on the `dev` branch. There is **no downloadable installer yet** — until the first packaged release, run it from source (`npm run electron:dev`, or the server-only `Start LANStreamer Server.bat` for a source/ZIP copy). The installer will **bundle FFmpeg and Icecast** so operators need nothing pre-installed (implemented; source/CLI installs still set them up separately — see the [guides](docs/guides/README.md)). The path to the first release lives in [docs/GO-LIVE-CHECKLIST.md](docs/GO-LIVE-CHECKLIST.md).
 
 ---
 
@@ -96,7 +96,7 @@ Restart LANStreamer afterwards. (Logins stay valid for 7 days, or set `JWT_EXPIR
 - Windows 10/11 64-bit (macOS/Linux supported from source)
 - 4 GB RAM, dual-core CPU — encoding one stream uses ~2–5% of a modern CPU
 - Any audio input (built-in mic, USB, or virtual audio cable)
-- FFmpeg + Icecast (bundling planned; today installed separately — see [guides](docs/guides/README.md))
+- FFmpeg + Icecast — **bundled with the desktop installer** (in preparation). Running from source/CLI? Install them separately (see [guides](docs/guides/README.md))
 
 **Listeners:** any phone/PC with a browser and WiFi — nothing to install. ~20–25 listeners per consumer WiFi access point for stable audio; larger events should add access points.
 

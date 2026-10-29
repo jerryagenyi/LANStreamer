@@ -138,3 +138,6 @@ nul
 .claude-consult-prompt.md
 config/
 electron/telemetry-key.json
+
+# Bundled FFmpeg/Icecast binaries for the installer (fetched, never committed)
+/vendor/

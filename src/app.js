@@ -1,5 +1,6 @@
 import express from 'express';
 import path from 'path';
+import fs from 'fs';
 import { fileURLToPath } from 'url';
 import systemRouter from './routes/system.js';
 import streamsRouter from './routes/streams.js';
@@ -7,6 +8,7 @@ import settingsRouter from './routes/settings.js';
 import contactRouter from './routes/contact.js';
 import authRouter from './routes/auth.js';
 import telemetryRouter from './routes/telemetry.js';
+import { uploadsBase } from './utils/vendorPaths.js';
 import { optionalAuth, authenticateToken } from './middleware/auth.js';
 import { requireLocalhostAdmin } from './middleware/requireLocalhost.js';
 import streamingService from './services/StreamingService.js';
@@ -24,6 +26,12 @@ export function createApp() {
   // Serve static files from public directory (so listener page on LAN gets CSS/JS)
   const publicPath = path.join(__dirname, '../public');
   app.use(express.static(publicPath));
+
+  // Writable uploads (event banners, lobby music): userData in packaged apps —
+  // public/ is inside the read-only asar there. In dev this resolves to the
+  // same public/uploads the static line above already serves.
+  fs.mkdirSync(uploadsBase(), { recursive: true });
+  app.use('/uploads', express.static(uploadsBase()));
 
   // Lock admin to localhost: block admin UI and admin APIs from non-localhost (listener page and APIs stay allowed)
   app.use(requireLocalhostAdmin);

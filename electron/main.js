@@ -11,6 +11,14 @@ const __dirname = path.dirname(__filename);
 const SMOKE = process.argv.includes('--smoke') || process.env.ELECTRON_SMOKE === '1';
 const BASE_PORT = parseInt(process.env.PORT || '3001', 10);
 
+// Bundled binaries + writable data dir for PACKAGED installs — must be set
+// before the server code below imports, so services resolve the vendored
+// FFmpeg/Icecast (resources/vendor) and keep config/logs in userData.
+if (app.isPackaged && !process.env.LANSTREAMER_VENDOR_DIR) {
+  process.env.LANSTREAMER_VENDOR_DIR = path.join(process.resourcesPath, 'vendor');
+  process.env.LANSTREAMER_DATA_DIR = app.getPath('userData');
+}
+
 let mainWindow = null;
 let tray = null;
 let serverHandle = null;
