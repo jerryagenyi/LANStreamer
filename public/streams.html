@@ -20,7 +20,7 @@
     <link rel="stylesheet" href="/assets/vendor/tailwind.css">
     <link rel="stylesheet" href="/assets/vendor/fonts/fonts.css?v=5">
     <link rel="stylesheet" href="/assets/css/tokens.css?v=5">
-    <link rel="stylesheet" href="/assets/css/ui.css?v=5">
+    <link rel="stylesheet" href="/assets/css/ui.css?v=7">
     <script src="/assets/js/theme-toggle.js?v=5"></script>
     <script src="/assets/js/qr-share.js?v=5"></script>
     <script src="/assets/js/marquee.js?v=5"></script>
@@ -850,6 +850,7 @@
                             : isCurrent
                                 ? '<span class="eq" style="color:var(--tok-accent);" aria-hidden="true"><i></i><i></i><i></i><i></i></span>'
                                 : '<span class="chip chip-live"><span class="pip" aria-hidden="true"></span>LIVE</span>'}
+                        <span class="chplay" aria-hidden="true"><span class="material-symbols-rounded">${isCurrent ? 'pause' : 'play_arrow'}</span></span>
                     </button>`;
             }
 

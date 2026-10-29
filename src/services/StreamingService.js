@@ -193,25 +193,31 @@ class StreamingService {
    * @param {object} streamConfig - Stream configuration
    * @returns {object} Stream information
    */
+  /**
+   * Icecast dependency: if it isn't running, try to START it automatically
+   * instead of failing with a wall of text. Users reasonably expect
+   * "Go Live" to just work; the old "start Icecast from the dashboard first"
+   * error was the top support issue.
+   */
+  async ensureIcecastRunning() {
+    const isRunning = await IcecastService.isIcecastRunning()
+    if (isRunning) return
+    logger.info('Icecast not running — auto-starting it before starting stream...')
+    const startResult = await IcecastService.start(false).catch(err => ({ success: false, error: err.message }))
+    if (!startResult || startResult.success !== true) {
+      throw new Error(`Icecast server is not running and could not be started automatically (${startResult?.error || 'unknown error'}). Start it from the dashboard Icecast panel, then try again.`)
+    }
+    logger.info('Icecast auto-started successfully')
+  }
+
   async startStream(streamConfig) {
     if (!streamConfig || (!streamConfig.deviceId && !streamConfig.inputFile)) {
       throw new Error('Invalid stream configuration: deviceId or inputFile is required')
     }
 
-    // Icecast dependency: if it isn't running, try to START it automatically
-    // instead of failing with a wall of text. Users reasonably expect
-    // "Go Live" to just work; the old "start Icecast from the dashboard first"
-    // error was the top support issue.
+    // Icecast dependency: auto-start it if needed (see ensureIcecastRunning)
     try {
-      const isRunning = await IcecastService.isIcecastRunning()
-      if (!isRunning) {
-        logger.info('Icecast not running — auto-starting it before starting stream...')
-        const startResult = await IcecastService.start(false).catch(err => ({ success: false, error: err.message }))
-        if (!startResult || startResult.success !== true) {
-          throw new Error(`Icecast server is not running and could not be started automatically (${startResult?.error || 'unknown error'}). Start it from the dashboard Icecast panel, then try again.`)
-        }
-        logger.info('Icecast auto-started successfully')
-      }
+      await this.ensureIcecastRunning()
     } catch (icecastError) {
       // Re-throw with more context
       throw new Error(`Icecast dependency check failed: ${icecastError.message}`)
@@ -877,6 +883,11 @@ class StreamingService {
 
     try {
       logger.info(`Restarting stream: ${streamId}`)
+
+      // Icecast dependency: restarts power the boot autostart and the Retry
+      // button — without this check both fail with "connection refused" when
+      // icecast hasn't been started yet (fresh boot, or it crashed).
+      await this.ensureIcecastRunning()
 
       // Check for device conflicts before restarting
       if (stream.config.deviceId) {

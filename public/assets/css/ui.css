@@ -386,6 +386,12 @@ body.drawer-open .drawer{transform:none}
 .chrow .t{flex:1;min-width:0}
 .chrow .t b{display:block;font-weight:600}
 .chrow.off{opacity:.55;cursor:default}
+/* Explicit play affordance: the whole row is clickable, but listeners need a
+   visible button. Solid accent circle = tap to play; muted = tap to pause. */
+.chrow .chplay{width:36px;height:36px;border-radius:50%;background:var(--tok-accent);color:var(--tok-accent-contrast);display:grid;place-items:center;flex-shrink:0;transition:transform .12s ease}
+.chrow .chplay .material-symbols-rounded{font-size:22px}
+.chrow:hover .chplay{transform:scale(1.06)}
+.chrow[aria-current="true"] .chplay{background:var(--tok-surface-2);color:var(--tok-text-1);border:1px solid var(--tok-line-strong)}
 
 /* ========================================
    TOASTS — stack top-center; new toasts push older ones down

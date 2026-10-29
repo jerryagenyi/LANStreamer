@@ -878,25 +878,30 @@ class IcecastService {
    * Prefers 192.168.x.x from Wi‑Fi; falls back to first 192.168.x.x, then icecast hostname.
    */
   getPreferredLANHost() {
-    const current = this.getHostname();
-    if (current && /^192\.168\.\d{1,3}\.\d{1,3}$/.test(current)) {
-      return current;
-    }
+    // Scan the machine's CURRENT 192.168.x IPv4s first (WiFi preferred).
     const ifaces = os.networkInterfaces();
-    const lanIPs = [];
+    const current = [];
     const wifiIPs = [];
+    const lanIPs = [];
     for (const name of Object.keys(ifaces)) {
       const list = ifaces[name];
       if (!list) continue;
       const isWifi = /wi-?fi|wireless|wlan/i.test(name);
       for (const iface of list) {
         if (iface.family === 'IPv4' && !iface.internal && /^192\.168\.\d{1,3}\.\d{1,3}$/.test(iface.address)) {
+          current.push(iface.address);
           if (isWifi) wifiIPs.push(iface.address);
           else lanIPs.push(iface.address);
         }
       }
     }
-    return (wifiIPs[0] || lanIPs[0]) || current || 'localhost';
+    // Trust the persisted icecast.xml hostname ONLY while it still belongs to
+    // this machine. Routers/DHCP change the LAN subnet silently (e.g.
+    // 192.168.1.x -> 192.168.55.x) and a saved-but-dead IP would make the
+    // share card + QR hand listeners an unreachable address.
+    const saved = this.getHostname();
+    if (saved && current.includes(saved)) return saved;
+    return (wifiIPs[0] || lanIPs[0]) || saved || 'localhost';
   }
 
   /**
