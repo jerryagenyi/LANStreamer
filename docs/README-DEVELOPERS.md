@@ -132,6 +132,7 @@ Puppeteer-driven checks against the live app (start the server first) — each w
 - `verify-conflict.mjs` — the canonical E2E: device-conflict busy error, edit-frees-device, blocked stream then starts; asserts ZERO orphaned ffmpeg afterwards
 - `verify-chplay.mjs`, `verify-banner.mjs` — listener channel-row play button; event-banner cover + lightbox
 - `verify-flat.mjs`, `verify-header.mjs` — flat cards (no shadow/hover/animation) and sticky-header layering (toasts/menus above the bar, opaque bg)
+- `verify-sticky-scroll.mjs` — BEHAVIORAL sticky check (computed-style checks pass even when sticky is dead): scrolls both pages, asserts header `top === 0` and no horizontal overflow
 - `verify-host.mjs`, `verify-offline.mjs` — LAN-IP detection overrides stale saved hosts; app renders with ALL non-localhost requests aborted (offline proof)
 - `verify-lightselect.mjs`, `verify-rowalign.mjs` — light-mode dropdown contrast; stream-row action icons at a fixed x across data changes
 - `verify-fixes.mjs`, `verify-p2p3.mjs`, `verify-p4.mjs`, `verify-round3.mjs` — earlier redesign/fix rounds
@@ -153,7 +154,7 @@ The manual test plan lives in [TEST-PLAN.md](TEST-PLAN.md).
 - **Sharing the listener page happens in ONE place** (header share card with open/copy/QR via `LSShare`) — never per-stream share buttons.
 - **Flat surfaces (2026-10-29, explicit owner rule):** cards get NO hover effects, NO shadows, NO animations; collapse chevrons snap. The ONLY shadowed surface is the sticky header (`0 2px 8px rgba(0,0,0,.15)`). Status indicators (LIVE pip, eq bars, boot dots) and button accents are controls and keep their motion.
 - **Z-index ladder (keep to it):** menu-pop/bell panel 120 · scrim 130 · drawer 140 · lightbox 150 · **toasts 200** · boot overlay 9999 — everything above the sticky header (100). Anything below 100 will be hidden behind the header.
-- **`position: sticky` dies silently** if ANY ancestor has `overflow: hidden/auto/scroll` — it becomes the containing block instead of the page. Check the parent chain, not just the element.
+- **`position: sticky` dies silently** in TWO ways — and `getComputedStyle(el).position === 'sticky'` proves NEITHER: (1) any ancestor with `overflow: hidden/auto/scroll` becomes the containing block instead of the page; (2) the sticky element's parent is only as tall as the element itself (e.g. a flex item like `#header-container`) — zero slack, nothing to stick within. Fix (2) by making the parent sticky (`#header-container{position:sticky;top:0}` in ui.css). Always verify BEHAVIORALLY — scroll the page and assert the header's `getBoundingClientRect().top === 0` (`scripts/verify-sticky-scroll.mjs`).
 - **Buttons cannot nest.** A `<button>` inside a `<button>` gets ejected by the HTML parser (icons fly out of rows). Use `span[role=button]` + `stopPropagation` for controls inside a toggle (see the Audio-inputs rescan in `public/index.html`).
 - **Bust the asset cache on every change:** all local CSS/JS includes carry `?v=N` per page — bump it on every page whenever that asset changes, or open tabs serve stale code mixed with new markup (has caused multiple false bug reports).
 - `node scripts/check-design-tokens.mjs` fails CI on **new** violations; existing debt is grandfathered in `scripts/design-token-baseline.json` (update deliberately with `--update-baseline` and say why in the commit).

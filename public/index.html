@@ -11,7 +11,7 @@
     <link rel="stylesheet" href="/assets/vendor/tailwind.css">
     <link rel="stylesheet" href="/assets/vendor/fonts/fonts.css?v=6">
     <link rel="stylesheet" href="/assets/css/tokens.css?v=10">
-    <link rel="stylesheet" href="/assets/css/ui.css?v=13">
+    <link rel="stylesheet" href="/assets/css/ui.css?v=14">
     <script src="/assets/js/theme-toggle.js?v=6"></script>
     <script src="/assets/js/admin-auth.js?v=6"></script>
     <script src="/assets/js/qr-share.js?v=6"></script>
@@ -552,7 +552,8 @@
         <div style="font-size:.85rem;color:#5D6570;">Loading…</div>
       </div>
     </div>
-    <div class="relative min-h-screen flex flex-col body-bg dark group/design-root overflow-x-hidden" style='font-family: var(--tok-font);'>
+    <!-- no overflow-x on this wrapper: it would become the sticky containing block and kill the sticky header -->
+    <div class="relative min-h-screen flex flex-col body-bg dark group/design-root" style='font-family: var(--tok-font);'>
     <!-- Header Component Container -->
     <div id="header-container"></div>
     <main class="px-4 sm:px-6 lg:px-10 py-8">

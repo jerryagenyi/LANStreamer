@@ -342,6 +342,10 @@ select option{background:var(--tok-surface-1);color:var(--tok-text-1)}
     .arow .meta .src + .dotsep{display:none}
 }
 
+/* Admin header: HeaderComponent renders into #header-container, a flex item sized to the
+   header's own height — a sticky child has zero slack inside it, so the CONTAINER sticks. */
+#header-container{position:sticky;top:0;z-index:50}
+
 /* Side drawer (new stream) — above the sticky header so only ONE bar shows */
 .scrim{position:fixed;inset:0;background:rgba(5,8,12,.5);opacity:0;pointer-events:none;transition:.2s;z-index:130}
 .drawer{position:fixed;top:0;right:0;bottom:0;width:min(440px,100%);background:var(--tok-surface-1);border-left:1px solid var(--tok-line);transform:translateX(100%);transition:.25s ease;z-index:140;display:flex;flex-direction:column}
