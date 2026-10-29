@@ -114,9 +114,11 @@ Jest runs with `--experimental-vm-modules` (the project is ESM — `"type": "mod
 | Folder | Contents |
 |--------|----------|
 | `tests/unit/` | `StreamingService`, `IcecastService`, `errorDiagnostics` unit tests |
-| `tests/integration/` | Server startup, auth, admin-localhost lock, stream create/start/reorder/proxy, start-all, spawn errors |
+| `tests/integration/` | Server startup, auth, admin-localhost lock, telemetry client relay, stream create/start/reorder/proxy, start-all, spawn errors |
 | `tests/scenarios/` | Error-scenario coverage |
 | `tests/fixtures/` | Shared fixtures (`tests/setup.js` is the global setup) |
+
+**Integration-test rule:** mock `StreamingService` (see `auth.test.js` / `telemetry-client.test.js`) — importing the real one spawns ffmpeg/icecast during module load and the worker hangs forever. To test the real auth gate, `delete process.env.AUTH_DISABLED` at the top of the file like those suites do.
 
 ### Electron smoke test
 
@@ -134,6 +136,8 @@ Puppeteer-driven checks against the live app (start the server first) — each w
 - `verify-flat.mjs`, `verify-header.mjs` — flat cards (no shadow/hover/animation) and sticky-header layering (toasts/menus above the bar, opaque bg)
 - `verify-sticky-scroll.mjs` — BEHAVIORAL sticky check (computed-style checks pass even when sticky is dead): scrolls both pages, asserts header `top === 0` and no horizontal overflow
 - `verify-host.mjs`, `verify-offline.mjs` — LAN-IP detection overrides stale saved hosts; app renders with ALL non-localhost requests aborted (offline proof)
+- `verify-client-telemetry.mjs` — listener failure relay E2E: real browser error → POST /api/telemetry/client-event → PostHog queue (sends past flushAt so events land in Live). Run against a fresh server (`PORT=3010 node src/server.js` + `BASE_URL=http://localhost:3010`) when the user's Electron app owns 3001
+- `prepare-telemetry-key.mjs` — bundles the PostHog key (env or `~/.secrets/posthog`) into gitignored `electron/telemetry-key.json` so packaged/distributed installs report after their first-run consent prompt
 - `verify-lightselect.mjs`, `verify-rowalign.mjs` — light-mode dropdown contrast; stream-row action icons pinned in a fixed RIGHT column (stable right edge across rows and live→stopped flips; ⋯ popup opens leftward inside the card)
 - `verify-fixes.mjs`, `verify-p2p3.mjs`, `verify-p4.mjs`, `verify-round3.mjs` — earlier redesign/fix rounds
 - `diag-listener.mjs`, `diag-toggle.mjs`, `diag-processes.ps1` — console/network forensics on the listener page, collapse-toggle timing, and stray FFmpeg/Icecast process inspection

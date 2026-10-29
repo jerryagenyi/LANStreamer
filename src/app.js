@@ -6,6 +6,7 @@ import streamsRouter from './routes/streams.js';
 import settingsRouter from './routes/settings.js';
 import contactRouter from './routes/contact.js';
 import authRouter from './routes/auth.js';
+import telemetryRouter from './routes/telemetry.js';
 import { optionalAuth, authenticateToken } from './middleware/auth.js';
 import { requireLocalhostAdmin } from './middleware/requireLocalhost.js';
 import streamingService from './services/StreamingService.js';
@@ -43,6 +44,9 @@ export function createApp() {
   app.use('/api', (req, res, next) => {
     if (process.env.NODE_ENV === 'test' && process.env.AUTH_DISABLED === '1') return next();
     if (req.path === '/auth/login' || req.path === '/auth/csrf-token') return next();
+    // Listener-browser failure reports: public (listeners never log in), but
+    // rate-limited + whitelisted inside the route itself.
+    if (req.method === 'POST' && req.path === '/telemetry/client-event') return next();
     if (req.method === 'GET' && (PUBLIC_GET_API.has(req.path) || PLAY_PROXY_RE.test(req.path))) return next();
     return authenticateToken(req, res, next);
   });
@@ -53,6 +57,7 @@ export function createApp() {
 
   // API Routes
   app.use('/api/auth', authRouter);
+  app.use('/api/telemetry', telemetryRouter); // listener failure relay (self-gating)
   app.use('/api/system', systemRouter);
   app.use('/api/streams', streamsRouter);
   app.use('/api/settings', settingsRouter);

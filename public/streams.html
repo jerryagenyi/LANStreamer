@@ -558,6 +558,26 @@
                                 `Playback failed for "${failed?.name || this.currentStream}". The stream may not be running — ask the operator to check it.`,
                                 'error'
                             );
+                            // Relay the failure so the operator can see what this
+                            // listener saw (media error code + browser), even if
+                            // the listener can't explain it verbally.
+                            const me = this.audioPlayer.error;
+                            this.reportClientEvent('playback_error', {
+                                streamId: this.currentStream,
+                                label: failed?.label || '',
+                                code: me?.code ?? 'unknown',
+                                msg: (me?.message || '').slice(0, 120) || 'no message',
+                                platform: navigator.platform || '',
+                                ua: (navigator.userAgent || '').slice(0, 120)
+                            });
+                        }
+                        if (evt === 'stalled' && this.currentStream && !this.offAirSince) {
+                            // Stalls repeat in bursts — report at most one per 30s
+                            const now = Date.now();
+                            if (!this._lastStallReport || now - this._lastStallReport > 30_000) {
+                                this._lastStallReport = now;
+                                this.reportClientEvent('playback_stalled', { streamId: this.currentStream });
+                            }
                         }
                         this.updateMiniPlayer();
                         this.renderStreams();
@@ -784,6 +804,10 @@
                 } catch (error) {
                     console.error('❌ Failed to load streams:', error);
                     this.showError('Failed to load streams');
+                    this.reportClientEvent('load_failed', {
+                        msg: (error?.message || 'unknown').slice(0, 120),
+                        platform: navigator.platform || ''
+                    });
                 }
             }
 
@@ -844,6 +868,19 @@
                                 : '<span class="chip chip-live"><span class="pip" aria-hidden="true"></span>LIVE</span>'}
                         <span class="chplay" aria-hidden="true"><span class="material-symbols-rounded">${isCurrent && !this.audioPlayer.paused ? 'pause' : 'play_arrow'}</span></span>
                     </button>`;
+            }
+
+            /** Listener-side failure telemetry — relayed through the operator's
+             *  server (listeners never hold a PostHog key or decide consent).
+             *  Fire-and-forget; telemetry must never break the page. */
+            reportClientEvent(event, properties = {}) {
+                try {
+                    fetch('/api/telemetry/client-event', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ event, properties })
+                    }).catch(() => {});
+                } catch (e) { /* never let reporting break playback */ }
             }
 
             /** Play (or switch to) a channel from the picker. */
@@ -1084,6 +1121,7 @@
             /** The stream we're listening to just disappeared from the server. */
             enterOffAir() {
                 this.offAirSince = Date.now();
+                this.reportClientEvent('reconnect_grace', { streamId: this.currentStream });
                 // Pause output but keep the row marked as "waiting" — the icon
                 // flips back to play only after the grace period expires.
                 this.audioPlayer.pause();
@@ -1096,6 +1134,7 @@
             /** Grace period expired: stop pretending, flip icon back to play. */
             giveUpOffAir() {
                 const name = this.streamName(this.currentStream);
+                this.reportClientEvent('offair_giveup', { streamId: this.currentStream });
                 this.offAirSince = null;
                 this.autoResumeWanted = !this.userPaused; // resume automatically when it returns
                 this.intentionallyStopping = true;
