@@ -68,6 +68,8 @@ The listener page is forgiving: it **auto-resumes** a stream that drops and come
 
 Sign in at `http://localhost:3001/dashboard` (or the Electron app window) — the login appears automatically when the dashboard is opened. The **listener page (`/streams`) has no login**; phones on the LAN just open the shared link.
 
+**First run:** while the default credentials are active, the dashboard shows a banner stating them and how to change them — it disappears permanently once you set your own.
+
 Admin access has two layers:
 
 1. **Login (username + password)** — every admin API call requires a session token from signing in.
@@ -112,6 +114,7 @@ Restart LANStreamer afterwards. (Logins stay valid for 7 days, or set `JWT_EXPIR
 | "Port 3001 already in use" | Close other apps using port 3001, or change `PORT` in `.env` |
 | "No audio devices detected" | Ensure device is connected and not in use by another app |
 | "Stream format not supported" | See [Stream Playback Issues](docs/TROUBLESHOOTING.md#stream-playback-issues) |
+| Link/QR stopped working after moving networks | The share card always shows the PC's **current** network address — re-share the link/QR after the network changes; old links point at the old address |
 
 > **📖 In-app guide:** LANStreamer ships with a built-in troubleshooting page at `http://localhost:3001/docs` — open it from any browser on the operator PC. For the full guide see [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) (subnet issues, firewall configuration, network diagnostics).
 

@@ -87,7 +87,8 @@
             <li>Sign in at <code>http://localhost:3001/dashboard</code> (or in the Electron app window) with your
             admin username and password — the defaults ship in the project <code>README.md</code> under
             “Admin access”, and can be changed with the <code>ADMIN_USERNAME</code> / <code>ADMIN_PASSWORD</code>
-            environment variables.</li>
+            environment variables. On first run the dashboard shows a banner stating the defaults and how to
+            change them; it disappears once you set your own.</li>
             <li>Admin is also locked to <strong>localhost</strong>: other machines on the network only ever see
             the listener page, even with valid credentials.</li>
             <li>Never port-forward ports 3001/8200 to the internet — the localhost lock only protects you on your LAN.</li>
@@ -97,6 +98,11 @@
 
     <section class="doc-section" id="streams">
         <h2><span class="material-symbols-rounded">podcasts</span>Streams</h2>
+
+        <h3>Start with the app (auto-start)</h3>
+        <p>Streams saved with <strong>Start with app</strong> enabled come up automatically when LANStreamer
+        launches &mdash; including the Icecast server, which starts itself if it isn't running yet. Stop a stream and
+        disable the toggle if you want it to stay down across restarts.</p>
 
         <h3>“Audio source busy — already used by …”</h3>
         <p>One audio input can feed <strong>one</strong> running stream at a time. Windows audio capture is exclusive

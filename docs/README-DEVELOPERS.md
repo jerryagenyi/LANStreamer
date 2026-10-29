@@ -128,8 +128,14 @@ npm run electron:smoke   # boots the real app, waits for dashboard load, prints 
 
 Puppeteer-driven checks against the live app (start the server first) — each was built to verify a specific fix round:
 
-- `verify-auth.mjs`, `verify-chplay.mjs`, `verify-conflict.mjs`, `verify-fixes.mjs`, `verify-host.mjs`, `verify-p2p3.mjs`, `verify-p4.mjs`, `verify-round3.mjs` — GUI/browser verification of auth, listener play buttons, host detection, redesign phases, and fix rounds
-- `diag-listener.mjs`, `diag-processes.ps1` — diagnose listener-page console/network errors and stray FFmpeg/Icecast processes
+- `verify-auth.mjs` — admin login gate (wrong/right credentials, token storage, authed calls, public listener surface)
+- `verify-conflict.mjs` — the canonical E2E: device-conflict busy error, edit-frees-device, blocked stream then starts; asserts ZERO orphaned ffmpeg afterwards
+- `verify-chplay.mjs`, `verify-banner.mjs` — listener channel-row play button; event-banner cover + lightbox
+- `verify-flat.mjs`, `verify-header.mjs` — flat cards (no shadow/hover/animation) and sticky-header layering (toasts/menus above the bar, opaque bg)
+- `verify-host.mjs`, `verify-offline.mjs` — LAN-IP detection overrides stale saved hosts; app renders with ALL non-localhost requests aborted (offline proof)
+- `verify-lightselect.mjs`, `verify-rowalign.mjs` — light-mode dropdown contrast; stream-row action icons at a fixed x across data changes
+- `verify-fixes.mjs`, `verify-p2p3.mjs`, `verify-p4.mjs`, `verify-round3.mjs` — earlier redesign/fix rounds
+- `diag-listener.mjs`, `diag-toggle.mjs`, `diag-processes.ps1` — console/network forensics on the listener page, collapse-toggle timing, and stray FFmpeg/Icecast process inspection
 - `check-design-tokens.mjs` — the CI-enforced UI integrity linter (see below)
 
 Also in `scripts/`: `setup.js` (first-run setup), `generate-screenshots.js` / `generate-screenshot-suite.mjs` (screenshot suite), `stitch-screenshot-pdf.py`, `vendor-fonts.mjs`, `prepare-telemetry-key.mjs` (build step for the Windows package).
@@ -143,8 +149,13 @@ The manual test plan lives in [TEST-PLAN.md](TEST-PLAN.md).
 - **Design tokens are the single source of truth** (`public/assets/css/tokens.css`); Tailwind maps them to semantic classes. Never hardcode hex colors or dark-only grays in new UI code.
 - **Shared components live in `public/assets/css/ui.css`** — new variants need a shared definition there first.
 - **Toasts stack** via `LSToasts.show(...)`; never hand-roll `position:fixed` toasts. Never use `alert()`.
-- **No runtime CDN dependencies** — fonts/icons/styles are self-hosted (`npm run vendor:fonts`, `npm run build:css`).
+- **No runtime CDN dependencies** — fonts/icons/styles are self-hosted (`npm run vendor:fonts`, `npm run build:css`). `verify-offline.mjs` enforces this.
 - **Sharing the listener page happens in ONE place** (header share card with open/copy/QR via `LSShare`) — never per-stream share buttons.
+- **Flat surfaces (2026-10-29, explicit owner rule):** cards get NO hover effects, NO shadows, NO animations; collapse chevrons snap. The ONLY shadowed surface is the sticky header (`0 2px 8px rgba(0,0,0,.15)`). Status indicators (LIVE pip, eq bars, boot dots) and button accents are controls and keep their motion.
+- **Z-index ladder (keep to it):** menu-pop/bell panel 120 · scrim 130 · drawer 140 · lightbox 150 · **toasts 200** · boot overlay 9999 — everything above the sticky header (100). Anything below 100 will be hidden behind the header.
+- **`position: sticky` dies silently** if ANY ancestor has `overflow: hidden/auto/scroll` — it becomes the containing block instead of the page. Check the parent chain, not just the element.
+- **Buttons cannot nest.** A `<button>` inside a `<button>` gets ejected by the HTML parser (icons fly out of rows). Use `span[role=button]` + `stopPropagation` for controls inside a toggle (see the Audio-inputs rescan in `public/index.html`).
+- **Bust the asset cache on every change:** all local CSS/JS includes carry `?v=N` per page — bump it on every page whenever that asset changes, or open tabs serve stale code mixed with new markup (has caused multiple false bug reports).
 - `node scripts/check-design-tokens.mjs` fails CI on **new** violations; existing debt is grandfathered in `scripts/design-token-baseline.json` (update deliberately with `--update-baseline` and say why in the commit).
 - Component showcase (dev-only) at `/showcase.html` — new UI must match a pattern shown there.
 
@@ -186,6 +197,7 @@ The full, current rules are in [CLAUDE.md](../CLAUDE.md) — read them before to
 - **Logs:** `logs/combined.log` (winston, daily rotation) is the first place to look when a stream fails silently.
 - **Port detection:** Icecast port is auto-detected from config, default 8000.
 - **Zombie processes:** on Windows, killing the server does not kill FFmpeg/Icecast children — the Electron shell tree-kills them (`taskkill /T /F`); when testing from source, check Task Manager or run `scripts/diag-processes.ps1`.
+- **Kill order invariant:** `killProcessTree` must run `taskkill /PID <pid> /T /F` BEFORE any `.kill()` on the child — a lone SIGTERM only ends the `cmd.exe` wrapper (streams spawn with `shell:true`) and orphans FFmpeg holding the audio device exclusively. Every path that stops a stream (stop, restart-failure, update, delete) must go through `killProcessTree`, never a bare `.kill()`. `verify-conflict.mjs` asserts zero orphans after its run.
 - **Step-by-step server boot order** for `npm run dev` is documented in [STARTUP-SEQUENCE.md](STARTUP-SEQUENCE.md).
 
 ---
