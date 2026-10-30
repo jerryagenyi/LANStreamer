@@ -35,6 +35,9 @@
         "to": "vendor"
       }
     ],
+    "electronLanguages": [
+      "en-US"
+    ],
     "directories": {
       "output": "release"
     },
