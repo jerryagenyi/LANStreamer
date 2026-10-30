@@ -13,7 +13,7 @@
     <link rel="stylesheet" href="/assets/css/tokens.css?v=10">
     <link rel="stylesheet" href="/assets/css/ui.css?v=16">
     <script src="/assets/js/theme-toggle.js?v=7"></script>
-    <script src="/assets/js/admin-auth.js?v=6"></script>
+    <script src="/assets/js/admin-auth.js?v=7"></script>
     <script src="/assets/js/qr-share.js?v=6"></script>
     <script src="/assets/js/marquee.js?v=6"></script>
     <style>
@@ -652,6 +652,41 @@
                 </style>
             </div>
 
+            <!-- Admin account: change the dashboard login in-app (the packaged
+                 app has no .env to edit). Collapsed + remembered like the
+                 other secondary cards. -->
+            <div class="ls-collapse glass-card" data-ls-collapse="admin-account" style="padding:0;">
+                <button type="button" class="ls-collapse-toggle" data-ls-collapse-toggle="admin-account" aria-expanded="false"
+                        style="width:100%;display:flex;align-items:center;gap:10px;padding:16px 18px;border-bottom:1px solid var(--tok-line);">
+                    <span class="flex items-center gap-2.5 min-w-0">
+                        <span class="ls-collapse-title" style="font-size:15px;font-weight:600;color:var(--tok-text-1);">Admin account</span>
+                        <span class="chip chip-off" id="admin-account-chip">—</span>
+                    </span>
+                    <span class="flex items-center gap-2" style="margin-left:auto;">
+                        <span class="material-symbols-rounded ls-collapse-chevron" aria-hidden="true">expand_more</span>
+                    </span>
+                </button>
+                <div class="ls-collapse-body is-closed" data-ls-collapse-body="admin-account">
+                    <div style="padding:16px 18px;display:flex;flex-direction:column;gap:8px;">
+                        <p id="admin-account-hint" style="font-size:13px;color:var(--tok-text-2);margin:0 0 4px;">Loading…</p>
+                        <label for="admin-cur-pw" style="font-size:12px;color:var(--tok-text-2);">Current password</label>
+                        <input type="password" id="admin-cur-pw" autocomplete="current-password"
+                               style="width:100%;padding:8px 10px;border-radius:8px;border:1px solid var(--tok-line-strong);background:var(--tok-surface-inset);color:var(--tok-text-1);font-size:14px;">
+                        <label for="admin-new-user" style="font-size:12px;color:var(--tok-text-2);">New username</label>
+                        <input type="text" id="admin-new-user" autocomplete="username"
+                               style="width:100%;padding:8px 10px;border-radius:8px;border:1px solid var(--tok-line-strong);background:var(--tok-surface-inset);color:var(--tok-text-1);font-size:14px;">
+                        <label for="admin-new-pw" style="font-size:12px;color:var(--tok-text-2);">New password (at least 8 characters)</label>
+                        <input type="password" id="admin-new-pw" autocomplete="new-password"
+                               style="width:100%;padding:8px 10px;border-radius:8px;border:1px solid var(--tok-line-strong);background:var(--tok-surface-inset);color:var(--tok-text-1);font-size:14px;">
+                        <label for="admin-new-pw2" style="font-size:12px;color:var(--tok-text-2);">Repeat new password</label>
+                        <input type="password" id="admin-new-pw2" autocomplete="new-password"
+                               style="width:100%;padding:8px 10px;border-radius:8px;border:1px solid var(--tok-line-strong);background:var(--tok-surface-inset);color:var(--tok-text-1);font-size:14px;">
+                        <div id="admin-account-error" class="hidden" role="alert" style="color:var(--tok-danger);font-size:13px;"></div>
+                        <button type="button" id="admin-save" class="btn btn-primary" style="margin-top:6px;">Update login</button>
+                    </div>
+                </div>
+            </div>
+
             <!-- Event Manager - Component -->
             <div id="event-manager">
                 <!-- EventManager component will be initialized here -->
@@ -970,6 +1005,9 @@
 
                 // First-run hint: default admin login + how to change it
                 await this.checkAdminCredsBanner();
+
+                // Admin account card (in-app credential change)
+                this.initAdminAccountCard();
 
                 // Initialize Contact Manager
                 await this.initializeContactManager();
@@ -1335,11 +1373,80 @@
                             <div class="grow">
                                 <b>Default admin login in use</b>
                                 <span style="color:var(--tok-text-2);"> — username <code>admin</code>, password <code>lanstreamer123</code>.
-                                To change them: set <code>ADMIN_USERNAME</code> and <code>ADMIN_PASSWORD</code> in the <code>.env</code> file next to the app, then restart LANStreamer (README → “Security Setup — Admin Login”).</span>
+                                To change it here in the app: sidebar → <b>Admin account</b> → Update login.
+                                (Running from source? <code>ADMIN_USERNAME</code> / <code>ADMIN_PASSWORD</code> in <code>.env</code> + restart also works — README → “Security Setup”.)</span>
                             </div>
                             ${window.LSNotices ? LSNotices.dismissButton('default-admin-creds') : ''}
                         </div>`;
                 } catch { el.innerHTML = ''; }
+            }
+
+            /**
+             * Admin account card (sidebar): current username + change form.
+             * The in-app settings path — packaged installs have no .env.
+             */
+            async initAdminAccountCard() {
+                const chip = document.getElementById('admin-account-chip');
+                const hint = document.getElementById('admin-account-hint');
+                const saveBtn = document.getElementById('admin-save');
+                if (saveBtn && !saveBtn.dataset.wired) {
+                    saveBtn.dataset.wired = '1';
+                    saveBtn.addEventListener('click', () => this.saveAdminCredentials());
+                }
+                try {
+                    const res = await fetch('/api/auth/settings');
+                    const data = await res.json();
+                    if (chip) {
+                        chip.textContent = data.username;
+                        chip.className = 'chip ' + (data.usingDefaultCredentials ? 'chip-warn' : 'chip-off');
+                        chip.title = data.usingDefaultCredentials ? 'Defaults active — set your own login' : 'Custom login active';
+                    }
+                    if (hint) {
+                        hint.textContent = data.usingDefaultCredentials
+                            ? 'The default login is active. Set your own username and password below — changing them here is permanent (no restart, no files to edit) and signs out other sessions.'
+                            : 'Set a new username and password for the dashboard login. Changing it signs out all other sessions.';
+                    }
+                    const user = document.getElementById('admin-new-user');
+                    if (user && !user.value) user.placeholder = data.username;
+                } catch {
+                    if (hint) hint.textContent = 'Could not load the current admin account settings.';
+                }
+            }
+
+            async saveAdminCredentials() {
+                const errEl = document.getElementById('admin-account-error');
+                const fail = (msg) => { if (errEl) { errEl.textContent = msg; errEl.classList.remove('hidden'); } };
+                if (errEl) errEl.classList.add('hidden');
+                const cur = document.getElementById('admin-cur-pw')?.value || '';
+                const user = (document.getElementById('admin-new-user')?.value || '').trim();
+                const pw = document.getElementById('admin-new-pw')?.value || '';
+                const pw2 = document.getElementById('admin-new-pw2')?.value || '';
+                if (!cur) return fail('Enter the current password.');
+                if (pw.length < 8) return fail('New password must be at least 8 characters.');
+                if (pw !== pw2) return fail('The two new passwords do not match.');
+                const btn = document.getElementById('admin-save');
+                if (btn) { btn.disabled = true; btn.textContent = 'Saving…'; }
+                try {
+                    const res = await fetch('/api/auth/credentials', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ currentPassword: cur, newUsername: user || undefined, newPassword: pw })
+                    });
+                    const data = await res.json();
+                    if (!res.ok) return fail(data.message || 'Could not update the login.');
+                    if (window.LSAdminAuth?.setToken && data.token) LSAdminAuth.setToken(data.token);
+                    ['admin-cur-pw', 'admin-new-user', 'admin-new-pw', 'admin-new-pw2'].forEach(id => {
+                        const el = document.getElementById(id);
+                        if (el) el.value = '';
+                    });
+                    if (window.LSToasts) LSToasts.show('Admin login updated. Other sessions were signed out.', 'success');
+                    await this.initAdminAccountCard();
+                    await this.checkAdminCredsBanner();
+                } catch {
+                    fail('Network error — try again.');
+                } finally {
+                    if (btn) { btn.disabled = false; btn.textContent = 'Update login'; }
+                }
             }
 
             async checkSecurityWarning() {

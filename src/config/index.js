@@ -17,6 +17,7 @@ import dotenv from 'dotenv'
 import path from 'path'
 import fs from 'fs'
 import { dataDir } from '../utils/vendorPaths.js'
+import { loadSecurityFile } from '../utils/securityStore.js'
 
 // Load environment variables (only for non-Icecast configs)
 dotenv.config()
@@ -145,6 +146,15 @@ const config = {
     path: process.env.BACKUP_PATH || './backups'
   }
 }
+
+// In-app admin credentials (dashboard → Admin account) persist to the data dir
+// and take precedence over env/defaults once set — an explicit in-app change
+// must win, and packaged installs have no .env to edit anyway. The password
+// lives only as a scrypt hash; when present it replaces plaintext comparison.
+const persistedSecurity = loadSecurityFile();
+if (persistedSecurity.adminUsername) config.security.adminUsername = persistedSecurity.adminUsername;
+if (persistedSecurity.adminPasswordHash) config.security.adminPasswordHash = persistedSecurity.adminPasswordHash;
+if (persistedSecurity.jwtSecret) config.security.jwtSecret = persistedSecurity.jwtSecret;
 
 // Validate required configuration
 const validateConfig = () => {

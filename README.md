@@ -77,7 +77,9 @@ Admin access has two layers:
 1. **Login (username + password)** — every admin API call requires a session token from signing in.
 2. **Localhost lock** — the dashboard and admin APIs refuse connections from other machines, so even someone on your LAN with the password cannot reach admin.
 
-To change the defaults, copy `env.example` to `.env`, then edit:
+To change the defaults, use the in-app settings: dashboard → sidebar → **Admin account** card → enter the current password and a new username/password → **Update login**. It applies immediately (no restart), signs out every other session, and is stored in the app's data folder — this works in the packaged desktop app, where there is no `.env` to edit.
+
+Running from source, `.env` also works — copy `env.example` to `.env`, then edit:
 
 ```env
 ADMIN_USERNAME=your-new-username
@@ -86,7 +88,7 @@ JWT_SECRET=your-jwt-secret
 SESSION_SECRET=your-session-secret
 ```
 
-Restart LANStreamer afterwards. (Logins stay valid for 7 days, or set `JWT_EXPIRES_IN` to change that.)
+Restart LANStreamer afterwards. (The in-app change takes precedence over `.env` values. Logins stay valid for 7 days, or set `JWT_EXPIRES_IN` to change that.)
 
 **Icecast uses its own stock defaults — change them before an event.** LANStreamer ships Icecast exactly as a normal Icecast install: the same default admin login (`admin`/`hackme`) and source/relay passwords that Icecast itself ships with. Nothing is hidden or renamed. The dashboard shows a security warning while they are unchanged. To set your own, edit `icecast.xml` (with the desktop app: `%APPDATA%\LANStreamer\icecast\icecast.xml`; with a manual Icecast install: the install folder, e.g. `C:\Program Files (x86)\Icecast\icecast.xml`) — change `<admin-user>`, `<admin-password>`, `<source-password>` and `<relay-password>` in the `<authentication>` block, then restart LANStreamer. Streams pick up the new source password automatically; browsers may need one refresh.
 

@@ -1,6 +1,7 @@
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 import config from '../config/index.js';
+import { verifyPasswordHash } from '../utils/securityStore.js';
 
 /**
  * Authentication middleware for protecting admin routes.
@@ -65,10 +66,14 @@ export const generateToken = (username) => {
 };
 
 /**
- * Verify admin credentials
+ * Verify admin credentials. When the in-app settings path has stored a scrypt
+ * hash (config.security.adminPasswordHash), verify against it; otherwise the
+ * env/default plaintext comparison applies.
  */
 export const verifyCredentials = (username, password) => {
-    return username === config.security.adminUsername && password === config.security.adminPassword;
+    if (username !== config.security.adminUsername) return false;
+    if (config.security.adminPasswordHash) return verifyPasswordHash(password, config.security.adminPasswordHash);
+    return password === config.security.adminPassword;
 };
 
 // Store for CSRF tokens (in production, use Redis or database)
