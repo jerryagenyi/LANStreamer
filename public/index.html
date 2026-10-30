@@ -560,6 +560,9 @@
     <div id="security-warning-banner"></div>
     <!-- First-run admin credentials banner (shows while defaults are active) -->
     <div id="admin-creds-banner"></div>
+    <!-- Streaming engines notice: rare tier where neither the bundled kit nor
+         a system install exists — guided download instead of a dead dashboard -->
+    <div id="binaries-banner"></div>
     <div class="grid grid-cols-1 xl:grid-cols-3 gap-8">
         <!-- Left Column (Primary Controls) -->
         <div class="xl:col-span-2 space-y-8">
@@ -1006,6 +1009,9 @@
                 // First-run hint: default admin login + how to change it
                 await this.checkAdminCredsBanner();
 
+                // Streaming engines notice (rare missing-binaries tier)
+                this.checkBinariesBanner();
+
                 // Admin account card (in-app credential change)
                 this.initAdminAccountCard();
 
@@ -1378,6 +1384,82 @@
                             </div>
                             ${window.LSNotices ? LSNotices.dismissButton('default-admin-creds') : ''}
                         </div>`;
+                } catch { el.innerHTML = ''; }
+            }
+
+            /**
+             * Streaming engines notice — the rare tier where neither the
+             * bundled kit nor a system install exists. FFmpeg: one-click
+             * pinned download into the app's data dir (progress polled).
+             * Icecast: guided external install (official installer).
+             */
+            async checkBinariesBanner() {
+                const el = document.getElementById('binaries-banner');
+                if (!el) return;
+                const render = (s) => {
+                    if (s.canStream) { el.innerHTML = ''; return; }
+                    const mb = (n) => (n / 1024 / 1024).toFixed(0) + ' MB';
+                    const line = (name, tier) => `<b>${name}</b>: ${
+                        tier === 'missing'
+                            ? '<span style="color:var(--tok-danger);">missing</span>'
+                            : `<span style="color:var(--tok-text-2);">${tier}</span>`}`;
+                    const job = s.download || {};
+                    const ffmpegBit = s.ffmpeg === 'missing' ? `
+                        <div style="margin-top:10px;">
+                            <button type="button" class="btn btn-secondary" id="binaries-download" ${job.running ? 'disabled' : ''}
+                                    style="height:34px;padding:0 14px;font-size:13px;">
+                                ${job.running ? 'Downloading…' : 'Download FFmpeg (≈110 MB)'}
+                            </button>
+                            <span id="binaries-progress" style="margin-left:10px;font-size:13px;color:var(--tok-text-2);">${
+                                job.running ? `${mb(job.bytes)} / ${mb(job.total)}` :
+                                job.error ? `<span style="color:var(--tok-danger);">failed — ${job.error}</span>` :
+                                job.done ? 'downloaded ✓' : ''
+                            }</span>
+                        </div>` : '';
+                    const icecastBit = s.icecast === 'missing' ? `
+                        <div style="margin-top:8px;font-size:13px;color:var(--tok-text-2);">
+                            Icecast: install it from <a href="https://icecast.org/download/" target="_blank" rel="noopener">icecast.org</a>
+                            (the app auto-detects standard installs) — or use the packaged app, which bundles it.
+                        </div>` : '';
+                    el.innerHTML = `
+                        <div class="banner" role="alert" style="margin-bottom:20px;">
+                            <span class="material-symbols-rounded" style="color:var(--tok-danger);" aria-hidden="true">download_for_offline</span>
+                            <div class="grow">
+                                <b>Streaming engines not ready</b>
+                                <div style="margin-top:4px;font-size:13px;">${line('FFmpeg', s.ffmpeg)} · ${line('Icecast', s.icecast)}</div>
+                                ${ffmpegBit}
+                                ${icecastBit}
+                            </div>
+                        </div>`;
+                    const btn = document.getElementById('binaries-download');
+                    if (btn && !btn.disabled) {
+                        btn.addEventListener('click', async () => {
+                            btn.disabled = true;
+                            btn.textContent = 'Downloading…';
+                            try {
+                                const r = await fetch('/api/system/binaries/download', { method: 'POST' });
+                                if (!r.ok) throw new Error((await r.json()).error || r.status);
+                            } catch (e) {
+                                const p = document.getElementById('binaries-progress');
+                                if (p) p.innerHTML = `<span style="color:var(--tok-danger);">could not start — ${e.message}</span>`;
+                            }
+                        });
+                    }
+                };
+                try {
+                    const res = await fetch('/api/system/binaries/status');
+                    const s = await res.json();
+                    render(s);
+                    if (!s.canStream && s.download && s.download.running) {
+                        const poll = setInterval(async () => {
+                            try {
+                                const r = await fetch('/api/system/binaries/status');
+                                const st = await r.json();
+                                render(st);
+                                if (!st.download?.running) { clearInterval(poll); setTimeout(() => this.checkBinariesBanner(), st.download?.done ? 1500 : 0); }
+                            } catch { clearInterval(poll); }
+                        }, 2000);
+                    }
                 } catch { el.innerHTML = ''; }
             }
 

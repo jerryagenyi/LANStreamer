@@ -232,6 +232,43 @@ router.get('/binary-probe', (req, res) => {
 });
 
 /**
+ * @route GET /api/system/binaries/status
+ * @description Which tier resolved for each engine (vendored / system /
+ *   missing) + the download-on-demand job state. Drives the dashboard
+ *   "streaming engines" notice.
+ * @access Private (admin)
+ */
+router.get('/binaries/status', async (req, res, next) => {
+  try {
+    const { binariesStatus, downloadJobState } = await import('../utils/binaries.js');
+    res.json({ ...binariesStatus(), download: downloadJobState() });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * @route POST /api/system/binaries/download
+ * @description Start the pinned FFmpeg download into the writable data-dir
+ *   vendor root (rare tier: neither bundled kit nor system install exists).
+ *   Returns immediately; poll GET /binaries/status for progress.
+ * @access Private (admin)
+ */
+router.post('/binaries/download', async (req, res, next) => {
+  try {
+    const { startBinaryDownload, downloadJobState } = await import('../utils/binaries.js');
+    const before = downloadJobState();
+    if (before.running) {
+      return res.status(409).json({ error: 'Download already running', download: before });
+    }
+    const job = startBinaryDownload();
+    return res.status(202).json({ message: 'Download started', download: job });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
  * @route GET /api/system/icecast/search-installations
  * @description Search for Icecast installations on the system
  * @access Public

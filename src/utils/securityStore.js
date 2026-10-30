@@ -56,3 +56,32 @@ export function saveSecurityFile(data) {
 export function mintJwtSecret() {
   return crypto.randomBytes(48).toString('hex');
 }
+
+/**
+ * First-run minting for PACKAGED installs (marker: LANSTREAMER_DATA_DIR set by
+ * the Electron shell): generate a per-install admin password + JWT secret so
+ * the public repo defaults never guard a real install. Returns
+ * { username, password } exactly ONCE for the show-once dialog; the file
+ * stores only the scrypt hash plus a `fresh` flag. No-ops when the operator
+ * configured credentials via env, or a store already exists.
+ */
+export function mintFirstRunSecurity() {
+  if (!process.env.LANSTREAMER_DATA_DIR) return null; // dev/CLI: keep documented defaults
+  if (process.env.ADMIN_PASSWORD || process.env.JWT_SECRET) return null; // explicit operator config wins
+  const existing = loadSecurityFile();
+  if (existing.adminPasswordHash) return null; // already minted or changed in-app
+  const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789';
+  const password = Array.from(crypto.randomBytes(12)).map(b => alphabet[b % alphabet.length]).join('');
+  const username = 'admin';
+  saveSecurityFile({ adminUsername: username, adminPasswordHash: hashPassword(password), jwtSecret: mintJwtSecret(), fresh: true });
+  return { username, password };
+}
+
+/** After the show-once dialog: stop flagging the credentials as fresh. */
+export function clearFreshFlag() {
+  const state = loadSecurityFile();
+  if (state.fresh) {
+    delete state.fresh;
+    saveSecurityFile(state);
+  }
+}

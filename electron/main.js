@@ -28,6 +28,17 @@ let isQuitting = false;
 // Server lifecycle (Express in-process; listeners on the LAN keep working)
 // ---------------------------------------------------------------------------
 
+// Mint per-install admin credentials BEFORE the server code loads its config:
+// packaged installs must never run on the repo's public defaults. The
+// plaintext exists only in this variable, shown once after the window opens.
+let freshCreds = null;
+try {
+  const store = await import('../src/utils/securityStore.js');
+  freshCreds = store.mintFirstRunSecurity();
+} catch (err) {
+  console.error('[electron] first-run credential minting failed:', err.message);
+}
+
 const { startServer } = await import('../src/app.js');
 
 function listenWithFallback(basePort, attempts = 5) {
@@ -321,6 +332,24 @@ if (!gotLock) {
     createWindow();
     createTray().catch(err => console.error('[electron] tray creation failed:', err.message));
     maybeAskTelemetryConsent().catch(err => console.error('[electron] telemetry prompt failed:', err.message));
+
+    // Show-once: the per-install admin password minted at first run
+    if (freshCreds && !SMOKE) {
+      const { username, password } = freshCreds;
+      freshCreds = null; // plaintext leaves memory right after the dialog
+      dialog.showMessageBox(mainWindow, {
+        type: 'info',
+        title: 'LANStreamer — your admin login',
+        message: `Username:  ${username}\nPassword:  ${password}`,
+        detail: 'Write these down now — this is the only time the password is shown. '
+          + 'You can change it anytime from the dashboard (Admin account settings).',
+        buttons: ['I saved it'],
+        noLink: true,
+      }).then(async () => {
+        const store = await import('../src/utils/securityStore.js');
+        store.clearFreshFlag();
+      }).catch(() => { /* flag stays; dialog re-shows next launch */ });
+    }
 
     startPowerManagement();
 

@@ -28,7 +28,8 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 export function vendorDir() {
   const candidates = [
     process.env.LANSTREAMER_VENDOR_DIR,
-    process.resourcesPath ? path.join(process.resourcesPath, 'vendor') : null, // Electron main (packaged)
+    process.resourcesPath ? path.join(process.resourcesPath, 'vendor') : null, // Electron main (packaged, bundled)
+    path.join(dataDir(), 'vendor'), // runtime download-on-demand tier (writable)
     path.join(__dirname, '..', '..', 'vendor') // dev checkout
   ];
   for (const dir of candidates) {
