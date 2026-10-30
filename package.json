@@ -39,7 +39,7 @@
       "output": "release"
     },
     "win": {
-      "icon": "public/assets/favicon.png"
+      "icon": "electron/icon.ico"
     },
     "nsis": {
       "oneClick": true,
