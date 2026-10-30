@@ -22,6 +22,7 @@ LANStreamer is an **Electron desktop app in active development** — most people
 | **[GO-LIVE-CHECKLIST.md](./GO-LIVE-CHECKLIST.md)** | Pre-release checklist — test matrix, packaging, security blockers, GitHub release process |
 | **[APP-FLOW.md](./APP-FLOW.md)** | Every page, user flow (mermaid), and component — the UI map |
 | **[pressure-checklist.md](./pressure-checklist.md)** | PR review gate for streaming-behavior changes |
+| **[UX-AUDIT-2026-10.md](./UX-AUDIT-2026-10.md)** | Holistic UX assessment (IxDF framework) — scores, prioritized issues, redesign roadmap |
 | **[benchmark-report-v1.md](./benchmark-report-v1.md)** | Performance baseline (kept current until the latency round lands v2) |
 | **[../CLAUDE.md](../CLAUDE.md)** | Code conventions for AI-assisted contributors |
 
