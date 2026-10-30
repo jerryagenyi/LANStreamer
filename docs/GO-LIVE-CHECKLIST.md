@@ -83,7 +83,10 @@ Start from a pristine state — most "bugs" this project has hit were dirty-stat
 The installer carries everything: `electron:build:win` auto-runs `fetch-vendor-binaries.mjs` (fills gitignored `vendor/` with FFmpeg + the Icecast kit and a **clean stock** icecast.xml — never the local machine's passwords) then `prepare-telemetry-key.mjs`, then electron-builder packs `vendor/` as extraResources. At runtime the app prefers the bundled binaries (explicit `FFMPEG_PATH` / `ICECAST_EXE_PATH` env still wins) and keeps all mutable state in `%APPDATA%/LANStreamer` — nothing writes next to the exe.
 
 - [ ] `npm test` green immediately before building
-- [ ] `npm run electron:build:win` → installer + portable in `release/`; installer size sane (~250 MB with vendored binaries)
+- [ ] `npm run electron:build:win` → installer + portable in `release/`; installer size sane (target ~100 MB once the bundle switches FULL → essentials ffmpeg and drops ffplay/ffprobe; ~230 MB with today's FULL build)
+- [ ] **Binary strategy (planned, pre-1.3.0 — probe design):** resolution order env → vendored → probe-passed system install → full-download prompt; first-run functional probe (dshow devices / encoder chain / 2 s end-to-end test against a temp loopback icecast) with the result pinned + cheaply revalidated each start; essentials smoke test on the maintainer's machine via vendor/ (no uninstall needed — vendor outranks PATH)
+- [x] Electron locales trimmed to en-US (`electronLanguages`) — shipped 07f2d6e
+- [x] Default event banner recompressed (1.27 MB → 188 KB, 2400 px) — shipped 07f2d6e
 - [ ] **Install on a clean Windows machine (or VM) with NOTHING pre-installed** — no Node, no FFmpeg, no Icecast. This is the single most important check ("works on my PC" insurance). On that machine:
   - [ ] App launches, dashboard opens, login works, version shows correctly (from package.json, not "unknown")
   - [ ] First-run telemetry consent dialog appears (bundled key resolves) — test BOTH Allow and Decline paths
