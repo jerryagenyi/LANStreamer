@@ -107,9 +107,10 @@ async function fetchFfmpeg() {
   if (!res.ok) throw new Error(`ffmpeg download failed: HTTP ${res.status}`);
   await pipeline(Readable.fromWeb(res.body), fs.createWriteStream(tmpZip));
   console.log(`[ffmpeg] downloaded ${mb(fs.statSync(tmpZip).size)} — extracting ffmpeg.exe only`);
-  // tar on Windows 10+ extracts zip; glob picks the nested bin/ffmpeg.exe
   const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'ffmpeg-'));
-  execSync(`tar -xf "${tmpZip}" -C "${tmpDir}"`, { stdio: 'ignore' });
+  // Expand-Archive, NOT tar: Git-Bash GNU tar treats "C:\..." as a remote host
+  // spec and fails; PowerShell extraction is PATH-independent
+  execSync(`powershell -NoProfile -Command "Expand-Archive -LiteralPath '${tmpZip.replace(/'/g, "''")}' -DestinationPath '${tmpDir.replace(/'/g, "''")}' -Force"`, { stdio: 'ignore', timeout: 120000 });
   const found = execSync(`dir /s /b "${tmpDir}\\ffmpeg.exe"`, { encoding: 'utf8' }).trim().split('\n')[0].trim();
   fs.copyFileSync(found, dest);
   fs.rmSync(tmpDir, { recursive: true, force: true });

@@ -1,11 +1,12 @@
 /** Verify the channel-row play button renders and toggles BOTH ways on the live app:
  *  play_arrow → (click) → pause → (click) → play_arrow → (click) → pause. */
 import puppeteer from 'puppeteer';
+const BASE = process.env.BASE_URL || 'http://localhost:3001';
 const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 
 const browser = await puppeteer.launch({ headless: 'new', defaultViewport: { width: 1360, height: 950 }, protocolTimeout: 120000, args: ['--no-sandbox', '--disable-gpu'] });
 const page = await browser.newPage();
-await page.goto('http://localhost:3001/streams', { waitUntil: 'networkidle2', timeout: 30000 });
+await page.goto(BASE + '/streams', { waitUntil: 'networkidle2', timeout: 30000 });
 await page.waitForSelector('.chrow:not(.off)', { timeout: 20000 });
 
 const readState = () => page.evaluate(() => {

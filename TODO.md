@@ -20,7 +20,7 @@ Context: [CLAUDE.md](CLAUDE.md), [docs/APP-FLOW.md](docs/APP-FLOW.md), [docs/TRO
 
 - [ ] **Phase 2: cross-platform abstraction** — Device discovery per OS (dshow/avfoundation/pulse; StreamingService hardcodes dshow), config/logs in OS app-data dirs, retire .bat scripts.
 
-- [ ] **Phase 3: bundle binaries — MOSTLY SHIPPED (2026-10-29)** — vendor/ + extraResources + data-dir runtime live (see GO-LIVE-CHECKLIST §0). Remaining: pin SHA256 checksums, official Icecast 2.5.0 kit download (2.4.4 EOL 2026-12-31; portable 2.5.0 already validated at ~/Tools/icecast-2.5.0), loopback bind + per-install random Icecast credentials, per-install admin credentials, GPL LICENSES files inside the installer.
+- [ ] **Phase 3: bundle binaries — NEARLY DONE (2026-10-30)** — vendor/ (gyan ESSENTIALS ffmpeg + Icecast kit, stock-parity per the §0.1 decision) + extraResources + data-dir runtime + first-run functional probe (BinaryProbeService) all live; `isIcecastRunning` now credential-verified (zombie-proof). Remaining: pin SHA256 checksums, official Icecast 2.5.0 kit download (2.4.4 EOL 2026-12-31; portable 2.5.0 already validated at ~/Tools/icecast-2.5.0), per-install admin values, GPL LICENSES files inside the installer, download-on-demand UI for probe failures.
 
 - [ ] **Phase 4: test/CI** — Playwright `_electron` + listener-page web E2E + axe-core + GitHub Actions 3-OS matrix (use `npm run electron:smoke`); electron-updater replaces UpdateService/.bat at packaging. Add E2E regression: machine IP change must not break status polling (covered by localhost polls; test the contract).
 

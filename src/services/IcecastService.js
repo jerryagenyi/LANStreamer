@@ -15,7 +15,7 @@ import {
   ErrorFactory,
   ErrorHandler
 } from '../utils/errors.js'
-import { vendoredIcecastExePath, ensureVendoredIcecastConfig, dataDir } from '../utils/vendorPaths.js'
+import { vendoredIcecastExePath, ensureVendoredIcecastConfig, claimVendoredIcecastPort, dataDir } from '../utils/vendorPaths.js'
 
 const execAsync = promisify(exec)
 
@@ -1683,6 +1683,14 @@ class IcecastService {
     try {
       let command, args;
 
+      // Foreign-Icecast race: the operator's own Icecast may have (re)claimed
+      // our generated port since boot. Right before spawning ours, move to a
+      // free port if needed and re-parse so FFmpeg's sink URL matches.
+      if (this.paths?.config && claimVendoredIcecastPort(this.paths.config)) {
+        await this.parsePort();
+        await this.parsePasswords();
+      }
+
       if (icecastCommand.endsWith('.bat')) {
         // For batch files, use cmd.exe to execute them
         command = 'cmd.exe';
@@ -2694,6 +2702,26 @@ class IcecastService {
    */
   async isIcecastRunning() {
     try {
+      const port = this.getActualPort();
+      if (port && this.getAdminPassword()) {
+        // A process named icecast.exe means nothing: the operator may run
+        // their OWN instance, and ours can be a zombie holding no port (both
+        // caused permanent "device busy / 401" confusion). Ask OUR port with
+        // OUR credentials: our server answers 200, a foreign instance 401s,
+        // nothing listening = down.
+        try {
+          const response = await fetch(`http://127.0.0.1:${port}/admin/stats.xml`, {
+            signal: AbortSignal.timeout(2000),
+            headers: {
+              'Authorization': `Basic ${Buffer.from(`admin:${this.getAdminPassword()}`).toString('base64')}`
+            }
+          });
+          return response.ok;
+        } catch {
+          return false;
+        }
+      }
+      // Legacy paths without a parsed port/password: weak process check
       if (process.platform === 'win32') {
         const { stdout } = await execAsync('tasklist /FI "IMAGENAME eq icecast.exe" /FO CSV');
         return stdout.includes('icecast.exe');

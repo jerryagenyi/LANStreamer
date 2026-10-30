@@ -84,7 +84,7 @@ The installer carries everything: `electron:build:win` auto-runs `fetch-vendor-b
 
 - [ ] `npm test` green immediately before building
 - [ ] `npm run electron:build:win` → installer + portable in `release/`; installer size sane (target ~100 MB once the bundle switches FULL → essentials ffmpeg and drops ffplay/ffprobe; ~230 MB with today's FULL build)
-- [ ] **Binary strategy (planned, pre-1.3.0 — probe design):** resolution order env → vendored → probe-passed system install → full-download prompt; first-run functional probe (dshow devices / encoder chain / 2 s end-to-end test against a temp loopback icecast) with the result pinned + cheaply revalidated each start; essentials smoke test on the maintainer's machine via vendor/ (no uninstall needed — vendor outranks PATH)
+- [x] **Binary strategy — SHIPPED (2026-10-30):** first-run functional probe (dshow devices / encoder chain / 2 s end-to-end against a throwaway loopback icecast; ~3.7 s measured, non-blocking) with the result pinned to `binary-probe.json` and re-run only on stale pins; resolution order env → vendored → probe-passed system → download prompt; `GET /api/system/binary-probe` for support. Essentials FFmpeg verified on the maintainer's real machine (all stages pass, real stream, listener playback). Remaining: the download-on-demand UI for the (rare) probe-failure tier.
 - [x] Electron locales trimmed to en-US (`electronLanguages`) — shipped 07f2d6e
 - [x] Default event banner recompressed (1.27 MB → 188 KB, 2400 px) — shipped 07f2d6e
 - [ ] **Install on a clean Windows machine (or VM) with NOTHING pre-installed** — no Node, no FFmpeg, no Icecast. This is the single most important check ("works on my PC" insurance). On that machine:

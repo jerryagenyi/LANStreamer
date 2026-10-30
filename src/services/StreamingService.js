@@ -8,6 +8,7 @@ import IcecastService from './IcecastService.js'
 import AudioDeviceService from './AudioDeviceService.js'
 import config from '../config/index.js'
 import { vendoredFfmpegPath, dataDir } from '../utils/vendorPaths.js'
+import binaryProbe from './BinaryProbeService.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
@@ -1397,12 +1398,21 @@ class StreamingService {
     //    machine, beats whatever happens to be on PATH)
     const vendored = vendoredFfmpegPath()
     if (vendored) return vendored
-    // 3. System PATH
+    // 3. System install the first-run binary probe PROVED can do our job
+    //    (dshow + encoder chain + 2s end-to-end). A stale/stub PATH ffmpeg
+    //    never gets here — determinism for non-technical operators.
+    try {
+      const pin = binaryProbe.getPin()
+      if ((pin?.result === 'ok' || pin?.result === 'device-issue') && pin.ffmpeg?.origin === 'system' && pin.ffmpeg.path) {
+        return pin.ffmpeg.path
+      }
+    } catch (e) { /* probe unavailable — fall through */ }
+    // 4. System PATH (legacy behavior when no probe pin exists yet)
     try {
       execSync('ffmpeg -version', { stdio: 'ignore' })
       return 'ffmpeg'
     } catch (error) {
-      // 4. Legacy project-local fallback
+      // 5. Legacy project-local fallback
       const bundledPath = join(__dirname, '../../bin/ffmpeg.exe')
       if (fs.existsSync(bundledPath)) {
         return bundledPath

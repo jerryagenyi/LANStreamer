@@ -18,7 +18,9 @@ function makeVendorFixture() {
   fs.mkdirSync(path.join(vendor, 'icecast', 'bin'), { recursive: true });
   fs.writeFileSync(path.join(vendor, 'icecast', 'bin', 'icecast.exe'), 'stub');
   fs.writeFileSync(path.join(vendor, 'icecast', 'icecast.xml'),
-    '<icecast><paths><logdir>./log</logdir><webroot>./web</webroot><adminroot>./admin</adminroot></paths></icecast>');
+    '<icecast><authentication><source-password>hackme</source-password><admin-password>hackme</admin-password><relay-password>hackme</relay-password></authentication>' +
+    '<listen-socket><port>8200</port><bind-address>0.0.0.0</bind-address></listen-socket>' +
+    '<paths><logdir>./log</logdir><webroot>./web</webroot><adminroot>./admin</adminroot></paths></icecast>');
   return { base, vendor };
 }
 
@@ -66,6 +68,19 @@ describe('vendorPaths resolution', () => {
     expect(xml).toContain(`<adminroot>${path.join(fixture.vendor, 'icecast', 'admin')}</adminroot>`);
     // logdir must actually exist (icecast fails to start otherwise)
     expect(fs.existsSync(path.join(fixture.base, 'data', 'icecast', 'log'))).toBe(true);
+  });
+
+  it('honors the stock-parity contract: stock credentials/binding/port survive generation, only paths are rewritten', () => {
+    const cfg = vendorPaths.ensureVendoredIcecastConfig();
+    const xml = fs.readFileSync(cfg, 'utf8');
+    // Deliberate product decision (GO-LIVE-CHECKLIST §0.1): the packaged app
+    // behaves exactly like a plain Icecast install — no hidden divergence.
+    expect(xml).toMatch(/<source-password>hackme</);
+    expect(xml).toMatch(/<admin-password>hackme</);
+    expect(xml).toContain('<bind-address>0.0.0.0</bind-address>');
+    expect(xml).toContain('<port>8200</port>');
+    // generated marker present (enables conflict-recovery port claiming later)
+    expect(xml).toContain('lanstreamer-generated');
   });
 
   it('is idempotent — an existing generated config is not rewritten', async () => {

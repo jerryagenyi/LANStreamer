@@ -19,6 +19,7 @@
  *   <dataDir>/icecast/icecast.xml  +  <dataDir>/icecast/log/
  */
 import fs from 'fs';
+import { execSync } from 'node:child_process';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -68,10 +69,21 @@ export function uploadsBase() {
 }
 
 /**
- * Create the writable vendored Icecast config if missing: copy the kit's
- * template and rewrite <logdir>/<webroot>/<adminroot> to absolute paths —
- * logdir into the writable data dir, web assets stay on the read-only kit.
- * Returns the config path (existing or freshly written). Idempotent.
+ * Create the writable vendored Icecast config if missing. Path rewrites only
+ * (logdir → data dir, web/admin assets stay on the read-only kit) — EVERYTHING
+ * ELSE stays exactly as the stock template ships it. Deliberate decision
+ * (Jerry, 2026-10-30, recorded in GO-LIVE-CHECKLIST §0.1): the packaged app
+ * must behave like a plain Icecast install with no hidden divergence — stock
+ * credentials, stock binding, stock port. Security is handled by advice (the
+ * dashboard banner calls out stock credentials; README documents changing
+ * them), not by silently diverging. Two stock instances on one machine are
+ * interchangeable, which also makes multi-install machines just work.
+ *
+ * Conflict recovery only: if OUR port is later held by an instance that
+ * rejects our (stock) credentials, claimVendoredIcecastPort moves our
+ * generated file to the next free port — recovery, not divergence.
+ * Idempotent: an existing config (incl. operator edits) is never rewritten
+ * beyond that port claim.
  */
 export function ensureVendoredIcecastConfig() {
   const dir = vendorDir();
@@ -90,12 +102,81 @@ export function ensureVendoredIcecastConfig() {
     fs.mkdirSync(logDir, { recursive: true });
     let xml = fs.readFileSync(template, 'utf8');
     // Replace every occurrence (active or commented) — absolute paths kill all
-    // cwd dependence and point logs at a writable location.
+    // cwd dependence and point logs at a writable location. That is the ONLY
+    // transformation: passwords/bind/port stay stock (see decision above).
     xml = xml
       .replace(/<logdir>[\s\S]*?<\/logdir>/g, `<logdir>${logDir}</logdir>`)
       .replace(/<webroot>[\s\S]*?<\/webroot>/g, `<webroot>${path.join(kitDir, 'web')}</webroot>`)
-      .replace(/<adminroot>[\s\S]*?<\/adminroot>/g, `<adminroot>${path.join(kitDir, 'admin')}</adminroot>`);
+      .replace(/<adminroot>[\s\S]*?<\/adminroot>/g, `<adminroot>${path.join(kitDir, 'admin')}</adminroot>`)
+      + '\n<!-- lanstreamer-generated: port may be auto-reclaimed on conflict, everything else is yours -->\n';
     fs.writeFileSync(configPath, xml);
+    // no logger import here on purpose: config/index.js depends on this module
+    console.log('[vendorPaths] generated bundled Icecast config (stock values, writable paths)');
   }
+  // NOTE: no port claim here on purpose — detection-time claiming would dodge
+  // an operator's STOCK instance, which is interchangeable with ours and
+  // therefore fine to use as-is. Claiming happens only in the start path,
+  // reached when the credential probe already proved the listener isn't ours.
   return configPath;
+}
+
+function isGeneratedByUs(configPath) {
+  try {
+    return /lanstreamer-generated/.test(fs.readFileSync(configPath, 'utf8'));
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Conflict recovery (runs at detection AND start): if our config's port is
+ * held by a listener that is NOT interchangeable with us (different
+ * credentials — a stock-vs-stock collision needs nothing, we just use the
+ * running instance), move OUR generated file to the next free port. Returns
+ * true when the port changed (caller must re-parse port + passwords).
+ */
+export function claimVendoredIcecastPort(configPath, base = 8200, span = 10) {
+  try {
+    const xml = fs.readFileSync(configPath, 'utf8');
+    const current = Number(xml.match(/<port>(\d+)<\/port>/)?.[1]);
+    if (!current) return false;
+    if (!isLoopbackOccupiedSync(current)) return false; // free or ours
+    const next = findFreeLoopbackPort(Math.max(current + 1, base), span);
+    if (next === current) return false;
+    fs.writeFileSync(configPath, xml.replace(/<port>\d+<\/port>/, `<port>${next}</port>`));
+    console.log(`[vendorPaths] bundled Icecast port ${current} occupied by a non-interchangeable listener — reclaimed ${next}`);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function isLoopbackOccupiedSync(port) {
+  return listeningPorts().has(port);
+}
+
+/**
+ * First port in [start, start+attempts) that nothing is listening on.
+ * net.createServer().listen() is ASYNC — an EADDRINUSE lands a tick later, so
+ * a "sync" bind probe always reports free. Parse netstat instead: one spawn,
+ * deterministic, genuinely synchronous.
+ */
+export function findFreeLoopbackPort(start, attempts) {
+  const taken = listeningPorts();
+  for (let port = start; port < start + attempts; port++) {
+    if (!taken.has(port)) return port;
+  }
+  return start; // fall through with the default; bind failures surface in the dashboard
+}
+
+/** Set of local TCP ports with a listener (any address — 0.0.0.0 covers loopback). */
+function listeningPorts() {
+  const ports = new Set();
+  try {
+    const out = execSync('netstat -an -p tcp', { encoding: 'utf8', windowsHide: true, timeout: 5000 });
+    for (const m of out.matchAll(/TCP\s+\S+?:(\d+)\s+\S+\s+LISTENING/gi)) {
+      ports.add(Number(m[1]));
+    }
+  } catch { /* netstat unavailable — treat everything as free */ }
+  return ports;
 }

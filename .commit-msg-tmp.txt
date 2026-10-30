@@ -1,0 +1,40 @@
+feat: functional binary probe + essentials bundle + zombie-proof icecast check
+
+Implements the binary strategy (plan consulted externally, Jerry-approved):
+determinism first, detection as recovery, offline-first.
+
+- BinaryProbeService: first-run functional self-test replacing
+  "check system specs" (which cannot predict compiled-in codecs). Stage A
+  dshow enumeration (handles both FFmpeg 8 and 9 output formats — 9
+  dropped the section header), stage B encoder chain, stage C a 2-second
+  real capture->MP3->icecast push through a throwaway loopback icecast
+  with one-time values. Result tiers ok / device-issue / fail; pinned to
+  binary-probe.json; re-probes only on stale pins (app update, vanished
+  path); fire-and-forget at server start (3.7s measured, never blocks
+  boot). GET /api/system/binary-probe exposes it for support.
+- FFmpeg resolution now: env > vendored > probe-passed system install >
+  PATH fallback. A stale PATH shim can no longer silently win.
+- vendor/ffmpeg switched FULL -> gyan ESSENTIALS (218MB -> 100MB raw).
+  Fetch script extraction moved from tar (GNU tar from Git Bash treats
+  C:\ as a remote host and fails) to PowerShell Expand-Archive.
+  Essentials passed the FULL live chain on the maintainer's real
+  machine: all probe stages, real dshow stream, listener play/pause via
+  the proxy — the remembered "essentials issues" are settled as folklore.
+- isIcecastRunning was "any icecast.exe process exists" — permanently
+  true on machines with the operator's own (or a zombie) icecast, which
+  blocked auto-start and produced endless 401s. Now asks our port with
+  our parsed values: 200 = usable, 401 = foreign, refused = down.
+- Bundled icecast config: STOCK-PARITY per the recorded decision
+  (8d3d109) — generation rewrites only the paths (writable logdir,
+  vendored web/admin roots); values, binding, and port stay exactly as
+  the kit ships. Port claiming (next free port) exists ONLY as conflict
+  recovery in the start path, reached when the credential probe already
+  proved the port holder is not interchangeable with us. (This round
+  initially implemented loopback+random per a stale plan framing; caught
+  the later recorded decision and aligned before commit.)
+- verify-chplay.mjs gained the BASE_URL parameter (was hardcoded to
+  3001 — silently tested the wrong server).
+
+93/93 tests (stock-parity contract test replaces the randomized one).
+Offline audit: runtime network surface = opt-in telemetry + one dead
+UpdateService (zero callers) — nothing blocks or degrades offline.

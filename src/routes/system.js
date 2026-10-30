@@ -3,6 +3,7 @@ import QRCode from 'qrcode';
 import audioDeviceService from '../services/AudioDeviceService.js';
 import IcecastService from '../services/IcecastService.js';
 import streamingService from '../services/StreamingService.js';
+import binaryProbe from '../services/BinaryProbeService.js';
 // import { updateService } from '../services/UpdateService.js';
 import { ErrorHandler, errorMiddleware } from '../utils/errors.js';
 
@@ -218,6 +219,16 @@ router.get('/icecast-status', async (req, res, next) => {
   } catch (error) {
     next(error); // Pass to error middleware
   }
+});
+
+/**
+ * @route GET /api/system/binary-probe
+ * @description Functional binary self-test result (which FFmpeg/Icecast the
+ *   app can rely on and why) — support's first diagnostic stop.
+ * @access Private (admin)
+ */
+router.get('/binary-probe', (req, res) => {
+  res.json(binaryProbe.getPin() || { result: 'not-run' });
 });
 
 /**
