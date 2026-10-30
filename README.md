@@ -88,6 +88,8 @@ SESSION_SECRET=your-session-secret
 
 Restart LANStreamer afterwards. (Logins stay valid for 7 days, or set `JWT_EXPIRES_IN` to change that.)
 
+**Icecast uses its own stock defaults — change them before an event.** LANStreamer ships Icecast exactly as a normal Icecast install: the same default admin login (`admin`/`hackme`) and source/relay passwords that Icecast itself ships with. Nothing is hidden or renamed. The dashboard shows a security warning while they are unchanged. To set your own, edit `icecast.xml` (with the desktop app: `%APPDATA%\LANStreamer\icecast\icecast.xml`; with a manual Icecast install: the install folder, e.g. `C:\Program Files (x86)\Icecast\icecast.xml`) — change `<admin-user>`, `<admin-password>`, `<source-password>` and `<relay-password>` in the `<authentication>` block, then restart LANStreamer. Streams pick up the new source password automatically; browsers may need one refresh.
+
 ---
 
 ## ⚙️ System Requirements
