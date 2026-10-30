@@ -1,0 +1,33 @@
+feat: credential policy per owner decision + bundled-Icecast hardening
+
+CREDENTIALS (Jerry, 2026-10-30): random per-install admin minting was
+overkill — REVERTED. Final policy: documented defaults + dashboard
+banner prompt + in-app Admin account change + a documented recovery
+path. Forgot-password recovery: delete security.json (path shown on
+the localhost-only login page, README, and /docs) → documented
+defaults return → change again in-app. The localhost lock remains the
+real guard keeping the LAN out of the admin panel; the README keeps
+documenting the defaults (removal not needed).
+
+Login page (cognitive-walkthrough fixes): first-run defaults are
+revealed directly on localhost (the page is unreachable from the
+network — the localhost lock refuses non-local requests before it is
+served; the non-local variant shows only a README pointer), and a
+failed sign-in now auto-opens the forgot-password recovery details —
+that failure IS the "forgot it" moment.
+
+ICECAST (the actual hack vector for public software with defaults):
+the generated bundled config now binds 127.0.0.1 (listeners receive
+audio via the :3001 play proxy — never Icecast directly) and
+randomizes source/relay/admin passwords per install; the app parses
+them itself, so nobody ever types them. Supersedes the earlier
+same-day stock-parity decision — shipping known-default credentials
+on a LAN-reachable port lets anyone who knows LANStreamer control the
+stream. Own system Icecast installs keep their own config; the
+dashboard warning covers stock credentials there. Vendor template
+regenerated (loopback bind); fetch script always rewrites the
+template so changes propagate without --force.
+
+97/97 tests (hardening contract replaces the stock-parity contract).
+Live-verified: generated config loopback + random creds, vendored
+icecast serving from 127.0.0.1 only.

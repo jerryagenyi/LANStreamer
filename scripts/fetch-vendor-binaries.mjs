@@ -18,6 +18,7 @@ import {
   downloadPinnedFFmpeg,
   installFFmpegFromZip,
   installIcecastKit,
+  writeIcecastTemplate,
   fetchLicenseTexts
 } from '../src/utils/binaries.js';
 
@@ -65,6 +66,9 @@ if (fs.existsSync(path.join(vendor, 'icecast', 'bin', 'icecast.exe')) && !args.h
   installIcecastKit(vendor, src);
   console.log(`[icecast] kit copied from ${src} + clean stock template written (no local credentials ship)`);
 }
+// ALWAYS rewrite the template — pick up template changes (e.g. the loopback
+// bind) even when the kit itself is skipped, and never trust source xml.
+writeIcecastTemplate(vendor);
 
 // ---- GPL compliance ----
 await fetchLicenseTexts(vendor);

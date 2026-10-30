@@ -19,6 +19,7 @@
  *   <dataDir>/icecast/icecast.xml  +  <dataDir>/icecast/log/
  */
 import fs from 'fs';
+import crypto from 'crypto';
 import { execSync } from 'node:child_process';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -102,17 +103,26 @@ export function ensureVendoredIcecastConfig() {
   if (!fs.existsSync(configPath)) {
     fs.mkdirSync(logDir, { recursive: true });
     let xml = fs.readFileSync(template, 'utf8');
-    // Replace every occurrence (active or commented) — absolute paths kill all
-    // cwd dependence and point logs at a writable location. That is the ONLY
-    // transformation: passwords/bind/port stay stock (see decision above).
+    // Two transformations:
+    //  1. Absolute paths — kills cwd dependence, logs go to a writable dir.
+    //  2. RANDOM per-install Icecast passwords. The app parses them back at
+    //     runtime (nobody ever types them), so a public app shipping the
+    //     template's stock kit values can never be "hacked" by someone who
+    //     simply knows LANStreamer's defaults — the same reason the template
+    //     binds 127.0.0.1 (listeners use the :3001 play proxy, never 8200).
+    const rand = () => crypto.randomBytes(16).toString('hex');
     xml = xml
       .replace(/<logdir>[\s\S]*?<\/logdir>/g, `<logdir>${logDir}</logdir>`)
       .replace(/<webroot>[\s\S]*?<\/webroot>/g, `<webroot>${path.join(kitDir, 'web')}</webroot>`)
       .replace(/<adminroot>[\s\S]*?<\/adminroot>/g, `<adminroot>${path.join(kitDir, 'admin')}</adminroot>`)
-      + '\n<!-- lanstreamer-generated: port may be auto-reclaimed on conflict, everything else is yours -->\n';
+      .replace(/<bind-address>[\s\S]*?<\/bind-address>/g, '<bind-address>127.0.0.1</bind-address>')
+      .replace(/<source-password>[\s\S]*?<\/source-password>/g, `<source-password>ls-${rand()}</source-password>`)
+      .replace(/<relay-password>[\s\S]*?<\/relay-password>/g, `<relay-password>ls-${rand()}</relay-password>`)
+      .replace(/<admin-password>[\s\S]*?<\/admin-password>/g, `<admin-password>ls-${rand()}</admin-password>`)
+      + '\n<!-- lanstreamer-generated: random per-install credentials, loopback bind, port may be auto-reclaimed on conflict -->\n';
     fs.writeFileSync(configPath, xml);
     // no logger import here on purpose: config/index.js depends on this module
-    console.log('[vendorPaths] generated bundled Icecast config (stock values, writable paths)');
+    console.log('[vendorPaths] generated bundled Icecast config (random credentials, loopback bind, writable paths)');
   }
   // NOTE: no port claim here on purpose — detection-time claiming would dodge
   // an operator's STOCK instance, which is interchangeable with ours and

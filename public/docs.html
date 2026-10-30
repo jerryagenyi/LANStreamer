@@ -89,8 +89,18 @@
             “Admin access”, and can be changed with the <code>ADMIN_USERNAME</code> / <code>ADMIN_PASSWORD</code>
             environment variables. On first run the dashboard shows a banner stating the defaults and how to
             change them; it disappears once you set your own.</li>
+            <li><strong>Change it in the app:</strong> dashboard → sidebar → <b>Admin account</b> card — new
+            username + password, applies immediately (works in the desktop app, where there is no <code>.env</code>).</li>
+            <li><strong>Forgot your password?</strong> On this PC, delete the admin login file and restart
+            LANStreamer — the documented default login returns, and you can set a new one from the Admin account
+            card. Installed app: <code>%APPDATA%\LANStreamer\security.json</code> · from source:
+            <code>config\security.json</code>. (The login page shows this hint too.)</li>
             <li>Admin is also locked to <strong>localhost</strong>: other machines on the network only ever see
             the listener page, even with valid credentials.</li>
+            <li>The <strong>bundled Icecast</strong> is hardened for you: it only listens on this PC
+            (<code>127.0.0.1</code>) and its passwords are randomly generated per install — listeners get audio
+            through LANStreamer's port 3001, never Icecast directly. Using your own Icecast install? Change its
+            stock passwords; the dashboard warns until you do.</li>
             <li>Never port-forward ports 3001/8200 to the internet — the localhost lock only protects you on your LAN.</li>
             <li>Remote admin over the internet: use a VPN like Tailscale instead of exposing ports.</li>
         </ul>

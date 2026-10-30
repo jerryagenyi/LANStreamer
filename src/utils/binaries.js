@@ -54,7 +54,12 @@ export const ICECAST_TEMPLATE = `<icecast>
   <hostname>localhost</hostname>
   <listen-socket>
     <port>8200</port>
-    <bind-address>0.0.0.0</bind-address>
+    <!-- LOOPBACK ONLY: listeners reach audio through the app's :3001 play
+         proxy; binding the LAN would expose Icecast's own admin plane to
+         anyone who knows the stock kit values this template ships with.
+         The app randomizes the passwords below per install at generation
+         time (vendorPaths.ensureVendoredIcecastConfig). -->
+    <bind-address>127.0.0.1</bind-address>
   </listen-socket>
   <fileserve>1</fileserve>
   <paths>

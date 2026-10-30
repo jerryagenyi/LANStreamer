@@ -70,15 +70,20 @@ describe('vendorPaths resolution', () => {
     expect(fs.existsSync(path.join(fixture.base, 'data', 'icecast', 'log'))).toBe(true);
   });
 
-  it('honors the stock-parity contract: stock credentials/binding/port survive generation, only paths are rewritten', () => {
+  it('hardens the generated config: loopback bind + per-install random credentials (owner decision 2026-10-30)', () => {
     const cfg = vendorPaths.ensureVendoredIcecastConfig();
     const xml = fs.readFileSync(cfg, 'utf8');
-    // Deliberate product decision (GO-LIVE-CHECKLIST §0.1): the packaged app
-    // behaves exactly like a plain Icecast install — no hidden divergence.
-    expect(xml).toMatch(/<source-password>hackme</);
-    expect(xml).toMatch(/<admin-password>hackme</);
-    expect(xml).toContain('<bind-address>0.0.0.0</bind-address>');
+    // The app is public software: shipping a LAN-reachable Icecast running
+    // the stock kit values would let anyone who knows LANStreamer control it
+    // (kill source, harvest listeners, hijack mounts). Loopback bind because
+    // listeners receive audio through the :3001 play proxy, never :8200.
+    expect(xml).not.toMatch(/<source-password>hackme</);
+    expect(xml).not.toMatch(/<admin-password>hackme</);
+    expect(xml).toContain('<bind-address>127.0.0.1</bind-address>');
+    expect(xml).not.toContain('<bind-address>0.0.0.0</bind-address>');
     expect(xml).toContain('<port>8200</port>');
+    expect(xml).toMatch(/<source-password>ls-[0-9a-f]{32}<\/source-password>/);
+    expect(xml).toMatch(/<admin-password>ls-[0-9a-f]{32}<\/admin-password>/);
     // generated marker present (enables conflict-recovery port claiming later)
     expect(xml).toContain('lanstreamer-generated');
   });

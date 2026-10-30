@@ -72,6 +72,8 @@ Sign in at `http://localhost:3001/dashboard` (or the Electron app window) — th
 
 **First run:** while the default credentials are active, the dashboard shows a banner stating them and how to change them — it disappears permanently once you set your own.
 
+**Forgot your password?** On the operator PC, delete the admin login file and restart LANStreamer — the default login above returns, and you can set a new one from the dashboard (Admin account). Installed app: `%APPDATA%\LANStreamer\security.json` · running from source: `config\security.json`. (The login page carries this same hint — it only opens on the operator's PC, so the path is safe to show there.)
+
 Admin access has two layers:
 
 1. **Login (username + password)** — every admin API call requires a session token from signing in.
@@ -90,7 +92,9 @@ SESSION_SECRET=your-session-secret
 
 Restart LANStreamer afterwards. (The in-app change takes precedence over `.env` values. Logins stay valid for 7 days, or set `JWT_EXPIRES_IN` to change that.)
 
-**Icecast uses its own stock defaults — change them before an event.** LANStreamer ships Icecast exactly as a normal Icecast install: the same default admin login (`admin`/`hackme`) and source/relay passwords that Icecast itself ships with. Nothing is hidden or renamed. The dashboard shows a security warning while they are unchanged. To set your own, edit `icecast.xml` (with the desktop app: `%APPDATA%\LANStreamer\icecast\icecast.xml`; with a manual Icecast install: the install folder, e.g. `C:\Program Files (x86)\Icecast\icecast.xml`) — change `<admin-user>`, `<admin-password>`, `<source-password>` and `<relay-password>` in the `<authentication>` block, then restart LANStreamer. Streams pick up the new source password automatically; browsers may need one refresh.
+**Icecast (the streaming server LANStreamer drives) is hardened automatically when bundled.** The bundled Icecast binds to `127.0.0.1` only — listeners receive audio through LANStreamer's own play proxy on port 3001, so nothing about Icecast is ever exposed to your network — and its passwords are randomly generated per install (the app reads them itself; nobody ever types them). Someone who knows LANStreamer's defaults cannot reach or control it.
+
+Using your **own Icecast install** instead of the bundled one? That install is on your network as you configured it: if it still has Icecast's stock default passwords, the dashboard shows a security warning until you change them (edit `icecast.xml` in the install folder, e.g. `C:\Program Files (x86)\Icecast\icecast.xml` — the `<authentication>` block — then restart LANStreamer).
 
 ---
 
