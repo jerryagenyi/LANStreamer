@@ -256,8 +256,8 @@ router.post('/reorder', async (req, res) => {
  */
 router.post('/update', async (req, res) => {
   try {
-    const { streamId, name, deviceId } = req.body;
-    const result = await streamingService.updateStream(streamId, { name, deviceId });
+    const { streamId, name, deviceId, bitrate } = req.body;
+    const result = await streamingService.updateStream(streamId, { name, deviceId, bitrate });
     res.status(200).json({
       message: 'Stream updated successfully',
       oldStreamId: result.oldStreamId,

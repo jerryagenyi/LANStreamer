@@ -594,7 +594,7 @@ class StreamingService {
    * @returns {Array} Command line arguments
    */
   buildFFmpegArgs(streamId, streamConfig, formatIndex = 0) {
-    const bitrate = streamConfig.bitrate || 192;
+    const bitrate = streamConfig.bitrate || 96;
 
     // Read Icecast config from icecast.xml at runtime (source of truth)
     // Source connections (FFmpeg → Icecast) must use localhost; getHostname() is for public URLs only
@@ -1088,6 +1088,18 @@ class StreamingService {
       currentStream.config.deviceId = updates.deviceId
     }
 
+    // Bitrate edit (96/128/192): applies to the stored config; a LIVE stream
+    // picks it up by restarting (FFmpeg args are fixed at spawn time).
+    const prevBitrate = currentStream.config?.bitrate
+    let bitrateChanged = false
+    if (updates.bitrate !== undefined) {
+      const br = parseInt(updates.bitrate, 10)
+      if ([96, 128, 192].includes(br) && br !== prevBitrate) {
+        currentStream.config.bitrate = br
+        bitrateChanged = true
+      }
+    }
+
     // UX: If device changed OR stream was in error OR name changed, reset to a clean stopped state
     const deviceChanged = updates.deviceId !== undefined && updates.deviceId !== prevDeviceId
     const nameChanged = updates.name !== undefined && updates.name !== prevName
@@ -1113,6 +1125,15 @@ class StreamingService {
 
     // Save to persistent storage
     this.savePersistentStreams()
+
+    // Bitrate-only change on a LIVE stream: restart it so the new bitrate
+    // takes effect immediately (device/name resets above leave it stopped).
+    if (bitrateChanged && !deviceChanged && currentStream.status === 'running') {
+      logger.info(`Bitrate ${prevBitrate}→${currentStream.config.bitrate} on live stream ${newStreamId} — restarting`)
+      this.restartStream(newStreamId).catch(err => {
+        logger.warn(`Bitrate restart failed for ${newStreamId}: ${err.message}`)
+      })
+    }
 
     logger.info(`Stream updated successfully. New ID: ${newStreamId}`)
     logger.info(`Updated stream data:`, {

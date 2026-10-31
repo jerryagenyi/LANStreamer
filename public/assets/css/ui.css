@@ -327,6 +327,11 @@
 .playbtn.stop{background:var(--tok-danger-dim);color:var(--tok-danger);border-color:color-mix(in oklab,var(--tok-danger) 30%,transparent)}
 .playbtn.stop:hover{background:var(--tok-danger);color:#fff}
 .rowactions{display:flex;align-items:center;justify-content:flex-end;gap:4px}
+/* Deterministic paint order for the row ⋯ popup: the streams card sits above
+   the following Audio-inputs card (Jerry report: popup dropped under it —
+   unreproducible fresh, but this guarantees the order in any cache mix). */
+#ffmpeg-streams{position:relative;z-index:2}
+[data-ls-collapse="audio-inputs"]{position:relative;z-index:1}
 /* Native dropdown rows: paint them from tokens so the open list can never
    come up black-on-black on any platform (pairs with color-scheme). */
 select option{background:var(--tok-surface-1);color:var(--tok-text-1)}

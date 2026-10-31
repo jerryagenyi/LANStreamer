@@ -16,9 +16,18 @@
  * pause icon) keeps working on both paths.
  */
 (function () {
-  const TARGET_AHEAD = 0.45;   // seconds of buffered audio we keep ahead of playhead
-  const MAX_AHEAD = 0.65;      // beyond this, snap back to live (drift grew)
-  const SNAP_BACK = 0.30;      // after snapping, playhead sits this far behind live edge
+  // Icecast delivers to clients in ~500ms ticks (measured identical on 2.4.4
+  // and 2.5.0 — it is the server's write loop, not a bug we can tune away).
+  // The buffer target MUST sit above that tick or playback runs dry between
+  // bursts — that was the "periodic break". 0.75s absorbs the tick with
+  // margin; drift control uses an inaudible playbackRate nudge, and a real
+  // seek (audible skip) happens only on true runaway (>2.5s).
+  const TARGET_AHEAD = 0.75;   // steady-state buffered-ahead target
+  const RATE_NUDGE_ABOVE = 0.9; // ahead beyond this → play 4% faster until back
+  const RATE_NUDGE = 1.04;
+  const SEEK_ABOVE = 2.5;      // ahead beyond this → hard snap (paused long, runaway drift)
+  const SNAP_BACK = 0.30;      // after a hard snap, playhead sits this far behind live edge
+  const WAIT_SEEK_AHEAD = 0.4; // underrun: only jump if this much data exists
   const MAX_TRIM = 12;         // periodically drop played-out buffer beyond this many seconds
 
   class LSLowLatency {
@@ -69,12 +78,15 @@
         }
       }, { once: true });
 
-      // Underrun recovery: when the buffer runs dry (WiFi jitter), jump to
-      // the live edge as soon as data exists again instead of spinning.
+      // Underrun recovery: with the buffer target above the 500ms delivery
+      // tick this should be rare (WiFi jitter). Only jump when meaningful
+      // data exists; otherwise let the next tick land — the element resumes
+      // by itself and the gap is a short silence, not an audible skip.
       this._onWaiting = () => {
         const b = this._bufferedEnd();
-        if (b !== null && b - this.audio.currentTime > 0.05) {
-          this.audio.currentTime = b - 0.05;
+        if (b !== null && b - this.audio.currentTime > WAIT_SEEK_AHEAD) {
+          this.audio.currentTime = Math.max(0, b - SNAP_BACK);
+          this.lastSnapAt = Date.now();
         }
       };
       this.audio.addEventListener('waiting', this._onWaiting);
@@ -115,20 +127,25 @@
       this._trim();
     }
 
-    /** Keep the playhead near the live edge and drop played-out buffer. */
+    /** Keep the playhead near the live edge and drop played-out buffer.
+     *  Gentle by design: a 4% playbackRate nudge is inaudible; a SEEK is an
+     *  audible skip, reserved for true runaway (long pause resume, drift). */
     _trim() {
       const sb = this.sourceBuffer, a = this.audio;
       if (!sb || sb.updating) return;
       const end = this._bufferedEnd();
       if (end === null) return;
 
-      // Drift snap: buffered-ahead grew past MAX_AHEAD → back to live.
-      // Rate-limited to once per second (each snap is a tiny audible skip).
       const ahead = end - a.currentTime;
       const now = Date.now();
-      if (ahead > MAX_AHEAD && now - this.lastSnapAt > 1000 && !a.paused) {
+      if (ahead > SEEK_ABOVE && now - this.lastSnapAt > 1000) {
         a.currentTime = Math.max(0, end - SNAP_BACK);
+        a.playbackRate = 1;
         this.lastSnapAt = now;
+      } else if (ahead > RATE_NUDGE_ABOVE && !a.paused) {
+        if (a.playbackRate !== RATE_NUDGE) a.playbackRate = RATE_NUDGE;
+      } else if (a.playbackRate !== 1) {
+        a.playbackRate = 1;
       }
 
       // Remove played-out buffer so SourceBuffer quota never fills.

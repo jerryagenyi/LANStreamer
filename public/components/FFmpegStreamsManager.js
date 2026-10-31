@@ -846,6 +846,21 @@ class FFmpegStreamsManager {
                         </select>
                     </div>
 
+                    <div style="display:flex;flex-direction:column;gap:6px;">
+                        <label for="editStreamBitrate" style="font-size:14px;font-weight:600;color:var(--tok-text-1);">Bitrate</label>
+                        <select
+                            id="editStreamBitrate"
+                            style="height:40px;padding:0 12px;border-radius:10px;background:var(--tok-surface-inset);border:1px solid var(--tok-line-strong);color:var(--tok-text-1);font:inherit;font-size:14px;width:100%;"
+                        >
+                            ${[96, 128, 192].map(b => `
+                                <option value="${b}" ${(stream.config?.bitrate || 96) === b ? 'selected' : ''}>
+                                    ${b} kbps${b === 96 ? ' · Speech' : b === 128 ? ' · Standard' : ' · Music'}
+                                </option>
+                            `).join('')}
+                        </select>
+                        <span style="font-size:12px;color:var(--tok-text-3);">96 is plenty for spoken translation, 192 recommended for music. Changing a live stream restarts it.</span>
+                    </div>
+
                     <div class="flex gap-3 pt-4">
                         <button
                             type="button"
@@ -905,6 +920,7 @@ class FFmpegStreamsManager {
 
                 const name = document.getElementById('editStreamName').value.trim();
                 const deviceId = document.getElementById('editStreamDevice').value;
+                const bitrate = parseInt(document.getElementById('editStreamBitrate')?.value || '96', 10);
 
                 if (!name || !deviceId) {
                     throw new Error('Please fill in all fields');
@@ -923,7 +939,8 @@ class FFmpegStreamsManager {
                     body: JSON.stringify({
                         streamId: stream.id,
                         name: sanitizedName,
-                        deviceId: deviceId
+                        deviceId: deviceId,
+                        bitrate
                     })
                 });
 
@@ -1200,7 +1217,7 @@ class FFmpegStreamsManager {
                 body: JSON.stringify({
                     name: `${src.name || streamId} (copy)`,
                     deviceId: src.deviceId,
-                    bitrate: src.config?.bitrate || 192,
+                    bitrate: src.config?.bitrate || 96,
                     autoStart: false
                 })
             });
@@ -1313,7 +1330,7 @@ class FFmpegStreamsManager {
                             <span class="material-symbols-rounded" style="font-size:13px;" aria-hidden="true">mic</span>${this.escapeHtml(deviceName)}
                         </span>
                         <span class="dotsep" aria-hidden="true"></span>
-                        <span class="mono">${stream.config?.bitrate || 192}k</span>
+                        <span class="mono">${stream.config?.bitrate || 96}k</span>
                         ${metaExtras}
                     </div>
                 </div>
@@ -1510,11 +1527,11 @@ class FFmpegStreamsManager {
                     <div style="display:flex;flex-direction:column;gap:6px;">
                         <label style="font-size:13px;font-weight:600;color:var(--tok-text-1);">Quality</label>
                         <div class="quality">
-                            <label><input type="radio" name="drawer-q" value="96"><b>96</b>kbps · Speech</label>
+                            <label><input type="radio" name="drawer-q" value="96" checked><b>96</b>kbps · Speech (default)</label>
                             <label><input type="radio" name="drawer-q" value="128"><b>128</b>kbps · Standard</label>
-                            <label><input type="radio" name="drawer-q" value="192" checked><b>192</b>kbps · Music</label>
+                            <label><input type="radio" name="drawer-q" value="192"><b>192</b>kbps · Music</label>
                         </div>
-                        <span class="hint" style="font-size:12px;color:var(--tok-text-3);">192 kbps is recommended for music; 96 is plenty for spoken translation.</span>
+                        <span class="hint" style="font-size:12px;color:var(--tok-text-3);">96 kbps is plenty for spoken translation (the usual case); switch to 192 for music channels.</span>
                     </div>
                     <label style="display:flex;align-items:center;gap:10px;font-size:14px;color:var(--tok-text-1);cursor:pointer;">
                         <button type="button" class="switch" id="drawer-autostart" role="switch" aria-checked="false" aria-label="Start automatically when LANStreamer launches"></button>
@@ -1557,7 +1574,7 @@ class FFmpegStreamsManager {
         const collect = () => {
             const name = nameInput.value.trim().replace(/[<>"'&]/g, '');
             const deviceId = root.querySelector('#stream-device')?.value || '';
-            const bitrate = parseInt(root.querySelector('input[name="drawer-q"]:checked')?.value || '192', 10);
+            const bitrate = parseInt(root.querySelector('input[name="drawer-q"]:checked')?.value || '96', 10);
             const autoStart = root.querySelector('#drawer-autostart').getAttribute('aria-checked') === 'true';
             if (!name || !deviceId) {
                 this.showNotification('Give the stream a name and pick an audio input.', 'warning');
