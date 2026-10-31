@@ -171,7 +171,14 @@ router.get('/play/:streamId', (req, res) => {
       return;
     }
     const contentType = upstream.headers['content-type'] || 'audio/mpeg';
+    // Low-latency pass-through: flush headers immediately (no Node output
+    // buffering), disable Nagle so small MP3 frames leave at once (Nagle adds
+    // 40-200ms per frame), and forbid caches from holding the stream. Every
+    // byte is forwarded the moment it arrives.
     res.setHeader('Content-Type', contentType);
+    res.setHeader('Cache-Control', 'no-store');
+    res.flushHeaders();
+    if (typeof res.socket?.setNoDelay === 'function') res.socket.setNoDelay(true);
     upstream.pipe(res);
   });
   clientRequest.on('timeout', () => {

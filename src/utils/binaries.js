@@ -43,7 +43,9 @@ export const ICECAST_TEMPLATE = `<icecast>
     <header-timeout>15</header-timeout>
     <source-timeout>10</source-timeout>
     <burst-on-connect>1</burst-on-connect>
-    <burst-size>65535</burst-size>
+    <!-- 16KB ≈ 0.7s at 128k: enough to start playback promptly without
+         pre-pushing seconds of history as initial latency (65535 ≈ 4s) -->
+    <burst-size>16384</burst-size>
   </limits>
   <authentication>
     <source-password>hackme</source-password>

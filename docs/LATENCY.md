@@ -17,17 +17,19 @@ Encoder buffer + server queue + burst/prebuffer + player buffer dominate; the LA
 
 ## App side (what LANStreamer can do)
 
-| Lever | Status / idea | Trade-off |
-|---|---|---|
-| **Icecast `burst-on-connect` / `burst-size`** | In our generated `icecast.xml`, set `burst-on-connect` to 0 for lowest latency | Burst makes playback start faster but ADDS initial latency; without it, listeners take a second or two longer to start hearing audio |
-| **Icecast `queue-size`** | Keep small in generated config | Too small = stutter on WiFi jitter |
-| **Bitrate / codec** | MP3 128–192 kbps is a good latency/quality balance; AAC has slightly higher encoder latency than MP3 at same settings | Lower bitrate (64–96 kbps) lowers encoder buffer + network load when many listeners |
-| **FFmpeg pacing (`-re`)** | Our spawn paces capture in real time already (live device input) | — |
-| **FFmpeg capture flags** | Evaluate `-fflags nobuffer -flags low_delay`, smaller `-probesize`/`-analyzeduration` for capture-side savings | Risk: some DirectShow devices misbehave; needs per-device testing |
-| **Listener player buffer** | Our `<audio>` play proxy uses browser defaults; investigate `preload="none"` (already set) + short fetch-buffer tricks | Browsers resist tiny buffers (stutter protection) |
-| **Express play proxy** | Streaming proxy adds negligible latency (no buffering, pipes bytes) | — |
+**Status 2026-10-30: the low-latency round SHIPPED.** Measured on a live stream (Chromium, `scripts/verify-latency.mjs`): buffered-ahead in the player dropped from **~2.3 s (browser default) to ~0.5 s steady**, time-to-first-audio ~1.6 s after the tap. Architecture floor with MP3-over-HTTP is ~0.8–1.2 s end-to-end; going below that means changing transport (WebSocket/WebRTC + Opus), not tuning.
 
-**Candidate TODO:** generate `icecast.xml` with `burst-on-connect 0` and measure end-to-end latency (clap test: record operator clap + phone output, count frames) before/after.
+| Lever | Status (2026-10-30) | Trade-off |
+|---|---|---|
+| **Listener player (the big lever)** | ✅ SHIPPED — MSE-based playback (`public/assets/js/lowlatency.js`): the page fetches the play-proxy stream itself and appends ~0.5 s chunks to a MediaSource buffer, snapping the playhead back to the live edge whenever drift exceeds ~0.65 s (rate-limited to 1/s). Safari/iOS (no MP3-in-MSE) and any MSE failure fall back to the plain `<audio src>` path automatically | Occasional tiny audible skip when snapping back to live after WiFi jitter — the cost of staying live instead of drifting seconds behind |
+| **FFmpeg capture flags** | ✅ SHIPPED — `-fflags nobuffer -flags low_delay -probesize 32k -analyzeduration 0` before the dshow input, `-flush_packets 1` on output (both input paths). Validated live against a real VB-Cable capture | Validated on this machine's devices; exotic capture devices should be re-tested (regression test: `tests/integration/ffmpeg-spawn.test.js`) |
+| **Express play proxy** | ✅ SHIPPED — `flushHeaders()`, `socket.setNoDelay(true)` (Nagle cost 40–200 ms per small MP3 frame), `Cache-Control: no-store` | — |
+| **Icecast `burst-on-connect` / `burst-size`** | ✅ SHIPPED (bundled template) — burst stays ON with a 16 KB burst (≈0.7 s at 128k) instead of the stock 64 KB (≈4 s pre-pushed on join) | 0 would shave a little more but listeners take 1–2 s longer to first hear audio |
+| **Icecast `queue-size`** | Stock 512 KB (it is a backlog CAP, not added latency — leave it) | — |
+| **Bitrate / codec** | MP3 128–192 kbps stays the balance; Opus would cut ~0.1–0.3 s but Icecast+browser support is spotty | Lower bitrate (64–96 kbps) for many-listener events |
+| **FFmpeg pacing (`-re`)** | Device capture is inherently real-time; `-re` only on the file-input path | — |
+
+**Remaining idea (bigger rewrite):** WebSocket/WebRTC + Opus transport for ~200–400 ms — see the UX audit P4/deferred list; only worth it if same-room interpretation demands sub-second.
 
 ## Operator/event side (beyond our control — guide them)
 

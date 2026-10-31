@@ -521,6 +521,7 @@
     <script src="/assets/js/boot.js?v=5"></script>
     <script src="/assets/js/toasts.js?v=5"></script>
     <script src="/assets/js/lightbox.js?v=1"></script>
+    <script src="/assets/js/lowlatency.js?v=2"></script>
     <script>
         class StreamListener {
             constructor() {
@@ -883,6 +884,44 @@
                 } catch (e) { /* never let reporting break playback */ }
             }
 
+            /** Audio source selection: MSE low-latency path when the browser
+             *  supports MP3-in-MSE (Chrome/Edge/Firefox/Android), plain src
+             *  otherwise (Safari/iOS) or after any MSE failure. The <audio>
+             *  element behaves identically on both paths — this only changes
+             *  WHERE the bytes come from and how little is buffered. */
+            setAudioSource(url) {
+                this.clearAudioSource();
+                if (window.LSLowLatency && LSLowLatency.supported()) {
+                    try {
+                        this.llPlayer = new LSLowLatency(this.audioPlayer, {
+                            onError: (e) => {
+                                console.warn('Low-latency playback failed, falling back to direct stream:', e && e.message);
+                                this.llFallback = true; // remember for this page load
+                                this.clearAudioSource();
+                                this.audioPlayer.src = url; // plain path, identical behaviour
+                                if (this.currentStream && this.audioPlayer.paused) {
+                                    this.audioPlayer.play().catch(() => {});
+                                }
+                            }
+                        });
+                        if (this.llPlayer.load(url)) {
+                            this.audioPlayer.preload = 'auto'; // MSE object URL needs load()+play()
+                            this.audioPlayer.load();
+                            return;
+                        }
+                    } catch (e) { /* fall through to direct */ }
+                }
+                this.audioPlayer.preload = 'none';
+                this.audioPlayer.src = url;
+                this.audioPlayer.load();
+            }
+
+            clearAudioSource() {
+                if (this.llPlayer) { this.llPlayer.stop(); this.llPlayer = null; }
+                this.audioPlayer.removeAttribute('src');
+                try { this.audioPlayer.load(); } catch (e) { /* detached */ }
+            }
+
             /** Play (or switch to) a channel from the picker. */
             playChannel(streamId) {
                 if (this.currentStream === streamId) {
@@ -993,13 +1032,13 @@
                     // Skip HEAD request validation on mobile - it often fails even when stream works
                     // Let the audio element's error handler catch real issues
 
-                    // Set up audio player with error handling (proxy = same origin, no CORS)
-                    this.audioPlayer.src = playUrl;
+                    // Set up audio player with error handling (proxy = same origin, no CORS).
+                    // Low latency first: MSE-fed playback keeps ~0.5s buffered ahead instead
+                    // of the browser's default 3-4.5s progressive prebuffer (the reported
+                    // "4-5 seconds" delay). Safari/iOS and any MSE failure fall back to the
+                    // plain src path — behaviour identical to before.
+                    this.setAudioSource(playUrl);
                     this.audioPlayer.volume = this.volume / 100; // Set initial volume (0-1 range)
-
-                    // Let browser auto-detect format from server Content-Type header
-                    // Removing hardcoded type to prevent format mismatch issues
-                    this.audioPlayer.preload = 'none'; // Don't preload to avoid format issues
 
                     this.audioPlayer.load();
 
@@ -1102,7 +1141,7 @@
                 this.intentionallyStopping = true;
 
                 this.audioPlayer.pause();
-                this.audioPlayer.src = '';
+                this.clearAudioSource();
                 this.currentStream = null;
                 this.offAirSince = null;
 
@@ -1139,7 +1178,7 @@
                 this.autoResumeWanted = !this.userPaused; // resume automatically when it returns
                 this.intentionallyStopping = true;
                 this.audioPlayer.pause();
-                this.audioPlayer.src = '';
+                this.clearAudioSource();
                 this.currentStream = null;
                 setTimeout(() => { this.intentionallyStopping = false; }, 1000);
                 this.renderStreams();
@@ -1151,7 +1190,7 @@
             resumeFromOffAir() {
                 const id = this.currentStream;
                 this.offAirSince = null;
-                this.audioPlayer.src = `/api/streams/play/${encodeURIComponent(id)}`;
+                this.setAudioSource(`/api/streams/play/${encodeURIComponent(id)}`);
                 this.audioPlayer.play().then(() => {
                     this.showNotification(`${this.streamName(id)} is back on air — resumed.`, 'success');
                     this.renderStreams();

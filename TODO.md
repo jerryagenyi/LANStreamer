@@ -6,7 +6,7 @@ Context: [CLAUDE.md](CLAUDE.md), [docs/APP-FLOW.md](docs/APP-FLOW.md), [docs/TRO
 
 ## To do (priority order)
 
-- [ ] **Latency management** — [docs/LATENCY.md](docs/LATENCY.md) has the research. Next: generate `icecast.xml` with `burst-on-connect 0` + small `queue-size`, then measure end-to-end (clap test) before/after; surface a "latency tips" link on the dashboard pointing at the operator-side guidance (5 GHz, dedicated AP, QoS, wired operator, AP placement — user-side, beyond our control).
+- [x] **Latency management — SHIPPED (2026-10-30)** — MSE listener player (~0.5 s buffered-ahead vs ~2.3 s browser default), FFmpeg low-delay flags, proxy no-Nagle/flushHeaders, 16 KB icecast burst. Measured: `scripts/verify-latency.mjs`. Remaining nice-to-have: "latency tips" link on the dashboard pointing at the operator-side guidance (5 GHz, dedicated AP, QoS, wired operator); sub-second would need a WebSocket/WebRTC + Opus transport rewrite (deferred — see docs/LATENCY.md).
 
 - [ ] **Minimum PC specs + cross-OS test story** — README section: minimum requirements (x64, 4 GB RAM, Node 18+ for source runs, FFmpeg, Icecast; packaged app drops the Node requirement). Cross-OS testing: GitHub Actions windows/macos/ubuntu matrix runs the suite + `electron:smoke` online (Phase 4); locally, Playwright covers the web pages on all three OSes; no credible downloadable "test on every PC" tool exists beyond VMs + the CI matrix.
 

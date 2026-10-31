@@ -617,6 +617,7 @@ class StreamingService {
         '-b:a', `${bitrate}k`,          // Audio bitrate (use -b:a for compatibility)
         '-ar', '44100',                 // Sample rate
         '-ac', '2',                     // Audio channels
+        '-flush_packets', '1',          // Low latency: emit each packet as encoded (no muxer batching)
         '-f', format.format,            // Output format
         icecastUrl,                     // Unique Icecast URL per stream
         '-loglevel', 'info'             // Show info level logs
@@ -638,16 +639,23 @@ class StreamingService {
         }
       }
 
-      // SIMPLIFIED: Use minimal FFmpeg command that works (based on manual setup scripts)
-      // Don't add extra parameters that might cause crashes
-      // IMPORTANT: Use quotes around device name for DirectShow (handles spaces and special chars)
+      // Low-latency capture flags sit BEFORE -i (they configure the dshow
+      // demuxer): nobuffer skips input buffering, low_delay sets decoder
+      // flags, probesize/analyzeduration cut the ~0.5-1s stream probing.
+      // Safe for live capture (nothing to probe ahead for); 32k is the
+      // smallest probesize that still identifies the stream.
       args = [
+        '-fflags', 'nobuffer',
+        '-flags', 'low_delay',
+        '-probesize', '32k',
+        '-analyzeduration', '0',
         '-f', 'dshow',                    // DirectShow input format
         '-i', `audio="${deviceName}"`,     // Audio input device (real DirectShow name, quoted for safety)
         '-acodec', format.codec,           // Audio codec (with fallback support)
         '-b:a', `${bitrate}k`,            // Audio bitrate (use -b:a instead of -ab for compatibility)
         '-ar', '44100',                    // Sample rate
         '-ac', '2',                        // Audio channels
+        '-flush_packets', '1',            // Low latency: emit each packet as encoded (no muxer batching, up to ~1.3s at 192k)
         '-f', format.format,               // Output format (with fallback support)
         icecastUrl,                        // Unique Icecast URL per stream
         '-loglevel', 'info'                // Show info level logs

@@ -20,6 +20,7 @@ Everything below is shipped in the working tree but **not yet bundled into an in
 ### Changed — 2026 redesign
 - Complete UI redesign (operator dashboard + listener page): token-based design system, status strip, grouped stream rows with pinned-right row actions, side drawer for stream creation, listener hero + channel picker with visible play affordances, sticky opaque headers, flat surfaces (no card shadows/hover/animations), full light/dark themes, fully offline (all fonts/assets vendored)
 - Process management hardened: Windows process-tree kills in the right order (no more orphaned FFmpeg holding audio devices), icecast self-healing on stream start/restart, stale LAN IP detection when the network changes
+- **Low-latency playback (2026-10-30):** listener audio delay cut from a reported 4–5 s to ~1 s class — MSE-based player keeps ~0.5 s buffered ahead (vs ~2.3 s browser default, measured) and snaps back to the live edge after WiFi jitter or pauses; FFmpeg capture runs with low-delay flags (`nobuffer`, `low_delay`, `probesize 32k`, `analyzeduration 0`, `flush_packets 1`); the play proxy disables Nagle and flushes headers; bundled Icecast uses a 16 KB join burst. Safari/iOS automatically use the classic direct-stream path
 
 ### Known gaps before first packaged release
 - No downloadable installer yet (NSIS packaging is wired and bundles FFmpeg + Icecast: `npm run electron:build:win`) — see the go-live checklist
