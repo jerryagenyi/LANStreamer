@@ -1,24 +1,49 @@
-import { spawn, execSync } from 'child_process'
+import { spawn, exec, execSync } from 'child_process'
 import { fileURLToPath } from 'url'
 import { dirname, join } from 'path'
 import fs from 'fs'
 import logger from '../utils/logger.js'
 import errorDiagnostics from '../utils/errorDiagnostics.js'
-import FFmpegService from './FFmpegService.js'
 import IcecastService from './IcecastService.js'
 import AudioDeviceService from './AudioDeviceService.js'
 import config from '../config/index.js'
+import { vendoredFfmpegPath, dataDir } from '../utils/vendorPaths.js'
+import binaryProbe from './BinaryProbeService.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
+
+/**
+ * Attach diagnosis to an error for structured API response and logging.
+ * Sets cause, diagnosis (category, title, description, solutions), shortMessage, capacity when mount_point, and stderrSnippet.
+ * @param {Error} err - Error instance
+ * @param {Object} diagnosis - Result from errorDiagnostics.diagnose()
+ * @param {Object} context - Optional { capacity, stderrSnippet } for mount_point/technical details
+ */
+function attachDiagnosis(err, diagnosis, context = {}) {
+  err.cause = diagnosis.category || 'unknown'
+  err.shortMessage = diagnosis.title
+  err.diagnosis = {
+    category: diagnosis.category,
+    title: diagnosis.title,
+    description: diagnosis.description,
+    solutions: diagnosis.solutions || []
+  }
+  if (diagnosis.category === 'mount_point' && context.capacity) {
+    err.capacity = context.capacity
+  }
+  // Include stderr snippet for technical debugging (max 1000 chars for UI)
+  if (context.stderrSnippet) {
+    err.stderrSnippet = context.stderrSnippet.slice(0, 1000)
+  }
+}
 
 class StreamingService {
   constructor() {
     this.activeStreams = {}
     /** @type {string[]} Display order of stream IDs (S1=first, S2=second, etc.). Persisted in streams.json as _order. */
     this.streamOrder = []
-    this.ffmpegService = FFmpegService
-    this.streamsConfigPath = join(process.cwd(), 'config', 'streams.json')
+    this.streamsConfigPath = join(dataDir(), 'streams.json')
     this.lastIcecastStatus = 'unknown'
     this.icecastDownSince = null // Track when Icecast went down
     this.ICECAST_GRACE_PERIOD_SECONDS = 30 // Wait 30 seconds before stopping streams
@@ -63,10 +88,76 @@ class StreamingService {
         })
 
         logger.info(`Loaded ${streamIds.length} persistent streams, order: ${this.streamOrder.length} entries`)
+
+        // Auto-start: streams saved with autoStart=true come up with the app.
+        // Fire-and-forget with a small stagger so devices/limits settle; failures
+        // surface on the row like any other start.
+        const autoStartIds = streamIds.filter(id => persistentStreams[id]?.config?.autoStart === true)
+        if (autoStartIds.length > 0) {
+          logger.info(`Auto-starting ${autoStartIds.length} stream(s) on boot: ${autoStartIds.join(', ')}`)
+          autoStartIds.forEach((id, i) => {
+            setTimeout(() => {
+              this.restartStream(id).catch(err => {
+                logger.warn(`Auto-start failed for ${id}: ${err.shortMessage || err.message}`)
+              })
+            }, 1500 + i * 3000)
+          })
+        }
       }
     } catch (error) {
       logger.error('Failed to load persistent streams:', error)
     }
+  }
+
+  /**
+   * Generate a stream id when the caller doesn't supply one.
+   * (startStream referenced this forever but the UI always sent an id, so the
+   * missing method only surfaced with createStoppedStream.)
+   */
+  generateUniqueStreamId() {
+    return `stream_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`
+  }
+
+  /**
+   * Create a stream configuration WITHOUT starting it ("Save" in the new-stream
+   * drawer). Persists as stopped so it appears in the Ready group immediately.
+   * @param {object} streamConfig { name, deviceId, bitrate?, autoStart? }
+   * @returns {object} The created (stopped) stream record
+   */
+  createStoppedStream(streamConfig) {
+    if (!streamConfig || !streamConfig.name || !streamConfig.deviceId) {
+      throw new Error('Invalid stream configuration: name and deviceId are required')
+    }
+    const name = String(streamConfig.name).trim()
+    if (!name) throw new Error('Stream name cannot be empty')
+    if (this.streamNameExists(name, null)) {
+      throw new Error(`A stream named "${name}" already exists. Use a unique name.`)
+    }
+
+    const streamId = streamConfig.id || this.generateUniqueStreamId()
+    const config = {
+      ...streamConfig,
+      name,
+      id: streamId,
+      bitrate: parseInt(streamConfig.bitrate, 10) || 192,
+      autoStart: streamConfig.autoStart === true
+    }
+
+    this.activeStreams[streamId] = {
+      id: streamId,
+      deviceId: config.deviceId,
+      name,
+      status: 'stopped',
+      ffmpegProcess: null,
+      startedAt: null,
+      createdAt: new Date(),
+      config,
+      needsRestart: false
+    }
+    this.streamOrder.push(streamId)
+    this.savePersistentStreams()
+    logger.info(`Created stopped stream ${streamId} (${name})`)
+    return this.activeStreams[streamId]
   }
 
   /**
@@ -104,21 +195,31 @@ class StreamingService {
    * @param {object} streamConfig - Stream configuration
    * @returns {object} Stream information
    */
+  /**
+   * Icecast dependency: if it isn't running, try to START it automatically
+   * instead of failing with a wall of text. Users reasonably expect
+   * "Go Live" to just work; the old "start Icecast from the dashboard first"
+   * error was the top support issue.
+   */
+  async ensureIcecastRunning() {
+    const isRunning = await IcecastService.isIcecastRunning()
+    if (isRunning) return
+    logger.info('Icecast not running — auto-starting it before starting stream...')
+    const startResult = await IcecastService.start(false).catch(err => ({ success: false, error: err.message }))
+    if (!startResult || startResult.success !== true) {
+      throw new Error(`Icecast server is not running and could not be started automatically (${startResult?.error || 'unknown error'}). Start it from the dashboard Icecast panel, then try again.`)
+    }
+    logger.info('Icecast auto-started successfully')
+  }
+
   async startStream(streamConfig) {
     if (!streamConfig || (!streamConfig.deviceId && !streamConfig.inputFile)) {
       throw new Error('Invalid stream configuration: deviceId or inputFile is required')
     }
 
-    // SIMPLIFIED: Just check if Icecast process is running (don't require admin interface)
+    // Icecast dependency: auto-start it if needed (see ensureIcecastRunning)
     try {
-      const isRunning = await IcecastService.isIcecastRunning()
-      if (!isRunning) {
-        throw new Error(`🧊 Icecast server is not running - Cannot start stream without Icecast.
-
-✅ QUICK FIX:
-1. Start the Icecast server from the dashboard
-2. Then try starting the stream again`)
-      }
+      await this.ensureIcecastRunning()
     } catch (icecastError) {
       // Re-throw with more context
       throw new Error(`Icecast dependency check failed: ${icecastError.message}`)
@@ -148,7 +249,7 @@ class StreamingService {
 
     const streamId = streamConfig.id || `stream_${Date.now()}`
 
-    if (this.activeStreams[streamId]) {
+    if (this.activeStreams[streamId]?.status === 'running') {
       throw new Error(`Stream ${streamId} is already running`)
     }
 
@@ -167,7 +268,9 @@ class StreamingService {
 
       if (conflictingStreams.length > 0) {
         const conflictNames = conflictingStreams.map(s => s.name).join(', ');
-        throw new Error(`Device "${streamConfig.deviceId}" is already in use by: ${conflictNames}. Stop other streams first.`);
+        const err = new Error(`Audio source already in use: "${streamConfig.deviceId}" is streaming on ${conflictNames}. Stop that stream first, or edit this stream to use a different audio source.`);
+        err.shortMessage = `🎤 Audio source busy — already used by ${conflictNames}`;
+        throw err;
       }
     }
 
@@ -236,6 +339,7 @@ class StreamingService {
         this.savePersistentStreams()
 
         logger.info(`Stream ${streamId} started successfully with ${currentFormat.name} format`)
+        import('./TelemetryService.js').then(m => m.default.capture('stream_started', { format: currentFormat.name })).catch(() => {})
         return this.activeStreams[streamId]
 
       } catch (error) {
@@ -252,6 +356,7 @@ class StreamingService {
 
     // If we get here, all formats failed
     logger.error(`Failed to start stream ${streamId} with all available formats:`, lastError)
+    import('./TelemetryService.js').then(m => m.default.capture('stream_failed', { category: lastError?.cause || 'unknown' })).catch(() => {})
     const err = new Error(`Stream failed to start with all audio formats (MP3, AAC, OGG). Last error: ${lastError?.message || 'Unknown error'}`)
     if (lastError?.capacity) err.capacity = lastError.capacity
     if (lastError?.shortMessage) err.shortMessage = lastError.shortMessage
@@ -275,7 +380,11 @@ class StreamingService {
     logger.info(`FFmpeg executable path: ${ffmpegPath}`)
     logger.info(`Full command: ${ffmpegPath} ${args.join(' ')}`)
 
-    const process = spawn(ffmpegPath, args, {
+    // shell:true lets 'ffmpeg' resolve from PATH — but an absolute vendored
+    // path (which may contain spaces, e.g. C:\Users\John Doe\...) must be
+    // quoted or cmd.exe splits it. Bare 'ffmpeg' must NOT be quoted.
+    const spawnCommand = ffmpegPath === 'ffmpeg' ? ffmpegPath : `"${ffmpegPath}"`
+    const process = spawn(spawnCommand, args, {
       stdio: ['ignore', 'pipe', 'pipe'],
       detached: false,
       shell: true  // Required on Windows to resolve 'ffmpeg' from PATH
@@ -359,13 +468,23 @@ class StreamingService {
               
               const errorMsg = `FFmpeg crashed immediately after startup (exit code: ${exitCode}).\n\n${diagnosis.title}\n\n${diagnosis.description}\n\n🔧 Quick fixes:\n${diagnosis.solutions.join('\n')}\n\nFFmpeg Error Output:\n${errorOutput}`;
               const err = new Error(errorMsg);
-              err.shortMessage = diagnosis.title;
+              let context = { stderrSnippet: stderrData || '' };
               if (diagnosis.category === 'mount_point') {
-                const rawLimit = IcecastService.getSourceLimit()
-                const sourceLimit = (typeof rawLimit === 'number' && !Number.isNaN(rawLimit)) ? rawLimit : 2
-                const activeCount = Object.values(this.activeStreams).filter(s => s.status === 'running').length
-                err.capacity = { sourceLimit, activeCount, remaining: Math.max(0, sourceLimit - activeCount), configPath: IcecastService.paths?.config }
+                const rawLimit = IcecastService.getSourceLimit();
+                const sourceLimit = (typeof rawLimit === 'number' && !Number.isNaN(rawLimit)) ? rawLimit : 2;
+                const activeCount = Object.values(this.activeStreams).filter(s => s.status === 'running').length;
+                context.capacity = { sourceLimit, activeCount, remaining: Math.max(0, sourceLimit - activeCount), configPath: IcecastService.paths?.config };
               }
+              attachDiagnosis(err, diagnosis, context);
+              logger.info('Stream start failed (grace period)', {
+                streamId,
+                deviceId: streamConfig.deviceId,
+                exitCode,
+                cause: err.cause,
+                category: diagnosis.category,
+                message: err.shortMessage,
+                stderrSnippet: (stderrData || '').slice(0, 500)
+              });
               hasResolved = true
               reject(err)
             }
@@ -411,13 +530,23 @@ class StreamingService {
           // Format the error message with diagnosis
           const errorMsg = `FFmpeg crashed during startup (exit code: ${code}).\n\n${diagnosis.title}\n\n${diagnosis.description}\n\n🔧 Quick fixes:\n${diagnosis.solutions.join('\n')}\n\nFFmpeg Error Output:\n${errorOutput}`;
           const err = new Error(errorMsg);
-          err.shortMessage = diagnosis.title;
+          let context = { stderrSnippet: stderrData || '' };
           if (diagnosis.category === 'mount_point') {
-            const rawLimit = IcecastService.getSourceLimit()
-            const sourceLimit = (typeof rawLimit === 'number' && !Number.isNaN(rawLimit)) ? rawLimit : 2
-            const activeCount = Object.values(this.activeStreams).filter(s => s.status === 'running').length
-            err.capacity = { sourceLimit, activeCount, remaining: Math.max(0, sourceLimit - activeCount), configPath: IcecastService.paths?.config }
+            const rawLimit = IcecastService.getSourceLimit();
+            const sourceLimit = (typeof rawLimit === 'number' && !Number.isNaN(rawLimit)) ? rawLimit : 2;
+            const activeCount = Object.values(this.activeStreams).filter(s => s.status === 'running').length;
+            context.capacity = { sourceLimit, activeCount, remaining: Math.max(0, sourceLimit - activeCount), configPath: IcecastService.paths?.config };
           }
+          attachDiagnosis(err, diagnosis, context);
+          logger.info('Stream start failed (exit handler)', {
+            streamId,
+            deviceId: streamConfig.deviceId,
+            exitCode: code,
+            cause: err.cause,
+            category: diagnosis.category,
+            message: err.shortMessage,
+            stderrSnippet: (stderrData || '').slice(0, 500)
+          });
           hasResolved = true
           reject(err)
         }
@@ -488,6 +617,7 @@ class StreamingService {
         '-b:a', `${bitrate}k`,          // Audio bitrate (use -b:a for compatibility)
         '-ar', '44100',                 // Sample rate
         '-ac', '2',                     // Audio channels
+        '-flush_packets', '1',          // Low latency: emit each packet as encoded (no muxer batching)
         '-f', format.format,            // Output format
         icecastUrl,                     // Unique Icecast URL per stream
         '-loglevel', 'info'             // Show info level logs
@@ -509,16 +639,23 @@ class StreamingService {
         }
       }
 
-      // SIMPLIFIED: Use minimal FFmpeg command that works (based on manual setup scripts)
-      // Don't add extra parameters that might cause crashes
-      // IMPORTANT: Use quotes around device name for DirectShow (handles spaces and special chars)
+      // Low-latency capture flags sit BEFORE -i (they configure the dshow
+      // demuxer): nobuffer skips input buffering, low_delay sets decoder
+      // flags, probesize/analyzeduration cut the ~0.5-1s stream probing.
+      // Safe for live capture (nothing to probe ahead for); 32k is the
+      // smallest probesize that still identifies the stream.
       args = [
+        '-fflags', 'nobuffer',
+        '-flags', 'low_delay',
+        '-probesize', '32k',
+        '-analyzeduration', '0',
         '-f', 'dshow',                    // DirectShow input format
         '-i', `audio="${deviceName}"`,     // Audio input device (real DirectShow name, quoted for safety)
         '-acodec', format.codec,           // Audio codec (with fallback support)
         '-b:a', `${bitrate}k`,            // Audio bitrate (use -b:a instead of -ab for compatibility)
         '-ar', '44100',                    // Sample rate
         '-ac', '2',                        // Audio channels
+        '-flush_packets', '1',            // Low latency: emit each packet as encoded (no muxer batching, up to ~1.3s at 192k)
         '-f', format.format,               // Output format (with fallback support)
         icecastUrl,                        // Unique Icecast URL per stream
         '-loglevel', 'info'                // Show info level logs
@@ -720,18 +857,11 @@ class StreamingService {
 
     try {
       logger.info(`Stopping stream: ${streamId}`)
+      import('./TelemetryService.js').then(m => m.default.capture('stream_stopped', {})).catch(() => {})
       
       if (stream.ffmpegProcess) {
-        // Kill the FFmpeg process gracefully
-        stream.ffmpegProcess.kill('SIGTERM')
-        
-        // Force kill after 5 seconds if still running
-        setTimeout(() => {
-          if (stream.ffmpegProcess && !stream.ffmpegProcess.killed) {
-            logger.warn(`Force killing FFmpeg process for stream ${streamId}`)
-            stream.ffmpegProcess.kill('SIGKILL')
-          }
-        }, 5000)
+        // Kill the whole tree (shell wrapper + ffmpeg) — see killProcessTree
+        this.killProcessTree(stream.ffmpegProcess, streamId)
       }
 
       // Mark as intentionally stopped to prevent handleProcessExit from marking it as error
@@ -768,6 +898,11 @@ class StreamingService {
     try {
       logger.info(`Restarting stream: ${streamId}`)
 
+      // Icecast dependency: restarts power the boot autostart and the Retry
+      // button — without this check both fail with "connection refused" when
+      // icecast hasn't been started yet (fresh boot, or it crashed).
+      await this.ensureIcecastRunning()
+
       // Check for device conflicts before restarting
       if (stream.config.deviceId) {
         const conflictingStreams = Object.values(this.activeStreams).filter(s =>
@@ -778,7 +913,9 @@ class StreamingService {
 
         if (conflictingStreams.length > 0) {
           const conflictNames = conflictingStreams.map(s => s.name).join(', ');
-          throw new Error(`Device "${stream.config.deviceId}" is already in use by: ${conflictNames}. Stop other streams first.`);
+          const err = new Error(`Audio source already in use: "${stream.config.deviceId}" is streaming on ${conflictNames}. Stop that stream first, or edit this stream to use a different audio source.`);
+          err.shortMessage = `🎤 Audio source busy — already used by ${conflictNames}`;
+          throw err;
         }
 
         // Validate device is still available
@@ -810,6 +947,10 @@ class StreamingService {
       stream.ffmpegProcess = ffmpegProcess
       stream.startedAt = new Date()
       stream.needsRestart = false
+      // A successful (re)start clears any previous failure — stale error text
+      // on a running row reads as "it failed" and confuses operators.
+      stream.error = undefined
+      stream.errorShort = undefined
 
       // Save to persistent storage
       this.savePersistentStreams()
@@ -819,7 +960,49 @@ class StreamingService {
       
     } catch (error) {
       logger.error(`Failed to restart stream ${streamId}:`, error)
+      // Surface the failure on the row itself (short summary + expandable detail)
+      if (this.activeStreams[streamId]) {
+        // A failed restart can leave a spawned FFmpeg alive while the stream
+        // reads as errored — a zombie holding the audio device. Kill the tree.
+        this.killProcessTree(this.activeStreams[streamId].ffmpegProcess, streamId)
+        this.activeStreams[streamId].ffmpegProcess = null
+        this.activeStreams[streamId].status = 'error'
+        this.activeStreams[streamId].error = error.message
+        this.activeStreams[streamId].errorShort = error.shortMessage || String(error.message || '').split('\n')[0]
+        this.savePersistentStreams()
+      }
       throw error
+    }
+  }
+
+  /**
+   * Kill an FFmpeg process AND its children. Streams are spawned with
+   * shell:true on Windows (needed to resolve ffmpeg from PATH), so a plain
+   * .kill() only ends the cmd wrapper — the ffmpeg child survives and keeps
+   * the audio device exclusively, which blocks every later start.
+   */
+  killProcessTree(childProcess, streamId = 'unknown') {
+    if (!childProcess || childProcess.exitCode !== null) return
+    const pid = childProcess.pid
+    if (process.platform === 'win32' && pid) {
+      // ORDER MATTERS: taskkill /T must run BEFORE any .kill(). Killing the
+      // cmd wrapper first (synchronous TerminateProcess) severs the parent
+      // link, so the later /T sweep finds a dead PID and no children — ffmpeg
+      // gets orphaned and keeps the audio device exclusively (the classic
+      // "device busy after stop" bug).
+      exec(`taskkill /PID ${pid} /T /F`, { windowsHide: true }, (err) => {
+        if (err) {
+          logger.warn(`taskkill tree failed for stream ${streamId} (pid ${pid}): ${err.message}; falling back to kill()`)
+          try { childProcess.kill('SIGKILL') } catch (e) { /* already dead */ }
+        } else {
+          logger.info(`Killed FFmpeg process tree for stream ${streamId} (pid ${pid})`)
+        }
+      })
+    } else {
+      try { childProcess.kill('SIGTERM') } catch (e) { /* already dead */ }
+      if (pid) {
+        try { process.kill(-pid, 'SIGKILL') } catch (e) { try { process.kill(pid, 'SIGKILL') } catch (e2) { /* dead */ } }
+      }
     }
   }
 
@@ -868,7 +1051,7 @@ class StreamingService {
       if (stream.status === 'running' && stream.ffmpegProcess) {
         logger.info(`Stopping running stream ${streamId} to update with new ID ${newStreamId}`)
         try {
-          stream.ffmpegProcess.kill('SIGTERM')
+          this.killProcessTree(stream.ffmpegProcess, streamId)
           stream.intentionallyStopped = true
         } catch (e) { /* ignore */ }
       }
@@ -911,9 +1094,11 @@ class StreamingService {
 
     if (deviceChanged || currentStream.status === 'error' || nameChanged) {
       logger.info(`Resetting stream state after update (deviceChanged=${deviceChanged}, nameChanged=${nameChanged}, previousStatus=${currentStream.status})`)
-      // Ensure any running process is cleared
+      // Ensure any running process is cleared — killProcessTree, NOT bare
+      // .kill(): a lone SIGTERM only ends the cmd wrapper and orphans ffmpeg
+      // (which keeps the audio device exclusively).
       if (currentStream.ffmpegProcess && typeof currentStream.ffmpegProcess.kill === 'function') {
-        try { currentStream.ffmpegProcess.kill('SIGTERM') } catch (e) { /* ignore */ }
+        try { this.killProcessTree(currentStream.ffmpegProcess, newStreamId) } catch (e) { /* ignore */ }
       }
       currentStream.ffmpegProcess = null
       currentStream.status = 'stopped'
@@ -1116,10 +1301,11 @@ class StreamingService {
    */
   handleProcessError(streamId, error) {
     logger.error(`FFmpeg process error for stream ${streamId}:`, error)
-    
+
     if (this.activeStreams[streamId]) {
       this.activeStreams[streamId].status = 'error'
       this.activeStreams[streamId].error = error.message
+      this.activeStreams[streamId].errorShort = error.shortMessage || String(error.message || '').split('\n')[0]
     }
   }
 
@@ -1163,7 +1349,9 @@ class StreamingService {
         
         // Get device info before parsing error
         const deviceName = stream.deviceName || stream.deviceId || 'Unknown device'
-        this.activeStreams[streamId].error = this.parseFFmpegError(code, safeStderrData, deviceName)
+        const parsed = this.parseFFmpegError(code, safeStderrData, deviceName)
+        this.activeStreams[streamId].error = parsed.message
+        this.activeStreams[streamId].errorShort = parsed.short
         logger.error(`Stream ${streamId} failed with exit code ${code}:`, this.activeStreams[streamId].error)
       }
     }
@@ -1175,7 +1363,7 @@ class StreamingService {
    * @param {number} exitCode - FFmpeg exit code
    * @param {string} stderrData - FFmpeg stderr output
    * @param {string} deviceName - Optional device name for better error messages
-   * @returns {string} Human-readable error message
+   * @returns {{message: string, short: string}} Full message + one-line summary
    */
   parseFFmpegError(exitCode, stderrData, deviceName = null) {
     // Analyze stderr for specific error patterns
@@ -1200,8 +1388,11 @@ class StreamingService {
       icecastPort: actualPort
     })
 
-    // Format the message
-    return errorDiagnostics.formatMessage(diagnosis)
+    // Full message for the expandable details; title for the one-line summary
+    return {
+      message: errorDiagnostics.formatMessage(diagnosis),
+      short: diagnosis.title || 'Stream failed to start'
+    }
   }
 
   /**
@@ -1209,17 +1400,32 @@ class StreamingService {
    * @returns {string} Path to FFmpeg
    */
   findFFmpegPath() {
-    // Check if FFmpeg is in PATH
+    // 1. Explicit user configuration
+    if (process.env.FFMPEG_PATH) return process.env.FFMPEG_PATH
+    // 2. Vendored binary (bundled with the installer — same engine on every
+    //    machine, beats whatever happens to be on PATH)
+    const vendored = vendoredFfmpegPath()
+    if (vendored) return vendored
+    // 3. System install the first-run binary probe PROVED can do our job
+    //    (dshow + encoder chain + 2s end-to-end). A stale/stub PATH ffmpeg
+    //    never gets here — determinism for non-technical operators.
+    try {
+      const pin = binaryProbe.getPin()
+      if ((pin?.result === 'ok' || pin?.result === 'device-issue') && pin.ffmpeg?.origin === 'system' && pin.ffmpeg.path) {
+        return pin.ffmpeg.path
+      }
+    } catch (e) { /* probe unavailable — fall through */ }
+    // 4. System PATH (legacy behavior when no probe pin exists yet)
     try {
       execSync('ffmpeg -version', { stdio: 'ignore' })
       return 'ffmpeg'
     } catch (error) {
-      // Check for bundled FFmpeg in the project
+      // 5. Legacy project-local fallback
       const bundledPath = join(__dirname, '../../bin/ffmpeg.exe')
       if (fs.existsSync(bundledPath)) {
         return bundledPath
       }
-      
+
       // Fallback to system PATH
       return 'ffmpeg'
     }
@@ -1343,9 +1549,12 @@ class StreamingService {
             // Generate error message
             if (exitCode !== null) {
               const deviceName = s.deviceName || s.deviceId || s.name || null
-              s.error = this.parseFFmpegError(exitCode, s.lastStderr || 'FFmpeg process exited without error output', deviceName)
+              const parsed = this.parseFFmpegError(exitCode, s.lastStderr || 'FFmpeg process exited without error output', deviceName)
+              s.error = parsed.message
+              s.errorShort = parsed.short
             } else {
               s.error = 'FFmpeg process terminated unexpectedly (no exit code). This may indicate a system-level issue.'
+              s.errorShort = 'FFmpeg terminated unexpectedly'
             }
 
             // Clear the dead process reference
@@ -1388,6 +1597,7 @@ class StreamingService {
         startedAt: s.startedAt,
         createdAt: s.createdAt,
         error: s.error,
+        errorShort: s.errorShort,
         uptime: s.startedAt ? Date.now() - s.startedAt.getTime() : 0
       }))
     }

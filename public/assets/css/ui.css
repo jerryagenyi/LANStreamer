@@ -1,0 +1,457 @@
+        /* ========================================
+           STREAM ROWS — broadcast console style
+           (hairline rows, big channel numerals; tokens drive both themes)
+           ======================================== */
+        .stream-row {
+            display: flex; align-items: center; gap: 0.875rem;
+            padding: 0.875rem 0.25rem;
+            border-bottom: 1px solid var(--tok-line);
+            background: transparent;
+            transition: background 180ms ease;
+        }
+        .stream-row:first-child { border-top: 1px solid var(--tok-line); }
+        .stream-row:hover { background: var(--tok-surface-2); }
+        .stream-row-live { box-shadow: inset 3px 0 0 var(--tok-accent); padding-left: 0.875rem; }
+
+        .channel-badge {
+            flex-shrink: 0;
+            width: 3rem; height: 3rem;
+            display: flex; align-items: center; justify-content: center;
+            border: 1px solid var(--tok-line-strong);
+            border-radius: 0.75rem;
+            font-weight: 800; font-size: 1rem; letter-spacing: 0.02em;
+            color: var(--tok-text-1);
+            background: var(--tok-surface-1);
+        }
+        .stream-row-live .channel-badge {
+            border-color: var(--tok-accent);
+            color: var(--tok-accent);
+            box-shadow: var(--tok-accent-glow);
+        }
+
+        .stream-name {
+            font-weight: 600; font-size: 1rem; color: var(--tok-text-1);
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .stream-sub {
+            display: flex; align-items: center; gap: 0.5rem;
+            font-size: 0.75rem; color: var(--tok-text-3); margin-top: 0.125rem;
+        }
+        .live-chip {
+            display: inline-flex; align-items: center; gap: 0.25rem;
+            font-size: 0.6875rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
+            color: var(--tok-live);
+        }
+
+        /* Equalizer bars — the one animated element; answers "is it playing".
+           LISTENER page only: freeze to a static silhouette while paused
+           (body.playing is toggled by updatePlayerUi). Admin rows keep
+           animating — there the eq means "stream is live", independent
+           of whether anyone is listening. */
+        .eq { display: inline-flex; align-items: flex-end; gap: 2px; height: 0.75rem; }
+        .eq span, .eq i { width: 3px; border-radius: 1px; background: currentColor; animation: eq-bounce 1s ease-in-out infinite; }
+        .eq span:nth-child(1), .eq i:nth-child(1) { height: 40%; animation-delay: 0s; }
+        .eq span:nth-child(2), .eq i:nth-child(2) { height: 90%; animation-delay: 0.15s; }
+        .eq span:nth-child(3), .eq i:nth-child(3) { height: 60%; animation-delay: 0.3s; }
+        .eq span:nth-child(4), .eq i:nth-child(4) { height: 100%; animation-delay: 0.1s; }
+        body.listener:not(.playing) .eq span, body.listener:not(.playing) .eq i { animation: none; }
+        @keyframes eq-bounce { 0%, 100% { transform: scaleY(0.4); } 50% { transform: scaleY(1); } }
+        @media (prefers-reduced-motion: reduce) { .eq span, .eq i { animation: none; } }
+
+        .play-btn {
+            flex-shrink: 0;
+            width: 3rem; height: 3rem;
+            display: inline-flex; align-items: center; justify-content: center;
+            border-radius: 999px;
+            background: linear-gradient(135deg, var(--tok-accent), var(--tok-accent-strong));
+            color: #fff;
+            box-shadow: var(--tok-accent-glow);
+            transition: transform 180ms ease, filter 180ms ease;
+        }
+        .play-btn:hover { transform: scale(1.06); filter: brightness(1.1); }
+        .play-btn:focus-visible { outline: 2px solid var(--tok-accent); outline-offset: 3px; }
+        .play-btn.is-playing { background: var(--tok-surface-2); color: var(--tok-accent); border: 1px solid var(--tok-accent); box-shadow: none; }
+
+        .copy-btn {
+            flex-shrink: 0;
+            width: 2.5rem; height: 2.5rem;
+            display: inline-flex; align-items: center; justify-content: center;
+            border-radius: 999px;
+            color: var(--tok-text-3);
+            transition: color 180ms ease, background 180ms ease;
+        }
+        .copy-btn:hover { color: var(--tok-text-1); background: var(--tok-surface-2); }
+
+        /* ========================================
+           MINI-PLAYER — persistent bottom bar (the bold element)
+           ======================================== */
+        .mini-player {
+            position: fixed; left: 0; right: 0; bottom: 0; z-index: 60;
+            display: flex; align-items: center; gap: 0.875rem;
+            padding: 0.75rem 1rem calc(0.75rem + env(safe-area-inset-bottom, 0px));
+            background: color-mix(in srgb, var(--tok-surface-1) 88%, transparent);
+            backdrop-filter: blur(18px) saturate(160%);
+            -webkit-backdrop-filter: blur(18px) saturate(160%);
+            border-top: 1px solid var(--tok-line-strong);
+            box-shadow: 0 -12px 40px rgba(0,0,0,0.35);
+        }
+        body.has-miniplayer { padding-bottom: 5.5rem; }
+        .mini-player .mp-label {
+            font-size: 0.6875rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
+            color: var(--tok-live);
+            display: flex; align-items: center; gap: 0.375rem;
+        }
+        .mini-player .mp-name {
+            font-weight: 600; font-size: 0.9375rem; color: var(--tok-text-1);
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 42vw;
+        }
+        .mp-btn {
+            flex-shrink: 0; width: 2.75rem; height: 2.75rem; border-radius: 999px;
+            display: inline-flex; align-items: center; justify-content: center;
+            border: 1px solid var(--tok-line-strong); background: var(--tok-surface-2); color: var(--tok-text-1);
+            transition: all 160ms ease;
+        }
+        .mp-btn:hover { border-color: var(--tok-accent); color: var(--tok-accent); }
+        .mp-btn:focus-visible { outline: 2px solid var(--tok-accent); outline-offset: 2px; }
+        .mp-btn.mp-primary { background: linear-gradient(135deg, var(--tok-accent), var(--tok-accent-strong)); color: #fff; border: none; box-shadow: var(--tok-accent-glow); }
+        .mini-player .volume-slider { max-width: 7rem; }
+
+/* Admin (dashboard) row variants */
+.stream-row-admin { padding: 0.75rem 0.5rem; }
+.stream-row-error { box-shadow: inset 3px 0 0 var(--tok-danger); padding-left: 0.875rem; }
+
+/* Marquee: overflowing single-line labels scroll; hover pauses (title tooltip) */
+.mq { display:inline-block; max-width:170px; overflow:hidden; white-space:nowrap; vertical-align:bottom; }
+.mq .mq-inner { display:inline-block; }
+.mq-on .mq-inner { animation: mq-slide var(--mq-dur,6s) linear infinite alternate; }
+.mq:hover .mq-inner { animation-play-state: paused; }
+@keyframes mq-slide { from { transform: translateX(0); } to { transform: translateX(var(--mq-shift,-40px)); } }
+@media (prefers-reduced-motion: reduce) { .mq-on .mq-inner { animation: none; } }
+
+/* Uptime chip (icon + duration, tooltip explains) */
+.uptime-chip { display:inline-flex; align-items:center; gap:0.25rem; }
+
+/* Mini-player fade: slides in when playback starts, fades out when it ends.
+   Toggling .hidden would jump; we animate opacity/transform instead. */
+.mini-player { transition: opacity 320ms ease, transform 320ms ease; }
+.mini-player.is-hidden { opacity: 0; transform: translateY(100%); pointer-events: none; }
+
+/* ========================================
+   COLLAPSIBLE CARDS — remembered open/closed state
+   ======================================== */
+.ls-collapse { padding: 0; overflow: visible; }
+.ls-collapse-toggle {
+    display: flex; align-items: center; justify-content: space-between; gap: 0.75rem;
+    width: 100%; padding: 1rem 1.25rem;
+    background: transparent; border: none; cursor: pointer;
+    color: var(--tok-text-1); text-align: left;
+    transition: background 180ms ease;
+}
+.ls-collapse-toggle:hover { background: var(--tok-surface-2); }
+.ls-collapse-toggle:focus-visible { outline: 2px solid var(--tok-accent); outline-offset: -2px; }
+.ls-collapse-icon { color: var(--tok-text-2); }
+.ls-collapse-title { font-weight: 700; font-size: 0.9375rem; letter-spacing: 0.01em; }
+.ls-collapse-chevron { color: var(--tok-text-3); }
+.ls-collapse-chevron.is-open { transform: rotate(180deg); }
+.ls-collapse-body { padding: 0.25rem 1.25rem 1.25rem; }
+.ls-collapse-body.is-closed { display: none; }
+
+/* Plain variant: nested disclosures render as a plain bottom-bordered row —
+   no card-in-card chrome, just the arrow to signal it opens.
+   (Two classes so it outranks the pages' own .glass-card rules.) */
+.ls-collapse.ls-collapse--plain { background: transparent; border: none; box-shadow: none; border-radius: 0; }
+.ls-collapse.ls-collapse--plain .ls-collapse-toggle {
+    padding: 0.625rem 0;
+    border-bottom: 1px solid var(--tok-line);
+    border-radius: 0;
+}
+.ls-collapse.ls-collapse--plain .ls-collapse-toggle:hover { background: transparent; }
+.ls-collapse.ls-collapse--plain .ls-collapse-body { padding: 0.875rem 0 0.25rem; }
+
+/* ========================================
+   NOTIFICATION CENTER — header bell + panel
+   ======================================== */
+#header-bell-btn { position: relative; }
+#header-bell-btn.has-notifications {
+    color: var(--tok-accent);
+    border-color: var(--tok-accent);
+}
+.lsn-badge {
+    position: absolute; top: 4px; right: 4px;
+    width: 10px; height: 10px; border-radius: 999px;
+    background: var(--tok-danger);
+    box-shadow: 0 0 0 2px var(--tok-bg);
+}
+.lsn-badge::after {
+    content: ''; position: absolute; inset: 0; border-radius: inherit;
+    background: var(--tok-danger);
+    animation: lsn-ping 1.6s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+@keyframes lsn-ping { 0% { transform: scale(1); opacity: 0.7; } 80%, 100% { transform: scale(2.2); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .lsn-badge::after { animation: none; } }
+
+.lsn-panel {
+    /* the header carries whitespace-nowrap; the panel's text must wrap */
+    white-space: normal;
+    position: absolute; top: calc(100% + 10px); right: 0;
+    width: min(360px, calc(100vw - 2rem));
+    max-height: 420px; overflow-y: auto; overflow-x: hidden;
+    background: var(--tok-surface-1);
+    border: 1px solid var(--tok-line-strong);
+    border-radius: var(--tok-radius-card, 14px);
+    z-index: 120;
+}
+.lsn-panel.is-hidden { display: none; }
+.lsn-head {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--tok-line);
+    position: sticky; top: 0; background: var(--tok-surface-1);
+}
+.lsn-clear {
+    background: none; border: none; cursor: pointer;
+    font-size: 0.75rem; font-weight: 600; color: var(--tok-text-2);
+}
+.lsn-clear:hover { color: var(--tok-accent); }
+.lsn-item { display: flex; gap: 0.75rem; padding: 0.75rem 1rem; border-bottom: 1px solid var(--tok-line); }
+.lsn-item:last-child { border-bottom: none; }
+.lsn-item.is-unread { background: var(--tok-surface-2); }
+.lsn-item > .material-symbols-rounded { font-size: 1.25rem; margin-top: 0.125rem; }
+.lsn-info { color: var(--tok-accent); }
+.lsn-success { color: var(--tok-live); }
+.lsn-warning { color: var(--tok-warning, #F59E0B); }
+.lsn-error { color: var(--tok-danger); }
+.lsn-item-title { font-size: 0.8125rem; font-weight: 600; color: var(--tok-text-1); }
+.lsn-item-msg { font-size: 0.75rem; color: var(--tok-text-2); margin-top: 0.125rem; line-height: 1.4; }
+.lsn-item-time { font-size: 0.6875rem; color: var(--tok-text-3); margin-top: 0.25rem; }
+.lsn-empty { padding: 2rem 1.5rem; text-align: center; color: var(--tok-text-2); font-size: 0.85rem; }
+.lsn-empty .material-symbols-rounded { font-size: 2rem; color: var(--tok-text-3); display: inline-block; width: 2rem; height: 2rem; overflow: hidden; white-space: nowrap; }
+.lsn-empty-sub { font-size: 0.75rem; color: var(--tok-text-3); margin-top: 0.375rem; }
+
+/* ========================================
+   STREAM ROW ERROR — one-line summary + expandable detail
+   ======================================== */
+.stream-error { margin-top: 0.5rem; }
+.stream-error summary {
+    list-style: none; cursor: pointer;
+    display: flex; align-items: center; gap: 0.375rem;
+    font-size: 0.75rem; font-weight: 600; color: var(--tok-danger);
+}
+.stream-error summary::-webkit-details-marker { display: none; }
+.stream-error summary .material-symbols-rounded { font-size: 1rem; }
+.stream-error[open] summary .material-symbols-rounded.chev { transform: rotate(180deg); }
+.stream-error-detail {
+    margin-top: 0.5rem; padding: 0.625rem 0.75rem;
+    background: var(--tok-danger-dim);
+    border: 1px solid var(--tok-danger);
+    border-radius: 10px;
+    font-size: 0.75rem; color: var(--tok-text-2);
+    white-space: pre-wrap; word-break: break-word; line-height: 1.5;
+    max-height: 240px; overflow-y: auto;
+}
+.stream-error-detail a { color: var(--tok-accent); text-decoration: underline; }
+
+/* ========================================
+   BOOT SCREEN dots (markup is inline; only the animation lives here)
+   ======================================== */
+.boot-dots { display: flex; gap: 6px; }
+.boot-dots span {
+    width: 8px; height: 8px; border-radius: 999px;
+    background: #1AA6F5;
+    animation: boot-dot 1.2s ease-in-out infinite;
+}
+.boot-dots span:nth-child(2) { animation-delay: 0.18s; }
+.boot-dots span:nth-child(3) { animation-delay: 0.36s; }
+@keyframes boot-dot { 0%, 100% { opacity: 0.25; transform: translateY(0); } 50% { opacity: 1; transform: translateY(-4px); } }
+@media (prefers-reduced-motion: reduce) { .boot-dots span { animation: none; opacity: 0.6; } }
+
+/* ========================================
+   REDESIGN SHARED COMPONENTS (designer mock, 2026-10-28)
+   ======================================== */
+
+/* Icon button (36px quiet square, header/toolbar) */
+.iconbtn{width:36px;height:36px;border-radius:10px;display:grid;place-items:center;color:var(--tok-text-2);position:relative;flex-shrink:0;background:transparent;border:none;cursor:pointer}
+.iconbtn:hover{background:var(--tok-surface-2);color:var(--tok-text-1)}
+.iconbtn .dot{position:absolute;top:7px;right:8px;width:7px;height:7px;border-radius:50%;background:var(--tok-danger);box-shadow:0 0 0 2px var(--tok-bg)}
+
+/* Chips — text label on every chip (colour is never the only signal) */
+.chip{display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 9px;border-radius:999px;font-size:12px;font-weight:600;letter-spacing:.02em;white-space:nowrap}
+.chip .pip{width:6px;height:6px;border-radius:50%;background:currentColor}
+.chip-live{background:var(--tok-live-dim);color:var(--tok-live)}
+.chip-live .pip{animation:chip-pulse 1.6s infinite}
+.chip-off{background:var(--tok-surface-2);color:var(--tok-text-2)}
+.chip-err{background:var(--tok-danger-dim);color:var(--tok-danger)}
+.chip-warn{background:var(--tok-warning-dim);color:var(--tok-warning)}
+.chip-accent{background:var(--tok-accent-soft);color:var(--tok-accent)}
+@keyframes chip-pulse{0%{box-shadow:0 0 0 0 color-mix(in oklab,currentColor 60%,transparent)}70%{box-shadow:0 0 0 6px transparent}100%{box-shadow:0 0 0 0 transparent}}
+@media (prefers-reduced-motion:reduce){.chip-live .pip{animation:none}}
+
+/* Status strip (dashboard) */
+.strip{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:24px 0 16px}
+.stat{padding:14px 16px;display:flex;flex-direction:column;gap:6px;min-width:0}
+.stat .v{font-size:22px;font-weight:600;letter-spacing:-.02em;display:flex;align-items:center;gap:8px}
+.stat .v small{font-size:13px;color:var(--tok-text-3);font-weight:500}
+.stat.alert{border-color:color-mix(in oklab,var(--tok-warning) 40%,transparent)}
+.stat.alert .v{color:var(--tok-warning);font-size:15px}
+@media (max-width:960px){.strip{grid-template-columns:repeat(2,1fr)}}
+
+/* Warning banner (security etc.) — warning colour, not error */
+.banner{display:flex;align-items:center;gap:12px;padding:10px 12px 10px 14px;border-radius:12px;background:var(--tok-warning-dim);border:1px solid color-mix(in oklab,var(--tok-warning) 30%,transparent);font-size:14px;color:var(--tok-text-1)}
+.banner b{color:var(--tok-warning)}
+.banner .grow{flex:1;min-width:0}
+@media (max-width:560px){.banner{flex-wrap:wrap}.banner .grow{flex-basis:calc(100% - 40px)}}
+
+/* Segmented control (list filters) */
+.seg{display:inline-flex;background:var(--tok-surface-2);border-radius:10px;padding:3px}
+.seg button{height:28px;padding:0 10px;border-radius:7px;font-size:13px;font-weight:500;color:var(--tok-text-2)}
+.seg button[aria-pressed="true"]{background:var(--tok-surface-1);color:var(--tok-text-1);box-shadow:0 1px 2px rgba(0,0,0,.08)}
+
+/* Admin stream rows (dashboard list) — actions pinned in a FIXED right column
+   so wrapping meta text never shifts them, and rows never jump between renders.
+   Children get explicit grid-column so the mobile sid2:hidden can't reshuffle tracks. */
+.arow{display:grid;grid-template-columns:auto minmax(0,1fr) 80px;align-items:start;gap:14px;padding:12px 18px;border-top:1px solid var(--tok-line);position:relative}
+.arow:hover{background:color-mix(in oklab,var(--tok-surface-2) 55%,transparent)}
+.arow > .sid2{grid-column:1}
+.arow > div:has(> .name){grid-column:2;margin-top:8px}
+.arow .rowactions{grid-column:3}
+.arow.is-live::before,.arow.is-err::before{content:"";position:absolute;left:0;top:10px;bottom:10px;width:3px;border-radius:0 3px 3px 0;background:var(--tok-live)}
+.arow.is-err::before{background:var(--tok-danger)}
+.sid2{width:38px;height:38px;border-radius:10px;border:1px solid var(--tok-line-strong);display:grid;place-items:center;font-family:var(--tok-mono);font-size:13px;font-weight:500;color:var(--tok-text-2)}
+.is-live .sid2{border-color:color-mix(in oklab,var(--tok-live) 50%,transparent);color:var(--tok-live);background:var(--tok-live-dim)}
+.arow .name{font-weight:600;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--tok-text-1)}
+.arow .meta{display:flex;align-items:center;gap:8px;margin-top:3px;flex-wrap:wrap;color:var(--tok-text-2);font-size:13px}
+.arow .meta .src{display:inline-flex;align-items:center;gap:5px;max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.arow .dotsep{width:3px;height:3px;border-radius:50%;background:var(--tok-text-3)}
+.playbtn{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;background:var(--tok-surface-2);color:var(--tok-text-1);border:1px solid var(--tok-line-strong);transition:.15s;flex-shrink:0}
+.playbtn:hover{background:var(--tok-accent);color:var(--tok-accent-contrast);border-color:var(--tok-accent)}
+.playbtn.stop{background:var(--tok-danger-dim);color:var(--tok-danger);border-color:color-mix(in oklab,var(--tok-danger) 30%,transparent)}
+.playbtn.stop:hover{background:var(--tok-danger);color:#fff}
+.rowactions{display:flex;align-items:center;justify-content:flex-end;gap:4px}
+/* Native dropdown rows: paint them from tokens so the open list can never
+   come up black-on-black on any platform (pairs with color-scheme). */
+select option{background:var(--tok-surface-1);color:var(--tok-text-1)}
+.menu{position:relative}
+/* ⋯ sits at the row's far right — the popup must extend LEFTWARD (right:0) or it
+   would overflow the card edge (was left:0 when the menu lived on the left). */
+.menu-pop{position:absolute;right:0;top:42px;min-width:190px;padding:6px;z-index:120;display:none;background:var(--tok-surface-1);border:1px solid var(--tok-line-strong);border-radius:12px}
+.menu.open .menu-pop{display:block}
+.menu-pop button{display:flex;width:100%;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;font-size:14px;text-align:left;color:var(--tok-text-1)}
+.menu-pop button:hover{background:var(--tok-surface-2)}
+.menu-pop .del{color:var(--tok-danger)}
+.errbox{grid-column:1/-1;margin-top:4px;padding:10px 12px;border-radius:10px;background:var(--tok-danger-dim);font-size:13px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.errbox b{color:var(--tok-danger)}
+.errbox .grow{flex:1;min-width:200px;color:var(--tok-text-2)}
+.group-label{padding:12px 18px 6px;display:flex;align-items:center;gap:8px}
+@media (max-width:560px){
+    .arow{grid-template-columns:minmax(0,1fr) 80px;gap:10px;padding:12px 16px}
+    .arow .sid2{display:none}
+    .arow > div:has(> .name){grid-column:1}
+    .arow .rowactions{grid-column:2}
+    .errbox{grid-column:1/-1}
+    .arow .meta .src{flex-basis:100%;max-width:100%}
+    .arow .meta .src + .dotsep{display:none}
+}
+
+/* Admin header: HeaderComponent renders into #header-container, a flex item sized to the
+   header's own height — a sticky child has zero slack inside it, so the CONTAINER sticks. */
+#header-container{position:sticky;top:0;z-index:50}
+
+/* Side drawer (new stream) — above the sticky header so only ONE bar shows */
+.scrim{position:fixed;inset:0;background:rgba(5,8,12,.5);opacity:0;pointer-events:none;transition:.2s;z-index:130}
+.drawer{position:fixed;top:0;right:0;bottom:0;width:min(440px,100%);background:var(--tok-surface-1);border-left:1px solid var(--tok-line);transform:translateX(100%);transition:.25s ease;z-index:140;display:flex;flex-direction:column}
+body.drawer-open .scrim{opacity:1;pointer-events:auto}
+body.drawer-open .drawer{transform:none}
+.drawer-b{padding:20px;display:flex;flex-direction:column;gap:18px;overflow:auto;flex:1}
+.drawer-f{padding:16px 20px;border-top:1px solid var(--tok-line);display:flex;gap:8px;justify-content:flex-end}
+.src-opt{display:flex;align-items:center;gap:12px;padding:10px 12px;border:1px solid var(--tok-line-strong);border-radius:10px;cursor:pointer;color:var(--tok-text-1)}
+.src-opt:has(input:checked){border-color:var(--tok-accent);background:var(--tok-accent-soft)}
+.src-opt input{accent-color:var(--tok-accent)}
+.src-opt .t{flex:1;min-width:0;font-size:14px}
+.src-opt .t div:first-child{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.quality{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.quality label{border:1px solid var(--tok-line-strong);border-radius:10px;padding:10px;text-align:center;cursor:pointer;font-size:13px;color:var(--tok-text-2)}
+.quality label:has(input:checked){border-color:var(--tok-accent);background:var(--tok-accent-soft);color:var(--tok-accent)}
+.quality input{display:none}
+.quality b{display:block;font-size:15px}
+
+/* Share card + audio inputs (dashboard sidebar) */
+.share-url{display:flex;align-items:center;gap:8px;padding:8px 8px 8px 12px;border-radius:10px;background:var(--tok-surface-inset);border:1px solid var(--tok-line)}
+.share-url code{flex:1;font-family:var(--tok-mono);font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--tok-text-1)}
+.qr-box{width:96px;height:96px;border-radius:10px;background:var(--tok-surface-1);border:1px solid var(--tok-line);padding:8px;flex-shrink:0;color:var(--tok-text-1)}
+.kv{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-top:1px dashed var(--tok-line);font-size:14px;color:var(--tok-text-1)}
+.kv:first-child{border-top:0}
+.devices li{list-style:none;display:flex;align-items:center;gap:10px;padding:8px 0;font-size:13px;border-top:1px dashed var(--tok-line);color:var(--tok-text-1)}
+.devices li:first-child{border-top:0}
+
+/* Switch (replaces the Tailwind peer toggle) */
+.switch{width:38px;height:22px;border-radius:999px;background:var(--tok-surface-inset);border:1px solid var(--tok-line-strong);position:relative;transition:.2s;flex-shrink:0;cursor:pointer}
+.switch::after{content:"";position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:var(--tok-surface-1);box-shadow:0 1px 2px rgba(0,0,0,.25);transition:.2s}
+.switch[aria-checked="true"]{background:var(--tok-accent);border-color:var(--tok-accent)}
+.switch[aria-checked="true"]::after{left:18px}
+
+/* ON AIR pill (listener top bar) */
+.onair{display:inline-flex;align-items:center;gap:8px;height:30px;padding:0 12px;border-radius:999px;border:1px solid color-mix(in oklab,var(--tok-onair) 45%,transparent);color:var(--tok-onair);font-weight:700;font-size:12px;letter-spacing:.1em}
+.onair .pip{width:8px;height:8px;border-radius:50%;background:var(--tok-onair);animation:chip-pulse 1.6s infinite}
+.onair.inactive{color:var(--tok-text-3);border-color:var(--tok-line-strong)}
+.onair.inactive .pip{background:var(--tok-text-3);animation:none}
+
+/* Big play + channel rows (listener) */
+.bigplay{width:84px;height:84px;border-radius:50%;background:var(--tok-accent);color:var(--tok-accent-contrast);display:grid;place-items:center;box-shadow:0 10px 30px -8px color-mix(in oklab,var(--tok-accent) 60%,transparent);transition:transform .15s;flex-shrink:0;cursor:pointer;border:none}
+.bigplay:hover{transform:scale(1.04)}
+.bigplay svg,.bigplay .material-symbols-rounded{font-size:30px;width:30px;height:30px}
+.chrow{display:flex;align-items:center;gap:14px;padding:12px 14px;border-radius:12px;border:1px solid var(--tok-line);background:var(--tok-surface-1);margin-bottom:8px;cursor:pointer;width:100%;text-align:left;color:var(--tok-text-1)}
+.chrow:hover{border-color:var(--tok-line-strong)}
+.chrow[aria-current="true"]{border-color:var(--tok-accent);background:var(--tok-accent-soft)}
+.chrow .lang{width:40px;height:40px;border-radius:10px;background:var(--tok-surface-2);display:grid;place-items:center;font-family:var(--tok-mono);font-size:13px;font-weight:500;flex-shrink:0}
+.chrow[aria-current="true"] .lang{background:var(--tok-accent);color:var(--tok-accent-contrast)}
+.chrow .t{flex:1;min-width:0}
+.chrow .t b{display:block;font-weight:600}
+.chrow.off{opacity:.55;cursor:default}
+/* Explicit play affordance: the whole row is clickable, but listeners need a
+   visible button. Solid accent circle = tap to play; muted = tap to pause. */
+.chrow .chplay{width:36px;height:36px;border-radius:50%;background:var(--tok-accent);color:var(--tok-accent-contrast);display:grid;place-items:center;flex-shrink:0;transition:transform .12s ease}
+.chrow .chplay .material-symbols-rounded{font-size:22px}
+.chrow:hover .chplay{transform:scale(1.06)}
+.chrow[aria-current="true"] .chplay{background:var(--tok-surface-2);color:var(--tok-text-1);border:1px solid var(--tok-line-strong)}
+
+/* ========================================
+   TOASTS — stack top-center; new toasts push older ones down
+   ======================================== */
+.toast-stack {
+    position: fixed;
+    top: 1rem; left: 50%; transform: translateX(-50%);
+    z-index: 200; /* above sticky header (z-100) + overlays; toasts used to hide behind the header */
+    display: flex; flex-direction: column; align-items: center; gap: 0.5rem;
+    width: min(30rem, calc(100vw - 2rem));
+    pointer-events: none;
+}
+.toast-stack > * { pointer-events: auto; }
+.toast {
+    display: flex; align-items: flex-start; gap: 0.625rem;
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border-radius: var(--tok-radius-card, 14px);
+    border: 1px solid var(--tok-line-strong);
+    background: color-mix(in srgb, var(--tok-surface-1) 92%, transparent);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    color: var(--tok-text-1);
+    font-size: 0.875rem; line-height: 1.45;
+    opacity: 0; transform: translateY(-6px);
+    transition: opacity 240ms ease, transform 240ms ease;
+}
+.toast.is-visible { opacity: 1; transform: translateY(0); }
+.toast.is-leaving { opacity: 0; transform: translateY(-6px); }
+.toast-icon { font-size: 1.125rem; margin-top: 0.0625rem; }
+.toast-info .toast-icon { color: var(--tok-accent); }
+.toast-success { border-color: var(--tok-live); }
+.toast-success .toast-icon { color: var(--tok-live); }
+.toast-warning .toast-icon { color: var(--tok-warning, #F59E0B); }
+.toast-error { border-color: var(--tok-danger); }
+.toast-error .toast-icon { color: var(--tok-danger); }
+.toast-message { flex: 1; word-break: break-word; white-space: pre-line; }
+.toast-close {
+    flex-shrink: 0; background: none; border: none; cursor: pointer; padding: 0;
+    color: var(--tok-text-3); display: inline-flex;
+}
+.toast-close:hover { color: var(--tok-text-1); }

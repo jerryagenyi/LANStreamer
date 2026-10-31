@@ -7,6 +7,9 @@
 process.env.NODE_ENV = 'test';
 process.env.PORT = '3001';
 process.env.HOST = '127.0.0.1';
+// Older integration tests predate admin auth; they exercise the routes, not
+// the gate. tests/integration/auth.test.js clears this to test auth for real.
+process.env.AUTH_DISABLED = '1';
 
 // Mock console methods in tests to reduce noise
 global.console = {

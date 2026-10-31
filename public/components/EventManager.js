@@ -284,12 +284,7 @@ class EventManager {
             return;
         }
 
-        container.innerHTML = `
-            <div class="glass-card p-6">
-                <div class="mb-4">
-                    <h2 class="text-lg font-bold text-white">🎯 Edit Event Details</h2>
-                </div>
-
+        const inner = `
                 <div class="space-y-3">
                     <!-- Event Configuration -->
                     <div class="space-y-3">
@@ -297,11 +292,11 @@ class EventManager {
 
                         <!-- Event Title -->
                         <div class="space-y-1">
-                            <label class="text-xs font-medium text-gray-300">Event Title</label>
+                            <label class="text-xs font-medium text-gray-300" for="event-title">Event Title</label>
                             <input type="text"
                                    id="event-title"
                                    maxlength="50"
-                                   class="w-full px-3 py-2 bg-[#111111] border border-[var(--border-color)] rounded-lg text-sm text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)]/50 focus:border-[var(--primary-color)]"
+                                   class="w-full px-3 py-2 bg-[var(--tok-surface-inset)] border border-[var(--border-color)] rounded-lg text-sm text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)]/50 focus:border-[var(--primary-color)]"
                                    placeholder="Live Audio Streams"
                                    value="${this.eventDetails.eventTitle}">
                             <div class="text-xs text-gray-500 mt-1">
@@ -311,11 +306,11 @@ class EventManager {
 
                         <!-- Event Subtitle -->
                         <div class="space-y-1">
-                            <label class="text-xs font-medium text-gray-300">Event Subtitle</label>
+                            <label class="text-xs font-medium text-gray-300" for="event-subtitle">Event Subtitle</label>
                             <input type="text"
                                    id="event-subtitle"
                                    maxlength="60"
-                                   class="w-full px-3 py-2 bg-[#111111] border border-[var(--border-color)] rounded-lg text-sm text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)]/50 focus:border-[var(--primary-color)]"
+                                   class="w-full px-3 py-2 bg-[var(--tok-surface-inset)] border border-[var(--border-color)] rounded-lg text-sm text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)]/50 focus:border-[var(--primary-color)]"
                                    placeholder="Click play to listen to any available stream"
                                    value="${this.eventDetails.eventSubtitle}">
                             <div class="text-xs text-gray-500 mt-1">
@@ -333,7 +328,7 @@ class EventManager {
                                 <textarea id="about-description"
                                           rows="4"
                                           maxlength="200"
-                                          class="w-full px-3 py-2 bg-[#111111] border border-[var(--border-color)] rounded-lg text-sm text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)]/50 focus:border-[var(--primary-color)] resize-none"
+                                          class="w-full px-3 py-2 bg-[var(--tok-surface-inset)] border border-[var(--border-color)] rounded-lg text-sm text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)]/50 focus:border-[var(--primary-color)] resize-none"
                                           placeholder="Describe your event, its purpose, and what attendees can expect">${this.eventDetails.aboutDescription}</textarea>
                                 <div class="text-xs text-gray-500 mt-1">
                                     <span id="about-description-count">${(this.eventDetails.aboutDescription || '').length}</span>/200 characters
@@ -352,7 +347,9 @@ class EventManager {
                                 <div class="relative group">
                                     <img src="${this.eventDetails.eventImage}"
                                          alt="Event Image"
-                                         class="w-full max-w-md h-48 object-cover rounded-lg border border-[var(--border-color)]">
+                                         data-lightbox
+                                         title="Click to view the full image"
+                                         style="width:100%;max-width:448px;aspect-ratio:16/9;object-fit:cover;display:block;border-radius:10px;border:1px solid var(--tok-line);cursor:zoom-in;">
                                     <button id="remove-event-image"
                                             type="button"
                                             class="absolute top-2 right-2 bg-red-500 hover:bg-red-600 text-white rounded-full p-2 transition-all duration-200 opacity-80 hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-red-400 focus:ring-offset-2 focus:ring-offset-[var(--card-bg)]"
@@ -381,14 +378,18 @@ class EventManager {
                     </div>
 
                     <!-- Save Button -->
-                    <button id="save-event-settings" 
+                    <button id="save-event-settings"
                             class="w-full inline-flex items-center justify-center gap-2 rounded-md px-4 py-3 text-sm font-semibold text-white shadow-lg transition-all duration-300 btn-gradient">
                         <span class="material-symbols-rounded text-base">event</span>
                         <span id="save-event-button-text">Save Event Settings</span>
                     </button>
                 </div>
-            </div>
         `;
+
+        // Collapsed by default; remembers the user's last open/closed choice
+        container.innerHTML = window.LSCollapse
+            ? LSCollapse.wrap('event-details', { title: 'Edit Event Details' }, inner, false)
+            : `<div class="glass-card p-6"><h2 class="text-lg font-bold text-white mb-4">🎯 Edit Event Details</h2>${inner}</div>`;
 
         // Re-setup dynamic event listeners after DOM update
         this.setupDynamicEventListeners();
@@ -585,35 +586,8 @@ class EventManager {
     }
 
     showNotification(message, type = 'info') {
-        // Create a simple toast notification
-        const toast = document.createElement('div');
-        toast.className = `fixed top-20 right-4 z-50 p-3 rounded-lg shadow-lg transition-all duration-300 transform translate-x-full`;
-        
-        const colors = {
-            'info': 'bg-blue-500',
-            'success': 'bg-green-500', 
-            'error': 'bg-red-500'
-        };
-        
-        toast.className += ` ${colors[type] || colors.info} text-white`;
-        toast.textContent = message;
-        
-        document.body.appendChild(toast);
-        
-        // Slide in
-        setTimeout(() => {
-            toast.classList.remove('translate-x-full');
-        }, 100);
-        
-        // Slide out and remove
-        setTimeout(() => {
-            toast.classList.add('translate-x-full');
-            setTimeout(() => {
-                if (toast.parentNode) {
-                    toast.parentNode.removeChild(toast);
-                }
-            }, 300);
-        }, 3000);
+        if (window.LSToasts) LSToasts.show(message, type);
+        else console.log(`${type.toUpperCase()}: ${message}`);
     }
 
     async handleImageUpload(event) {

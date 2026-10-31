@@ -1,0 +1,57 @@
+name: enforce-prs
+
+# Free-tier branch protection (adopted from the devops repo, 2026-10-28):
+# every commit that lands on main must (a) belong to a merged PR and (b)
+# have a green CI run for that exact commit. Direct pushes and red-CI
+# merges are auto-reverted (GITHUB_TOKEN pushes do not re-trigger
+# workflows, so the revert itself doesn't loop). dev stays open for the
+# documented local-merge workflow; only main (the release branch) is
+# protected. Replace with native branch protection if the repo upgrades
+# to GitHub Pro or goes public.
+
+on:
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
+
+jobs:
+  verify-pr:
+    if: >
+      github.event.workflow_run.head_branch == 'main' &&
+      github.event.workflow_run.event == 'push'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: read
+    steps:
+      - name: Require green CI and PR association for this commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          SHA: ${{ github.event.workflow_run.head_sha }}
+          CONCLUSION: ${{ github.event.workflow_run.conclusion }}
+        run: |
+          if [ "$CONCLUSION" != "success" ]; then
+            echo "::error::CI concluded '$CONCLUSION' for $SHA on main. This commit will be reverted."
+            exit 78
+          fi
+          n=$(gh api "repos/$REPO/commits/$SHA/pulls" --jq 'length')
+          echo "associated PRs: $n"
+          if [ "$n" -eq 0 ]; then
+            echo "::error::Direct push to main is not allowed. Open a PR (CI must pass, then merge). This commit will be reverted."
+            exit 78
+          fi
+      - name: Revert the offending push
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          git config --global user.name "ci-guard"
+          git config --global user.email "ci-guard@users.noreply.github.com"
+          git clone "https://x-access-token:${GH_TOKEN}@github.com/${REPO}.git" repo
+          cd repo
+          git revert --no-edit "$SHA" || { echo "revert failed (merge conflict?) — MANUAL ACTION REQUIRED"; exit 1; }
+          git push origin main
+          echo "Reverted $SHA on main."

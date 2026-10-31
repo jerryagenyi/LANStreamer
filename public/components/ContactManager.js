@@ -354,29 +354,26 @@ class ContactManager {
             return;
         }
 
-        container.innerHTML = `
-            <div class="glass-card p-6">
-                <div class="mb-4">
-                    <h2 class="text-lg font-bold text-white">📞 Your Feedback Contact</h2>
-                </div>
+        const inputCls = 'w-full px-3 py-2 bg-[var(--tok-surface-inset)] border border-[var(--border-color)] rounded-lg text-sm text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)]/50 focus:border-[var(--primary-color)]';
 
+        const inner = `
                 <div class="space-y-3">
                     <!-- Email -->
                     <div class="space-y-1">
                         <div class="flex items-center justify-between">
-                            <label class="text-xs font-medium text-gray-300">📧 Email Address</label>
+                            <label class="text-xs font-medium text-gray-300" for="contact-email">📧 Email Address</label>
                             <label class="relative inline-flex items-center cursor-pointer">
-                                <input type="checkbox" 
-                                       id="show-email" 
-                                       class="sr-only peer" 
+                                <input type="checkbox"
+                                       id="show-email"
+                                       class="sr-only peer"
                                        ${this.contactDetails.showEmail ? 'checked' : ''}>
                                 <div class="w-11 h-6 bg-gray-600 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-[var(--primary-color)]/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[var(--primary-color)]"></div>
                             </label>
                         </div>
-                        <input type="email" 
-                               id="contact-email" 
-                               class="w-full px-3 py-2 bg-[#111111] border border-[var(--border-color)] rounded-lg text-sm text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)]/50 focus:border-[var(--primary-color)]" 
-                               placeholder="admin@example.com" 
+                        <input type="email"
+                               id="contact-email"
+                               class="${inputCls}"
+                               placeholder="admin@example.com"
                                value="${this.contactDetails.email}">
                         <p id="contact-email-error" class="text-red-400 text-xs hidden" role="alert"></p>
                     </div>
@@ -384,19 +381,19 @@ class ContactManager {
                     <!-- Phone -->
                     <div class="space-y-1">
                         <div class="flex items-center justify-between">
-                            <label class="text-xs font-medium text-gray-300">📱 Phone Number</label>
+                            <label class="text-xs font-medium text-gray-300" for="contact-phone">📱 Phone Number</label>
                             <label class="relative inline-flex items-center cursor-pointer">
-                                <input type="checkbox" 
-                                       id="show-phone" 
-                                       class="sr-only peer" 
+                                <input type="checkbox"
+                                       id="show-phone"
+                                       class="sr-only peer"
                                        ${this.contactDetails.showPhone ? 'checked' : ''}>
                                 <div class="w-11 h-6 bg-gray-600 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-[var(--primary-color)]/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[var(--primary-color)]"></div>
                             </label>
                         </div>
-                        <input type="tel" 
-                               id="contact-phone" 
-                               class="w-full px-3 py-2 bg-[#111111] border border-[var(--border-color)] rounded-lg text-sm text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)]/50 focus:border-[var(--primary-color)]" 
-                               placeholder="+1 (234) 567-8900" 
+                        <input type="tel"
+                               id="contact-phone"
+                               class="${inputCls}"
+                               placeholder="+1 (234) 567-8900"
                                value="${this.contactDetails.phone}">
                         <p id="contact-phone-error" class="text-red-400 text-xs hidden" role="alert"></p>
                     </div>
@@ -404,32 +401,36 @@ class ContactManager {
                     <!-- WhatsApp -->
                     <div class="space-y-1">
                         <div class="flex items-center justify-between">
-                            <label class="text-xs font-medium text-gray-300">💬 WhatsApp</label>
+                            <label class="text-xs font-medium text-gray-300" for="contact-whatsapp">💬 WhatsApp</label>
                             <label class="relative inline-flex items-center cursor-pointer">
-                                <input type="checkbox" 
-                                       id="show-whatsapp" 
-                                       class="sr-only peer" 
+                                <input type="checkbox"
+                                       id="show-whatsapp"
+                                       class="sr-only peer"
                                        ${this.contactDetails.showWhatsapp ? 'checked' : ''}>
                                 <div class="w-11 h-6 bg-gray-600 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-[var(--primary-color)]/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[var(--primary-color)]"></div>
                             </label>
                         </div>
-                        <input type="tel" 
-                               id="contact-whatsapp" 
-                               class="w-full px-3 py-2 bg-[#111111] border border-[var(--border-color)] rounded-lg text-sm text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)]/50 focus:border-[var(--primary-color)]" 
-                               placeholder="e.g. +44 7123 456789 (country code required)" 
+                        <input type="tel"
+                               id="contact-whatsapp"
+                               class="${inputCls}"
+                               placeholder="e.g. +44 7123 456789 (country code required)"
                                value="${this.contactDetails.whatsapp}">
                         <p id="contact-whatsapp-error" class="text-red-400 text-xs hidden" role="alert"></p>
                     </div>
 
                     <!-- Save Button -->
-                    <button id="save-contact-details" 
+                    <button id="save-contact-details"
                             class="w-full inline-flex items-center justify-center gap-2 rounded-md px-4 py-3 text-sm font-semibold text-white shadow-lg transition-all duration-300 btn-gradient">
                         <span class="material-symbols-rounded text-base">contact_phone</span>
                         <span id="save-contact-button-text">Save Contact Details</span>
                     </button>
                 </div>
-            </div>
         `;
+
+        // Collapsed by default; remembers the user's last open/closed choice
+        container.innerHTML = window.LSCollapse
+            ? LSCollapse.wrap('feedback-contact', { title: 'Your Feedback Contact' }, inner, false)
+            : `<div class="glass-card p-6"><h2 class="text-lg font-bold text-white mb-4">📞 Your Feedback Contact</h2>${inner}</div>`;
     }
 
     updatePreview() {
@@ -587,35 +588,8 @@ class ContactManager {
     }
 
     showNotification(message, type = 'info') {
-        // Create a simple toast notification
-        const toast = document.createElement('div');
-        toast.className = `fixed top-20 right-4 z-50 p-3 rounded-lg shadow-lg transition-all duration-300 transform translate-x-full`;
-        
-        const colors = {
-            'info': 'bg-blue-500',
-            'success': 'bg-green-500', 
-            'error': 'bg-red-500'
-        };
-        
-        toast.className += ` ${colors[type] || colors.info} text-white`;
-        toast.textContent = message;
-        
-        document.body.appendChild(toast);
-        
-        // Slide in
-        setTimeout(() => {
-            toast.classList.remove('translate-x-full');
-        }, 100);
-        
-        // Slide out and remove
-        setTimeout(() => {
-            toast.classList.add('translate-x-full');
-            setTimeout(() => {
-                if (toast.parentNode) {
-                    toast.parentNode.removeChild(toast);
-                }
-            }, 300);
-        }, 3000);
+        if (window.LSToasts) LSToasts.show(message, type);
+        else console.log(`${type.toUpperCase()}: ${message}`);
     }
 }
 

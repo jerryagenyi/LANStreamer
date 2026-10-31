@@ -5,15 +5,26 @@ All notable changes to LANStreamer will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [Unreleased] — development on `dev` branch (target: next packaged release)
 
-### Planned
-- Stream configuration and mount point management
-- FFmpeg integration for audio streaming
-- Listener web player interface
-- QR code generation for listener access
-- Real-time stream monitoring and statistics
-- Final packaging as standalone `.exe`
+Everything below is shipped in the working tree but **not yet bundled into an installer** — the app currently runs from source (`npm run electron:dev`). Release process: see [GO-LIVE-CHECKLIST.md](./GO-LIVE-CHECKLIST.md).
+
+### Added — the Electron desktop app
+- Full Electron shell: dashboard window, tray icon (hide-to-tray, Stop All & Quit), single-instance lock, first-run telemetry consent prompt, graceful shutdown that stops streams + Icecast
+- **Bundled binaries:** the installer ships FFmpeg + the Icecast kit (extraResources), with runtime resolution preferring the bundle over system installs — a fresh machine needs NOTHING pre-installed. Bundled Icecast runs from a writable per-user config/log dir (no more Program Files EPERM), and all mutable state (streams, device config, contact details, uploads, telemetry consent) lives in `%APPDATA%/LANStreamer` on packaged installs
+- Admin authentication: login page, JWT session (7-day), localhost lock so admin APIs/dashboard refuse non-localhost connections; default-credentials banner with change instructions; logout
+- Voluntary PostHog telemetry (opt-in): server events (app start, stream started/stopped/failed with error category) and **listener failure reports** (playback error with media code + browser, buffer stalls, off-air grace/give-up, page-load failures) relayed through the operator's server; distributed installs get telemetry via a bundled build key after their own consent prompt
+- Event banner system: operator-uploaded artwork with lightbox, bundled default banner when none set
+- In-app guide page (`/docs`), QR code sharing, share card that tracks the PC's current LAN address
+
+### Changed — 2026 redesign
+- Complete UI redesign (operator dashboard + listener page): token-based design system, status strip, grouped stream rows with pinned-right row actions, side drawer for stream creation, listener hero + channel picker with visible play affordances, sticky opaque headers, flat surfaces (no card shadows/hover/animations), full light/dark themes, fully offline (all fonts/assets vendored)
+- Process management hardened: Windows process-tree kills in the right order (no more orphaned FFmpeg holding audio devices), icecast self-healing on stream start/restart, stale LAN IP detection when the network changes
+- **Low-latency playback (2026-10-30):** listener audio delay cut from a reported 4–5 s to ~1 s class — MSE-based player keeps ~0.5 s buffered ahead (vs ~2.3 s browser default, measured) and snaps back to the live edge after WiFi jitter or pauses; FFmpeg capture runs with low-delay flags (`nobuffer`, `low_delay`, `probesize 32k`, `analyzeduration 0`, `flush_packets 1`); the play proxy disables Nagle and flushes headers; bundled Icecast uses a 16 KB join burst. Safari/iOS automatically use the classic direct-stream path
+
+### Known gaps before first packaged release
+- No downloadable installer yet (NSIS packaging is wired and bundles FFmpeg + Icecast: `npm run electron:build:win`) — see the go-live checklist
+- macOS/Linux support is source-only
 
 ---
 

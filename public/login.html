@@ -3,194 +3,159 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.tailwindcss.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self';">
-    <meta http-equiv="X-Content-Type-Options" content="nosniff">
-    <meta http-equiv="X-Frame-Options" content="DENY">
-    <meta http-equiv="X-XSS-Protection" content="1; mode=block">
-    <title>LANStreamer - Admin Login</title>
-    <link rel="icon" type="image/png" href="/assets/favicon.png">
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:FILL@1" rel="stylesheet">
+    <title>Admin login — LANStreamer</title>
+    <link rel="stylesheet" href="/assets/vendor/tailwind.css">
+    <link rel="stylesheet" href="/assets/vendor/fonts/fonts.css?v=5">
+    <link rel="stylesheet" href="/assets/css/tokens.css?v=10">
+    <link rel="stylesheet" href="/assets/css/ui.css?v=16">
+    <script src="/assets/js/theme-toggle.js?v=7"></script>
     <style>
-        :root {
-            --primary-color: #00AEEF;
-            --dark-bg: #111111;
-            --card-bg: #1A1A1A;
-            --border-color: #2F2F2F;
+        body {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--tok-bg);
+            padding: 24px;
         }
-        .btn-gradient {
-            background-image: linear-gradient(to right, #00AEEF, #0088CC);
-            box-shadow: 0 4px 15px 0 rgba(0, 174, 239, 0.3);
+        .login-card {
+            width: 100%;
+            max-width: 380px;
         }
-        .btn-gradient:hover {
-            background-image: linear-gradient(to right, #0088CC, #00AEEF);
-            box-shadow: 0 6px 20px 0 rgba(0, 174, 239, 0.4);
+        .login-field {
+            width: 100%;
+            padding: 11px 14px;
+            border-radius: 10px;
+            border: 1px solid var(--tok-line);
+            background: var(--tok-field);
+            color: var(--tok-text-1);
+            font-size: 14px;
+            outline: none;
+            transition: border-color .15s ease;
+        }
+        .login-field:focus { border-color: var(--tok-accent); }
+        .login-field::placeholder { color: var(--tok-text-3); }
+        #login-error {
+            display: none;
+            font-size: 13px;
+            color: var(--tok-danger, #f87171);
+            background: color-mix(in srgb, var(--tok-danger, #f87171) 12%, transparent);
+            border: 1px solid color-mix(in srgb, var(--tok-danger, #f87171) 35%, transparent);
+            border-radius: 8px;
+            padding: 9px 12px;
         }
     </style>
 </head>
-<body class="bg-[var(--dark-bg)] min-h-screen flex items-center justify-center">
-    <div class="w-full max-w-md mx-4">
-        <!-- Logo and Title -->
-        <div class="text-center mb-8">
-            <div class="flex items-center justify-center gap-3 mb-4">
-                <img src="/assets/lanstreamer-logo.png" alt="LANStreamer" class="h-16 w-auto" onerror="this.style.display='none'; document.getElementById('logo-fallback').style.display='flex';">
-                <div id="logo-fallback" style="display: none;" class="flex items-center">
-                    <span class="text-2xl font-bold tracking-wider text-white">LANStreamer</span>
-                </div>
-            </div>
-            <h1 class="text-2xl font-bold text-white mb-2">Admin Dashboard</h1>
-            <p class="text-gray-400">Enter your credentials to access the streaming control panel</p>
-        </div>
-
-        <!-- Login Form -->
-        <div class="bg-[var(--card-bg)] border border-[var(--border-color)] rounded-2xl p-8 shadow-2xl">
-            <form id="loginForm" class="space-y-6">
-                <!-- Username Field -->
-                <div>
-                    <label for="username" class="block text-sm font-medium text-gray-300 mb-2">
-                        <span class="material-symbols-rounded text-sm mr-1">person</span>
-                        Username
-                    </label>
-                    <input 
-                        type="text" 
-                        id="username" 
-                        name="username"
-                        required
-                        class="w-full px-4 py-3 bg-[#2A2A2A] border border-[var(--border-color)] rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)]/50 focus:border-[var(--primary-color)] transition-colors"
-                        placeholder="Enter your username"
-                        autocomplete="username"
-                    >
-                </div>
-
-                <!-- Password Field -->
-                <div>
-                    <label for="password" class="block text-sm font-medium text-gray-300 mb-2">
-                        <span class="material-symbols-rounded text-sm mr-1">lock</span>
-                        Password
-                    </label>
-                    <input 
-                        type="password" 
-                        id="password" 
-                        name="password"
-                        required
-                        class="w-full px-4 py-3 bg-[#2A2A2A] border border-[var(--border-color)] rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)]/50 focus:border-[var(--primary-color)] transition-colors"
-                        placeholder="Enter your password"
-                        autocomplete="current-password"
-                    >
-                </div>
-
-                <!-- Error Message -->
-                <div id="errorMessage" class="hidden p-3 bg-red-500/10 border border-red-500/30 rounded-lg">
-                    <div class="flex items-center gap-2">
-                        <span class="material-symbols-rounded text-red-400 text-sm">error</span>
-                        <span class="text-red-300 text-sm" id="errorText">Invalid credentials</span>
-                    </div>
-                </div>
-
-                <!-- Login Button -->
-                <button 
-                    type="submit" 
-                    class="w-full btn-gradient text-white font-semibold py-3 px-4 rounded-lg transition-all duration-300 flex items-center justify-center gap-2"
-                >
-                    <span class="material-symbols-rounded">login</span>
-                    Sign In to Dashboard
-                </button>
-            </form>
-
-            <!-- Help Text -->
-            <div class="mt-6 p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg">
-                <div class="flex items-start gap-2">
-                    <span class="material-symbols-rounded text-blue-400 text-sm mt-0.5">info</span>
-                    <div class="text-xs text-blue-300">
-                        <p class="font-medium mb-1">First Time Setup:</p>
-                        <p class="mt-1 text-blue-200/80">Admin credentials are configured in your <code class="bg-blue-900/30 px-1 rounded">.env</code> file.</p>
-                        <p class="mt-1 text-blue-200/80">See the setup guide in <code class="bg-blue-900/30 px-1 rounded">README.md</code> for configuration details.</p>
-                    </div>
-                </div>
+<body>
+    <main class="login-card glass-card" style="padding:28px;">
+        <div class="flex flex-col items-center gap-3" style="margin-bottom:22px;">
+            <img src="/assets/logo.svg?v=3" alt="LANStreamer" data-theme-logo class="h-12 w-auto"
+                 onerror="this.onerror=null; this.src='/assets/lanstreamer-logo.png';">
+            <div style="text-align:center;">
+                <div style="font-size:16px;font-weight:600;color:var(--tok-text-1);">Admin sign in</div>
+                <div class="tok-label" style="margin-top:2px;">The listener page needs no login — this is for the dashboard.</div>
             </div>
         </div>
 
-        <!-- Footer -->
-        <div class="text-center mt-8">
-            <p class="text-gray-500 text-sm">
-                LANStreamer Audio Streaming Server
+        <form id="login-form" class="flex flex-col" style="gap:14px;" novalidate>
+            <label class="flex flex-col" style="gap:6px;">
+                <span class="tok-label">Username</span>
+                <input id="login-username" class="login-field" type="text" autocomplete="username"
+                       placeholder="admin" autocapitalize="none" spellcheck="false" required>
+            </label>
+            <label class="flex flex-col" style="gap:6px;">
+                <span class="tok-label">Password</span>
+                <input id="login-password" class="login-field" type="password" autocomplete="current-password"
+                       placeholder="••••••••" required>
+            </label>
+            <div id="login-error" role="alert"></div>
+            <button id="login-submit" type="submit" class="btn btn-primary" style="width:100%;padding:11px 16px;">
+                Sign in
+            </button>
+        </form>
+
+        <p class="tok-label" id="login-defaults-hint" style="display:none;text-align:center;margin-top:18px;line-height:1.55;">
+            First run on this PC? The default login is <code>admin</code> / <code>lanstreamer123</code>
+            (documented in the README, “Admin access”). The dashboard will prompt you to change it.
+        </p>
+        <p class="tok-label" id="login-readme-hint" style="display:none;text-align:center;margin-top:18px;">
+            Default credentials are listed in the project README (README → “Admin access”).
+        </p>
+        <details id="login-forgot" style="margin-top:10px;">
+            <summary class="tok-label" style="cursor:pointer;text-align:center;">Forgot your password?</summary>
+            <p class="tok-label" style="margin-top:8px;line-height:1.55;">
+                On this PC, delete the admin login file and restart LANStreamer — the default
+                login returns, and you can set a new one from the dashboard (Admin account).
+                This page only opens on the operator's PC, which is why the path is safe to show.<br>
+                Installed app: <code>%APPDATA%\LANStreamer\security.json</code><br>
+                Running from source: <code>config\security.json</code>
             </p>
-        </div>
-    </div>
+        </details>
+    </main>
 
     <script>
-        document.getElementById('loginForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
+        (function () {
+            const form = document.getElementById('login-form');
+            const errBox = document.getElementById('login-error');
+            const submit = document.getElementById('login-submit');
 
-            const username = document.getElementById('username').value.trim();
-            const password = document.getElementById('password').value;
-            const errorDiv = document.getElementById('errorMessage');
-            const errorText = document.getElementById('errorText');
-            const submitBtn = e.target.querySelector('button[type="submit"]');
-
-            // Show loading state
-            const originalText = submitBtn.innerHTML;
-            submitBtn.innerHTML = '<span class="material-symbols-rounded animate-spin">refresh</span> Signing In...';
-            submitBtn.disabled = true;
-            errorDiv.classList.add('hidden');
-
-            try {
-                // Get CSRF token first
-                const csrfResponse = await fetch('/api/auth/csrf-token');
-                const csrfData = await csrfResponse.json();
-
-                const response = await fetch('/api/auth/login', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-Token': csrfData.csrfToken
-                    },
-                    body: JSON.stringify({ username, password })
-                });
-                
-                const data = await response.json();
-                
-                if (response.ok) {
-                    // Store auth token
-                    localStorage.setItem('lanstreamer_token', data.token);
-                    
-                    // Redirect to dashboard
-                    window.location.href = '/';
-                } else {
-                    // Show error
-                    errorText.textContent = data.message || 'Invalid credentials';
-                    errorDiv.classList.remove('hidden');
-                }
-            } catch (error) {
-                console.error('Login error:', error);
-                errorText.textContent = 'Connection error. Please try again.';
-                errorDiv.classList.remove('hidden');
-            } finally {
-                // Restore button
-                submitBtn.innerHTML = originalText;
-                submitBtn.disabled = false;
+            // Already signed in? Straight to the dashboard.
+            const existing = localStorage.getItem('lsAdminToken');
+            if (existing) {
+                fetch('/api/auth/verify', { headers: { Authorization: 'Bearer ' + existing } })
+                    .then(r => { if (r.ok) window.location.href = '/dashboard'; })
+                    .catch(() => {});
             }
-        });
 
-        // Check if already logged in
-        if (localStorage.getItem('lanstreamer_token')) {
-            // Verify token is still valid
-            fetch('/api/auth/verify', {
-                headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('lanstreamer_token')}`
+            // Cognitive-walkthrough fixes (2026-10-30):
+            //  1. A packaged-app operator has no README open when the login
+            //     appears. This page is unreachable from the network (the
+            //     localhost lock refuses non-local requests before it is ever
+            //     served), so on localhost we reveal the documented defaults
+            //     right where they're needed — the dashboard banner still
+            //     prompts to change them.
+            //  2. A failed sign-in is exactly the "forgot it" moment — open
+            //     the recovery details instead of leaving them folded below.
+            const isLocal = ['localhost', '127.0.0.1', '::1'].includes(window.location.hostname);
+            const defaultsHint = document.getElementById('login-defaults-hint');
+            const readmeHint = document.getElementById('login-readme-hint');
+            if (isLocal && defaultsHint) defaultsHint.style.display = 'block';
+            if (!isLocal && readmeHint) readmeHint.style.display = 'block';
+            const forgot = document.getElementById('login-forgot');
+
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                errBox.style.display = 'none';
+                submit.disabled = true;
+                submit.textContent = 'Signing in…';
+                try {
+                    const res = await fetch('/api/auth/login', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            username: document.getElementById('login-username').value.trim(),
+                            password: document.getElementById('login-password').value
+                        }),
+                        signal: AbortSignal.timeout(10000)
+                    });
+                    const data = await res.json().catch(() => ({}));
+                    if (res.ok && data.token) {
+                        localStorage.setItem('lsAdminToken', data.token);
+                        window.location.href = '/dashboard';
+                        return;
+                    }
+                    errBox.textContent = data.message || 'Login failed — check username and password.';
+                    errBox.style.display = 'block';
+                    if (forgot) forgot.open = true;
+                } catch {
+                    errBox.textContent = 'Could not reach the server — is LANStreamer running?';
+                    errBox.style.display = 'block';
+                } finally {
+                    submit.disabled = false;
+                    submit.textContent = 'Sign in';
                 }
-            })
-            .then(response => {
-                if (response.ok) {
-                    window.location.href = '/';
-                } else {
-                    localStorage.removeItem('lanstreamer_token');
-                }
-            })
-            .catch(() => {
-                localStorage.removeItem('lanstreamer_token');
             });
-        }
+        })();
     </script>
 </body>
 </html>

@@ -15,6 +15,19 @@ class FFmpegStreamsManager {
         this.containerId = containerId;
         this.container = null;
 
+        // List filter (all / live / err) — segmented control in the toolbar
+        this.streamFilter = 'all';
+
+        // Close any open ⋯ menu when clicking elsewhere (delegated, once)
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.menu')) {
+                document.querySelectorAll('.menu.open').forEach(m => m.classList.remove('open'));
+            }
+        });
+
+        // Test tools: hidden by default; toggle shows Test source button in add-stream modal
+        this.showTestTools = false;
+
         // Dynamic Icecast config (fetched from /api/system/config)
         this.icecastPort = 8000; // Default fallback (Icecast standard port)
         this.serverHost = null; // Will be loaded from config - uses getPreferredLANHost() for correct network IP
@@ -29,11 +42,12 @@ class FFmpegStreamsManager {
     /**
      * Run a callback after the next paint so the UI (e.g. list update) is visible before we show a notification.
      * Use for success notifications that follow state-changing actions (delete, stop, start, etc.).
+     * Uses a small timeout to ensure DOM updates are visually complete.
      */
     afterNextPaint(callback) {
-        requestAnimationFrame(() => {
-            requestAnimationFrame(() => callback());
-        });
+        // Use setTimeout instead of RAF to ensure DOM is visually updated
+        // 100ms is enough for the DOM to paint but short enough to feel responsive
+        setTimeout(() => callback(), 100);
     }
 
     /**
@@ -52,6 +66,7 @@ class FFmpegStreamsManager {
         return msg;
     }
 
+    /**
     /**
      * True if the error is a duplicate name or duplicate source (simple modal, no troubleshooting link).
      */
@@ -88,6 +103,88 @@ class FFmpegStreamsManager {
         const close = () => modal.remove();
         if (ok) ok.addEventListener('click', close);
         modal.addEventListener('click', (e) => { if (e.target === modal) close(); });
+    }
+
+    /**
+     * Show structured stream error (cause + diagnosis). When API returns diagnosis, shows modal with
+     * title, first solutions or link, and expandable Details (description + full solutions).
+     * @param {Object} data - API error response { message, error, code?, cause?, diagnosis?, capacity? }
+     */
+    showStreamError(data) {
+        const diagnosis = data && data.diagnosis;
+        const title = (diagnosis && diagnosis.title) || data?.error || data?.message || 'Stream failed';
+        const linkUrl = TROUBLESHOOTING_GUIDE_URL;
+        const linkText = 'troubleshooting guide';
+
+        // Every stream start/restart failure also lands in the notification bell
+        if (window.LSNotifications) {
+            LSNotifications.notify({
+                title,
+                message: 'Stream could not be started. Open the row details for the cause.',
+                type: 'error'
+            });
+        }
+
+        if (diagnosis && (diagnosis.description || (diagnosis.solutions && diagnosis.solutions.length > 0))) {
+            // Structured error: show centred modal with title, short solutions, expandable Details
+            const escapedTitle = String(title).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+            const firstSolutions = (diagnosis.solutions || []).slice(0, 2);
+            const solutionsHtml = firstSolutions.length
+                ? '<p class="text-sm mt-2 text-red-100">' + firstSolutions.map(s => `<span class="block mt-1">• ${String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</span>`).join('') + '</p>'
+                : '';
+            const detailsId = 'stream-error-details-' + Date.now();
+            const descEscaped = (diagnosis.description || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>');
+            const allSolutions = (diagnosis.solutions || []).map(s => `<li class="mt-1">${String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</li>`).join('');
+            const modal = document.createElement('div');
+            modal.className = 'fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60';
+            modal.innerHTML = `
+                <div class="bg-[var(--card-bg)] border border-[var(--border-color)] rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+                    <div class="p-6 border-b border-[var(--border-color)] flex items-start gap-3">
+                        <span class="material-symbols-rounded text-2xl text-red-400 flex-shrink-0">error</span>
+                        <div class="flex-1 min-w-0">
+                            <h3 class="text-lg font-semibold text-white">${escapedTitle}</h3>
+                            ${solutionsHtml}
+                            <p class="text-sm mt-2 text-red-200/90">
+                                Open the <a href="/docs" target="_blank" rel="noopener" class="underline font-medium hover:opacity-90">in-app guide</a> or the <a href="${linkUrl}" target="_blank" rel="noopener noreferrer" class="underline font-medium hover:opacity-90">full ${linkText}</a> for more steps.
+                            </p>
+                        </div>
+                        <button class="text-gray-400 hover:text-white transition-colors flex-shrink-0" onclick="this.closest('.fixed').remove()" aria-label="Close">
+                            <span class="material-symbols-rounded text-xl">close</span>
+                        </button>
+                    </div>
+                    <div class="flex-1 overflow-y-auto p-6 pt-0">
+                        <details class="group" id="${detailsId}">
+                            <summary class="cursor-pointer text-sm font-medium text-gray-300 hover:text-white py-2 flex items-center gap-2">
+                                <span class="material-symbols-rounded text-lg transition-transform group-open:rotate-90">expand_more</span>
+                                Details &amp; full solutions
+                            </summary>
+                            <div class="pl-7 mt-2 text-sm text-gray-300 space-y-2">
+                                ${diagnosis.description ? `<p class="text-gray-300">${descEscaped}</p>` : ''}
+                                ${allSolutions ? `<ul class="list-disc list-inside">${allSolutions}</ul>` : ''}
+                            </div>
+                        </details>
+                        ${data && data.stderrSnippet ? `
+                        <details class="group/tech mt-2">
+                            <summary class="cursor-pointer text-xs font-medium text-gray-500 hover:text-gray-300 py-2 flex items-center gap-2">
+                                <span class="material-symbols-rounded text-sm transition-transform group-open/tech:rotate-90">bug_report</span>
+                                Technical details (FFmpeg output)
+                            </summary>
+                            <pre class="pl-7 mt-2 text-xs text-gray-500 bg-black/30 p-3 rounded overflow-x-auto font-mono">${String(data.stderrSnippet).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</pre>
+                        </details>
+                        ` : ''}
+                        ${data && data.capacity ? `<p class="text-xs text-gray-400 mt-3">Streams in use: ${data.capacity.activeStreams ?? '?'}/${data.capacity.sourceLimit ?? '?'}${data.capacity.configPath ? ' (config: ' + data.capacity.configPath + ')' : ''}</p>` : ''}
+                    </div>
+                </div>
+            `;
+            modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
+            document.body.appendChild(modal);
+            const timeout = 60000;
+            setTimeout(() => { if (modal.parentNode) { modal.style.opacity = '0'; setTimeout(() => modal.remove(), 300); } }, timeout);
+            return;
+        }
+
+        // Backward compat: no diagnosis — toast with message + link
+        this.showNotification(title, 'error', { linkUrl, linkText });
     }
 
     /**
@@ -163,6 +260,21 @@ class FFmpegStreamsManager {
             if (data.streams) {
                 // Update client timers based on stream status changes
                 this.updateClientTimers(data.streams);
+
+                // Feed the notification bell when a running stream lands in error
+                if (window.LSNotifications && Array.isArray(this.activeStreams)) {
+                    data.streams.forEach(next => {
+                        const prev = this.activeStreams.find(s => s.id === next.id);
+                        if (prev && prev.status === 'running' && next.status === 'error') {
+                            LSNotifications.notify({
+                                title: `Stream "${next.name || next.id}" stopped with an error`,
+                                message: next.errorShort || 'Check the row details for the cause.',
+                                type: 'error'
+                            });
+                        }
+                    });
+                }
+
                 this.activeStreams = data.streams;
 
                 // Debug: Log stream names
@@ -277,19 +389,30 @@ class FFmpegStreamsManager {
 
     /**
      * Start a new stream
+     * @param {Object} streamConfig - Stream configuration
+     * @param {HTMLElement} modalToClose - Optional modal element to close on success
      */
-    async startStream(streamConfig) {
+    async startStream(streamConfig, modalToClose = null) {
         try {
             // First check if Icecast server is running
             const icecastStatus = await this.checkIcecastStatus();
             if (!icecastStatus.running) {
                 this.showNotification('Icecast server is not running. Please start the Icecast server first.', 'error');
+                // Re-enable modal button if modal was provided
+                if (modalToClose) {
+                    const submitBtn = modalToClose.querySelector('button[type="submit"]');
+                    if (submitBtn) {
+                        submitBtn.innerHTML = '<span class="material-symbols-rounded">play_arrow</span> 🔴 Go Live';
+                        submitBtn.disabled = false;
+                    }
+                }
                 return;
             }
 
             console.log('Starting stream with config:', streamConfig);
 
             const response = await fetch('/api/streams/start', {
+                signal: AbortSignal.timeout(25000),
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -299,13 +422,21 @@ class FFmpegStreamsManager {
 
             const data = await response.json();
             console.log('Stream start response:', { status: response.status, ok: response.ok, data });
-            
-            // Check if request was successful (2xx status)
+
             if (!response.ok) {
-                throw new Error(this.formatStreamError(data, 'Failed to start stream'));
+                // Close the add stream modal before showing error modal
+                if (modalToClose) {
+                    modalToClose.remove();
+                }
+                this.showStreamError(data);
+                return;
             }
-            
+
             if (data.message === 'Stream started successfully') {
+                // Close the add stream modal on success
+                if (modalToClose) {
+                    modalToClose.remove();
+                }
                 await this.loadStreams();
                 this.render();
 
@@ -314,10 +445,22 @@ class FFmpegStreamsManager {
                 const streamUrl = `http://${displayHost}:${this.icecastPort}/${streamConfig.id || 'stream'}`;
                 this.afterNextPaint(() => this.showNotification(`Stream started successfully! Stream is now available in the list below.`, 'success'));
             } else {
-                throw new Error(this.formatStreamError(data, 'Failed to start stream'));
+                // Close the add stream modal before showing error modal
+                if (modalToClose) {
+                    modalToClose.remove();
+                }
+                this.showStreamError(data);
             }
         } catch (error) {
             console.error('Failed to start stream:', error);
+            // Re-enable modal button if modal was provided
+            if (modalToClose) {
+                const submitBtn = modalToClose.querySelector('button[type="submit"]');
+                if (submitBtn) {
+                    submitBtn.innerHTML = '<span class="material-symbols-rounded">play_arrow</span> 🔴 Go Live';
+                    submitBtn.disabled = false;
+                }
+            }
             const msg = error.message || 'Failed to start stream';
             if (this.isDuplicateError(msg)) {
                 this.showDuplicateModal('Stream already exists', msg);
@@ -350,6 +493,7 @@ class FFmpegStreamsManager {
     async stopStream(streamId) {
         try {
             const response = await fetch('/api/streams/stop', {
+                    signal: AbortSignal.timeout(15000),
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -380,6 +524,7 @@ class FFmpegStreamsManager {
             console.log('Restarting stream:', streamId);
 
             const response = await fetch('/api/streams/restart', {
+                signal: AbortSignal.timeout(25000),
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -390,9 +535,9 @@ class FFmpegStreamsManager {
             const data = await response.json();
             console.log('Stream restart response:', { status: response.status, ok: response.ok, data });
 
-            // Check if request was successful (2xx status)
             if (!response.ok) {
-                throw new Error(this.formatStreamError(data, 'Failed to restart stream'));
+                this.showStreamError(data);
+                return;
             }
 
             if (data.message === 'Stream restarted successfully') {
@@ -400,10 +545,17 @@ class FFmpegStreamsManager {
                 this.render();
                 setTimeout(() => this.showNotification('Stream started successfully', 'success'), 1000);
             } else {
-                throw new Error(this.formatStreamError(data, 'Failed to restart stream'));
+                this.showStreamError(data);
             }
         } catch (error) {
-            console.error('Failed to start stream:', error);
+            console.error('Failed to restart stream:', error);
+            if (window.LSNotifications) {
+                LSNotifications.notify({
+                    title: error.shortMessageHint || `Could not start "${streamId}"`,
+                    message: (error.message || '').split('\n')[0],
+                    type: 'error'
+                });
+            }
             const msg = error.message || 'Failed to restart stream';
             if (this.isDuplicateError(msg)) {
                 this.showDuplicateModal('Stream already exists', msg);
@@ -544,6 +696,7 @@ class FFmpegStreamsManager {
     async deleteStream(streamId) {
         try {
             const response = await fetch('/api/streams/delete', {
+                    signal: AbortSignal.timeout(15000),
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -554,11 +707,27 @@ class FFmpegStreamsManager {
             const result = await response.json();
 
             if (response.ok) {
+                const removed = this.activeStreams.find(s => s.id === streamId);
+                const displayName = removed?.name || removed?.config?.name || streamId;
+
                 // Remove from local array
                 this.activeStreams = this.activeStreams.filter(s => s.id !== streamId);
-                this.render();
-                // Wait 1 second after row disappears before showing notification
-                setTimeout(() => this.showNotification('Stream deleted successfully', 'success'), 1000);
+                this.render();  // Re-render entire component (updates stats and list)
+
+                // Confirm the stream is really gone before announcing it, then
+                // let the row removal paint first — a delayed toast.
+                setTimeout(async () => {
+                    let reallyGone = true;
+                    try {
+                        const statusRes = await fetch('/api/streams/status');
+                        const statusData = await statusRes.json();
+                        reallyGone = !(statusData.streams || []).some(s => s.id === streamId);
+                    } catch { /* if the check fails, don't suppress the toast */ }
+
+                    if (reallyGone) {
+                        this.afterNextPaint(() => this.showNotification(`Stream "${displayName}" deleted`, 'success'));
+                    }
+                }, 900);
             } else {
                 throw new Error(result.error || 'Failed to delete stream');
             }
@@ -659,14 +828,13 @@ class FFmpegStreamsManager {
                                 <span id="edit-stream-name-counter" class="text-xs text-gray-400">${(stream.name || '').length}/50</span>
                             </div>
                         </div>
-                        <p class="text-xs text-gray-400 mt-1">Maximum 50 characters</p>
                     </div>
 
                     <div>
                         <label class="block text-sm font-medium text-gray-300 mb-2">Audio Source</label>
                         <select
                             id="editStreamDevice"
-                            class="w-full px-3 py-2 bg-[#1a1a1a] border border-[var(--border-color)] rounded-lg text-white focus:outline-none focus:border-[var(--primary-color)] transition-colors"
+                            style="height:40px;padding:0 12px;border-radius:10px;background:var(--tok-surface-inset);border:1px solid var(--tok-line-strong);color:var(--tok-text-1);font:inherit;font-size:14px;width:100%;"
                             required
                         >
                             <option value="">Select audio device...</option>
@@ -747,6 +915,7 @@ class FFmpegStreamsManager {
 
                 // Update stream via API
                 const response = await fetch('/api/streams/update', {
+                    signal: AbortSignal.timeout(25000),
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
@@ -943,47 +1112,53 @@ class FFmpegStreamsManager {
     }
 
     /**
-     * Render the component
+     * Render the component. Skips the DOM rewrite when the visible data is
+     * unchanged (`force` overrides): re-rendering on every 5s poll closes any
+     * open "⋯" menu and makes the row actions flicker.
      */
-    render() {
+    render(force = false) {
         if (!this.container) {
             console.error('Cannot render: container not found');
             return;
         }
 
+        const signature = JSON.stringify(this.activeStreams.map(s =>
+            [s.id, s.status, s.name, s.label, s.deviceId, s.config?.bitrate, s.errorShort]
+        ));
+        if (!force && signature === this._listSignature) return;
+        this._listSignature = signature;
+
+        const total = this.activeStreams.length;
+        const live = this.getRunningStreamsCount();
+        const issues = this.activeStreams.filter(s => s.status === 'error').length;
+
         this.container.innerHTML = `
-            <div class="glass-card p-6">
-                <!-- Header -->
-                <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
-                    <div>
-                        <h2 class="text-2xl font-bold text-white flex items-center gap-2">
-                            <span class="material-symbols-rounded text-[var(--primary-color)]">radio</span>
-                            🎤 Audio Streams
-                        </h2>
-                        <p class="text-gray-400 text-sm mt-1">Stream audio from any input source to your network</p>
+            <div class="glass-card" style="padding:0;">
+                <!-- Toolbar: title + filters + actions -->
+                <div style="display:flex;align-items:center;gap:8px;padding:14px 18px;border-bottom:1px solid var(--tok-line);flex-wrap:wrap;">
+                    <h2 style="font-size:16px;font-weight:600;color:var(--tok-text-1);margin-right:auto;">Streams</h2>
+                    <div class="seg" role="group" aria-label="Filter streams" id="stream-filter">
+                        <button type="button" data-f="all" aria-pressed="${this.streamFilter === 'all'}">All ${total}</button>
+                        <button type="button" data-f="live" aria-pressed="${this.streamFilter === 'live'}">Live${live ? ' · ' + live : ''}</button>
+                        <button type="button" data-f="err" aria-pressed="${this.streamFilter === 'err'}">Issues${issues ? ' · ' + issues : ''}</button>
                     </div>
-                    <div class="flex items-center gap-3">
-                        <div class="flex items-center gap-2 px-3 py-1.5 bg-green-500/10 border border-green-500/20 rounded-full">
-                            <div class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
-                            <span class="text-xs font-medium text-green-400">${this.getStreamCountStatus()}</span>
-                        </div>
-                        <div class="flex items-center gap-2">
-                            ${this.getRunningStreamsCount() > 0 || this.getStoppedStreamsCount() > 0 ? `
-                                <button id="start-stop-all-btn" class="inline-flex items-center justify-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-all duration-300 border ${this.getRunningStreamsCount() > 0 ? 'text-red-300 bg-red-900/30 hover:bg-red-800/40 border-red-700/50' : 'text-green-300 bg-green-900/30 hover:bg-green-800/40 border-green-700/50'}" title="${this.getRunningStreamsCount() > 0 ? 'Stop All Running Streams' : 'Start All Stopped Streams'}">
-                                    <span class="material-symbols-rounded text-sm">${this.getRunningStreamsCount() > 0 ? 'stop' : 'play_arrow'}</span>
-                                    ${this.getRunningStreamsCount() > 0 ? 'Stop All' : 'Start All'}
-                                </button>
-                            ` : ''}
-                            <button id="add-stream-btn" class="inline-flex items-center justify-center gap-2 rounded-md px-4 py-2.5 text-sm font-semibold text-white bg-[var(--live-color)] hover:bg-[var(--live-color)]/80 transition-all duration-300 shadow-lg">
-                                <span class="material-symbols-rounded">add</span>
-                                🔴 Start New Stream
-                            </button>
-                        </div>
-                    </div>
+                    ${(live > 0 || this.getStoppedStreamsCount() > 0) && total > 0 ? `
+                        <button id="start-stop-all-btn" class="btn btn-ghost" style="height:30px;padding:0 10px;font-size:13px;" title="${live > 0 ? 'Stop all running streams' : 'Start all stopped streams'}">
+                            <span class="material-symbols-rounded text-sm">${live > 0 ? 'stop' : 'play_arrow'}</span>
+                            ${live > 0 ? 'Stop all' : 'Start all'}
+                        </button>
+                    ` : ''}
+                    <button id="refresh-devices-btn" class="iconbtn" title="Refresh devices" aria-label="Refresh audio devices" style="width:30px;height:30px;">
+                        <span class="material-symbols-rounded text-base">refresh</span>
+                    </button>
+                    <button id="add-stream-btn" class="btn btn-primary" style="height:32px;" title="Create a new stream">
+                        <span class="material-symbols-rounded text-base">add</span>
+                        New stream
+                    </button>
                 </div>
 
-                <!-- Streams Content -->
-                <div class="space-y-4">
+                <!-- Grouped, filterable list -->
+                <div class="list" id="streams-list-admin">
                     ${this.renderStreams()}
                 </div>
             </div>
@@ -992,258 +1167,183 @@ class FFmpegStreamsManager {
         this.setupEventListeners();
     }
 
+    /** One-line plain-language fix hint for a failed stream (under the error title). */
+    errorHint(stream) {
+        const s = `${stream.errorShort || ''} ${stream.error || ''}`;
+        if (/busy|already used by/i.test(s)) return 'Stop the other stream first, or edit this one to use a different input.';
+        if (/could not be opened|not found|device/i.test(s)) return 'The device is missing or held by another app — reconnect it or pick a different input.';
+        if (/icecast|connect/i.test(s)) return 'Check the Icecast panel — it may need a start or restart.';
+        return 'Open the details for the full diagnostic.';
+    }
+
+    /** Copy the listener page URL (share target is always the page, not the mount). */
+    copyListenerUrl() {
+        const displayHost = this.serverHost || window.location.hostname;
+        const url = `http://${displayHost}:${window.location.port || '3001'}/streams`;
+        if (navigator.clipboard) {
+            navigator.clipboard.writeText(url).then(() => this.showNotification('Listener link copied', 'success', { tag: 'copy' }))
+                .catch(() => window.prompt('Copy this link:', url));
+        } else {
+            window.prompt('Copy this link:', url);
+        }
+    }
+
+    /** Duplicate a stream config as a new stopped stream ("(copy)" name). */
+    async duplicateStream(streamId) {
+        const src = this.activeStreams.find(s => s.id === streamId);
+        if (!src) return;
+        try {
+            const response = await fetch('/api/streams/create', {
+                signal: AbortSignal.timeout(15000),
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    name: `${src.name || streamId} (copy)`,
+                    deviceId: src.deviceId,
+                    bitrate: src.config?.bitrate || 192,
+                    autoStart: false
+                })
+            });
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.error || 'Failed to duplicate');
+            this.showNotification(`Duplicated as "${data.stream.name}" (stopped)`, 'success');
+            await this.loadStreams();
+            this.render();
+        } catch (error) {
+            this.showNotification(`Duplicate failed: ${error.message}`, 'error');
+        }
+    }
+
     /**
      * Render active streams (including stopped ones)
      */
+    /**
+     * Render streams grouped (On air / Ready) and filtered (all/live/issues)
+     */
     renderStreams() {
-
         if (this.activeStreams.length === 0) {
-            return `
-                <div class="text-center py-12 px-6">
-                    <div class="mb-6">
-                        <div class="w-16 h-16 mx-auto mb-4 bg-[var(--primary-color)]/10 rounded-full flex items-center justify-center">
-                            <span class="material-symbols-rounded text-3xl text-[var(--primary-color)]">radio</span>
-                        </div>
-                        <h3 class="text-xl font-semibold text-white mb-2">Ready to Stream!</h3>
-                        <p class="text-gray-400 mb-4">No active streams yet. Start streaming audio from any input source.</p>
-                    </div>
-
-                    <div class="glass-card-inset rounded-xl p-6 max-w-md mx-auto">
-                        <h4 class="text-white font-medium mb-3">🚀 Quick Start Guide:</h4>
-                        <div class="text-left space-y-2 text-sm text-gray-300">
-                            <div class="flex items-center gap-2">
-                                <span class="w-5 h-5 bg-[var(--primary-color)] text-white rounded-full flex items-center justify-center text-xs font-bold">1</span>
-                                <span>Click <strong>"🔴 Start New Stream"</strong> above</span>
-                            </div>
-                            <div class="flex items-center gap-2">
-                                <span class="w-5 h-5 bg-[var(--primary-color)] text-white rounded-full flex items-center justify-center text-xs font-bold">2</span>
-                                <span>Select your audio input source</span>
-                            </div>
-                            <div class="flex items-center gap-2">
-                                <span class="w-5 h-5 bg-[var(--primary-color)] text-white rounded-full flex items-center justify-center text-xs font-bold">3</span>
-                                <span>Click <strong>"Go Live"</strong> to start streaming</span>
-                            </div>
-                        </div>
-
-                        <div class="mt-4 p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg">
-                            <p class="text-xs text-blue-300">
-                                💡 <strong>Pro Tip:</strong> Install DVS (Dante Virtual Soundcard) or Virtual Audio Cable to route audio from music players, DJ software, or any application to LANStreamer.
-                            </p>
-                        </div>
-                    </div>
-                </div>
-            `;
+            return this.renderEmptyState();
         }
 
-        return this.activeStreams.map((stream, index) => {
-            // Use client-side timer for uptime calculation
-            const clientTimer = this.clientTimers.get(stream.id);
-            let uptime = '0s';
+        const visible = this.activeStreams.filter(s =>
+            this.streamFilter === 'all' ||
+            (this.streamFilter === 'live' ? s.status === 'running' : s.status === 'error')
+        );
+        if (visible.length === 0) {
+            return `<p style="padding:32px 18px;text-align:center;color:var(--tok-text-2);">Nothing here.</p>`;
+        }
 
-            if (clientTimer && clientTimer.isRunning) {
-                const currentUptime = Date.now() - clientTimer.startTime;
-                uptime = this.formatUptime(currentUptime);
-            } else if (stream.status !== 'running') {
-                // For stopped streams, show last known uptime or 0
-                uptime = '0s';
-            }
+        const liveRows = visible.filter(s => s.status === 'running');
+        const restRows = visible.filter(s => s.status !== 'running');
+        let html = '';
+        if (liveRows.length > 0) {
+            html += `<div class="group-label tok-label">On air · ${liveRows.length}</div>`;
+            html += liveRows.map(s => this.renderAdminRow(s)).join('');
+        }
+        if (restRows.length > 0) {
+            html += `<div class="group-label tok-label">${this.streamFilter === 'err' ? 'Issues' : 'Ready'} · ${restRows.length}</div>`;
+            html += restRows.map(s => this.renderAdminRow(s)).join('');
+        }
+        return html;
+    }
 
-            const displayHost = this.serverHost || window.location.hostname;
-            const streamUrl = `http://${displayHost}:${this.icecastPort}/${stream.id}`;
+    /** Friendly 3-step empty state (replaces the old Quick Start notice). */
+    renderEmptyState() {
+        return `
+            <div style="padding:48px 24px;text-align:center;">
+                <img src="/assets/logo-mark.svg" alt="" style="width:48px;height:48px;margin:0 auto 16px;display:block;">
+                <h3 style="font-size:20px;color:var(--tok-text-1);">No streams yet</h3>
+                <p style="margin-top:6px;color:var(--tok-text-2);">Pick an audio input, name it, and go live — listeners on your Wi-Fi hear it instantly.</p>
+                <div style="display:inline-flex;gap:24px;margin:20px 0;flex-wrap:wrap;justify-content:center;">
+                    <span style="display:flex;gap:10px;align-items:center;font-size:14px;color:var(--tok-text-2);"><span class="mono" style="width:24px;height:24px;border-radius:50%;background:var(--tok-accent-soft);color:var(--tok-accent);display:grid;place-items:center;">1</span>New stream</span>
+                    <span style="display:flex;gap:10px;align-items:center;font-size:14px;color:var(--tok-text-2);"><span class="mono" style="width:24px;height:24px;border-radius:50%;background:var(--tok-accent-soft);color:var(--tok-accent);display:grid;place-items:center;">2</span>Choose input</span>
+                    <span style="display:flex;gap:10px;align-items:center;font-size:14px;color:var(--tok-text-2);"><span class="mono" style="width:24px;height:24px;border-radius:50%;background:var(--tok-accent-soft);color:var(--tok-accent);display:grid;place-items:center;">3</span>Go live</span>
+                </div>
+                <div><button type="button" class="btn btn-primary" onclick="ffmpegStreamsManager.openDrawer()"><span class="material-symbols-rounded text-base">add</span>Create first stream</button></div>
+                <p style="font-size:13px;margin-top:20px;color:var(--tok-text-3);">Tip: route app audio with VB-Audio Cable or Dante Virtual Soundcard.</p>
+            </div>
+        `;
+    }
 
-            // Determine status styling and icon
-            let statusColor, statusIcon, statusText, statusBg, errorMessage = '';
-            switch (stream.status) {
-                case 'running':
-                    statusColor = 'text-green-400';
-                    statusIcon = 'radio';
-                    statusText = 'LIVE';
-                    statusBg = 'bg-green-500/10 border-green-500/20';
-                    break;
-                case 'stopped':
-                    statusColor = 'text-gray-400';
-                    statusIcon = 'stop_circle';
-                    statusText = 'STOPPED';
-                    statusBg = 'bg-gray-500/10 border-gray-500/20';
-                    break;
-                case 'error':
-                    statusColor = 'text-red-400';
-                    statusIcon = 'error';
-                    statusText = 'ERROR';
-                    statusBg = 'bg-red-500/10 border-red-500/20';
-                    errorMessage = stream.error || 'Stream failed to start';
-                    break;
-                default:
-                    statusColor = 'text-yellow-400';
-                    statusIcon = 'help';
-                    statusText = 'UNKNOWN';
-                    statusBg = 'bg-yellow-500/10 border-yellow-500/20';
-            }
+    /** One admin stream row (designer anatomy: badge · name/meta · play + ⋯ menu). */
+    renderAdminRow(stream) {
+        const index = this.activeStreams.indexOf(stream);
+        const live = stream.status === 'running';
+        const err = stream.status === 'error';
 
-            return `
-            <div class="glass-card-inset rounded-xl p-5 hover:border-[var(--primary-color)]/30 transition-all duration-300">
-                <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                    <!-- Stream Info (label S1, S2, S3 + reorder) -->
-                    <div class="flex items-center gap-4 flex-1">
-                        <div class="flex flex-col items-center gap-0.5 flex-shrink-0">
-                            <button type="button" onclick="ffmpegStreamsManager.moveStreamUp(${index})" title="Move up" class="p-1 rounded hover:bg-[var(--primary-color)]/20 text-gray-400 hover:text-white disabled:opacity-30 disabled:pointer-events-none" ${index === 0 ? 'disabled' : ''}>
-                                <span class="material-symbols-rounded text-lg">arrow_upward</span>
-                            </button>
-                            <span class="text-xs font-medium text-[var(--primary-color)]">${stream.label || 'S' + (index + 1)}</span>
-                            <button type="button" onclick="ffmpegStreamsManager.moveStreamDown(${index})" title="Move down" class="p-1 rounded hover:bg-[var(--primary-color)]/20 text-gray-400 hover:text-white disabled:opacity-30 disabled:pointer-events-none" ${index === this.activeStreams.length - 1 ? 'disabled' : ''}>
-                                <span class="material-symbols-rounded text-lg">arrow_downward</span>
-                            </button>
-                        </div>
-                        <div class="relative">
-                            <div class="w-3 h-3 rounded-full ${stream.status === 'running' ? 'bg-[var(--live-color)] pulse-live' : stream.status === 'error' ? 'bg-red-500' : 'bg-gray-500'}"></div>
-                            ${stream.status === 'running' ? '<div class="absolute inset-0 w-3 h-3 rounded-full bg-[var(--live-color)] animate-ping opacity-75"></div>' : ''}
-                        </div>
-                        <div class="flex-1 min-w-0">
-                            <div class="flex items-start justify-between gap-2 mb-1">
-                                <h3 class="font-semibold text-white text-lg truncate flex-1">${stream.label ? stream.label + ' - ' : ''}${stream.name || stream.id}</h3>
-                            </div>
-                            <div class="flex flex-wrap items-center gap-3 text-sm text-gray-400">
-                                <span class="flex items-center gap-1">
-                                    <span class="material-symbols-rounded text-sm">mic</span>
-                                    ${this.getDeviceName(stream.deviceId)}
-                                </span>
-                                <span class="flex items-center gap-1">
-                                    <span class="material-symbols-rounded text-sm">high_quality</span>
-                                    ${stream.config?.bitrate || '192'} kbps
-                                </span>
-                                <span class="flex items-center gap-1">
-                                    <span class="material-symbols-rounded text-sm">schedule</span>
-                                    <span data-stream-uptime="${stream.id}">Uptime: ${uptime}</span>
-                                </span>
-                                <span class="px-2 py-1 text-xs font-medium ${statusBg} ${statusColor} border rounded-full flex items-center gap-1 flex-shrink-0">
-                                    <span class="material-symbols-rounded text-xs">${statusIcon}</span>
-                                    ${statusText}
-                                </span>
-                            </div>
-                        </div>
+        const clientTimer = this.clientTimers.get(stream.id);
+        let uptime = '0s';
+        if (clientTimer && clientTimer.isRunning) {
+            uptime = this.formatUptime(Date.now() - clientTimer.startTime);
+        }
+
+        const statusChip = live
+            ? `<span class="chip chip-live"><span class="eq" aria-hidden="true"><i></i><i></i><i></i><i></i></span>LIVE</span>`
+            : err
+                ? `<span class="chip chip-err"><span class="pip" aria-hidden="true"></span>ERROR</span>`
+                : `<span class="chip chip-off">Stopped</span>`;
+
+        const deviceName = this.getDeviceName(stream.deviceId);
+        const metaExtras = live
+            ? `<span class="dotsep" aria-hidden="true"></span><span class="mono" data-stream-uptime="${stream.id}">${uptime}</span>`
+            : '';
+
+        const errBox = err ? `
+            <div class="errbox">
+                <b>${this.escapeHtml(stream.errorShort || 'Stream failed to start')}</b>
+                <span class="grow">${this.escapeHtml(this.errorHint(stream))}</span>
+                <button type="button" class="btn btn-secondary" style="height:30px;padding:0 10px;font-size:13px;" onclick="ffmpegStreamsManager.editStream('${stream.id}')">Change input</button>
+                <button type="button" class="btn btn-ghost" style="height:30px;padding:0 10px;font-size:13px;" onclick="ffmpegStreamsManager.restartStream('${stream.id}')">Retry</button>
+                <details style="width:100%;">
+                    <summary style="cursor:pointer;color:var(--tok-text-3);font-size:12px;">Full diagnostic</summary>
+                    <div class="stream-error-detail" style="margin-top:8px;">${this.escapeHtml(stream.error || '')}
+<a href="/docs" target="_blank" rel="noopener">Open troubleshooting guide</a></div>
+                </details>
+            </div>
+        ` : '';
+
+        return `
+            <div class="arow ${live ? 'is-live' : ''} ${err ? 'is-err' : ''}" data-stream-row="${stream.id}">
+                <span class="sid2" aria-hidden="true">${stream.label || 'S' + (index + 1)}</span>
+                <div style="min-width:0;">
+                    <div class="name">${this.escapeHtml(stream.name || stream.id)}</div>
+                    <div class="meta">
+                        ${statusChip}
+                        <span class="src" title="${this.escapeHtml(deviceName)}">
+                            <span class="material-symbols-rounded" style="font-size:13px;" aria-hidden="true">mic</span>${this.escapeHtml(deviceName)}
+                        </span>
+                        <span class="dotsep" aria-hidden="true"></span>
+                        <span class="mono">${stream.config?.bitrate || 192}k</span>
+                        ${metaExtras}
                     </div>
-
-
-
-                    <!-- Stream Actions -->
-                    <div class="flex items-center gap-3 w-full sm:w-auto">
-                        <div class="flex items-center gap-2 flex-1 sm:flex-initial">
-                            ${stream.status === 'running' ? `
-                                <button
-                                    onclick="ffmpegStreamsManager.copyStreamUrl('${streamUrl}', this)"
-                                    class="inline-flex items-center justify-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-gray-300 bg-[#2A2A2A] hover:bg-[#3A3A3A] border border-[var(--border-color)] transition-all duration-300"
-                                    title="Copy stream URL"
-                                >
-                                    <span class="material-symbols-rounded text-sm">link</span>
-                                    Copy URL
-                                </button>
-                                <button
-                                    onclick="ffmpegStreamsManager.editStream('${stream.id}')"
-                                    class="inline-flex items-center justify-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-blue-300 bg-blue-600/20 hover:bg-blue-600/30 border border-blue-600/30 transition-all duration-300"
-                                    title="Edit stream settings"
-                                >
-                                    <span class="material-symbols-rounded text-sm">edit</span>
-                                    Edit
-                                </button>
-                                <button
-                                    onclick="ffmpegStreamsManager.stopStream('${stream.id}')"
-                                    class="inline-flex items-center justify-center gap-2 rounded-md px-4 py-2 text-sm font-semibold text-white bg-red-600 hover:bg-red-700 transition-all duration-300 shadow-lg"
-                                >
-                                    <span class="material-symbols-rounded">stop</span>
-                                    Stop Stream
-                                </button>
-                            ` : `
-                                <button
-                                    onclick="ffmpegStreamsManager.restartStream('${stream.id}')"
-                                    class="inline-flex items-center justify-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-green-300 bg-green-600/20 hover:bg-green-600/30 border border-green-600/30 transition-all duration-300"
-                                    title="Start stream"
-                                >
-                                    <span class="material-symbols-rounded text-sm">play_arrow</span>
-                                    Start
-                                </button>
-                                <button
-                                    onclick="ffmpegStreamsManager.editStream('${stream.id}')"
-                                    class="inline-flex items-center justify-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-blue-300 bg-blue-600/20 hover:bg-blue-600/30 border border-blue-600/30 transition-all duration-300"
-                                    title="Edit stream settings"
-                                >
-                                    <span class="material-symbols-rounded text-sm">edit</span>
-                                    Edit
-                                </button>
-                                <button
-                                    onclick="ffmpegStreamsManager.deleteStream('${stream.id}')"
-                                    class="inline-flex items-center justify-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-red-300 bg-red-600/20 hover:bg-red-600/30 border border-red-600/30 transition-all duration-300"
-                                    title="Delete stream"
-                                >
-                                    <span class="material-symbols-rounded text-sm">delete</span>
-                                    Delete
-                                </button>
-                            `}
+                </div>
+                <div class="rowactions">
+                    ${live ? `
+                        <button class="playbtn stop" onclick="ffmpegStreamsManager.stopStream('${stream.id}')" title="Stop stream" aria-label="Stop ${this.escapeHtml(stream.name || stream.id)}">
+                            <span class="material-symbols-rounded" style="font-size:16px;">stop</span>
+                        </button>
+                    ` : `
+                        <button class="playbtn" onclick="ffmpegStreamsManager.restartStream('${stream.id}')" title="${err ? 'Retry start' : 'Go live'}" aria-label="${err ? 'Retry' : 'Go live'} ${this.escapeHtml(stream.name || stream.id)}">
+                            <span class="material-symbols-rounded" style="font-size:18px;font-variation-settings:'FILL' 1;">play_arrow</span>
+                        </button>
+                    `}
+                    <div class="menu">
+                        <button class="iconbtn" style="width:36px;height:36px;" title="More actions" aria-label="More actions for ${this.escapeHtml(stream.name || stream.id)}" onclick="this.parentNode.classList.toggle('open')">
+                            <span class="material-symbols-rounded text-base">more_vert</span>
+                        </button>
+                        <div class="menu-pop">
+                            <button type="button" onclick="ffmpegStreamsManager.copyListenerUrl()"><span class="material-symbols-rounded text-base">link</span>Copy listener link</button>
+                            <button type="button" onclick="ffmpegStreamsManager.editStream('${stream.id}')"><span class="material-symbols-rounded text-base">edit</span>Edit</button>
+                            <button type="button" onclick="ffmpegStreamsManager.moveStreamUp(${index})" ${index === 0 ? 'disabled style="opacity:.4;"' : ''}><span class="material-symbols-rounded text-base">keyboard_arrow_up</span>Move up</button>
+                            <button type="button" onclick="ffmpegStreamsManager.moveStreamDown(${index})" ${index === this.activeStreams.length - 1 ? 'disabled style="opacity:.4;"' : ''}><span class="material-symbols-rounded text-base">keyboard_arrow_down</span>Move down</button>
+                            <button type="button" onclick="ffmpegStreamsManager.duplicateStream('${stream.id}')"><span class="material-symbols-rounded text-base">content_copy</span>Duplicate</button>
+                            <button type="button" class="del" onclick="ffmpegStreamsManager.deleteStream('${stream.id}')"><span class="material-symbols-rounded text-base">delete</span>Delete</button>
                         </div>
                     </div>
                 </div>
-
-                ${stream.status === 'running' ? `
-                    <!-- Stream URL Display -->
-                    <div class="mt-4 p-3 bg-[#0A0A0A] border border-[var(--border-color)] rounded-lg">
-                        <div class="flex items-center justify-between gap-2">
-                            <div class="flex items-center gap-2 flex-1">
-                                <span class="material-symbols-rounded text-sm text-[var(--primary-color)]">radio</span>
-                                <span class="text-xs text-gray-400">Listen via:</span>
-                                <code class="text-xs text-[var(--primary-color)] font-mono bg-[var(--primary-color)]/10 px-2 py-1 rounded flex-1 truncate">${streamUrl}</code>
-                            </div>
-                            <div class="flex items-center gap-1">
-                                <button
-                                    onclick="ffmpegStreamsManager.copyStreamUrl('${streamUrl}', this)"
-                                    class="text-xs text-gray-400 hover:text-white transition-colors px-1"
-                                    title="Copy stream URL to clipboard"
-                                >
-                                    <span class="material-symbols-rounded text-sm">content_copy</span>
-                                </button>
-                                <button
-                                    onclick="window.open('${streamUrl}', '_blank')"
-                                    class="text-xs text-gray-400 hover:text-white transition-colors px-1"
-                                    title="Test stream in browser"
-                                >
-                                    <span class="material-symbols-rounded text-sm">open_in_new</span>
-                                </button>
-                             ${stream.status === 'stopped' ? `
-                             <button
-                                 onclick="ffmpegStreamsManager.restartStream('${stream.id}')"
-                                 class="text-xs text-blue-400 hover:text-blue-300 transition-colors px-1"
-                                 title="Start this stream"
-                             >
-                                 <span class="material-symbols-rounded text-sm">restart_alt</span>
-                             </button>
-                             ` : ''}
-                            </div>
-                        </div>
-                        <div class="mt-2 text-xs text-gray-500">
-                            💡 Stream is live! Click copy button to share this URL.
-                        </div>
-                    </div>
-                ` : stream.status === 'stopped' ? `
-                    <!-- Stream Status Info -->
-                    <div class="mt-4 p-3 bg-gray-500/10 border border-gray-500/20 rounded-lg">
-                        <div class="flex items-center gap-2">
-                            <span class="material-symbols-rounded text-sm text-gray-400">info</span>
-                            <span class="text-xs text-gray-400">Stream stopped. Use Start to begin streaming.</span>
-                        </div>
-                    </div>
-                ` : `
-                    <!-- Error Status Info -->
-                    <div class="mt-4 p-3 bg-red-500/10 border border-red-500/20 rounded-lg">
-                        <div class="flex items-start gap-2">
-                            <span class="material-symbols-rounded text-sm text-red-400 mt-0.5">error</span>
-                            <div class="flex-1">
-                                <p class="text-xs text-red-300 font-medium mb-1">${errorMessage}</p>
-                                <p class="text-xs text-red-400/80">Click Edit to change device, then Start.</p>
-                            </div>
-                        </div>
-                    </div>
-                `}
+                ${errBox}
             </div>
         `;
-        }).join('');
     }
 
     /**
@@ -1295,7 +1395,18 @@ class FFmpegStreamsManager {
         const addStreamBtn = document.getElementById('add-stream-btn');
         if (addStreamBtn) {
             addStreamBtn.addEventListener('click', () => {
-                this.showAddStreamModal();
+                this.openDrawer();
+            });
+        }
+
+        // Segmented filter (All / Live / Issues)
+        const filterGroup = document.getElementById('stream-filter');
+        if (filterGroup) {
+            filterGroup.querySelectorAll('button[data-f]').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    this.streamFilter = btn.getAttribute('data-f');
+                    this.render(true); // filter change must repaint even with identical data
+                });
             });
         }
 
@@ -1309,192 +1420,186 @@ class FFmpegStreamsManager {
                 }
             });
         }
+
+        const refreshDevicesBtn = document.getElementById('refresh-devices-btn');
+        if (refreshDevicesBtn) {
+            refreshDevicesBtn.addEventListener('click', () => {
+                this.refreshAudioDevices();
+            });
+        }
+
+        const showTestToolsToggle = document.getElementById('show-test-tools-toggle');
+        if (showTestToolsToggle) {
+            showTestToolsToggle.addEventListener('change', () => {
+                this.showTestTools = showTestToolsToggle.checked;
+                this.render();
+            });
+        }
+    }
+
+    /** Open the new-stream side drawer. */
+    openDrawer() {
+        this.showAddStreamModal();
     }
 
     /**
      * Show add stream modal with improved UX
      */
+    /**
+     * New-stream side drawer (designer P3): source cards annotated with the
+     * stream already using them, purpose-based quality, auto-start switch, and
+     * explicit Save (stopped) vs Go live. Replaces the centred modal.
+     */
     showAddStreamModal() {
-        // Create modal for adding new stream
-        const modal = document.createElement('div');
-        modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
-        modal.innerHTML = `
-            <div class="glass-card p-6 max-w-lg w-full mx-4">
-                <div class="flex items-center gap-3 mb-6">
-                    <span class="material-symbols-rounded text-2xl text-[var(--primary-color)]">radio</span>
-                    <h3 class="text-xl font-bold text-white">🎤 Start New Audio Stream</h3>
+        // Rebuild drawer markup each open (state is cheap, stale state is not)
+        let root = document.getElementById('stream-drawer-root');
+        if (root) root.remove();
+
+        root = document.createElement('div');
+        root.id = 'stream-drawer-root';
+
+        // Source cards: known devices + any device referenced by an existing
+        // stream but missing from the system (greyed out — the OBS case).
+        const usedBy = {};
+        this.activeStreams.forEach(s => {
+            if (s.status === 'running' && s.deviceId) {
+                usedBy[s.deviceId] = usedBy[s.deviceId] || [];
+                usedBy[s.deviceId].push(s.label || s.name || s.id);
+            }
+        });
+        const knownIds = new Set(this.audioDevices.map(d => d.id));
+        const missingDevices = [...new Set(
+            this.activeStreams.map(s => s.deviceId).filter(id => id && !knownIds.has(id))
+        )];
+
+        // Source options as a dropdown (compact — no need to see every device at once)
+        const sourceOptions = [
+            `<option value="">Select an audio source…</option>`,
+            ...this.audioDevices.map(d => {
+                const used = usedBy[d.id];
+                const label = used
+                    ? `${d.name} — used by ${used.join(', ')}`
+                    : `${d.name}${d.virtual ? ' (virtual)' : ''}`;
+                return `<option value="${this.escapeHtml(d.id)}">${this.escapeHtml(label)}</option>`;
+            }),
+            ...missingDevices.map(id =>
+                `<option value="" disabled>${this.escapeHtml(id)} — MISSING (not detected)</option>`)
+        ].join('');
+
+        root.innerHTML = `
+            <div class="scrim" id="drawer-scrim"></div>
+            <aside class="drawer" role="dialog" aria-modal="true" aria-labelledby="drawer-title">
+                <div style="display:flex;align-items:center;gap:10px;padding:18px 20px;border-bottom:1px solid var(--tok-line);">
+                    <h2 id="drawer-title" style="font-size:17px;font-weight:600;color:var(--tok-text-1);">New stream</h2>
+                    <span style="flex:1;"></span>
+                    <button type="button" class="iconbtn" id="drawer-close" aria-label="Close drawer" title="Close">
+                        <span class="material-symbols-rounded">close</span>
+                    </button>
                 </div>
-
-                <div class="mb-4 p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg">
-                    <div class="flex items-start gap-2">
-                        <span class="material-symbols-rounded text-blue-400 text-lg mt-0.5">info</span>
-                        <div class="text-sm">
-                            <p class="text-blue-300 font-medium">Quick Start</p>
-                            <p class="text-blue-200/80">Select your audio input source and click "Go Live" to start streaming immediately.</p>
-                        </div>
+                <form class="drawer-b" id="drawer-form" onsubmit="event.preventDefault();">
+                    <div style="display:flex;flex-direction:column;gap:6px;">
+                        <label for="stream-name" style="font-size:13px;font-weight:600;color:var(--tok-text-1);">Name</label>
+                        <input id="stream-name" maxlength="50" placeholder="e.g. Main Room English" required
+                               style="height:40px;padding:0 12px;border-radius:10px;background:var(--tok-surface-inset);border:1px solid var(--tok-line-strong);color:var(--tok-text-1);font:inherit;font-size:14px;width:100%;">
+                        <span class="hint" style="font-size:12px;color:var(--tok-text-3);">Listeners see this. Use the room or language.</span>
                     </div>
-                </div>
-
-                <form id="add-stream-form">
-                    <div class="space-y-5">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-300 mb-2">
-                                <span class="material-symbols-rounded text-sm mr-1">label</span>
-                                Stream Name
-                            </label>
-                            <div class="relative">
-                                <input type="text"
-                                       id="stream-name"
-                                       maxlength="50"
-                                       class="w-full input-glass text-white text-sm rounded-md focus:ring-[var(--primary-color)] focus:border-[var(--primary-color)] block px-3 py-2.5 pr-12"
-                                       placeholder="e.g., Main Room Audio, DJ Mix, Podcast"
-                                       required>
-                                <div class="absolute right-3 top-1/2 transform -translate-y-1/2">
-                                    <span id="stream-name-counter" class="text-xs text-gray-400">0/50</span>
-                                </div>
-                            </div>
-                            <p class="text-xs text-gray-400 mt-1">Maximum 50 characters</p>
-                        </div>
-
-                        <div>
-                            <label class="block text-sm font-medium text-gray-300 mb-2">
-                                <span class="material-symbols-rounded text-sm mr-1">mic</span>
-                                Audio Input Source
-                            </label>
-                            <select id="stream-device" class="w-full input-glass text-white text-sm rounded-md focus:ring-[var(--primary-color)] focus:border-[var(--primary-color)] block px-3 py-2.5" required>
-                                <option value="">🎯 Select your audio source...</option>
-                                ${this.audioDevices.map(device => `
-                                    <option value="${device.id}">
-                                        ${device.virtual ? '🔗' : '🎤'} ${device.name}
-                                        ${device.fallback ? ' (Fallback)' : ''}
-                                        ${device.virtual ? ' (Virtual)' : ''}
-                                    </option>
-                                `).join('')}
-                            </select>
-                            <p class="text-xs text-gray-400 mt-1">💡 Install DVS or Virtual Audio Cable for virtual audio routing</p>
-                            ${this.hasVirtualAudioDevices() ? `
-                                <div class="mt-2 p-2 bg-yellow-500/10 border border-yellow-500/20 rounded text-xs text-yellow-300">
-                                    ⚠️ <strong>Virtual Audio Notice:</strong> Virtual devices may occasionally disappear due to driver restarts. If streaming fails, try restarting your virtual audio software or refresh audio devices.
-                                </div>
-                            ` : ''}
-                        </div>
-
-                        <div>
-                            <label class="block text-sm font-medium text-gray-300 mb-2">
-                                <span class="material-symbols-rounded text-sm mr-1">high_quality</span>
-                                Stream Quality
-                            </label>
-                            <select id="stream-bitrate" class="w-full input-glass text-white text-sm rounded-md focus:ring-[var(--primary-color)] focus:border-[var(--primary-color)] block px-3 py-2.5">
-                                <option value="128">🎵 128 kbps - Good (smaller file size)</option>
-                                <option value="192" selected>🎶 192 kbps - High Quality (recommended)</option>
-                                <option value="256">🎼 256 kbps - Very High Quality</option>
-                                <option value="320">🎹 320 kbps - Maximum Quality</option>
-                            </select>
-                        </div>
+                    <div style="display:flex;flex-direction:column;gap:6px;">
+                        <label for="stream-device" style="font-size:13px;font-weight:600;color:var(--tok-text-1);">Audio input</label>
+                        <select id="stream-device" style="height:40px;padding:0 12px;border-radius:10px;background:var(--tok-surface-inset);border:1px solid var(--tok-line-strong);color:var(--tok-text-1);font:inherit;font-size:14px;width:100%;">${sourceOptions}</select>
                     </div>
-
-                    <div class="flex gap-3 mt-8">
-                        <button type="submit" class="flex-1 inline-flex items-center justify-center gap-2 rounded-md px-4 py-3 text-sm font-semibold text-white bg-[var(--live-color)] hover:bg-[var(--live-color)]/80 transition-all duration-300 shadow-lg">
-                            <span class="material-symbols-rounded">play_arrow</span>
-                            🔴 Go Live
-                        </button>
-                        <button type="button" onclick="this.closest('.fixed').remove()" class="flex-1 inline-flex items-center justify-center gap-2 rounded-md px-4 py-3 text-sm font-semibold text-white bg-gray-600 hover:bg-gray-700 transition-all duration-300">
-                            <span class="material-symbols-rounded">close</span>
-                            Cancel
-                        </button>
+                    <div style="display:flex;flex-direction:column;gap:6px;">
+                        <label style="font-size:13px;font-weight:600;color:var(--tok-text-1);">Quality</label>
+                        <div class="quality">
+                            <label><input type="radio" name="drawer-q" value="96"><b>96</b>kbps · Speech</label>
+                            <label><input type="radio" name="drawer-q" value="128"><b>128</b>kbps · Standard</label>
+                            <label><input type="radio" name="drawer-q" value="192" checked><b>192</b>kbps · Music</label>
+                        </div>
+                        <span class="hint" style="font-size:12px;color:var(--tok-text-3);">192 kbps is recommended for music; 96 is plenty for spoken translation.</span>
                     </div>
+                    <label style="display:flex;align-items:center;gap:10px;font-size:14px;color:var(--tok-text-1);cursor:pointer;">
+                        <button type="button" class="switch" id="drawer-autostart" role="switch" aria-checked="false" aria-label="Start automatically when LANStreamer launches"></button>
+                        Start automatically when LANStreamer launches
+                    </label>
                 </form>
-            </div>
+                <div class="drawer-f">
+                    <button type="button" class="btn btn-ghost" id="drawer-cancel">Cancel</button>
+                    <button type="button" class="btn btn-secondary" id="drawer-save">Save</button>
+                    <button type="button" class="btn btn-primary" id="drawer-golive"><span class="material-symbols-rounded text-base">play_arrow</span>Go live</button>
+                </div>
+            </aside>
         `;
+        document.body.appendChild(root);
+        requestAnimationFrame(() => document.body.classList.add('drawer-open'));
 
-        document.body.appendChild(modal);
+        const close = () => {
+            document.body.classList.remove('drawer-open');
+            setTimeout(() => root.remove(), 250);
+            document.removeEventListener('keydown', escHandler);
+        };
+        root.querySelector('#drawer-close').addEventListener('click', close);
+        root.querySelector('#drawer-cancel').addEventListener('click', close);
+        root.querySelector('#drawer-scrim').addEventListener('click', close);
+        root.querySelector('#drawer-autostart').addEventListener('click', function () {
+            this.setAttribute('aria-checked', this.getAttribute('aria-checked') !== 'true');
+        });
+        const escHandler = (e) => { if (e.key === 'Escape') close(); };
+        document.addEventListener('keydown', escHandler);
 
-        // Setup character counter for stream name
-        const streamNameInput = document.getElementById('stream-name');
-        const streamNameCounter = document.getElementById('stream-name-counter');
-        
-        if (streamNameInput && streamNameCounter) {
-            const updateCounter = () => {
-                const length = streamNameInput.value.length;
-                streamNameCounter.textContent = `${length}/50`;
+        // Name counter hint tints as the limit approaches
+        const nameInput = root.querySelector('#stream-name');
+        const hint = root.querySelector('#drawer-form .hint');
+        nameInput.addEventListener('input', () => {
+            const n = nameInput.value.length;
+            hint.style.color = n > 45 ? 'var(--tok-danger)' : n > 40 ? 'var(--tok-warning)' : 'var(--tok-text-3)';
+        });
+        setTimeout(() => nameInput.focus(), 300);
 
-                // Change color based on character count
-                if (length > 45) {
-                    streamNameCounter.className = 'text-xs text-red-400';
-                } else if (length > 40) {
-                    streamNameCounter.className = 'text-xs text-yellow-400';
-                } else {
-                    streamNameCounter.className = 'text-xs text-gray-400';
-                }
+        const collect = () => {
+            const name = nameInput.value.trim().replace(/[<>"'&]/g, '');
+            const deviceId = root.querySelector('#stream-device')?.value || '';
+            const bitrate = parseInt(root.querySelector('input[name="drawer-q"]:checked')?.value || '192', 10);
+            const autoStart = root.querySelector('#drawer-autostart').getAttribute('aria-checked') === 'true';
+            if (!name || !deviceId) {
+                this.showNotification('Give the stream a name and pick an audio input.', 'warning');
+                return null;
+            }
+            const cleanId = name.toLowerCase().replace(/[^a-z0-9\s]/g, '').replace(/\s+/g, '_').substring(0, 20);
+            return {
+                name,
+                deviceId,
+                bitrate,
+                autoStart,
+                id: cleanId ? `${cleanId}_${Date.now()}` : this.generateUniqueStreamId()
             };
-            
-            streamNameInput.addEventListener('input', updateCounter);
-            updateCounter(); // Initial update
-        }
+        };
 
-        // Handle form submission
-        const form = modal.querySelector('#add-stream-form');
-        form.addEventListener('submit', async (e) => {
-            e.preventDefault();
-
-            const submitBtn = form.querySelector('button[type="submit"]');
-            const originalText = submitBtn.innerHTML;
-
-            // Show loading state
-            submitBtn.innerHTML = `
-                <div class="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
-                Starting Stream...
-            `;
-            submitBtn.disabled = true;
-
+        // Save: create as stopped (appears instantly in the Ready group)
+        root.querySelector('#drawer-save').addEventListener('click', async () => {
+            const config = collect();
+            if (!config) return;
             try {
-                const streamName = document.getElementById('stream-name').value.trim();
-                
-                // Basic sanitization - remove potentially dangerous characters
-                const sanitizedName = streamName.replace(/[<>\"'&]/g, '');
-                
-                // Generate clean stream ID from name
-                const cleanId = sanitizedName
-                    .toLowerCase()
-                    .replace(/[^a-z0-9\s]/g, '') // Remove special characters
-                    .replace(/\s+/g, '_') // Replace spaces with underscores
-                    .substring(0, 20); // Limit length
-
-                // Use name-based ID with timestamp for uniqueness
-                const streamId = cleanId ? `${cleanId}_${Date.now()}` : this.generateUniqueStreamId();
-
-                const streamConfig = {
-                    name: sanitizedName,
-                    deviceId: document.getElementById('stream-device').value,
-                    bitrate: parseInt(document.getElementById('stream-bitrate').value),
-                    id: streamId
-                };
-
-                modal.remove();
-                await this.startStream(streamConfig);
-            } catch (error) {
-                // Restore button state on error
-                submitBtn.innerHTML = originalText;
-                submitBtn.disabled = false;
-                this.showNotification(error.message || 'Failed to start stream', 'error', {
-                    linkUrl: TROUBLESHOOTING_GUIDE_URL,
-                    linkText: 'troubleshooting guide'
+                const response = await fetch('/api/streams/create', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(config)
                 });
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.error || 'Failed to save');
+                this.showNotification(`Saved "${data.stream.name}" (stopped)`, 'success');
+                close();
+                await this.loadStreams();
+                this.render();
+            } catch (error) {
+                this.showNotification(`Save failed: ${error.message}`, 'error');
             }
         });
 
-        // Close modal on escape key
-        modal.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape') {
-                modal.remove();
-            }
-        });
-
-        // Close modal on backdrop click
-        modal.addEventListener('click', (e) => {
-            if (e.target === modal) {
-                modal.remove();
-            }
+        // Go live: create + start immediately (reuses the hardened start path)
+        root.querySelector('#drawer-golive').addEventListener('click', () => {
+            const config = collect();
+            if (!config) return;
+            // Duck-type the close handle startStream expects from the old modal
+            this.startStream(config, { remove: close, querySelector: () => null });
         });
     }
 
@@ -1502,12 +1607,22 @@ class FFmpegStreamsManager {
      * Get device name from device ID
      */
     getDeviceName(deviceId) {
+        // Plain name only — icons live in the UI layer (Material mic symbol).
+        // Emoji prefixes here previously produced '�' replacement characters:
+        // the emoji-stripping regex split surrogate pairs.
         const device = this.audioDevices.find(d => d.id === deviceId);
-        if (device) {
-            const icon = device.virtual ? '🔗' : '🎤';
-            return `${icon} ${device.name}`;
-        }
-        return `🎤 ${deviceId || 'Unknown Device'}`;
+        return device ? device.name : (deviceId || 'Unknown Device');
+    }
+
+    /**
+     * Escape text for safe interpolation into HTML templates
+     */
+    escapeHtml(text) {
+        return String(text ?? '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;');
     }
 
     /**
@@ -1534,59 +1649,17 @@ class FFmpegStreamsManager {
      * @param {{ linkUrl?: string, linkText?: string }} options - Optional; linkUrl + linkText show "See the [link] for steps."
      */
     showNotification(message, type = 'info', options = {}) {
-        const { linkUrl, linkText = 'troubleshooting guide' } = options;
-        const useErrorWithLink = type === 'error' && linkUrl;
-
-        // For stream errors with link, always use our own toast (short message + link)
-        if (useErrorWithLink) {
-            const escaped = String(message).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-            const linkHtml = `<a href="${linkUrl}" target="_blank" rel="noopener noreferrer" class="underline font-medium hover:opacity-90">${linkText}</a>`;
-            const content = `${escaped}<br><br>See the ${linkHtml} for steps.`;
-            const toast = document.createElement('div');
-            toast.className = 'fixed top-4 left-1/2 -translate-x-1/2 z-50 px-6 py-5 rounded-xl shadow-2xl transition-all duration-300 max-w-md bg-red-700 text-white';
-            toast.innerHTML = `
-                <div class="flex items-start gap-3">
-                    <span class="material-symbols-rounded text-xl mt-0.5 flex-shrink-0">error</span>
-                    <div class="flex-1 min-w-0 text-sm leading-relaxed">${content}</div>
-                    <button class="text-white/80 hover:text-white transition-colors flex-shrink-0 ml-2" onclick="this.closest('.fixed').remove()">
-                        <span class="material-symbols-rounded text-xl">close</span>
-                    </button>
-                </div>
-            `;
-            document.body.appendChild(toast);
-            const timeout = 60000;
-            setTimeout(() => { toast.style.opacity = '0'; setTimeout(() => toast.remove(), 300); }, timeout);
+        // All toasts go through the stacking toast system (LSToasts): new ones
+        // push older ones down instead of overlapping at the same fixed spot.
+        if (window.LSToasts) {
+            LSToasts.show(message, type, {
+                linkUrl: options.linkUrl,
+                linkText: options.linkText || 'troubleshooting guide',
+                timeoutMs: type === 'error' ? 30000 : undefined
+            });
             return;
         }
-
-        if (window.showNotification) {
-            window.showNotification(message, type);
-        } else {
-            const maxWidth = type === 'error' ? 'max-w-3xl' : 'max-w-md';
-            const toast = document.createElement('div');
-            toast.className = `fixed top-4 left-1/2 -translate-x-1/2 z-50 px-6 py-5 rounded-xl shadow-2xl transition-all duration-300 ${maxWidth} ${
-                type === 'success' ? 'bg-green-600 text-white' :
-                type === 'error' ? 'bg-red-700 text-white' :
-                'bg-blue-600 text-white'
-            }`;
-            const formattedMessage = type === 'error'
-                ? `<pre class="whitespace-pre-wrap font-sans text-sm leading-relaxed max-h-96 overflow-y-auto">${String(message).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</pre>`
-                : `<span class="flex-1">${String(message).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</span>`;
-            toast.innerHTML = `
-                <div class="flex items-start gap-3">
-                    <span class="material-symbols-rounded text-xl mt-0.5 flex-shrink-0">
-                        ${type === 'success' ? 'check_circle' : type === 'error' ? 'error' : 'info'}
-                    </span>
-                    <div class="flex-1 min-w-0">${formattedMessage}</div>
-                    <button class="text-white/80 hover:text-white transition-colors flex-shrink-0 ml-2" onclick="this.parentElement.parentElement.remove()">
-                        <span class="material-symbols-rounded text-xl">close</span>
-                    </button>
-                </div>
-            `;
-            document.body.appendChild(toast);
-            const timeout = type === 'error' ? 60000 : 4000;
-            setTimeout(() => { toast.style.opacity = '0'; setTimeout(() => toast.remove(), 300); }, timeout);
-        }
+        console.log(`${type.toUpperCase()}: ${message}`);
     }
 
     /**

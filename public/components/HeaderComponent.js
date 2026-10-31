@@ -18,10 +18,10 @@ class HeaderComponent {
         await this.loadConfig(); // Load config first to get correct LAN IP
         this.render();
         this.setupEventListeners();
-        this.updateBellIcon(); // Sync bell state (default until check completes)
-        this.checkForUpdates(); // Auto-check for updates on load
+        if (window.LSNotifications) LSNotifications.bindBell(); // Notification center owns the bell now
+        this.checkForUpdates(); // Feeds update notices into the notification bell
         this.isInitialized = true;
-        console.log('✅ HeaderComponent initialization complete');
+        console.log('🎯 HeaderComponent initialization complete');
     }
 
     async loadConfig() {
@@ -44,108 +44,21 @@ class HeaderComponent {
             const response = await fetch('/api/system/update-check');
             const data = await response.json();
 
-            if (data.success) {
+            if (data.success && data.updateAvailable) {
                 this.updateInfo = data;
-                if (data.updateAvailable) {
-                    this.updateAvailable = true;
-                    this.updateBellIcon();
+                this.updateAvailable = true;
+                // Update notices are one of the bell's notification sources
+                if (window.LSNotifications) {
+                    LSNotifications.notify({
+                        title: `Update available: v${data.latest} (you have v${data.current})`,
+                        message: 'Download it from the GitHub releases page.',
+                        type: 'update'
+                    });
                 }
             }
         } catch (error) {
             console.warn('Failed to check for updates:', error);
         }
-    }
-
-    updateBellIcon() {
-        const bellBtn = document.getElementById('header-update-bell-btn');
-        if (!bellBtn) return;
-
-        if (this.updateAvailable) {
-            // Show update icon with notification badge
-            bellBtn.innerHTML = `
-                <span class="material-symbols-rounded text-sm relative">
-                    system_update
-                    <span class="absolute -top-1 -right-1 flex h-2 w-2">
-                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                        <span class="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
-                    </span>
-                </span>
-            `;
-            bellBtn.classList.add('bg-green-900/30', 'border-green-600/50', 'text-green-400');
-            bellBtn.classList.remove('bg-gray-800/50', 'border-gray-600/30', 'text-gray-300');
-            bellBtn.title = `Update available: ${this.updateInfo?.latest || ''}`;
-        } else {
-            // Show update icon without badge
-            bellBtn.innerHTML = `
-                <span class="material-symbols-rounded text-sm">system_update</span>
-            `;
-            bellBtn.classList.remove('bg-green-900/30', 'border-green-600/50', 'text-green-400');
-            bellBtn.classList.add('bg-gray-800/50', 'border-gray-600/30', 'text-gray-300');
-            bellBtn.title = 'Check for Updates';
-        }
-    }
-
-    showUpdateModal() {
-        if (!this.updateInfo || !this.updateAvailable) {
-            this.showNotification('No update information available', 'info');
-            return;
-        }
-
-        const modal = document.createElement('div');
-        modal.className = 'fixed inset-0 bg-black/50 flex items-center justify-center z-50';
-        modal.innerHTML = `
-            <div class="glass-card p-6 max-w-md mx-4">
-                <div class="flex items-center gap-3 mb-4">
-                    <span class="material-symbols-rounded text-3xl text-green-500">system_update</span>
-                    <div>
-                        <h3 class="text-lg font-semibold text-white">Update Available!</h3>
-                        <p class="text-sm text-gray-400">A new version of LANStreamer is ready</p>
-                    </div>
-                </div>
-                <div class="glass-card-inset rounded-lg p-4 mb-4">
-                    <div class="flex justify-between items-center mb-2">
-                        <span class="text-gray-400 text-sm">Current Version</span>
-                        <span class="text-white font-medium">${this.updateInfo.current}</span>
-                    </div>
-                    <div class="flex justify-between items-center">
-                        <span class="text-gray-400 text-sm">Latest Version</span>
-                        <span class="text-green-400 font-semibold">${this.updateInfo.latest}</span>
-                    </div>
-                </div>
-                <div class="flex gap-3">
-                    <button id="update-view-release" class="btn-glass btn-glass-primary flex-1">
-                        View Release
-                    </button>
-                    <button id="update-close-modal" class="btn-glass btn-glass-secondary flex-1">
-                        Close
-                    </button>
-                </div>
-            </div>
-        `;
-
-        document.body.appendChild(modal);
-
-        // Add event listeners
-        const viewReleaseBtn = document.getElementById('update-view-release');
-        if (viewReleaseBtn && this.updateInfo.releaseUrl) {
-            viewReleaseBtn.addEventListener('click', () => {
-                const url = this.updateInfo.releaseUrl;
-                if (url && (url.startsWith('https://github.com') || url.startsWith('https://api.github.com'))) {
-                    window.open(url, '_blank');
-                }
-            });
-        }
-
-        document.getElementById('update-close-modal').addEventListener('click', () => {
-            document.body.removeChild(modal);
-        });
-
-        // Close on backdrop click
-        modal.addEventListener('click', (e) => {
-            if (e.target === modal) {
-                document.body.removeChild(modal);
-            }
-        });
     }
 
     render() {
@@ -163,11 +76,12 @@ class HeaderComponent {
                 <!-- Logo Section -->
                 <div class="flex items-center gap-4 text-white">
                     <a href="http://localhost:3001" class="flex items-center gap-2 text-white hover:text-[var(--primary-color)] transition-colors">
-                        <img src="/assets/lanstreamer-logo.png"
+                        <img src="${window.LSTheme?.logoSrc?.() || '/assets/logo.svg?v=3'}"
                              alt="LANStreamer"
-                             class="h-16 w-auto logo-glow"
+                             class="h-16 w-auto"
                              id="logo-image"
-                             onerror="this.style.display='none'; document.getElementById('logo-fallback').style.display='flex';">
+                             data-theme-logo
+                             onerror="this.onerror=null; this.src='/assets/lanstreamer-logo.png';">
                         <div id="logo-fallback" style="display: none;" class="flex items-center">
                             <span class="text-xl font-bold tracking-wider">LANStreamer</span>
                         </div>
@@ -176,32 +90,39 @@ class HeaderComponent {
 
                 <!-- Navigation and Actions -->
                 <div class="flex items-center gap-3">
-                    <!-- Update Icon: shows badge when update available; click opens modal or runs check -->
-                    <button id="header-update-bell-btn"
-                            class="icon-btn text-gray-300 hover:text-white"
-                            title="Check for Updates"
-                            aria-label="Check for Updates">
-                        <span class="material-symbols-rounded text-sm">system_update</span>
+                    <!-- Notification bell: lights up when there are unread notifications -->
+                    <button id="header-bell-btn"
+                            class="theme-toggle"
+                            title="No notifications"
+                            aria-label="No notifications"
+                            aria-haspopup="dialog">
+                        <span class="material-symbols-rounded text-sm">notifications</span>
                     </button>
 
-                    <!-- Admin Navigation Links -->
-                    <div class="flex items-center gap-2">
-                        <a href="${streamsUrl}"
-                           target="_blank"
-                           class="btn-glass btn-glass-secondary"
-                           title="Open Streams Page (for listeners)">
-                            <span class="material-symbols-rounded text-sm">radio</span>
-                            <span class="hidden sm:inline">Listen to Streams</span>
-                        </a>
+                    <!-- Theme toggle (dark/light) -->
+                    <button data-theme-toggle
+                            class="theme-toggle"
+                            title="Toggle dark/light mode"
+                            aria-label="Switch to light mode"
+                            aria-pressed="false">
+                        <span class="material-symbols-rounded text-sm">light_mode</span>
+                    </button>
 
-                        <button id="header-logout-btn"
-                               class="btn-glass btn-glass-secondary"
-                               title="Logout from Admin Dashboard"
-                               aria-label="Sign out of admin dashboard"
-                               role="button">
-                            <span class="material-symbols-rounded text-sm" aria-hidden="true">logout</span>
-                            <span class="hidden sm:inline">Logout</span>
-                        </button>
+                    <!-- Sign out of the admin dashboard -->
+                    <button type="button"
+                            class="theme-toggle"
+                            title="Sign out"
+                            aria-label="Sign out"
+                            onclick="window.LSAdminAuth && window.LSAdminAuth.logout()">
+                        <span class="material-symbols-rounded text-sm">logout</span>
+                    </button>
+
+                    <!-- Open listener page (sharing lives in the dashboard sidebar card) -->
+                    <a href="${streamsUrl}" target="_blank" rel="noopener" class="btn btn-secondary" style="height:30px;padding:0 10px;font-size:13px;" title="Open the listener page">
+                        <span class="material-symbols-rounded" style="font-size:15px;">headphones</span>
+                        <span class="hidden sm:inline">Open listener page</span>
+                    </a>
+
                     </div>
                 </div>
             </header>
@@ -211,101 +132,7 @@ class HeaderComponent {
     }
 
     setupEventListeners() {
-        // Update Bell Button
-        const bellBtn = document.getElementById('header-update-bell-btn');
-        if (bellBtn) {
-            bellBtn.addEventListener('click', async () => {
-                if (this.updateAvailable) {
-                    // Show update modal if update is available
-                    this.showUpdateModal();
-                } else {
-                    // Manual check if no update available
-                    console.log('🔄 Header update check requested');
-
-                    // Show loading state
-                    bellBtn.innerHTML = `
-                        <span class="material-symbols-rounded text-sm animate-spin">refresh</span>
-                    `;
-                    bellBtn.disabled = true;
-
-                    try {
-                        const response = await fetch('/api/system/update-check/force', {
-                            method: 'POST'
-                        });
-                        const data = await response.json();
-
-                        if (data.success) {
-                            this.updateInfo = data;
-                            if (data.updateAvailable) {
-                                this.updateAvailable = true;
-                                this.updateBellIcon();
-                                this.showUpdateModal();
-                            } else {
-                                this.showNotification('You have the latest version!', 'success');
-                            }
-                        } else {
-                            this.showNotification('Failed to check for updates', 'error');
-                        }
-                    } catch (error) {
-                        console.error('Update check failed:', error);
-                        this.showNotification('Update check failed', 'error');
-                    } finally {
-                        // Restore button if no update
-                        if (!this.updateAvailable) {
-                            bellBtn.innerHTML = originalContent;
-                        }
-                        bellBtn.disabled = false;
-                    }
-                }
-            });
-        }
-
-        // Logout Button
-        const logoutBtn = document.getElementById('header-logout-btn');
-        if (logoutBtn) {
-            logoutBtn.addEventListener('click', async (e) => {
-                e.preventDefault();
-                console.log('🚪 Logout requested');
-
-                // Show confirmation dialog
-                const confirmed = await this.showLogoutConfirmation();
-                if (!confirmed) {
-                    return;
-                }
-
-                // Show loading state
-                const originalContent = logoutBtn.innerHTML;
-                logoutBtn.innerHTML = '<span class="material-symbols-rounded text-sm animate-spin">refresh</span><span class="hidden sm:inline">Signing Out...</span>';
-                logoutBtn.disabled = true;
-
-                try {
-                    // Call logout API with timeout
-                    const controller = new AbortController();
-                    const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
-
-                    await fetch('/api/auth/logout', {
-                        method: 'POST',
-                        signal: controller.signal,
-                        headers: {
-                            'Authorization': `Bearer ${localStorage.getItem('lanstreamer_token')}`,
-                            'Content-Type': 'application/json'
-                        }
-                    });
-
-                    clearTimeout(timeoutId);
-                } catch (error) {
-                    console.log('Logout request failed:', error);
-                    // Continue with logout even if API fails
-                } finally {
-                    // Comprehensive token and session clearance
-                    this.clearAllAuthData();
-
-                    // Redirect to login page
-                    window.location.href = '/login.html';
-                }
-            });
-        }
-
+        // Notification bell is wired up by notifications.js (LSNotifications.bindBell)
         console.log('🎯 Header event listeners setup complete');
     }
 

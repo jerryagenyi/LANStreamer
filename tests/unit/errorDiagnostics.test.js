@@ -55,5 +55,37 @@ describe('errorDiagnostics', () => {
       expect(result).toBeDefined();
       expect(result.category).toBe('connection');
     });
+
+    it('returns device_not_found when stderr contains "could not find audio device" and context has deviceId', () => {
+      const stderr = 'Could not find audio device with name [OBS Virtual Camera (Audio)]';
+      const result = errorDiagnostics.diagnose(stderr, 1, { deviceId: 'OBS Virtual Camera (Audio)', deviceName: 'OBS Virtual Camera (Audio)' });
+      expect(result).toBeDefined();
+      expect(result.category).toBe('device_not_found');
+      expect(result.title).toBeDefined();
+      expect(result.solutions).toBeDefined();
+      expect(result.solutions.length).toBeGreaterThan(0);
+    });
+
+    // Regression: FFmpeg 9 device-open failures can exit with -5; the exit-code
+    // shortcut used to misclassify them as Icecast connection errors.
+    it('classifies FFmpeg 9 [in#0/dshow] open failure with exit -5 as a device error, not connection', () => {
+      const stderr = '[in#0/dshow @ 0000] Error opening input: Immediate exit requested\n[dshow @ 0000] Could not find device "OBS Virtual Camera (Audio)"';
+      const result = errorDiagnostics.diagnose(stderr, -5, { deviceId: 'OBS Virtual Camera (Audio)', deviceName: 'OBS Virtual Camera (Audio)', icecastPort: 8200 });
+      expect(result.category).not.toBe('connection');
+      expect(['device_not_found', 'device_busy', 'directshow']).toContain(result.category);
+      expect(result.title).toMatch(/device|audio source/i);
+    });
+
+    it('classifies "Error opening input" (no dshow tag) as device_not_found', () => {
+      const stderr = 'in#0/dshow: Error opening input: Immediate exit requested';
+      const result = errorDiagnostics.diagnose(stderr, 1, { deviceId: 'Mic', deviceName: 'Mic' });
+      expect(result.category).toBe('device_not_found');
+    });
+
+    it('still classifies genuine connection refusals with exit -5 as connection', () => {
+      const stderr = '[icecast @ 0000] Connection refused';
+      const result = errorDiagnostics.diagnose(stderr, -5, { deviceId: 'Mic', icecastPort: 8200 });
+      expect(result.category).toBe('connection');
+    });
   });
 });

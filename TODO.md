@@ -1,66 +1,49 @@
 # LANStreamer – TODO
 
-Context: [CLAUDE.md](CLAUDE.md), [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md). Delete when done.
+Context: [CLAUDE.md](CLAUDE.md), [docs/APP-FLOW.md](docs/APP-FLOW.md), [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md). Delete items when done.
 
 ---
 
 ## To do (priority order)
 
-- [ ] **Explore: Listener song requests** — Extend LANStreamer so anyone on the network (mobile or PC) can request to play a song from their device; admin grants the request and the song is listed on the listener page for others to hear. Support multiple user requests.
+- [x] **Latency management — SHIPPED (2026-10-30)** — MSE listener player (~0.5 s buffered-ahead vs ~2.3 s browser default), FFmpeg low-delay flags, proxy no-Nagle/flushHeaders, 16 KB icecast burst. Measured: `scripts/verify-latency.mjs`. Remaining nice-to-have: "latency tips" link on the dashboard pointing at the operator-side guidance (5 GHz, dedicated AP, QoS, wired operator); sub-second would need a WebSocket/WebRTC + Opus transport rewrite (deferred — see docs/LATENCY.md).
 
-- [ ] **Centralize notifications/alerts** — Control all notifications, alerts, and toasts from a single place so one change impacts everywhere (e.g. styling, z-index, behaviour). To be done on branch `fix/error-handling-refactor` or a new dedicated branch (e.g. `refactor/centralize-notifications`).
+- [ ] **Minimum PC specs + cross-OS test story** — README section: minimum requirements (x64, 4 GB RAM, Node 18+ for source runs, FFmpeg, Icecast; packaged app drops the Node requirement). Cross-OS testing: GitHub Actions windows/macos/ubuntu matrix runs the suite + `electron:smoke` online (Phase 4); locally, Playwright covers the web pages on all three OSes; no credible downloadable "test on every PC" tool exists beyond VMs + the CI matrix.
 
-- [ ] **Centralised theming (light/dark, themes)** — UI-UX v2 was implemented with many styles inline in `index.html` and `streams.html` (duplicated variables, hardcoded colours). Refactor to a single theme layer (e.g. shared CSS or design tokens) so themes and light/dark mode can be added without touching every component. Prefer one source of truth for colours, shadows, and glass tokens.
+- [ ] **UI redesign — dashboard deep pass** — Restyle remaining dashboard sections (Icecast panel, event/contact panels, header) to the broadcast language on tokens; a11y sweep (aria, focus rings, 44px targets).
 
-- [x] **Lock admin to localhost** — Admin UI only on localhost; listeners use LAN IP. Implemented: `requireLocalhostAdmin` middleware; listener page and APIs (config, status, play, contact-details) allowed from LAN; integration tests in `lock-admin-localhost.test.js`.
+- [ ] **Centralize notifications/alerts** — All toasts/modals from one module so styling + z-index + behaviour change in one place.
 
-- [x] **Verify 5+ streams** — Confirmed 6/6 live (VB-Cable A/B, mics). Root cause of "5th fails" was bad device choice, not Icecast limit.
+- [ ] **Internet broadcast tunnel (explore; only if feasible)** — Optional outbound-only tunnel so listeners outside the LAN can listen (e.g. self-hosted frp/ngrok-style relay on a VPS the operator controls). Must stay opt-in, off by default — LANStreamer's core is local, low-latency, private. Research latency + NAT constraints before committing.
 
-- [x] **Unique stream names** — No duplicate display names (create/update); case-insensitive, trimmed.
+- [ ] **Explore: Listener song requests** — Anyone on the network can request a song; admin grants; listed on listener page. (From PR #12.)
 
-- [x] **Start/Stop All button** — Start all stopped/error streams; Stop all running; API `POST /api/streams/start-all`; partial-failure toast with names + first error; 150ms delay between success/error toasts.
+- [ ] **Phase 2: cross-platform abstraction** — Device discovery per OS (dshow/avfoundation/pulse; StreamingService hardcodes dshow), config/logs in OS app-data dirs, retire .bat scripts.
 
-- [x] **Listener page uses LAN IP** — Copy URLs and listener page use `config.host` from getPreferredLANHost / icecast.xml. Docs: "Which IP is my LAN / WiFi?" in TROUBLESHOOTING.md.
+- [ ] **Phase 3: bundle binaries — NEARLY DONE (2026-10-30)** — vendor/ (gyan ESSENTIALS ffmpeg + Icecast kit, stock-parity per the §0.1 decision) + extraResources + data-dir runtime + first-run functional probe (BinaryProbeService) all live; `isIcecastRunning` now credential-verified (zombie-proof). Remaining: pin SHA256 checksums, official Icecast 2.5.0 kit download (2.4.4 EOL 2026-12-31; portable 2.5.0 already validated at ~/Tools/icecast-2.5.0), per-install admin values, GPL LICENSES files inside the installer, download-on-demand UI for probe failures.
 
-- [x] **Mobile** — Listener page, "Listen to Streams" header link, and Copy URL use correct LAN IP. HeaderComponent fetches config.host; TROUBLESHOOTING.md "Action Required: Mobile Listener Setup". _QA: Test with real device on same WiFi._
+- [ ] **Phase 4: test/CI** — Playwright `_electron` + listener-page web E2E + axe-core + GitHub Actions 3-OS matrix (use `npm run electron:smoke`); electron-updater replaces UpdateService/.bat at packaging. Add E2E regression: machine IP change must not break status polling (covered by localhost polls; test the contract).
 
-- [x] **Workflow/docs** — Branch workflow: feature → merge into dev locally → push dev → PR dev→main (remote only). Local branches: dev + features only; `main` deleted locally (remote-only). AGENTS.md removed; refs point to CLAUDE.md. PR #6 updated with lock-admin-localhost changes.
+- [ ] **Phase 6: packaging** — Windows NSIS/portable first; unsigned DMG later for savvy Mac users. Telemetry disclosure + LICENSES in installer. Telemetry key ships via `electron:build:win` (auto-injected from POSTHOG_KEY; also reads ~/.secrets/posthog on dev machines).
 
-- [x] **Notification types** — For duplicate stream name or duplicate source, use a simple modal ("stream already exists") without troubleshooting link; for real failures, existing error handling with diagnosis/link. Implemented in FFmpegStreamsManager: isDuplicateError(), showDuplicateModal(); used for start, restart, update, start-all.
+---
 
-- [x] **Source validation & clear errors** — On stream failure, backend errorDiagnostics provides category (device, connection, auth, etc.), title, solutions; API returns shortMessage; admin dashboard shows error + troubleshooting link. Optional "Test source" button deferred.
+## Done (2026-10-28 revival)
 
-- [x] **Timing of Modals** — Alert modals should appear only after the action is performed, not before. All success modals now have 1-second delay after UI updates.
-
-- [x] **Listener: dismiss without reload** — New-stream notification dismisses overlay without full reload (don't stop playback). Hot reload only for the affected stream. Implemented: `dismissNewStreamNotification()` calls `loadStreams()` to refresh without page reload.
-
-- [x] **Error alert UX** — Structured error from API (shortMessage = diagnosis title); admin dashboard shows centred toast with message + link to troubleshooting guide; Start All partial failure lists failed names (up to 5 + "and N more") and first error. Duplicate errors use simple modal without link.
-
-- [x] **Stability** — Confirm 3+ streams stay stable (see TROUBLESHOOTING.md). _CONFIRMED working._
-
-- [x] **Device change mid-stream / Play after edit** — Play proxy now checks Icecast response status; non-200 returns 502 with clear message so listener page no longer shows "Authentication Failed". Listener page shows "Stream not running. Start it on the dashboard, then try Play again." No refresh or delete/recreate needed. _See TROUBLESHOOTING.md §1c._
-
-- [x] **Stream labels (optional)** — Streams show S1, S2, S3 from server order; label in `getStats()` and on listener page / dashboard.
-
-- [x] **Sortable streams (optional)** — Up/down buttons on dashboard; `POST /api/streams/reorder`; order persisted in `config/streams.json` (`_order`); listener page uses same order and S1/S2/S3 labels without refresh.
-
-- [x] **Contact: WhatsApp** — Country code enforced (digits 10–15, no leading zero); validation backend + ContactManager; `wa.me/<digits>` built on listener page; placeholder "e.g. +44 7123 456789 (country code required)". Not working
-
-- [x] **Update notification UX** — Bell icon in header; auto-check on load (HeaderComponent.checkForUpdates); when updateAvailable=true bell shows badge and "Update Available"; click opens modal with update info and link to release. Single button id header-update-bell-btn; manual check on click when no update yet.
-
-- [x] **Event Details & Your Contact components** — Not working as they should; details not saving for contact, and the event details collapsible doesn't open after saving details.
-
-- [x] **UI/UX polish (optional)** — [docs/UI-UX-RECOMMENDATIONS.md](docs/UI-UX-RECOMMENDATIONS.md).
+- **Listener page redesigned** — broadcast rows + persistent mini-player (eq bars, both themes, a11y labels); theming foundation (tokens.css, dark/light toggle, pill buttons, logo variants).
+- **Stale-stream / can't-create-stream fixed** — starting a stream now auto-starts Icecast (was: wall-of-text "cannot connect" error). Troubleshooting doc updated.
+- **Doubled audio devices fixed** — FFmpeg 9 changed device-listing format (`[dshow @]`→`[in#0 @]`); parsers updated for both formats + PowerShell fallback output de-duplicated. (Note: `[^]]` regex classes mis-parse on this Node — always use `[^\]]`.)
+- **Add-stream modal decluttered** — Pro-Tip/Virtual-Audio notices moved behind an info icon popover (links to manual-setup docs); redundant "Maximum 50 characters" hints removed (counter exists).
+- **Delete-stream toast** — waits 900ms, verifies the stream is actually gone via status API, then shows `Stream "<name>" deleted`.
+- **Electron: external links** (e.g. "Listen to Streams") open in the system browser.
+- **Telemetry key for packaged builds** — `electron:build:win` injects POSTHOG_KEY from the build environment into the app (scripts/prepare-telemetry-key.mjs); resolution order env → config/telemetry.json → bundled.
+- Reconciled dev/main; merged error-handling branch (68/68 tests); branch cleanup (local = dev only).
+- Dead code removed (SystemService, WebSocketService, FFmpegService); offline UI (vendored Tailwind + fonts, CSP 'self').
+- Phase 1 Electron wrapper (tray, Stop All & Quit, tree-kill, --smoke); stale-hostname bug fixed (localhost polls + hostname auto-sync); log spam fixed; dismissible notices; SVG logo set; env.example; repo cleanup; docs index.
 
 ---
 
 ## Reference
 
-- Run `npm test` before releases; [STARTUP-SEQUENCE.md](docs/STARTUP-SEQUENCE.md) for troubleshooting.
-- **Future refactor:** ErrorFactory consistency, remove/trim FFmpegService.js, device mapping extraction, split large HTML/JS — see inline notes in codebase.
-
----
-
-## Earlier (historical)
-
-Notification timing, LANStreamer.bat updater, Claude hooks, custom-instructions, capacity NaN fix, config capacity fields, shortMessage + troubleshooting link.
+- Run `npm test` before releases; `npm run build:css` after changing Tailwind classes.
+- Versions (2026-10): FFmpeg 9.0.2 latest (app runs on 8.x, fine); Icecast 2.5.0 latest — **2.4.4 EOL 2026-12-31**.

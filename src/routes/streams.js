@@ -3,8 +3,29 @@ import http from 'http';
 import streamingService from '../services/StreamingService.js';
 import IcecastService from '../services/IcecastService.js';
 import logger from '../utils/logger.js';
+import { ErrorCodes } from '../utils/errors.js';
 
 const router = express.Router();
+
+/**
+ * Build structured stream error payload for start/restart failures.
+ * @param {Error} error - Caught error (may have cause, diagnosis, capacity, shortMessage, stderrSnippet)
+ * @param {string} message - Generic message e.g. "Error starting stream"
+ * @param {string} code - ErrorCodes.STREAM_START_FAILED or STREAM_RESTART_FAILED
+ * @returns {Object} Payload for res.status(500).json()
+ */
+function streamErrorPayload(error, message, code) {
+  const payload = {
+    message,
+    error: error.shortMessage || error.message,
+    code
+  };
+  if (error.cause) payload.cause = error.cause;
+  if (error.diagnosis) payload.diagnosis = error.diagnosis;
+  if (error.capacity) payload.capacity = error.capacity;
+  if (error.stderrSnippet) payload.stderrSnippet = error.stderrSnippet;
+  return payload;
+}
 
 /**
  * @route POST /api/streams/start
@@ -26,9 +47,23 @@ router.post('/start', async (req, res) => {
     });
   } catch (error) {
     logger.error('Error starting stream:', { error: error.message, stack: error.stack });
-    const payload = { message: 'Error starting stream', error: error.shortMessage || error.message };
-    if (error.capacity) payload.capacity = error.capacity;
-    res.status(500).json(payload);
+    logger.info('Stream start failed', { cause: error.cause, streamId: req.body?.id || req.body?.streamId });
+    res.status(500).json(streamErrorPayload(error, 'Error starting stream', ErrorCodes.STREAM_START_FAILED));
+  }
+});
+
+/**
+ * @route POST /api/streams/create
+ * @description Create a stream configuration without starting it (drawer "Save").
+ * @access Public
+ */
+router.post('/create', async (req, res) => {
+  try {
+    const stream = await streamingService.createStoppedStream(req.body || {});
+    res.status(200).json({ message: 'Stream created (stopped)', streamId: stream.id, stream });
+  } catch (error) {
+    logger.error('Error creating stream:', { error: error.message });
+    res.status(400).json({ message: 'Error creating stream', error: error.message });
   }
 });
 
@@ -84,23 +119,24 @@ router.post('/start-all', async (req, res) => {
  * @access Public
  */
 router.post('/restart', async (req, res) => {
+  let id; // declared OUTSIDE try: the catch logs it, and a ReferenceError inside
+          // catch would hang the response forever (unhandledRejection in express 4)
   try {
-    const { id } = req.body;
+    id = req.body?.id;
     logger.info('Received stream restart request:', { streamId: id });
-    
+
     const result = await streamingService.restartStream(id);
     logger.info('Stream restarted successfully:', { streamId: id });
-    
-    res.status(200).json({ 
-      message: 'Stream restarted successfully', 
+
+    res.status(200).json({
+      message: 'Stream restarted successfully',
       streamId: id,
       result: result
     });
   } catch (error) {
     logger.error('Error restarting stream:', { error: error.message, stack: error.stack });
-    const payload = { message: 'Error restarting stream', error: error.shortMessage || error.message };
-    if (error.capacity) payload.capacity = error.capacity;
-    res.status(500).json(payload);
+    logger.info('Stream restart failed', { cause: error.cause, streamId: id });
+    res.status(500).json(streamErrorPayload(error, 'Error restarting stream', ErrorCodes.STREAM_RESTART_FAILED));
   }
 });
 
@@ -135,7 +171,14 @@ router.get('/play/:streamId', (req, res) => {
       return;
     }
     const contentType = upstream.headers['content-type'] || 'audio/mpeg';
+    // Low-latency pass-through: flush headers immediately (no Node output
+    // buffering), disable Nagle so small MP3 frames leave at once (Nagle adds
+    // 40-200ms per frame), and forbid caches from holding the stream. Every
+    // byte is forwarded the moment it arrives.
     res.setHeader('Content-Type', contentType);
+    res.setHeader('Cache-Control', 'no-store');
+    res.flushHeaders();
+    if (typeof res.socket?.setNoDelay === 'function') res.socket.setNoDelay(true);
     upstream.pipe(res);
   });
   clientRequest.on('timeout', () => {

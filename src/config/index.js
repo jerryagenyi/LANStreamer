@@ -16,6 +16,8 @@
 import dotenv from 'dotenv'
 import path from 'path'
 import fs from 'fs'
+import { dataDir } from '../utils/vendorPaths.js'
+import { loadSecurityFile } from '../utils/securityStore.js'
 
 // Load environment variables (only for non-Icecast configs)
 dotenv.config()
@@ -26,7 +28,7 @@ dotenv.config()
  */
 function getIcecastPortFromDeviceConfig() {
   try {
-    const deviceConfigPath = path.join(process.cwd(), 'config', 'device-config.json')
+    const deviceConfigPath = path.join(dataDir(), 'device-config.json')
     if (fs.existsSync(deviceConfigPath)) {
       const deviceConfig = JSON.parse(fs.readFileSync(deviceConfigPath, 'utf8'))
       if (deviceConfig.port) {
@@ -52,8 +54,10 @@ const config = {
   // Security Configuration
   security: {
     jwtSecret: process.env.JWT_SECRET || 'default-secret-change-in-production',
-    jwtExpiresIn: process.env.JWT_EXPIRES_IN || '24h',
-    adminPassword: process.env.ADMIN_PASSWORD || 'admin123',
+    jwtExpiresIn: process.env.JWT_EXPIRES_IN || '7d',
+    // Single source of truth for admin credentials (README documents these).
+    adminUsername: process.env.ADMIN_USERNAME || 'admin',
+    adminPassword: process.env.ADMIN_PASSWORD || 'lanstreamer123',
     sessionSecret: process.env.SESSION_SECRET || 'session-secret',
     enableHelmet: process.env.ENABLE_HELMET === 'true',
     enableCompression: process.env.ENABLE_COMPRESSION === 'true'
@@ -142,6 +146,15 @@ const config = {
     path: process.env.BACKUP_PATH || './backups'
   }
 }
+
+// In-app admin credentials (dashboard → Admin account) persist to the data dir
+// and take precedence over env/defaults once set — an explicit in-app change
+// must win, and packaged installs have no .env to edit anyway. The password
+// lives only as a scrypt hash; when present it replaces plaintext comparison.
+const persistedSecurity = loadSecurityFile();
+if (persistedSecurity.adminUsername) config.security.adminUsername = persistedSecurity.adminUsername;
+if (persistedSecurity.adminPasswordHash) config.security.adminPasswordHash = persistedSecurity.adminPasswordHash;
+if (persistedSecurity.jwtSecret) config.security.jwtSecret = persistedSecurity.jwtSecret;
 
 // Validate required configuration
 const validateConfig = () => {

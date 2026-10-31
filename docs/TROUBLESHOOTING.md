@@ -13,6 +13,29 @@ Common issues and solutions for LANStreamer.
 
 ---
 
+## Stale streams after tool upgrades or network changes
+
+**Symptom:** a stream that worked before won't start; the dashboard shows a red "Cannot connect to Icecast" error; creating a new stream also fails.
+
+**Cause:** Icecast isn't running (common after upgrading/moving the Icecast install, a reboot, or a network change). Streams need a live Icecast to push into.
+
+**Fix (automatic since 2026-10-28):** starting a stream now **auto-starts Icecast** if it is installed and not running — normally you never see this. If it still fails:
+
+1. Check the Icecast panel on the dashboard — does the path/version look right? After moving or upgrading Icecast, click **Search Installations** (or delete `config/device-config.json` and restart) so the app re-detects it.
+2. Networks that use DHCP change the machine's IP; LANStreamer polls Icecast over `localhost` (immune to IP changes) and auto-syncs the hostname in `icecast.xml`. No manual step needed.
+
+**Do you need to delete and recreate the stream?** No — streams persist their device + settings and start fine once Icecast is reachable. Only recreate if the audio device itself no longer exists.
+
+## Audio devices listed twice (or missing) after a FFmpeg upgrade
+
+**Symptom:** every device appears twice in the dropdown, or only odd "ps-*" devices appear.
+
+**Cause:** FFmpeg 9 changed its device-listing output format (`[dshow @ …]` became `[in#0 @ …]`), which older LANStreamer versions could not parse — they fell back to PowerShell discovery, which lists each device as both input and output.
+
+**Fix (automatic since 2026-10-28):** the parsers accept both formats and results are de-duplicated. Click **Refresh Devices** once after upgrading FFmpeg. If duplicates persist, restart the server.
+
+---
+
 ## Admin only on localhost
 
 Admin (login, dashboard, stream management) is **only available from this computer** (localhost).
@@ -499,7 +522,7 @@ When troubleshooting, check these in order:
 
 ## Still Having Issues?
 
-1. Check the [System Architecture Documentation](LANSTREAMER_SYSTEM_ARCHITECTURE.md) for detailed technical information
+1. Check the [developer guide](README-DEVELOPERS.md) for architecture notes and the diagnostic script inventory
 2. Review [Network Setup Guide](NETWORK-SETUP.md) for network configuration
 3. Check [Installation Guides](guides/README.md) for component setup
 4. Create an issue on GitHub with:

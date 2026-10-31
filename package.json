@@ -10,8 +10,44 @@
     "dev:simple": "nodemon src/server.js",
     "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
     "test:coverage": "node --experimental-vm-modules node_modules/jest/bin/jest.js --coverage",
+    "build:css": "tailwindcss -i src/tailwind.css -o public/assets/vendor/tailwind.css --minify",
+    "vendor:fonts": "node scripts/vendor-fonts.mjs",
+    "electron:dev": "electron electron/main.js",
+    "electron:smoke": "electron electron/main.js --smoke",
+    "electron:build:win": "node scripts/fetch-vendor-binaries.mjs && node scripts/prepare-telemetry-key.mjs && electron-builder --win nsis portable",
     "setup": "node scripts/setup.js",
     "screenshots": "node scripts/generate-screenshots.js"
+  },
+  "build": {
+    "appId": "com.lanstreamer.app",
+    "productName": "LANStreamer",
+    "main": "electron/main.js",
+    "files": [
+      "electron/**",
+      "src/**",
+      "public/**",
+      "package.json",
+      "README.md"
+    ],
+    "extraResources": [
+      {
+        "from": "vendor",
+        "to": "vendor"
+      }
+    ],
+    "electronLanguages": [
+      "en-US"
+    ],
+    "directories": {
+      "output": "release"
+    },
+    "win": {
+      "icon": "electron/icon.ico"
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false
+    }
   },
   "keywords": [
     "streaming",
@@ -28,16 +64,22 @@
     "jsonwebtoken": "^9.0.2",
     "multer": "^2.0.2",
     "node-fetch": "^3.3.2",
+    "posthog-node": "^5.56.4",
+    "qrcode": "^1.5.4",
     "winston": "^3.17.0",
     "winston-daily-rotate-file": "^5.0.0",
     "xml2js": "^0.6.2"
   },
   "devDependencies": {
+    "@tailwindcss/container-queries": "^0.1.1",
+    "@tailwindcss/forms": "^0.5.11",
     "@types/jest": "^30.0.0",
-    "browser-sync": "^3.0.4",
+    "electron": "^45.0.0",
+    "electron-builder": "^26.18.0",
     "jest": "^30.2.0",
     "nodemon": "^2.0.0",
     "puppeteer": "^24.0.0",
-    "supertest": "^7.2.2"
+    "supertest": "^7.2.2",
+    "tailwindcss": "^3.4.19"
   }
 }
