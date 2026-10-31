@@ -898,6 +898,31 @@ class StreamingService {
     try {
       logger.info(`Restarting stream: ${streamId}`)
 
+      // STOP-FIRST: if this stream is still running (bitrate edit on a live
+      // stream, or restarting a healthy one), kill the old FFmpeg and wait
+      // for the capture device to be released BEFORE spawning the new one.
+      // Without this the new spawn races the old process for the exclusive
+      // dshow device and fails with a misleading "input in use elsewhere"
+      // error (which the old Retry path never hit — its process was dead).
+      if (stream.ffmpegProcess && stream.ffmpegProcess.exitCode === null) {
+        logger.info(`restartStream: stopping old FFmpeg for ${streamId} first (device handoff)`)
+        stream.intentionallyStopped = true // exit handler must not mark an error
+        await new Promise((resolve) => {
+          const pid = stream.ffmpegProcess.pid
+          if (process.platform === 'win32' && pid) {
+            exec(`taskkill /PID ${pid} /T /F`, { windowsHide: true }, () => {
+              // small grace for dshow graph teardown before the new open
+              setTimeout(resolve, 700)
+            })
+          } else {
+            try { stream.ffmpegProcess.kill('SIGTERM') } catch (e) { /* already gone */ }
+            setTimeout(resolve, 1500)
+          }
+        })
+        stream.ffmpegProcess = null
+        stream.status = 'stopped'
+      }
+
       // Icecast dependency: restarts power the boot autostart and the Retry
       // button — without this check both fail with "connection refused" when
       // icecast hasn't been started yet (fresh boot, or it crashed).
@@ -951,6 +976,7 @@ class StreamingService {
       // on a running row reads as "it failed" and confuses operators.
       stream.error = undefined
       stream.errorShort = undefined
+      stream.intentionallyStopped = false // a real crash from here on IS an error
 
       // Save to persistent storage
       this.savePersistentStreams()

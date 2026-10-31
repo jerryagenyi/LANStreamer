@@ -125,6 +125,7 @@ Using your **own Icecast install** instead of the bundled one? That install is o
 | "No audio devices detected" | Ensure device is connected and not in use by another app |
 | "Stream format not supported" | See [Stream Playback Issues](docs/TROUBLESHOOTING.md#stream-playback-issues) |
 | Link/QR stopped working after moving networks | The share card always shows the PC's **current** network address — re-share the link/QR after the network changes; old links point at the old address |
+| Audio reaches listeners ~1–1.5 s after the room | Normal — the low-latency player holds a small buffer that also absorbs Icecast's ½-second delivery rhythm; how it works and how to tune it: [docs/LATENCY.md](docs/LATENCY.md) |
 
 > **📖 In-app guide:** LANStreamer ships with a built-in troubleshooting page at `http://localhost:3001/docs` — open it from any browser on the operator PC. For the full guide see [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) (subnet issues, firewall configuration, network diagnostics).
 
