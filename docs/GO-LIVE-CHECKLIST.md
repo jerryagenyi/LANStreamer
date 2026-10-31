@@ -1,6 +1,6 @@
 # 🚀 Go-Live Checklist — before bundling & shipping LANStreamer
 
-Working document for the first packaged release of the **Electron desktop app**. Current version: `1.2.4` (package.json) — target for the next release: **1.3.0**. Work through every section; tick items only with evidence (test run, screenshot, command output).
+Working document for the first packaged release of the **Electron desktop app**. Version: **2.0.0** (bumped in package.json 2026-10-31 — Jerry's call: the redesign + desktop-app transformation is a MAJOR release; the old `1.2.4 → 1.3.0` minor target is superseded). Work through every section; tick items only with evidence (test run, screenshot, command output).
 
 > Run the automated suite first — it clears most regressions in minutes:
 > `npm test` → then `npm run electron:smoke` → then the verify scripts in [README-DEVELOPERS.md](./README-DEVELOPERS.md) against a fresh server.
@@ -102,16 +102,16 @@ The installer carries everything: `electron:build:win` auto-runs `fetch-vendor-b
 
 ## 7. Release: version, tag, notes on GitHub
 
-- [ ] Bump `version` in **package.json** (`1.2.4` → `1.3.0` — new features, no breaking change) and rebuild so the installer embeds it
-- [ ] Move `[Unreleased]` in [CHANGELOG.md](./CHANGELOG.md) to `## [1.3.0] - <date>`; write the user-facing highlights (Electron app, admin login, redesign, listener page, telemetry opt-in, default event banner)
+- [ ] Bump `version` in **package.json** (already bumped to 2.0.0 — verify the installer filename says 2.0.0)
+- [ ] Move `[Unreleased]` in [CHANGELOG.md](./CHANGELOG.md) to `## [2.0.0] - <date>`; write the user-facing highlights (Electron app, admin login, redesign, listener page, telemetry opt-in, default event banner)
 - [ ] Update README if anything user-facing changed (credentials section, download link once releases exist)
 - [ ] Merge `dev` → `main` via PR (never push straight to main); CI green on the PR
-- [ ] Tag and push: `git tag v1.3.0 && git push origin v1.3.0`
+- [ ] Tag and push: `git tag v2.0.0 && git push origin v2.0.0`
 - [ ] Create the GitHub release with the installers attached and real release notes:
   ```bash
-  gh release create v1.3.0 release/*.exe release/*.yml SHA256SUMS.txt \
-    --title "LANStreamer v1.3.0 — desktop app" \
-    --notes-file release-notes-v1.3.0.md
+  gh release create v2.0.0 release/*.exe release/*.yml SHA256SUMS.txt \
+    --title "LANStreamer v2.0.0 — desktop app" \
+    --notes-file release-notes-v2.0.0.md
   ```
 - [ ] Generate and attach **SHA256SUMS.txt** for all release artifacts (partial SmartScreen mitigation for an unsigned installer)
 - [ ] Release notes template (user-facing, non-technical): **What's new** (5–8 bullets) · **Installing** (nothing to pre-install — FFmpeg + Icecast come bundled; SmartScreen note) · **Upgrading from a source/ZIP install** · **Known issues** · **Telemetry disclosure** (opt-in, what's collected, how to decline; Decline must persist across app updates) · **Licenses** (bundled FFmpeg/Icecast are GPL — offer in notes, texts inside the installer)
