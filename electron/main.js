@@ -79,8 +79,13 @@ function treeKill(pid) {
 function sweepOrphanChildren() {
   if (process.platform !== 'win32') return 0;
   try {
+    // No nested double quotes: cmd.exe strips the outer pair, and an inner
+    // pair would terminate the -Command string early (the smoke run hit
+    // "positional parameter cannot be found that accepts argument 'or'").
+    // Single quotes only inside; filter via Where-Object instead of -Filter.
     const out = execSync(
-      `powershell -NoProfile -Command "Get-CimInstance Win32_Process -Filter "name='ffmpeg.exe' or name='icecast.exe'" | ` +
+      `powershell -NoProfile -Command "Get-CimInstance Win32_Process | ` +
+      `Where-Object { $_.Name -eq 'ffmpeg.exe' -or $_.Name -eq 'icecast.exe' } | ` +
       `Where-Object { $_.ExecutablePath -like '*LANStreamer*vendor*' } | ` +
       `ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue; $_.ProcessId }"`,
       { encoding: 'utf8', windowsHide: true, timeout: 15000 }
@@ -112,7 +117,11 @@ async function shutdownBackend() {
   }
   if (icecastService.process?.pid && !icecastService.process.killed) {
     try { await icecastService.stop(false); } catch { /* ignore */ }
-    if (!icecastService.process.killed) treeKill(icecastService.process.pid);
+    // stop() NULLS the process reference on success — re-read defensively
+    // (a bare .killed here crashed the smoke shutdown: "reading 'killed' of null")
+    if (icecastService.process?.pid && !icecastService.process.killed) {
+      treeKill(icecastService.process.pid);
+    }
   }
 
   if (serverHandle) {
@@ -337,7 +346,7 @@ if (!gotLock) {
         console.log('SMOKE_OK');
         setTimeout(() => {
           isQuitting = true;
-          shutdownBackend().finally(() => app.exit(0));
+          shutdownBackend().catch(err => console.error('[electron] smoke shutdown error:', err.message)).finally(() => app.exit(0));
         }, 1500);
       });
     }
@@ -350,20 +359,24 @@ if (!gotLock) {
     if (!isQuitting) {
       e.preventDefault();
       isQuitting = true;
-      shutdownBackend().finally(() => app.quit());
+      shutdownBackend().catch(err => console.error('[electron] shutdown error:', err.message)).finally(() => app.quit());
     }
   });
 
   // One policy for the unexpected in a packaged app (no console to see it in):
   // surface it, then take the ordered shutdown path instead of orphaning children.
-  process.on('uncaughtException', (err) => {
-    console.error('[electron] uncaught exception:', err);
+  const crashPolicy = (label) => (err) => {
+    console.error(`[electron] ${label}:`, err);
     try {
-      dialog.showErrorBox('LANStreamer', `An unexpected error occurred:\n\n${err && err.message}\n\nThe app will now shut down.`);
+      dialog.showErrorBox('LANStreamer', `An unexpected error occurred:\n\n${err && (err.stack || err.message)}\n\nThe app will now shut down.`);
     } catch { /* dialogs can fail headless */ }
     isQuitting = true;
-    shutdownBackend().finally(() => app.exit(1));
-  });
+    shutdownBackend().catch(() => {}).finally(() => app.exit(1));
+  };
+  process.on('uncaughtException', crashPolicy('uncaught exception'));
+  // The smoke run surfaced this class separately: async failures reject, they
+  // don't throw — without this handler they surface only as console noise.
+  process.on('unhandledRejection', crashPolicy('unhandled rejection'));
 }
 
 /**
