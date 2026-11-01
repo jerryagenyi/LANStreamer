@@ -1,4 +1,4 @@
-import { app, BrowserWindow, Tray, Menu, nativeImage, dialog, shell, powerSaveBlocker, powerMonitor } from 'electron';
+import { app, BrowserWindow, Tray, Menu, nativeImage, dialog, shell, powerSaveBlocker, powerMonitor, ipcMain } from 'electron';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { spawn, execSync } from 'child_process';
@@ -158,6 +158,7 @@ function createWindow() {
     webPreferences: {
       contextIsolation: true,
       nodeIntegration: false,
+      preload: path.join(__dirname, 'preload.js'), // window.LSApp — minimize/shutdown bridge
     },
   });
 
@@ -246,6 +247,55 @@ async function createTray() {
   tray.setContextMenu(menu);
   tray.on('double-click', () => { if (mainWindow) mainWindow.show(); });
 }
+
+// ---------------------------------------------------------------------------
+// App control from the dashboard header (window.LSApp via preload.js)
+// ---------------------------------------------------------------------------
+
+ipcMain.on('ls:minimize', () => {
+  if (!mainWindow || isQuitting) return;
+  mainWindow.hide();
+  // Windows balloon: self-expiring toast from the tray — tells the operator
+  // the app is alive in the tray and listeners keep their audio.
+  try {
+    if (tray && typeof tray.displayBalloon === 'function') {
+      tray.displayBalloon({
+        iconType: 'info',
+        title: 'LANStreamer is still running',
+        content: 'It lives in the tray now — streams keep playing for your listeners. Double-click the tray icon to reopen the dashboard.'
+      });
+    }
+  } catch { /* balloons are best-effort (older Windows may suppress them) */ }
+});
+
+ipcMain.on('ls:shutdown', async () => {
+  if (!mainWindow || isQuitting) return;
+  // cheap read: any live stream means listeners lose audio on shutdown
+  // (dynamic import — module already loaded in-process, resolves instantly)
+  let running = false;
+  try {
+    const streamingService = (await import('../src/services/StreamingService.js')).default;
+    running = Object.values(streamingService.activeStreams || {}).some(s => s.status === 'running');
+  } catch { /* default to the calmer wording */ }
+
+  const { response } = await dialog.showMessageBox(mainWindow, {
+    type: 'warning',
+    title: 'Shut down LANStreamer?',
+    message: 'Shut down LANStreamer?',
+    detail: running
+      ? 'Streams are LIVE — shutting down stops them all and every listener loses audio. The dashboard, streams and Icecast all close.'
+      : 'The dashboard, streams and Icecast all close. (No streams are live right now.)',
+    buttons: ['Cancel', 'Shut down'],
+    defaultId: 0,
+    cancelId: 0,
+    noLink: true,
+  });
+  if (response !== 1) return;
+
+  isQuitting = true;
+  await shutdownBackend().catch(err => console.error('[electron] shutdown error:', err.message));
+  app.quit();
+});
 
 /**
  * First-run telemetry NOTICE (owner decision 2026-11-01: opt-out — telemetry

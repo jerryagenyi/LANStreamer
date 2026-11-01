@@ -114,18 +114,34 @@ class HeaderComponent {
                         <span class="material-symbols-rounded text-sm">light_mode</span>
                     </button>
 
-                    <!-- Sign out of the admin dashboard — always the last control -->
+                    <!-- App controls (only exist inside the desktop app — a plain
+                         browser tab has no window.LSApp and hides both) -->
                     <button type="button"
-                            class="theme-toggle"
-                            title="Sign out"
-                            aria-label="Sign out"
-                            onclick="window.LSAdminAuth && window.LSAdminAuth.logout()">
-                        <span class="material-symbols-rounded text-sm">logout</span>
+                            class="theme-toggle ${window.LSApp ? '' : 'hidden'}"
+                            id="header-minimize"
+                            title="Minimize to tray — streams keep running"
+                            aria-label="Minimize to tray (streams keep running)">
+                        <span class="material-symbols-rounded text-sm">minimize</span>
+                    </button>
+
+                    <!-- Shut down the whole app — always the LAST control -->
+                    <button type="button"
+                            class="theme-toggle ${window.LSApp ? '' : 'hidden'}"
+                            id="header-exit"
+                            title="Shut down LANStreamer (stops all streams)"
+                            aria-label="Shut down LANStreamer (stops all streams)">
+                        <span class="material-symbols-rounded text-sm" style="color:var(--tok-danger);">power_settings_new</span>
                     </button>
                     </div>
                 </div>
             </header>
         `;
+
+        // App controls (desktop app only — window.LSApp comes from the preload)
+        const minBtn = container.querySelector('#header-minimize');
+        if (minBtn && window.LSApp) minBtn.addEventListener('click', () => window.LSApp.minimize());
+        const exitBtn = container.querySelector('#header-exit');
+        if (exitBtn && window.LSApp) exitBtn.addEventListener('click', () => window.LSApp.shutdown());
 
         console.log('🎯 Header rendered successfully');
     }
