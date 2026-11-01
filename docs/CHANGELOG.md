@@ -5,9 +5,9 @@ All notable changes to LANStreamer will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased] — development on `dev` branch (target: next packaged release)
+## [2.0.0] — 2026-11-01 (first packaged release)
 
-Everything below is shipped in the working tree but **not yet bundled into an installer** — the app currently runs from source (`npm run electron:dev`). Release process: see [GO-LIVE-CHECKLIST.md](./GO-LIVE-CHECKLIST.md).
+Everything below ships in the Windows installer and standalone builds. For the release process, see [GO-LIVE-CHECKLIST.md](./GO-LIVE-CHECKLIST.md).
 
 ### Added — the Electron desktop app
 - Full Electron shell: dashboard window, tray icon (hide-to-tray, Stop All & Quit), single-instance lock, first-run telemetry notice (ON by default, one-click off), graceful shutdown that stops streams + Icecast
@@ -22,8 +22,7 @@ Everything below is shipped in the working tree but **not yet bundled into an in
 - Process management hardened: Windows process-tree kills in the right order (no more orphaned FFmpeg holding audio devices), icecast self-healing on stream start/restart, stale LAN IP detection when the network changes
 - **Low-latency playback (2026-10-30):** listener audio delay cut from a reported 4–5 s to ~1 s class — MSE-based player keeps ~0.5 s buffered ahead (vs ~2.3 s browser default, measured) and snaps back to the live edge after WiFi jitter or pauses; FFmpeg capture runs with low-delay flags (`nobuffer`, `low_delay`, `probesize 32k`, `analyzeduration 0`, `flush_packets 1`); the play proxy disables Nagle and flushes headers; bundled Icecast uses a 16 KB join burst. Safari/iOS automatically use the classic direct-stream path
 
-### Known gaps before first packaged release
-- No downloadable installer yet (NSIS packaging is wired and bundles FFmpeg + Icecast: `npm run electron:build:win`) — see the go-live checklist
+### Known gaps
 - macOS/Linux support is source-only
 
 ---
