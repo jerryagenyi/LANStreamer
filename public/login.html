@@ -69,6 +69,18 @@
                 <input id="login-password" class="login-field" type="password" autocomplete="current-password"
                        placeholder="••••••••" required>
             </label>
+
+            <div style="display:flex;align-items:center;justify-content:space-between;">
+                <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+                    <input id="login-remember" type="checkbox" checked style="width:15px;height:15px;accent-color:var(--tok-accent);cursor:pointer;">
+                    <span class="tok-label">Remember me on this PC</span>
+                </label>
+                <button type="button" id="login-forgot-link" class="tok-label"
+                        style="background:none;border:none;cursor:pointer;text-decoration:underline;padding:0;color:var(--tok-accent);">
+                    Forgot password?
+                </button>
+            </div>
+
             <div id="login-error" role="alert"></div>
             <button id="login-submit" type="submit" class="btn btn-primary" style="width:100%;padding:11px 16px;">
                 Sign in
@@ -83,13 +95,13 @@
             Default credentials are listed in the project README (README → “Admin access”).
         </p>
         <details id="login-forgot" style="margin-top:10px;">
-            <summary class="tok-label" style="cursor:pointer;text-align:center;">Forgot your password?</summary>
+            <summary class="tok-label" style="cursor:pointer;text-align:center;display:none;">Forgot your password?</summary>
             <p class="tok-label" style="margin-top:8px;line-height:1.55;">
                 On this PC, delete the admin login file and restart LANStreamer — the default
                 login returns, and you can set a new one from the dashboard (Admin account).
                 This page only opens on the operator's PC, which is why the path is safe to show.<br>
                 Installed app: <code>%APPDATA%\LANStreamer\security.json</code><br>
-                Running from source: <code>config\security.json</code>
+                Standalone / running from source: <code>config\security.json</code>
             </p>
         </details>
     </main>
@@ -100,13 +112,19 @@
             const errBox = document.getElementById('login-error');
             const submit = document.getElementById('login-submit');
 
-            // Already signed in? Straight to the dashboard.
-            const existing = localStorage.getItem('lsAdminToken');
+            // Already signed in? Straight to the dashboard. (Token may live in
+            // localStorage — "Remember me" — or sessionStorage — this window only.)
+            const existing = localStorage.getItem('lsAdminToken') || sessionStorage.getItem('lsAdminToken');
             if (existing) {
                 fetch('/api/auth/verify', { headers: { Authorization: 'Bearer ' + existing } })
                     .then(r => { if (r.ok) window.location.href = '/dashboard'; })
                     .catch(() => {});
             }
+
+            // Forgot-password link opens the recovery details (kept as <details>
+            // so the failed-login auto-open below still works)
+            const forgotLink = document.getElementById('login-forgot-link');
+            if (forgotLink) forgotLink.addEventListener('click', () => { forgot.open = true; });
 
             // Cognitive-walkthrough fixes (2026-10-30):
             //  1. A packaged-app operator has no README open when the login
@@ -130,18 +148,21 @@
                 submit.disabled = true;
                 submit.textContent = 'Signing in…';
                 try {
+                    const remember = document.getElementById('login-remember')?.checked !== false;
                     const res = await fetch('/api/auth/login', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
                             username: document.getElementById('login-username').value.trim(),
-                            password: document.getElementById('login-password').value
+                            password: document.getElementById('login-password').value,
+                            remember
                         }),
                         signal: AbortSignal.timeout(10000)
                     });
                     const data = await res.json().catch(() => ({}));
                     if (res.ok && data.token) {
-                        localStorage.setItem('lsAdminToken', data.token);
+                        try { localStorage.removeItem('lsAdminToken'); sessionStorage.removeItem('lsAdminToken'); } catch { }
+                        (remember ? localStorage : sessionStorage).setItem('lsAdminToken', data.token);
                         window.location.href = '/dashboard';
                         return;
                     }

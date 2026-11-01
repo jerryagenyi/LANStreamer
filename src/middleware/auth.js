@@ -57,11 +57,11 @@ export const optionalAuth = (req, res, next) => {
 /**
  * Generate JWT token for authenticated user
  */
-export const generateToken = (username) => {
+export const generateToken = (username, { expiresIn } = {}) => {
     return jwt.sign(
         { username, type: 'admin' },
         config.security.jwtSecret,
-        { expiresIn: config.security.jwtExpiresIn }
+        { expiresIn: expiresIn || config.security.jwtExpiresIn }
     );
 };
 

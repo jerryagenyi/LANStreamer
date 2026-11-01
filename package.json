@@ -43,6 +43,9 @@
     "win": {
       "icon": "electron/icon.ico"
     },
+    "portable": {
+      "artifactName": "LANStreamer Standalone ${version}.${ext}"
+    },
     "nsis": {
       "oneClick": true,
       "perMachine": false

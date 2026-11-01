@@ -64,11 +64,14 @@ router.post('/login', loginThrottle, async (req, res) => {
         // Verify credentials
         if (verifyCredentials(username, password)) {
             recordLoginResult(req, username, true);
-            const token = generateToken(username);
+            // "Remember me": 30-day token vs 1-day (login form default = on)
+            const remember = req.body?.remember !== false;
+            const token = generateToken(username, { expiresIn: remember ? '30d' : '1d' });
 
             res.json({
                 message: 'Login successful',
                 token,
+                remember,
                 user: { username }
             });
         } else {

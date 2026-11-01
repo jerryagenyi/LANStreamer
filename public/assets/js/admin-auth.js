@@ -4,10 +4,21 @@
  * Loaded FIRST on /dashboard: patches window.fetch so every same-origin /api
  * call (except /api/auth/login) carries the saved Bearer token — components
  * never need to know auth exists. A 401/403 from any call bounces to /login.
+ *
+ * Token storage honours the login form's "Remember me":
+ *   remembered  → localStorage (survives app restarts; 30-day JWT)
+ *   not checked → sessionStorage (dies with the window; 1-day JWT)
  */
 (function () {
   const TOKEN_KEY = 'lsAdminToken';
-  const getToken = () => { try { return localStorage.getItem(TOKEN_KEY); } catch { return null; } };
+  const getToken = () => {
+    try {
+      return localStorage.getItem(TOKEN_KEY) || sessionStorage.getItem(TOKEN_KEY);
+    } catch { return null; }
+  };
+  const clearToken = () => {
+    try { localStorage.removeItem(TOKEN_KEY); sessionStorage.removeItem(TOKEN_KEY); } catch { }
+  };
 
   const nativeFetch = window.fetch.bind(window);
   window.fetch = function (input, init) {
@@ -35,7 +46,7 @@
             const refreshedElsewhere = attachedAuth && stored && ('Bearer ' + stored) !== attachedAuth;
             if (!refreshedElsewhere) {
               // Token expired/invalid — hand over to the login page.
-              try { localStorage.removeItem(TOKEN_KEY); } catch { }
+              clearToken();
               window.location.href = '/login';
             }
           }
@@ -54,7 +65,7 @@
     try {
       const res = await nativeFetch('/api/auth/verify', { headers: { Authorization: 'Bearer ' + token } });
       if (!res.ok) {
-        try { localStorage.removeItem(TOKEN_KEY); } catch { }
+        clearToken();
         window.location.href = '/login';
       }
     } catch {
@@ -64,13 +75,18 @@
 
   window.LSAdminAuth = {
     logout() {
-      try { localStorage.removeItem(TOKEN_KEY); } catch { }
+      clearToken();
       window.location.href = '/login';
     },
     // After a credential change the API returns a fresh token (the old one
-    // dies with the rotated secret) — store it so polling continues.
+    // dies with the rotated secret) — store it wherever the current one
+    // lived so polling continues.
     setToken(token) {
-      try { localStorage.setItem(TOKEN_KEY, token); } catch { }
+      try {
+        const inLocal = !!localStorage.getItem(TOKEN_KEY);
+        if (inLocal) localStorage.setItem(TOKEN_KEY, token);
+        else sessionStorage.setItem(TOKEN_KEY, token);
+      } catch { }
     }
   };
 })();
