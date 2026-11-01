@@ -143,16 +143,14 @@ Using your **own Icecast install** instead of the bundled one? That install is o
 
 LANStreamer is **free and open source — no one makes money from it, and no one should** (MIT license).
 
-**What we collect (only if you allow it):** anonymous events — app start, stream started/stopped/failed (with the error *category* only), app version, OS, and a random install ID. Every event also carries a fixed `app: lanstreamer` tag (the maintainer's PostHog project is shared across apps; the tag separates this app's events). **Never collected:** audio, stream names, contact details, file paths, IPs, or any personal data.
+**Telemetry is ON by default (opt-out).** **What is collected:** anonymous events — app start, stream started/stopped/failed (with the error *category* only), app version, OS, and a random install ID. Every event also carries a fixed `app: lanstreamer` tag (the maintainer's PostHog project is shared across apps; the tag separates this app's events). **Never collected:** audio, stream names, contact details, file paths, IPs, or any personal data.
 
-**Listener failure reports:** when playback fails on a listener's device (audio error, buffer stall, the stream going off-air mid-listen, or the page failing to load), the listener page reports it to the *operator's own server*, which relays it to PostHog **only if the operator allowed telemetry** — carrying the stream label (e.g. "S1"), the media error code, and the browser platform. Listener devices never talk to PostHog directly and never hold any key; without operator consent the reports are dropped at the server.
+**Listener failure reports:** when playback fails on a listener's device (audio error, buffer stall, the stream going off-air mid-listen, or the page failing to load), the listener page reports it to the *operator's own server*, which relays it to PostHog **only while the operator's telemetry is on** — carrying the stream label (e.g. "S1"), the media error code, and the browser platform. Listener devices never talk to PostHog directly and never hold any key; with telemetry off, the reports are dropped at the server.
 
-- **First run** asks once: Allow / Decline. The choice is saved (`config/telemetry.json`).
-- **Change it anytime**: tray icon → **Telemetry → On/Off**.
-- Events go to the maintainer's PostHog over the internet, queued and flushed in the background — nothing is sent while you decline, and a fully offline LAN works either way.
-- Maintainers packaging a distributed build: run `node scripts/prepare-telemetry-key.mjs` before building — it bundles the PostHog key into the app (gitignored) so other operators' installs report too, after their own first-run consent prompt.
-
-**What the app communicates with:** your own LAN (Express + Icecast for streaming), the maintainer's PostHog *if* telemetry is allowed, and GitHub release checks for update notifications.
+- **First run** shows a plain notice that statistics are on, what they contain, and a one-click **Turn it off**.
+- **Change it anytime**: dashboard → sidebar → **Admin account** → *Anonymous usage statistics* switch, or tray icon → **Telemetry → On/Off**.
+- Events go to the maintainer's PostHog over the internet, queued and flushed in the background — nothing is sent while telemetry is off, and a fully offline LAN works either way.
+- Maintainers packaging a distributed build: run `node scripts/prepare-telemetry-key.mjs` before building — it bundles the PostHog key into the app (gitignored) so other operators' installs report too (each with their own off switch).
 
 ---
 

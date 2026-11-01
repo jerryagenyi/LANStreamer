@@ -73,7 +73,15 @@ export const generateToken = (username) => {
 export const verifyCredentials = (username, password) => {
     if (username !== config.security.adminUsername) return false;
     if (config.security.adminPasswordHash) return verifyPasswordHash(password, config.security.adminPasswordHash);
-    return password === config.security.adminPassword;
+    // Plaintext fallback (env/defaults): constant-time compare (SEC-AUTH-004) —
+    // a plain === leaks timing/length on the localhost-reachable login route.
+    try {
+        const a = Buffer.from(String(password));
+        const b = Buffer.from(String(config.security.adminPassword));
+        return a.length === b.length && crypto.timingSafeEqual(a, b);
+    } catch {
+        return false;
+    }
 };
 
 // Store for CSRF tokens (in production, use Redis or database)

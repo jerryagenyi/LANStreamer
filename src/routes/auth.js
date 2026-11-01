@@ -11,10 +11,47 @@ const usingDefaultCredentials = () =>
     config.security.adminUsername === 'admin' &&
     config.security.adminPassword === 'lanstreamer123';
 
+// Brute-force throttle (SEC-AUTH-001, blocker severity — from the devops
+// practices database). The localhost lock keeps the LAN out, but anything
+// running ON the operator's machine (or a malicious page doing localhost
+// fetches) can hammer this route freely. Composite key (IP + username) per
+// the record; escalating lockout so a legit typo never blocks the operator.
+const loginAttempts = new Map(); // key -> { count, lockedUntil }
+const MAX_ATTEMPTS = 5;
+const LOCKOUT_MS = 60_000;
+const attemptKey = (req, username) => `${req.ip || 'unknown'}|${String(username || '').toLowerCase()}`;
+
+function loginThrottle(req, res, next) {
+    const { username } = req.body || {};
+    const key = attemptKey(req, username);
+    const now = Date.now();
+    const rec = loginAttempts.get(key);
+    if (rec && rec.lockedUntil > now) {
+        return res.status(429).json({
+            message: `Too many attempts — try again in ${Math.ceil((rec.lockedUntil - now) / 1000)}s`
+        });
+    }
+    next();
+}
+
+function recordLoginResult(req, username, ok) {
+    const key = attemptKey(req, username);
+    if (ok) { loginAttempts.delete(key); return; }
+    const rec = loginAttempts.get(key) || { count: 0, lockedUntil: 0 };
+    rec.count += 1;
+    if (rec.count >= MAX_ATTEMPTS) {
+        // escalate: each subsequent lockout doubles, capped at 15 minutes
+        const prior = rec.lockedUntil > Date.now() ? rec.lockedUntil - Date.now() : 0;
+        rec.lockedUntil = Date.now() + Math.min(Math.max(LOCKOUT_MS, prior * 2), 15 * 60_000);
+        rec.count = 0;
+    }
+    loginAttempts.set(key, rec);
+}
+
 /**
  * Login endpoint
  */
-router.post('/login', async (req, res) => {
+router.post('/login', loginThrottle, async (req, res) => {
     try {
         const { username, password } = req.body;
 
@@ -26,14 +63,16 @@ router.post('/login', async (req, res) => {
 
         // Verify credentials
         if (verifyCredentials(username, password)) {
+            recordLoginResult(req, username, true);
             const token = generateToken(username);
-            
+
             res.json({
                 message: 'Login successful',
                 token,
                 user: { username }
             });
         } else {
+            recordLoginResult(req, username, false);
             res.status(401).json({
                 message: 'Invalid username or password'
             });

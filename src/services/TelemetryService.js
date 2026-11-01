@@ -142,7 +142,11 @@ class TelemetryService {
 
   _maybeStartClient() {
     const key = this.getKey();
-    if (!key || this.consented !== true) {
+    // OPT-OUT model (owner decision 2026-11-01): telemetry is ON unless the
+    // operator explicitly turned it off (consented === false). A fresh install
+    // (consented null) sends; the first-run dialog is an informational notice
+    // with a one-click "Turn off", and the dashboard/tray toggles flip it.
+    if (!key || this.consented === false) {
       this.enabled = false;
       return;
     }

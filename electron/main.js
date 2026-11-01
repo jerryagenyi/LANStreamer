@@ -248,9 +248,10 @@ async function createTray() {
 }
 
 /**
- * First-run consent: ask once, remember the answer (data-dir telemetry.json).
- * Change anytime: tray menu (Telemetry: On/Off) or the dashboard Admin
- * account card switch.
+ * First-run telemetry NOTICE (owner decision 2026-11-01: opt-out — telemetry
+ * is ON unless explicitly turned off). Shows once, states plainly what is
+ * collected, and offers a one-click "Turn off". Change anytime: dashboard
+ * Admin account card switch, or tray icon → Telemetry → On/Off.
  *
  * FIX (2026-11-01, Jerry's install report): this check RACES the telemetry
  * service's async init — getKey() read before _loadState finishes returns
@@ -265,22 +266,22 @@ async function maybeAskTelemetryConsent() {
   if (state.consented !== null || !telemetry.getKey()) return; // decided, or nothing to enable
 
   const { response } = await dialog.showMessageBox(mainWindow, {
-    type: 'question',
-    title: 'Help improve LANStreamer?',
-    message: 'Allow anonymous usage statistics?',
-    detail: 'LANStreamer is free and open source — no one profits from it.\n\n'
-      + 'If you allow telemetry, the operator of this install sends anonymous events '
+    type: 'info',
+    title: 'LANStreamer — anonymous usage statistics: ON',
+    message: 'Anonymous usage statistics are ON for this install.',
+    detail: 'LANStreamer is free and open source — no one profits from it. '
+      + 'To keep improving it, this install sends anonymous events '
       + '(app start/stop, stream started/stopped/failed, app version, OS) to the '
-      + 'maintainer\'s PostHog. No audio, no stream names, no personal data, and '
-      + 'listeners\' phones never send anything.\n\n'
-      + 'You can change this anytime: the dashboard Admin account card, or tray icon → Telemetry → On/Off.',
-    buttons: ['Allow', 'Decline'],
-    defaultId: 1,
-    cancelId: 1,
+      + 'maintainer\u2019s PostHog.\n\n'
+      + 'No audio, no stream names, no personal data — and listeners\u2019 phones never send anything.\n\n'
+      + 'Turn it off anytime: the dashboard Admin account card switch, or tray icon \u2192 Telemetry \u2192 On/Off.',
+    buttons: ['OK, keep it on', 'Turn it off'],
+    defaultId: 0,
+    cancelId: 0,
     noLink: true,
   });
 
-  telemetry.setConsented(response === 0);
+  telemetry.setConsented(response !== 1); // 0 = keep on (persisted), 1 = off
   createTray(); // refresh the tray label
 }
 

@@ -10,10 +10,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 Everything below is shipped in the working tree but **not yet bundled into an installer** — the app currently runs from source (`npm run electron:dev`). Release process: see [GO-LIVE-CHECKLIST.md](./GO-LIVE-CHECKLIST.md).
 
 ### Added — the Electron desktop app
-- Full Electron shell: dashboard window, tray icon (hide-to-tray, Stop All & Quit), single-instance lock, first-run telemetry consent prompt, graceful shutdown that stops streams + Icecast
+- Full Electron shell: dashboard window, tray icon (hide-to-tray, Stop All & Quit), single-instance lock, first-run telemetry notice (ON by default, one-click off), graceful shutdown that stops streams + Icecast
 - **Bundled binaries:** the installer ships FFmpeg + the Icecast kit (extraResources), with runtime resolution preferring the bundle over system installs — a fresh machine needs NOTHING pre-installed. Bundled Icecast runs from a writable per-user config/log dir (no more Program Files EPERM), and all mutable state (streams, device config, contact details, uploads, telemetry consent) lives in `%APPDATA%/LANStreamer` on packaged installs
 - Admin authentication: login page, JWT session (7-day), localhost lock so admin APIs/dashboard refuse non-localhost connections; default-credentials banner with change instructions; logout
-- Voluntary PostHog telemetry (opt-in): server events (app start, stream started/stopped/failed with error category) and **listener failure reports** (playback error with media code + browser, buffer stalls, off-air grace/give-up, page-load failures) relayed through the operator's server; distributed installs get telemetry via a bundled build key after their own consent prompt
+- **PostHog telemetry (ON by default, opt-out — owner decision 2026-11-01):** server events (app start, stream started/stopped/failed with error category) and **listener failure reports** (playback error with media code + browser, buffer stalls, off-air grace/give-up, page-load failures) relayed through the operator's server; distributed installs get telemetry via a bundled build key (asar path fix); first run shows an informational notice with one-click Turn-off
 - Event banner system: operator-uploaded artwork with lightbox, bundled default banner when none set
 - In-app guide page (`/docs`), QR code sharing, share card that tracks the PC's current LAN address
 
