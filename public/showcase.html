@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LANStreamer Design System — Component Showcase (dev only)</title>
+    <link rel="icon" type="image/svg+xml" href="/assets/logo-mark.svg">
+    <link rel="stylesheet" href="/assets/vendor/tailwind.css">
+    <link rel="stylesheet" href="/assets/vendor/fonts/fonts.css?v=5">
+    <link rel="stylesheet" href="/assets/css/tokens.css?v=10">
+    <link rel="stylesheet" href="/assets/css/ui.css?v=16">
+    <script src="/assets/js/theme-toggle.js?v=5"></script>
+    <script src="/assets/js/toasts.js?v=5"></script>
+    <script src="/assets/js/collapsible.js?v=5"></script>
+    <script src="/assets/js/notifications.js?v=5"></script>
+    <style>
+        body { font-family: var(--tok-font); }
+        .sc-wrap { max-width: 56rem; margin: 0 auto; padding: 2.5rem 1.25rem 5rem; }
+        .sc-section { margin-top: 3rem; }
+        .sc-section > h2 {
+            font-size: 1rem; font-weight: 800; color: var(--tok-text-1);
+            display: flex; align-items: center; gap: 0.5rem;
+            padding-bottom: 0.5rem; border-bottom: 1px solid var(--tok-line);
+        }
+        .sc-section > h2 .material-symbols-rounded { color: var(--tok-accent); font-size: 1.2rem; }
+        .sc-note { font-size: 0.78rem; color: var(--tok-text-3); margin-top: 0.375rem; }
+        .sc-row { display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem; margin-top: 1.25rem; }
+        .sc-block { margin-top: 1.25rem; padding: 1.25rem; border: 1px dashed var(--tok-line-strong); border-radius: 14px; }
+        .sc-label { font-size: 0.7rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--tok-text-3); margin: 1.5rem 0 0.5rem; }
+        .sc-input {
+            width: 100%; max-width: 22rem; padding: 0.625rem 0.875rem;
+            background: var(--tok-surface-inset); border: 1px solid var(--tok-line-strong);
+            border-radius: var(--tok-radius-input, 10px); color: var(--tok-text-1); font-size: 0.875rem;
+        }
+        .sc-input:focus { outline: none; border-color: var(--tok-accent); }
+        .sc-swatch { flex: 1 1 120px; min-width: 120px; max-width: 200px; border: 1px solid var(--tok-line); border-radius: 12px; overflow: hidden; }
+        .sc-swatch > div:first-child { height: 44px; }
+        .sc-swatch > div:last-child { padding: 0.4rem 0.6rem; font-size: 0.65rem; font-family: ui-monospace, monospace; color: var(--tok-text-2); }
+    </style>
+</head>
+<body class="body-bg">
+<div class="sc-wrap">
+    <!-- Mini header with the notification bell (same as dashboard) -->
+    <div class="flex items-center justify-between gap-4 flex-wrap" style="position:relative;">
+        <div class="flex items-center gap-3">
+            <img src="/assets/logo.svg?v=3" alt="LANStreamer" data-theme-logo class="h-9 w-auto">
+            <div>
+                <div class="text-lg font-bold" style="color:var(--tok-text-1)">Design System</div>
+                <div class="tok-label">Component showcase — dev only</div>
+            </div>
+        </div>
+        <div class="flex items-center gap-2" style="position:relative;">
+            <button id="header-bell-btn" class="theme-toggle" title="No notifications" aria-label="No notifications" aria-haspopup="dialog">
+                <span class="material-symbols-rounded text-sm">notifications</span>
+            </button>
+            <button data-theme-toggle class="theme-toggle" title="Toggle dark/light mode" aria-label="Toggle dark/light mode">
+                <span class="material-symbols-rounded text-sm">light_mode</span>
+            </button>
+        </div>
+    </div>
+    <p class="sc-note">Every component below is built ONLY from design tokens — if a new UI element doesn't fit one of
+    these patterns, extend this page first, then build. Verify both themes here.</p>
+
+    <!-- TOKENS -->
+    <section class="sc-section">
+        <h2><span class="material-symbols-rounded">palette</span>Tokens</h2>
+        <div class="sc-row" id="swatches"></div>
+    </section>
+
+    <!-- BUTTONS -->
+    <section class="sc-section">
+        <h2><span class="material-symbols-rounded">smart_button</span>Buttons</h2>
+        <div class="sc-row">
+            <button class="btn btn-primary">Primary action</button>
+            <button class="btn btn-secondary">Secondary</button>
+            <button class="btn btn-ghost">Ghost</button>
+            <button class="btn btn-danger">Danger</button>
+            <button class="btn btn-primary" disabled>Disabled</button>
+        </div>
+        <div class="sc-label">Playback + icon buttons</div>
+        <div class="sc-row">
+            <button class="play-btn" aria-label="Play"><span class="material-symbols-rounded" style="font-variation-settings:'FILL' 1;">play_arrow</span></button>
+            <button class="play-btn is-playing" aria-label="Stop"><span class="material-symbols-rounded">stop</span></button>
+            <button class="copy-btn" title="Icon-only action with tooltip" aria-label="Edit"><span class="material-symbols-rounded text-base">edit</span></button>
+            <button class="copy-btn" title="Icon-only action with tooltip" aria-label="Delete"><span class="material-symbols-rounded text-base">delete</span></button>
+        </div>
+        <p class="sc-note">Rule: repeated/context-obvious actions are icon-only (.copy-btn / .play-btn) with a tooltip.</p>
+    </section>
+
+    <!-- INPUTS -->
+    <section class="sc-section">
+        <h2><span class="material-symbols-rounded">edit_note</span>Inputs</h2>
+        <div class="sc-label">Text input (token surface + focus accent)</div>
+        <input class="sc-input" placeholder="Stream name…">
+        <div class="sc-label">Toggle switch (visibility toggles)</div>
+        <label class="relative inline-flex items-center cursor-pointer">
+            <input type="checkbox" class="sr-only peer" checked>
+            <div class="w-11 h-6 bg-gray-600 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-[var(--primary-color)]/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[var(--primary-color)]"></div>
+        </label>
+    </section>
+
+    <!-- CHIPS + STATUS -->
+    <section class="sc-section">
+        <h2><span class="material-symbols-rounded">label</span>Chips &amp; status</h2>
+        <div class="sc-row">
+            <span class="live-chip">Live</span>
+            <span class="live-chip" style="color:var(--tok-warning,#F59E0B);">Reconnecting…</span>
+            <span class="uptime-chip"><span class="material-symbols-rounded text-sm">schedule</span> 4m 12s</span>
+            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold" style="border:1px solid var(--tok-live);color:var(--tok-live);"><span style="width:7px;height:7px;border-radius:999px;background:var(--tok-live);display:inline-block;"></span>Online</span>
+            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold" style="border:1px solid var(--tok-text-3);color:var(--tok-text-3);"><span style="width:7px;height:7px;border-radius:999px;background:var(--tok-text-3);display:inline-block;"></span>Offline</span>
+            <span class="px-2 py-0.5 text-xs font-medium rounded-full" style="background:rgba(167,139,250,0.15);color:#A78BFA;">Virtual</span>
+            <img src="/assets/icecast-mark.svg" alt="" class="w-5 h-5" style="color:var(--tok-accent);">
+            <span class="eq" aria-hidden="true"><span></span><span></span><span></span><span></span></span>
+        </div>
+    </section>
+
+    <!-- STREAM ROWS (admin) + CHANNEL ROWS (listener) -->
+    <section class="sc-section">
+        <h2><span class="material-symbols-rounded">podcasts</span>Stream rows</h2>
+        <div class="sc-block" style="padding:0;overflow:hidden;">
+            <div class="group-label tok-label">On air · 1</div>
+            <div class="arow is-live">
+                <span class="sid2" aria-hidden="true">S1</span>
+                <div style="min-width:0;">
+                    <div class="name">Main Room English</div>
+                    <div class="meta"><span class="chip chip-live"><span class="eq" aria-hidden="true"><i></i><i></i><i></i><i></i></span>LIVE</span>
+                        <span class="src" title="CABLE Output (VB-Audio Virtual Cable)"><span class="material-symbols-rounded" style="font-size:13px;" aria-hidden="true">mic</span>CABLE Output (VB-Audio Virtual Cable)</span>
+                        <span class="dotsep" aria-hidden="true"></span><span class="mono">192k</span>
+                        <span class="dotsep" aria-hidden="true"></span><span class="mono">1m 02s</span></div>
+                </div>
+                <div class="rowactions">
+                    <button class="playbtn stop" aria-label="Stop"><span class="material-symbols-rounded" style="font-size:16px;">stop</span></button>
+                    <div class="menu"><button class="iconbtn" aria-label="More actions"><span class="material-symbols-rounded text-base">more_vert</span></button>
+                        <div class="menu-pop"><button type="button">Copy listener link</button><button type="button">Edit</button><button type="button" class="del">Delete</button></div></div>
+                </div>
+            </div>
+            <div class="group-label tok-label">Ready · 1</div>
+            <div class="arow is-err">
+                <span class="sid2" aria-hidden="true">S3</span>
+                <div style="min-width:0;">
+                    <div class="name">AutoStart Test</div>
+                    <div class="meta"><span class="chip chip-err"><span class="pip" aria-hidden="true"></span>ERROR</span>
+                        <span class="src" title="OBS Virtual Camera (Audio)"><span class="material-symbols-rounded" style="font-size:13px;" aria-hidden="true">mic</span>OBS Virtual Camera (Audio)</span>
+                        <span class="dotsep" aria-hidden="true"></span><span class="mono">192k</span></div>
+                </div>
+                <div class="rowactions">
+                    <button class="playbtn" aria-label="Retry"><span class="material-symbols-rounded" style="font-size:18px;font-variation-settings:'FILL' 1;">play_arrow</span></button>
+                    <div class="menu"><button class="iconbtn" aria-label="More actions"><span class="material-symbols-rounded text-base">more_vert</span></button></div>
+                </div>
+                <div class="errbox">
+                    <b>🎤 Audio Device Not Found</b>
+                    <span class="grow">The device is missing or held by another app — reconnect it or pick a different input.</span>
+                    <button class="btn btn-secondary" style="height:30px;padding:0 10px;font-size:13px;">Change input</button>
+                    <button class="btn btn-ghost" style="height:30px;padding:0 10px;font-size:13px;">Retry</button>
+                </div>
+            </div>
+        </div>
+        <div class="sc-label">Listener channel row</div>
+        <div style="max-width:26rem;">
+            <button type="button" class="chrow" aria-current="true"><span class="lang" aria-hidden="true">S1</span><span class="t"><b>Main Room English</b><span class="faint" style="font-size:13px;">Live · 1m 02s · 192k</span></span><span class="eq" style="color:var(--tok-accent);" aria-hidden="true"><i></i><i></i><i></i><i></i></span></button>
+            <div class="chrow off"><span class="lang" aria-hidden="true">S2</span><span class="t"><b>Side Room French</b><span class="faint" style="font-size:13px;">Starts soon</span></span></div>
+        </div>
+    </section>
+
+    <!-- STRIP + BANNER + FILTERS -->
+    <section class="sc-section">
+        <h2><span class="material-symbols-rounded">monitoring</span>Status strip · banner · filters</h2>
+        <div class="strip" style="margin-top:1.25rem;">
+            <div class="glass-card stat"><span class="tok-label">On air</span><span class="v"><span class="eq" style="color:var(--tok-live);" aria-hidden="true"><i></i><i></i><i></i><i></i></span>1<small>/ 7 streams</small></span></div>
+            <div class="glass-card stat"><span class="tok-label">Listeners</span><span class="v">23 <small>peak 31</small></span></div>
+            <div class="glass-card stat"><span class="tok-label">Icecast server</span><span class="v"><span class="chip chip-live"><span class="pip" aria-hidden="true"></span>Online</span><small class="mono">:8200</small></span></div>
+            <div class="glass-card stat alert"><span class="tok-label">Needs attention</span><span class="v">1 stream · 1 setting</span></div>
+        </div>
+        <div class="banner" style="margin-top:1rem;">
+            <span class="material-symbols-rounded" style="color:var(--tok-warning);" aria-hidden="true">gpp_maybe</span>
+            <div class="grow"><b>Default Icecast password in use.</b> <span style="color:var(--tok-text-2);">Anyone on your network could take over a stream.</span></div>
+            <button class="btn btn-secondary" style="height:30px;padding:0 10px;font-size:13px;">Change password</button>
+        </div>
+        <div class="sc-row">
+            <div class="seg" role="group" aria-label="Filter"><button aria-pressed="true">All 7</button><button aria-pressed="false">Live · 1</button><button aria-pressed="false">Issues</button></div>
+        </div>
+    </section>
+
+    <!-- CARDS -->
+    <section class="sc-section">
+        <h2><span class="material-symbols-rounded">dashboard</span>Cards &amp; collapsibles</h2>
+        <div class="sc-block" id="card-demo"></div>
+        <p class="sc-note">Collapsed by default, remembers open/closed per browser (localStorage).</p>
+    </section>
+
+    <!-- TOASTS -->
+    <section class="sc-section">
+        <h2><span class="material-symbols-rounded">notifications</span>Toasts (stacked — never overlap)</h2>
+        <div class="sc-row">
+            <button class="btn btn-secondary" onclick="LSToasts.show('Info toast', 'info')">Info</button>
+            <button class="btn btn-secondary" onclick="LSToasts.show('Saved successfully', 'success')">Success</button>
+            <button class="btn btn-secondary" onclick="LSToasts.show('Something needs attention', 'warning')">Warning</button>
+            <button class="btn btn-secondary" onclick="LSToasts.show('Stream failed to start', 'error', { linkUrl: '/docs', linkText: 'troubleshooting guide' })">Error + link</button>
+            <button class="btn btn-primary" onclick="for (let i = 1; i <= 3; i++) LSToasts.show('Burst ' + i, 'info')">Burst ×3</button>
+            <button class="btn btn-ghost" onclick="LSToasts.show('Connecting…', 'info', { tag: 'demo' }); setTimeout(() => LSToasts.show('Now playing — replaced the connecting toast', 'success', { tag: 'demo' }), 1500)">Tagged replace demo</button>
+        </div>
+        <p class="sc-note">Same-tag toasts replace each other (Connecting… → Now playing). Max 4 stacked; oldest is dropped.</p>
+    </section>
+
+    <!-- NOTIFICATIONS BELL -->
+    <section class="sc-section">
+        <h2><span class="material-symbols-rounded">notification_add</span>Notification bell</h2>
+        <div class="sc-row">
+            <button class="btn btn-secondary" onclick="LSNotifications.notify({ title: 'Stream Demo stopped with an error', message: 'Check the row details for the cause.', type: 'error' })">Push error notification</button>
+            <button class="btn btn-secondary" onclick="LSNotifications.notify({ title: 'Icecast server is back online', type: 'success' })">Push success notification</button>
+        </div>
+        <p class="sc-note">The bell in the header above lights up (badge + pulse) until opened. Same code as the dashboard header.</p>
+    </section>
+
+    <!-- MISC -->
+    <section class="sc-section">
+        <h2><span class="material-symbols-rounded">widgets</span>Small elements</h2>
+        <div class="sc-row">
+            <span class="boot-dots"><span></span><span></span><span></span></span>
+            <span class="material-symbols-rounded animate-spin" style="color:var(--tok-accent)">progress_activity</span>
+        </div>
+    </section>
+</div>
+
+<script>
+    // Token swatches generated from the live CSS variables (both themes stay in sync)
+    const swatchDefs = [
+        ['--tok-bg', 'bg'], ['--tok-surface-1', 'surface-1'], ['--tok-surface-2', 'surface-2'],
+        ['--tok-surface-inset', 'inset'], ['--tok-text-1', 'text-1'], ['--tok-text-2', 'text-2'],
+        ['--tok-line', 'line'], ['--tok-accent', 'accent'], ['--tok-live', 'live'],
+        ['--tok-warning', 'warning'], ['--tok-danger', 'danger']
+    ];
+    function renderSwatches() {
+        const el = document.getElementById('swatches');
+        const cs = getComputedStyle(document.documentElement);
+        el.innerHTML = swatchDefs.map(([v, name]) => `
+            <div class="sc-swatch">
+                <div style="background:var(${v});border-bottom:1px solid var(--tok-line);"></div>
+                <div>${name}<br>${cs.getPropertyValue(v).trim()}</div>
+            </div>`).join('');
+    }
+    renderSwatches();
+    new MutationObserver(renderSwatches).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+
+    // Collapsible card demo
+    document.getElementById('card-demo').innerHTML = LSCollapse.wrap('showcase-card',
+        { icon: 'event', title: 'Card with remembered collapse state', badge: '<span class="live-chip">Live</span>' },
+        `<div class="text-sm" style="color:var(--tok-text-2);">Body content goes here. Toggle me, reload the page — I remember.</div>`,
+        false);
+
+    // Wire the bell (same as HeaderComponent does)
+    LSNotifications.bindBell();
+</script>
+</body>
+</html>

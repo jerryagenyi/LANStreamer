@@ -1,7 +1,9 @@
 import express from 'express';
+import QRCode from 'qrcode';
 import audioDeviceService from '../services/AudioDeviceService.js';
 import IcecastService from '../services/IcecastService.js';
 import streamingService from '../services/StreamingService.js';
+import binaryProbe from '../services/BinaryProbeService.js';
 // import { updateService } from '../services/UpdateService.js';
 import { ErrorHandler, errorMiddleware } from '../utils/errors.js';
 
@@ -75,12 +77,14 @@ router.post('/audio-devices/test', async (req, res) => {
       return res.status(400).json({ message: 'Device ID is required' });
     }
 
-    const isAccessible = await audioDeviceService.testDevice(deviceId);
+    const result = await audioDeviceService.testDevice(deviceId);
 
     res.json({
       success: true,
       deviceId,
-      accessible: isAccessible
+      accessible: result.ok,
+      reason: result.reason,
+      deviceName: result.deviceName
     });
   } catch (error) {
     res.status(500).json({ message: 'Error testing audio device', error: error.message });
@@ -149,6 +153,32 @@ router.get('/audio-devices/diagnose', async (req, res) => {
  * @description Get system config for frontend (Icecast port, host). Used for building listener/copy URLs.
  * @access Public
  */
+/**
+ * @route GET /api/qr?url=<http(s) URL>
+ * @description QR code (SVG) for any URL — used by the share popups so people
+ *   can scan to open the listener page on their phones. Fully offline.
+ * @access Public (encodes only the URL the caller provides)
+ */
+router.get('/qr', async (req, res) => {
+  try {
+    const url = String(req.query.url || '');
+    if (!/^https?:\/\/.+/.test(url) || url.length > 512) {
+      return res.status(400).json({ error: 'A valid http(s) url parameter is required' });
+    }
+    const svg = await QRCode.toString(url, {
+      type: 'svg',
+      margin: 1,
+      width: 320,
+      color: { dark: '#000000', light: '#FFFFFF' },
+    });
+    res.setHeader('Content-Type', 'image/svg+xml');
+    res.setHeader('Cache-Control', 'public, max-age=300');
+    res.send(svg);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to generate QR code' });
+  }
+});
+
 router.get('/config', async (req, res, next) => {
   try {
     await icecastService.ensureInitialized();
@@ -188,6 +218,53 @@ router.get('/icecast-status', async (req, res, next) => {
     res.json(status);
   } catch (error) {
     next(error); // Pass to error middleware
+  }
+});
+
+/**
+ * @route GET /api/system/binary-probe
+ * @description Functional binary self-test result (which FFmpeg/Icecast the
+ *   app can rely on and why) — support's first diagnostic stop.
+ * @access Private (admin)
+ */
+router.get('/binary-probe', (req, res) => {
+  res.json(binaryProbe.getPin() || { result: 'not-run' });
+});
+
+/**
+ * @route GET /api/system/binaries/status
+ * @description Which tier resolved for each engine (vendored / system /
+ *   missing) + the download-on-demand job state. Drives the dashboard
+ *   "streaming engines" notice.
+ * @access Private (admin)
+ */
+router.get('/binaries/status', async (req, res, next) => {
+  try {
+    const { binariesStatus, downloadJobState } = await import('../utils/binaries.js');
+    res.json({ ...binariesStatus(), download: downloadJobState() });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * @route POST /api/system/binaries/download
+ * @description Start the pinned FFmpeg download into the writable data-dir
+ *   vendor root (rare tier: neither bundled kit nor system install exists).
+ *   Returns immediately; poll GET /binaries/status for progress.
+ * @access Private (admin)
+ */
+router.post('/binaries/download', async (req, res, next) => {
+  try {
+    const { startBinaryDownload, downloadJobState } = await import('../utils/binaries.js');
+    const before = downloadJobState();
+    if (before.running) {
+      return res.status(409).json({ error: 'Download already running', download: before });
+    }
+    const job = startBinaryDownload();
+    return res.status(202).json({ message: 'Download started', download: job });
+  } catch (error) {
+    next(error);
   }
 });
 

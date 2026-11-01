@@ -92,7 +92,7 @@ class AudioDeviceService {
    * @returns {Array<{id: string, name: string, type: string, deviceType: string}>} List of Windows audio devices.
    */
   async detectWindowsDevices() {
-    const devices = [];
+    let devices = [];
 
     // Get DirectShow input devices
     const dshowCommand = 'ffmpeg -list_devices true -f dshow -i dummy 2>&1';
@@ -176,29 +176,23 @@ class AudioDeviceService {
       throw new Error('🎤 No Audio Devices Available: FFmpeg and PowerShell could not detect any audio devices. This usually means virtual audio drivers (like VB-Audio Virtual Cable) need to be restarted. Try: 1) Restart VB-Audio Virtual Cable Control Panel, 2) Close other audio applications, 3) Use a physical microphone, or 4) Restart your computer.');
     }
 
-    // Remove duplicates based on device name and ID
-    const uniqueDevices = devices.filter((device, index, self) => {
-      return index === self.findIndex(d =>
-        d.name === device.name &&
-        d.deviceType === device.deviceType &&
-        d.id === device.id
-      );
-    });
-
-    // Additional deduplication by name only (in case same device has different IDs)
-    const finalDevices = uniqueDevices.filter((device, index, self) => {
-      const duplicatesByName = self.filter(d => d.name === device.name && d.deviceType === device.deviceType);
-      if (duplicatesByName.length > 1) {
-        // Keep the first occurrence of devices with same name
-        return index === self.findIndex(d => d.name === device.name && d.deviceType === device.deviceType);
+    // Remove duplicates. FFmpeg 9 exposes the same physical device through BOTH
+    // DirectShow and WASAPI with the same id (sanitized name) but a different
+    // deviceType — so dedupe by device id alone, keeping the FIRST occurrence
+    // (DirectShow entries come first and are what streaming spawns with).
+    const finalDevices = (() => {
+      const byId = new Map();
+      for (const d of devices) {
+        const key = String(d.id || d.name || '').toLowerCase().trim();
+        if (!byId.has(key)) byId.set(key, d); // first occurrence wins (DirectShow)
       }
-      return true;
-    });
+      return [...byId.values()];
+    })();
 
     logger.audio('Windows device detection completed', {
       totalFound: devices.length,
-      uniqueDevices: uniqueDevices.length,
       finalDevices: finalDevices.length,
+      duplicatesRemoved: devices.length - finalDevices.length,
       inputCount: finalDevices.filter(d => d.deviceType === 'input').length,
       outputCount: finalDevices.filter(d => d.deviceType === 'output').length
     });
@@ -304,8 +298,9 @@ class AudioDeviceService {
     logger.audio('Parsing Windows devices output', { outputLength: output.length, lineCount: lines.length });
 
     for (const line of lines) {
-      // Look for DirectShow audio input devices
-      const audioInputMatch = line.match(/\[dshow @ .*\] "([^"]+)" \(audio\)/);
+      // Look for DirectShow audio input devices.
+      // FFmpeg 8: [dshow @ 0x...] "Name" (audio); FFmpeg 9: [in#0 @ 0x...] "Name" (audio)
+      const audioInputMatch = line.match(/\[(?:dshow|in#\d+)[^\]]*\] "([^"]+)" \(audio\)/);
       if (audioInputMatch) {
         const deviceName = audioInputMatch[1];
         logger.audio('Found audio input device', { deviceName });
@@ -320,7 +315,7 @@ class AudioDeviceService {
       }
 
       // Look for DirectShow video devices (some have audio capabilities)
-      const videoMatch = line.match(/\[dshow @ .*\] "([^"]+)" \(video\)/);
+      const videoMatch = line.match(/\[(?:dshow|in#\d+)[^\]]*\] "([^"]+)" \(video\)/);
       if (videoMatch) {
         const deviceName = videoMatch[1];
         // Check if it's likely an audio-capable device (webcam with microphone)
@@ -341,7 +336,7 @@ class AudioDeviceService {
 
       // Look for Windows audio output devices (speakers, headphones)
       // These might appear in different formats, so we'll check for common patterns
-      const outputMatch = line.match(/\[dshow @ .*\] "([^"]+)"/);
+      const outputMatch = line.match(/\[(?:dshow|in#\d+)[^\]]*\] "([^"]+)"/);
       if (outputMatch) {
         const deviceName = outputMatch[1];
         // Check if it's likely an output device
@@ -382,8 +377,9 @@ class AudioDeviceService {
     logger.audio('Parsing WASAPI devices output', { outputLength: output.length, lineCount: lines.length });
 
     for (const line of lines) {
-      // Look for WASAPI audio devices - format: [wasapi @ address] "Device Name" (audio, output)
-      const wasapiMatch = line.match(/\[wasapi @ .*\] "([^"]+)"/);
+      // Look for WASAPI audio devices - FFmpeg 8: [wasapi @ addr] "Name" (audio, output);
+      // FFmpeg 9 uses the generic input prefix: [in#0 @ addr] "Name"
+      const wasapiMatch = line.match(/\[(?:wasapi|in#\d+)[^\]]*\] "([^"]+)"/);
       if (wasapiMatch) {
         const deviceName = wasapiMatch[1];
 
@@ -563,36 +559,28 @@ class AudioDeviceService {
   }
 
   /**
-   * Tests if a specific audio device is accessible.
-   * This is a lightweight check that verifies the device exists in our device list.
-   * The actual FFmpeg accessibility will be tested when the stream starts.
+   * Tests if a specific audio device is available (exists in device list).
+   * Lightweight check; actual FFmpeg accessibility is tested when the stream starts.
    * @param {string} deviceId - Device ID to test
-   * @returns {boolean} True if device is accessible
+   * @returns {{ ok: boolean, reason?: string, deviceName?: string }}
    */
   async testDevice(deviceId) {
     try {
-      logger.audio('Testing device accessibility (lightweight check)', { deviceId });
-      
-      // Get fresh device list (bypasses cache if expired)
+      logger.audio('Testing device availability (lightweight check)', { deviceId });
+
       const devices = await this.getAudioDevices();
       const device = devices.find(d => d.id === deviceId);
-      
+
       if (!device) {
         logger.audio('Device not found in device list', { deviceId, availableDevices: devices.map(d => d.id) });
-        return false;
+        return { ok: false, reason: 'Device not in list. It may be disconnected, in use, or the list may be stale. Try "Refresh Devices".' };
       }
 
-      logger.audio('Device found and accessible', { deviceId, deviceName: device.name });
-      
-      // Device exists in the list - assume it's accessible
-      // The actual FFmpeg test will happen when the stream starts
-      // This avoids hanging on slow device tests
-      return true;
-      
+      logger.audio('Device found and available', { deviceId, deviceName: device.name });
+      return { ok: true, deviceName: device.name };
     } catch (error) {
       logger.audio('Device test failed with exception', { deviceId, error: error.message });
-      // If we can't even check the device list, assume it's not accessible
-      return false;
+      return { ok: false, reason: error.message || 'Could not check device list.' };
     }
   }
 }

@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LANStreamer — Troubleshooting &amp; Guide</title>
+    <link rel="icon" type="image/png" href="/assets/favicon.png">
+    <link rel="icon" type="image/svg+xml" href="/assets/logo-mark.svg">
+    <link rel="stylesheet" href="/assets/vendor/tailwind.css">
+    <link rel="stylesheet" href="/assets/vendor/fonts/fonts.css?v=5">
+    <link rel="stylesheet" href="/assets/css/tokens.css?v=10">
+    <link rel="stylesheet" href="/assets/css/ui.css?v=16">
+    <script src="/assets/js/theme-toggle.js?v=7"></script>
+    <style>
+        body { font-family: var(--tok-font); }
+        .doc-wrap { max-width: 52rem; margin: 0 auto; padding: 2rem 1.25rem 4rem; }
+        .doc-toc { display: flex; flex-wrap: wrap; gap: 0.5rem; margin: 1.5rem 0 2.5rem; }
+        .doc-toc a {
+            font-size: 0.75rem; font-weight: 600; text-decoration: none;
+            padding: 0.4rem 0.9rem; border-radius: 999px;
+            border: 1px solid var(--tok-line-strong); color: var(--tok-text-2);
+        }
+        .doc-toc a:hover { color: var(--tok-accent); border-color: var(--tok-accent); }
+        .doc-section { margin-top: 2.75rem; }
+        .doc-section h2 {
+            font-size: 1.05rem; font-weight: 800; color: var(--tok-text-1);
+            display: flex; align-items: center; gap: 0.5rem;
+            padding-bottom: 0.5rem; border-bottom: 1px solid var(--tok-line);
+        }
+        .doc-section h2 .material-symbols-rounded { color: var(--tok-accent); font-size: 1.25rem; }
+        .doc-section h3 { font-size: 0.875rem; font-weight: 700; color: var(--tok-text-1); margin-top: 1.5rem; }
+        .doc-section p, .doc-section li { font-size: 0.875rem; color: var(--tok-text-2); line-height: 1.65; }
+        .doc-section strong { color: var(--tok-text-1); }
+        .doc-section code {
+            font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+            font-size: 0.78rem; padding: 0.1rem 0.4rem; border-radius: 6px;
+            background: var(--tok-surface-inset); border: 1px solid var(--tok-line);
+            color: var(--tok-text-1);
+        }
+        .doc-callout {
+            margin-top: 1rem; padding: 0.875rem 1rem;
+            border-radius: 12px; border: 1px solid var(--tok-line-strong);
+            background: var(--tok-surface-2);
+            font-size: 0.8125rem; color: var(--tok-text-2); line-height: 1.6;
+        }
+        .doc-callout .material-symbols-rounded { font-size: 1.1rem; vertical-align: -2px; color: var(--tok-accent); margin-right: 0.25rem; }
+        .doc-steps { margin: 0.75rem 0; padding-left: 1.25rem; list-style: decimal; }
+        .doc-steps li { margin: 0.35rem 0; }
+        a.doc-back {
+            display: inline-flex; align-items: center; gap: 0.375rem;
+            font-size: 0.8125rem; font-weight: 600; text-decoration: none; color: var(--tok-text-2);
+        }
+        a.doc-back:hover { color: var(--tok-accent); }
+    </style>
+</head>
+<body class="body-bg">
+<div class="doc-wrap">
+    <header class="flex items-center justify-between gap-4 flex-wrap">
+        <div class="flex items-center gap-3">
+            <img src="/assets/logo.svg?v=3" alt="LANStreamer" data-theme-logo class="h-10 w-auto">
+            <div>
+                <div class="text-lg font-bold" style="color:var(--tok-text-1)">Troubleshooting &amp; Guide</div>
+                <div class="tok-label">Everything in one page — works offline</div>
+            </div>
+        </div>
+        <div class="flex items-center gap-2">
+            <button data-theme-toggle class="theme-toggle" title="Toggle dark/light mode" aria-label="Toggle dark/light mode">
+                <span class="material-symbols-rounded text-sm">light_mode</span>
+            </button>
+        </div>
+    </header>
+
+    <nav class="doc-toc" aria-label="Sections">
+        <a href="#access">Admin access</a>
+        <a href="#streams">Streams</a>
+        <a href="#devices">Audio sources</a>
+        <a href="#network">Network &amp; phones</a>
+        <a href="#latency">Latency</a>
+        <a href="#specs">Minimum specs</a>
+    </nav>
+
+    <section class="doc-section" id="access">
+        <h2><span class="material-symbols-rounded">lock</span>Admin access</h2>
+        <p>The admin dashboard is protected by a login. <strong>The listener page has no login</strong> —
+        phones on the network just open the shared <code>/streams</code> link.</p>
+        <ul>
+            <li>Sign in at <code>http://localhost:3001/dashboard</code> (or in the Electron app window) with your
+            admin username and password — the defaults ship in the project <code>README.md</code> under
+            “Admin access”, and can be changed with the <code>ADMIN_USERNAME</code> / <code>ADMIN_PASSWORD</code>
+            environment variables. On first run the dashboard shows a banner stating the defaults and how to
+            change them; it disappears once you set your own.</li>
+            <li><strong>Change it in the app:</strong> dashboard → sidebar → <b>Admin account</b> card — new
+            username + password, applies immediately (works in the desktop app, where there is no <code>.env</code>).</li>
+            <li><strong>Forgot your password?</strong> On this PC, delete the admin login file and restart
+            LANStreamer — the documented default login returns, and you can set a new one from the Admin account
+            card. Installed app: <code>%APPDATA%\LANStreamer\security.json</code> · from source:
+            <code>config\security.json</code>. (The login page shows this hint too.)</li>
+            <li>Admin is also locked to <strong>localhost</strong>: other machines on the network only ever see
+            the listener page, even with valid credentials.</li>
+            <li>The <strong>bundled Icecast</strong> is hardened for you: it only listens on this PC
+            (<code>127.0.0.1</code>) and its passwords are randomly generated per install — listeners get audio
+            through LANStreamer's port 3001, never Icecast directly. Using your own Icecast install? Change its
+            stock passwords; the dashboard warns until you do.</li>
+            <li>Never port-forward ports 3001/8200 to the internet — the localhost lock only protects you on your LAN.</li>
+            <li>Remote admin over the internet: use a VPN like Tailscale instead of exposing ports.</li>
+        </ul>
+    </section>
+
+    <section class="doc-section" id="streams">
+        <h2><span class="material-symbols-rounded">podcasts</span>Streams</h2>
+
+        <h3>Start with the app (auto-start)</h3>
+        <p>Streams saved with <strong>Start with app</strong> enabled come up automatically when LANStreamer
+        launches &mdash; including the Icecast server, which starts itself if it isn't running yet. Stop a stream and
+        disable the toggle if you want it to stay down across restarts.</p>
+
+        <h3>“Audio source busy — already used by …”</h3>
+        <p>One audio input can feed <strong>one</strong> running stream at a time. Windows audio capture is exclusive
+        per process, so a second stream on the same source cannot start.</p>
+        <ol class="doc-steps">
+            <li>Stop the other stream named in the message, <strong>or</strong></li>
+            <li>Edit this stream and pick a different audio source, then Start.</li>
+        </ol>
+
+        <h3>“Audio source … could not be opened”</h3>
+        <p>FFmpeg could see the device name but not open it as a capture device.</p>
+        <ol class="doc-steps">
+            <li>If the source is a <strong>virtual camera's audio pin</strong> (e.g. <em>OBS Virtual Camera</em>), it cannot be captured — use OBS's actual audio output via a virtual cable (VoiceMeeter / VB-Cable) instead.</li>
+            <li>Close other apps holding the mic (Zoom, Teams, Discord, Audacity, OBS itself).</li>
+            <li>Restart VoiceMeeter / VB-Cable if you use virtual devices, then Refresh Devices.</li>
+        </ol>
+
+        <h3>“Cannot connect to Icecast”</h3>
+        <ol class="doc-steps">
+            <li>Check the Icecast panel on the dashboard — it should say <strong>Online</strong>. Start it if not (LANStreamer also auto-starts it when you go live).</li>
+            <li>Port conflict: run <code>netstat -ano | findstr ":8200"</code> — if another app (e.g. Docker) holds the port, stop it or change the port in icecast.xml.</li>
+            <li>Restart Icecast from its panel (Stop → Start).</li>
+            <li>Windows Firewall: allow icecast.exe on private networks.</li>
+        </ol>
+
+        <h3>The app opened on port 3002, or “port 3001 already in use”</h3>
+        <p>Another LANStreamer server instance is still running — usually a leftover <code>node</code> server
+        from a terminal (the window with the <em>“DO NOT CLOSE THIS TERMINAL”</em> message), or a second copy
+        of the app. Two instances share the same stream settings and fight over audio devices, so stop one:</p>
+        <ol class="doc-steps">
+            <li>On the dashboard of the instance you're keeping, <strong>stop every stream and the Icecast
+            server</strong> — that frees the audio devices cleanly (the stop buttons end the encoders properly).</li>
+            <li>Note: there is deliberately no “stop server” button — a web server cannot stop itself over HTTP.
+            To end the server process itself, close its terminal window (or quit the Electron app from the tray),
+            or kill it from Task Manager (<code>node.exe</code> listening on port 3001).</li>
+            <li>Relaunch the app — it takes port 3001 back and starts clean.</li>
+        </ol>
+
+        <h3>Stream stuck on “starting” / listener can't hear anything</h3>
+        <p>The stream row status refreshes every 5&nbsp;seconds. If a stream shows an error or stopped:</p>
+        <ol class="doc-steps">
+            <li>Open the error's <strong>Details</strong> on the row — the top line says what failed.</li>
+            <li>If the machine's IP changed (DHCP), restart LANStreamer; it re-syncs Icecast's hostname automatically.</li>
+            <li>Ask listeners to tap play again — the listener page auto-resumes a stream that comes back on air.</li>
+        </ol>
+    </section>
+
+    <section class="doc-section" id="devices">
+        <h2><span class="material-symbols-rounded">mic</span>Audio sources</h2>
+        <h3>Devices listed twice</h3>
+        <p>Fixed in current versions — duplicate entries are de-duplicated. If you still see doubles after plugging a
+        new device in, click <strong>Refresh Devices</strong> (icon in the sources card).</p>
+        <h3>Routing app audio into LANStreamer</h3>
+        <p>Windows only exposes microphones as capture devices. To stream what a player/DJ app plays, install a virtual
+        cable and pick it as the stream source:</p>
+        <ul>
+            <li><strong>VoiceMeeter</strong> (donationware) — mixer + virtual outputs.</li>
+            <li><strong>VB-Audio Virtual Cable</strong> — simple in/out pair.</li>
+        </ul>
+        <div class="doc-callout">
+            <span class="material-symbols-rounded">info</span>
+            Pick the cable <strong>output</strong> (what apps play into) as LANStreamer's input source, and set the same
+            cable as the default playback device in your music app.
+        </div>
+    </section>
+
+    <section class="doc-section" id="network">
+        <h2><span class="material-symbols-rounded">wifi</span>Network &amp; phones</h2>
+        <h3>Listener address</h3>
+        <p>Listeners open <code>http://&lt;your-ip&gt;:3001/streams</code> — use the <strong>QR code / copy button in
+        the dashboard header</strong> to share the exact address.</p>
+        <h3>The IP changed (DHCP)</h3>
+        <p>LANStreamer detects IP changes and re-syncs, but bookmarks on phones still point at the old IP. Best fix:
+        give the streaming PC a <strong>static DHCP reservation</strong> in your router, then have listeners re-open
+        the shared link once. Listeners can also bookmark <code>/streams</code> in their browser.</p>
+        <h3>Page is blank</h3>
+        <p>A blank page means the server isn't reachable (wrong IP, server off, or different Wi-Fi). The listener page
+        itself shows “No live streams” whenever the server is up but nothing is on air.</p>
+    </section>
+
+    <section class="doc-section" id="latency">
+        <h2><span class="material-symbols-rounded">speed</span>Latency</h2>
+        <p>Total delay from mic to ears is typically <strong>2–6 seconds</strong>. Fastest wins:</p>
+        <ul>
+            <li><strong>Operator side:</strong> 5&nbsp;GHz Wi-Fi or wired for the streaming PC; keep it away from congestion; QoS/streaming priority on the router helps on busy networks.</li>
+            <li><strong>Listener side:</strong> phones on the same AP/SSID; close background streaming apps; wired headsets avoid Bluetooth's extra 100–200&nbsp;ms.</li>
+            <li><strong>In LANStreamer:</strong> lower bitrate (128&nbsp;kbps) trims buffer a little; keep the listener volume above ~50% and use the on-page volume.</li>
+        </ul>
+        <p>Full write-up: <code>docs/LATENCY.md</code> in the repository.</p>
+    </section>
+
+    <section class="doc-section" id="specs">
+        <h2><span class="material-symbols-rounded">memory</span>Minimum specs</h2>
+        <ul>
+            <li>Windows 10/11 (64-bit), 4&nbsp;GB RAM, dual-core CPU</li>
+            <li>FFmpeg and Icecast 2.4+ (bundled with the installer)</li>
+            <li>Wired or solid Wi-Fi to the same network as the listeners</li>
+            <li>Listeners: any modern phone browser (Chrome/Safari/Edge, ~2019+)</li>
+        </ul>
+    </section>
+
+    <footer style="margin-top:3.5rem;padding-top:1.25rem;border-top:1px solid var(--tok-line);" class="flex items-center justify-between gap-3 flex-wrap">
+        <span class="text-xs" style="color:var(--tok-text-3)">LANStreamer — free &amp; open source</span>
+        <a href="https://github.com/jerryagenyi/LANStreamer" target="_blank" rel="noopener"
+           class="doc-back"><span class="material-symbols-rounded text-sm">open_in_new</span>GitHub repository</a>
+    </footer>
+</div>
+</body>
+</html>

@@ -48,25 +48,26 @@ class FooterComponent {
         const currentMonth = new Date().toLocaleString('default', { month: 'long' });
 
         container.innerHTML = `
-            <footer class="mt-12 border-t border-[var(--border-color)] pt-8 pb-8 px-4 sm:px-6 lg:px-8">
-                <div class="flex flex-col sm:flex-row items-center justify-between gap-6 text-xs text-gray-500">
+            <footer class="mt-12 border-t pt-8 pb-8 px-4 sm:px-6 lg:px-8" style="border-color:var(--tok-line);">
+                <div class="flex flex-col sm:flex-row items-center justify-between gap-4 text-xs" style="color:var(--tok-text-3);">
                     <div class="flex items-center gap-4">
                         <span id="version-info">LANStreamer ${this.currentVersion}</span>
-                        <a href="https://github.com/jerryagenyi/LANStreamer" 
-                           target="_blank" 
-                           class="text-blue-400 hover:text-blue-300 transition-colors flex items-center gap-1">
+                        <a href="https://github.com/jerryagenyi/LANStreamer"
+                           target="_blank"
+                           class="flex items-center gap-1 transition-colors"
+                           style="color:var(--tok-accent);">
                             <span class="material-symbols-rounded text-sm">open_in_new</span>
-                            GitHub Repository
+                            GitHub
+                        </a>
+                        <a href="/docs" target="_blank" class="flex items-center gap-1 transition-colors" style="color:var(--tok-accent);">
+                            <span class="material-symbols-rounded text-sm">help</span>
+                            Troubleshooting
                         </a>
                     </div>
                     <div class="flex items-center gap-4">
-                        <button id="check-updates-btn" 
-                                class="text-blue-400 hover:text-blue-300 transition-colors flex items-center gap-1">
-                            <span class="material-symbols-rounded text-sm">system_update</span>
-                            Check for Updates
-                        </button>
-                        <span class="text-gray-600">|</span>
-                        <span>© ${currentMonth} ${currentYear} LANStreamer</span>
+                        <span>Free &amp; open source — no ads, no tracking of listeners</span>
+                        <span aria-hidden="true">|</span>
+                        <span>© ${currentYear} LANStreamer</span>
                     </div>
                 </div>
             </footer>
@@ -76,53 +77,7 @@ class FooterComponent {
     }
 
     setupEventListeners() {
-        const updateBtn = document.getElementById('check-updates-btn');
-        if (updateBtn) {
-            updateBtn.addEventListener('click', async () => {
-                console.log('🔄 Manual update check requested');
-                
-                // Show loading state
-                updateBtn.innerHTML = `
-                    <span class="material-symbols-rounded text-sm animate-spin">refresh</span>
-                    Checking...
-                `;
-                updateBtn.disabled = true;
-
-                try {
-                    // Force update check
-                    const response = await fetch('/api/system/update-check/force', {
-                        method: 'POST'
-                    });
-                    const data = await response.json();
-
-                    if (data.success) {
-                        if (data.updateAvailable) {
-                            this.showUpdateNotification(data);
-                        } else {
-                            this.showNotification('You have the latest version!', 'success');
-                        }
-                        
-                        // Update version display if changed
-                        if (data.current && data.current !== this.currentVersion.replace('v', '')) {
-                            this.currentVersion = `v${data.current}`;
-                            this.updateVersionDisplay();
-                        }
-                    } else {
-                        this.showNotification('Failed to check for updates', 'error');
-                    }
-                } catch (error) {
-                    console.error('Update check failed:', error);
-                    this.showNotification('Update check failed', 'error');
-                } finally {
-                    // Restore button
-                    updateBtn.innerHTML = `
-                        <span class="material-symbols-rounded text-sm">system_update</span>
-                        Check for Updates
-                    `;
-                    updateBtn.disabled = false;
-                }
-            });
-        }
+        // Update notices now surface through the header notification bell
     }
 
     updateVersionDisplay() {

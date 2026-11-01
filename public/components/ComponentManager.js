@@ -96,12 +96,8 @@ class ComponentManager {
                 static: 'lobby-music-static',
                 name: 'Lobby Background Music'
             },
-            // Future components will be registered here
-            'audio-devices': {
-                component: 'AudioDeviceSelector',
-                static: 'audio-devices-static',
-                name: 'Audio Devices'
-            },
+            // audio-devices + video-sources render as plain dashboard markup
+            // (sidebar inputs card / hidden panel) — no component fallback needed.
             'icecast-server': {
                 component: 'IcecastManager',
                 static: 'icecast-server-static',
@@ -111,11 +107,6 @@ class ComponentManager {
                 component: 'FFmpegStreamsManager',
                 static: 'ffmpeg-streams-static',
                 name: 'FFmpeg Streams'
-            },
-            'video-sources': {
-                component: 'VideoSourcesPanel',
-                static: 'video-sources-static',
-                name: 'Video Sources'
             },
             'event-manager': {
                 component: 'EventManager',
@@ -131,12 +122,17 @@ class ComponentManager {
     }
 
     /**
-     * Initialize all registered sections
+     * Initialize all registered sections.
+     * Sections render into independent containers, so they initialize in
+     * parallel — a slow one (e.g. the Icecast installation scan) must not
+     * delay the rest of the dashboard.
      */
     async initializeAll() {
-        for (const [sectionId, config] of Object.entries(this.componentRegistry)) {
-            await this.initializeSection(sectionId, config);
-        }
+        await Promise.allSettled(
+            Object.entries(this.componentRegistry).map(([sectionId, config]) =>
+                this.initializeSection(sectionId, config)
+            )
+        );
     }
 
     /**
@@ -254,6 +250,12 @@ class ComponentManager {
 
             this.components.set(sectionId, componentInstance);
             console.log(`✅ ${config.name} - Component initialized successfully`);
+
+            // The streams card is the dashboard's primary content — once it is
+            // up, the app has "loaded" as far as the user is concerned.
+            if (sectionId === 'ffmpeg-streams' && window.LSBoot) {
+                LSBoot.ready();
+            }
 
         } catch (error) {
             console.error(`❌ Failed to initialize ${config.name} component:`, error);

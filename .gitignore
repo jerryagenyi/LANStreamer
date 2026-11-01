@@ -123,6 +123,7 @@ dev-docs/
 config/streams.json
 config/device-config.json
 config/contact-details.json
+config/security.json
 config/web/
 config/admin/
 
@@ -133,3 +134,15 @@ Desktop.ini
 
 # Windows reserved name (can appear as accidental file)
 nul
+/release/
+.claude/settings.local.json
+.claude-consult-prompt.md
+# Root config/ holds per-install runtime state — anchored so src/config/ (source
+# code) is never caught by this pattern (it silently blocked `git add` there).
+/config/
+/config/binary-probe.json
+/config/telemetry.json
+electron/telemetry-key.json
+
+# Bundled FFmpeg/Icecast binaries for the installer (fetched, never committed)
+/vendor/

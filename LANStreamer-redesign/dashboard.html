@@ -1,0 +1,275 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>LANStreamer — Admin dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+<script src="app.js"></script>
+<style>
+/* System strip: replaces the 3 collapsed sidebar cards + scattered status */
+.strip{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:24px 0 16px}
+.stat{padding:14px 16px;display:flex;flex-direction:column;gap:6px;min-width:0}
+.stat .v{font-size:22px;font-weight:600;letter-spacing:-.02em;display:flex;align-items:center;gap:8px}
+.stat .v small{font-size:13px;color:var(--text-3);font-weight:500}
+.stat.alert{border-color:color-mix(in oklab,var(--warn) 40%,transparent)}
+.stat.alert .v{color:var(--warn);font-size:15px}
+/* Security banner: compact, actionable */
+.banner{display:flex;align-items:center;gap:12px;padding:10px 12px 10px 14px;border-radius:12px;background:var(--warn-soft);border:1px solid color-mix(in oklab,var(--warn) 30%,transparent);font-size:14px}
+.banner b{color:var(--warn)}
+.banner .grow{flex:1;min-width:0}
+/* Layout */
+.grid{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:20px;align-items:start}
+.toolbar{display:flex;align-items:center;gap:8px;padding:14px 18px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.toolbar h2{font-size:16px;font-weight:600;margin-right:auto}
+.seg{display:inline-flex;background:var(--surface-2);border-radius:10px;padding:3px}
+.seg button{height:28px;padding:0 10px;border-radius:7px;font-size:13px;font-weight:500;color:var(--text-2)}
+.seg button[aria-pressed="true"]{background:var(--surface-1);color:var(--text-1);box-shadow:0 1px 2px rgba(0,0,0,.08)}
+.group-label{padding:12px 18px 6px;display:flex;align-items:center;gap:8px}
+/* Stream row */
+.row{display:grid;grid-template-columns:auto auto minmax(0,1fr) auto;align-items:center;gap:14px;padding:12px 18px;border-top:1px solid var(--line);position:relative}
+.row:hover{background:color-mix(in oklab,var(--surface-2) 55%,transparent)}
+.row:hover .grip{opacity:1}
+.row.is-live::before,.row.is-err::before{content:"";position:absolute;left:0;top:10px;bottom:10px;width:3px;border-radius:0 3px 3px 0;background:var(--live)}
+.row.is-err::before{background:var(--danger)}
+.grip{opacity:0;color:var(--text-3);cursor:grab;width:14px}
+.sid{width:38px;height:38px;border-radius:10px;border:1px solid var(--line-strong);display:grid;place-items:center;font-family:var(--mono);font-size:13px;font-weight:500;color:var(--text-2)}
+.is-live .sid{border-color:color-mix(in oklab,var(--live) 50%,transparent);color:var(--live);background:var(--live-soft)}
+.name{font-weight:600;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.meta{display:flex;align-items:center;gap:8px;margin-top:3px;flex-wrap:wrap;color:var(--text-2);font-size:13px}
+.meta .src{display:inline-flex;align-items:center;gap:5px;max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.meta .dotsep{width:3px;height:3px;border-radius:50%;background:var(--text-3)}
+.actions{display:flex;align-items:center;gap:4px}
+.playbtn{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;background:var(--surface-2);color:var(--text-1);border:1px solid var(--line-strong);transition:.15s}
+.playbtn:hover{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
+.playbtn.stop{background:var(--danger-soft);color:var(--danger);border-color:color-mix(in oklab,var(--danger) 30%,transparent)}
+.playbtn.stop:hover{background:var(--danger);color:#fff}
+.menu{position:relative}
+.menu-pop{position:absolute;right:0;top:40px;min-width:180px;padding:6px;z-index:10;display:none}
+.menu.open .menu-pop{display:block}
+.menu-pop button{display:flex;width:100%;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;font-size:14px;text-align:left}
+.menu-pop button:hover{background:var(--surface-2)}
+.menu-pop .del{color:var(--danger)}
+.errbox{grid-column:3/-1;margin-top:4px;padding:10px 12px;border-radius:10px;background:var(--danger-soft);font-size:13px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.errbox b{color:var(--danger)}
+.errbox .grow{flex:1;min-width:200px;color:var(--text-2)}
+/* Side panel */
+.side{display:flex;flex-direction:column;gap:16px;position:sticky;top:84px}
+.share-url{display:flex;align-items:center;gap:8px;padding:8px 8px 8px 12px;border-radius:10px;background:var(--inset);border:1px solid var(--line)}
+.share-url code{flex:1;font-family:var(--mono);font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.qr{width:96px;height:96px;border-radius:10px;background:var(--surface-1);border:1px solid var(--line);padding:8px;flex-shrink:0}
+.kv{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-top:1px dashed var(--line);font-size:14px}
+.kv:first-child{border-top:0}
+.devices li{list-style:none;display:flex;align-items:center;gap:10px;padding:8px 0;font-size:13px;border-top:1px dashed var(--line)}
+.devices li:first-child{border-top:0}
+.lvl{flex:1;height:4px;border-radius:2px;background:var(--inset);overflow:hidden;max-width:70px}
+.lvl i{display:block;height:100%;background:var(--live)}
+/* Drawer */
+.scrim{position:fixed;inset:0;background:rgba(5,8,12,.5);opacity:0;pointer-events:none;transition:.2s;z-index:40}
+.drawer{position:fixed;top:0;right:0;bottom:0;width:min(440px,100%);background:var(--surface-1);border-left:1px solid var(--line);transform:translateX(100%);transition:.25s ease;z-index:50;display:flex;flex-direction:column}
+body.drawer-open .scrim{opacity:1;pointer-events:auto}
+body.drawer-open .drawer{transform:none}
+.drawer-b{padding:20px;display:flex;flex-direction:column;gap:18px;overflow:auto;flex:1}
+.drawer-f{padding:16px 20px;border-top:1px solid var(--line);display:flex;gap:8px;justify-content:flex-end}
+.src-opt{display:flex;align-items:center;gap:12px;padding:10px 12px;border:1px solid var(--line-strong);border-radius:10px;cursor:pointer}
+.src-opt:has(input:checked){border-color:var(--accent);background:var(--accent-soft)}
+.src-opt input{accent-color:var(--accent)}
+.src-opt .t{flex:1;min-width:0;font-size:14px}
+.src-opt .t div:first-child{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.quality{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.quality label{border:1px solid var(--line-strong);border-radius:10px;padding:10px;text-align:center;cursor:pointer;font-size:13px}
+.quality label:has(input:checked){border-color:var(--accent);background:var(--accent-soft);color:var(--accent)}
+.quality input{display:none}
+.quality b{display:block;font-size:15px}
+/* Empty state */
+.empty{padding:48px 24px;text-align:center;display:none}
+.empty ol{display:inline-flex;gap:24px;margin:20px 0;list-style:none;text-align:left;flex-wrap:wrap;justify-content:center}
+.empty li{display:flex;gap:10px;align-items:center;font-size:14px;color:var(--text-2)}
+.empty li span{width:24px;height:24px;border-radius:50%;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;font-family:var(--mono);font-size:12px}
+body.is-empty .empty{display:block}
+body.is-empty .list{display:none}
+@media (max-width:960px){.grid{grid-template-columns:1fr}.side{position:static}.strip{grid-template-columns:repeat(2,1fr)}}
+@media (max-width:560px){
+  .row{grid-template-columns:auto minmax(0,1fr) auto;gap:12px;padding:12px 16px}
+  .grip{display:none}.errbox{grid-column:1/-1}
+  .meta .src{max-width:180px}
+  .toolbar h2{width:100%}
+  .banner{flex-wrap:wrap}.banner .grow{flex-basis:calc(100% - 40px)}
+  .meta .src{flex-basis:100%;max-width:100%}.meta .src + .dotsep{display:none}
+  .toolbar .btn-primary{margin-left:auto}
+}
+</style>
+</head>
+<body>
+<header class="topbar"><div class="wrap">
+  <div class="brand"><span class="brand-mark" id="logo"></span><span><b>LAN</b>Streamer</span><span class="sep hide-sm">/</span><span class="event hide-sm">Sounds For A Beautiful Day</span></div>
+  <div class="spacer"></div>
+  <a class="btn btn-secondary btn-sm hide-sm" href="listener.html" target="_blank">
+    <svg class="svg" viewBox="0 0 24 24" style="width:15px;height:15px"><path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1v-6h3zM3 19a2 2 0 0 0 2 2h1v-6H3z"/></svg>Open listener page</a>
+  <button class="iconbtn" aria-label="Notifications (1 unread)"><svg class="svg" viewBox="0 0 24 24"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg><span class="dot"></span></button>
+  <button class="iconbtn" aria-label="Toggle theme" onclick="LS.toggleTheme()"><svg class="svg" viewBox="0 0 24 24"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9z"/></svg></button>
+</div></header>
+
+<main class="wrap">
+  <div class="strip">
+    <div class="card stat"><span class="eyebrow">On air</span><span class="v"><span class="eq" style="color:var(--live)"><i></i><i></i><i></i><i></i></span><span id="liveCount">1</span><small>/ 7 streams</small></span></div>
+    <div class="card stat"><span class="eyebrow">Listeners</span><span class="v">23 <small>peak 31</small></span></div>
+    <div class="card stat"><span class="eyebrow">Icecast server</span><span class="v"><span class="chip chip-live"><span class="pip"></span>Online</span><small class="mono">:8000</small></span></div>
+    <div class="card stat alert"><span class="eyebrow">Needs attention</span><span class="v">1 stream · 1 setting</span></div>
+  </div>
+
+  <div class="banner" id="banner" role="alert" style="margin-bottom:20px">
+    <svg class="svg" viewBox="0 0 24 24" style="color:var(--warn)"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M12 8v4M12 16h.01"/></svg>
+    <div class="grow"><b>Default Icecast password in use.</b> <span class="muted">Anyone on your network could take over a stream.</span></div>
+    <button class="btn btn-secondary btn-sm" onclick="LS.toast('Opening server settings…')">Change password</button>
+    <button class="iconbtn" aria-label="Dismiss" onclick="banner.remove()"><svg class="svg" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+  </div>
+
+  <div class="grid">
+    <section class="card" aria-label="Audio streams">
+      <div class="toolbar">
+        <h2>Streams</h2>
+        <div class="seg" role="group" aria-label="Filter">
+          <button aria-pressed="true" data-f="all">All 7</button><button aria-pressed="false" data-f="live">Live</button><button aria-pressed="false" data-f="err">Issues</button>
+        </div>
+        <button class="btn btn-ghost btn-sm" onclick="stopAll()">Stop all</button>
+        <button class="btn btn-ghost btn-sm" onclick="document.body.classList.toggle('is-empty')" title="Preview empty state">Empty</button>
+        <button class="btn btn-primary" onclick="openDrawer()"><svg class="svg" viewBox="0 0 24 24" style="width:16px;height:16px"><path d="M12 5v14M5 12h14"/></svg>New stream</button>
+      </div>
+      <div class="list" id="list"></div>
+      <div class="empty">
+        <div class="brand-mark" style="width:48px;height:48px;margin:0 auto 16px;border-radius:14px" id="logo2"></div>
+        <h3 style="font-size:20px;letter-spacing:-.01em">No streams yet</h3>
+        <p class="muted" style="margin-top:6px">Pick an audio input, name it, and go live — listeners on your Wi-Fi hear it instantly.</p>
+        <ol><li><span>1</span>New stream</li><li><span>2</span>Choose input</li><li><span>3</span>Go live</li></ol>
+        <div><button class="btn btn-primary" onclick="openDrawer()">Create first stream</button></div>
+        <p class="faint" style="font-size:13px;margin-top:20px">Tip: route app audio with VB-Audio Cable or Dante Virtual Soundcard.</p>
+      </div>
+    </section>
+
+    <aside class="side">
+      <section class="card">
+        <div class="card-h"><h3>Share with listeners</h3></div>
+        <div class="card-b" style="display:flex;gap:14px;align-items:center">
+          <svg class="qr" viewBox="0 0 21 21" shape-rendering="crispEdges" id="qr"></svg>
+          <div style="min-width:0;flex:1;display:flex;flex-direction:column;gap:8px">
+            <p class="muted" style="font-size:13px">Scan or open on any device on this network.</p>
+            <div class="share-url"><code>192.168.1.24:3001</code><button class="iconbtn" style="width:28px;height:28px" aria-label="Copy link" onclick="LS.toast('Link copied','copy')"><svg class="svg" viewBox="0 0 24 24" style="width:15px;height:15px"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="card-h"><h3>Event</h3><span class="spacer"></span><button class="btn btn-ghost btn-sm">Edit</button></div>
+        <div class="card-b">
+          <div class="kv"><span class="muted">Title</span><span>Sounds For A Beautiful Day</span></div>
+          <div class="kv"><span class="muted">Feedback contact</span><span>hello@example.com</span></div>
+          <div class="kv"><span class="muted">Show on listener page</span><button class="switch" role="switch" aria-checked="true" onclick="this.ariaChecked=this.ariaChecked!=='true'"></button></div>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="card-h"><h3>Audio inputs</h3><span class="chip chip-off">4 found</span><span class="spacer"></span><button class="iconbtn" style="width:30px;height:30px" aria-label="Rescan" onclick="LS.toast('Rescanning inputs…','scan')"><svg class="svg" viewBox="0 0 24 24" style="width:15px;height:15px"><path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/></svg></button></div>
+        <ul class="card-b devices">
+          <li><span class="chip chip-live" style="height:20px">IN USE</span><span style="flex:1;min-width:0">CABLE Output (VB-Audio Virtual Cable)</span><span class="lvl"><i style="width:70%"></i></span></li>
+          <li><span class="chip chip-off" style="height:20px">IDLE</span><span style="flex:1">CABLE-A Output (VB-Audio Cable A)</span><span class="lvl"><i style="width:0"></i></span></li>
+          <li><span class="chip chip-off" style="height:20px">IDLE</span><span style="flex:1">Microphone (Realtek Audio)</span><span class="lvl"><i style="width:15%"></i></span></li>
+          <li><span class="chip chip-err" style="height:20px">MISSING</span><span style="flex:1" class="muted">OBS Virtual Camera (Audio)</span></li>
+        </ul>
+      </section>
+    </aside>
+  </div>
+</main>
+
+<footer class="foot"><div class="wrap">
+  <span>LANStreamer v1.2.4</span><a href="https://github.com/jerryagenyi/LANStreamer">GitHub</a><a href="#">Troubleshooting</a>
+  <span class="spacer"></span><span>Free &amp; open source · no ads, no listener tracking</span>
+</div></footer>
+
+<!-- New stream drawer -->
+<div class="scrim" onclick="closeDrawer()"></div>
+<aside class="drawer" role="dialog" aria-modal="true" aria-labelledby="dt">
+  <div class="card-h" style="padding:18px 20px"><h2 id="dt" style="font-size:17px">New stream</h2><span class="spacer"></span><button class="iconbtn" aria-label="Close" onclick="closeDrawer()"><svg class="svg" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg></button></div>
+  <form class="drawer-b" id="newForm" onsubmit="event.preventDefault();goLive()">
+    <div class="field"><label for="sn">Name</label><input id="sn" class="input" maxlength="50" placeholder="e.g. Main Room English" required><span class="hint">Listeners see this. Use the room or language.</span></div>
+    <div class="field"><label>Audio input</label>
+      <label class="src-opt"><input type="radio" name="src" checked><div class="t"><div>CABLE Output (VB-Audio Virtual Cable)</div><div class="faint mono">Used by S5 · can share</div></div><span class="lvl"><i style="width:70%"></i></span></label>
+      <label class="src-opt"><input type="radio" name="src"><div class="t"><div>CABLE-A Output (VB-Audio Cable A)</div><div class="faint mono">Idle</div></div><span class="lvl"><i style="width:0"></i></span></label>
+      <label class="src-opt"><input type="radio" name="src"><div class="t"><div>Microphone (Realtek Audio)</div><div class="faint mono">Idle</div></div><span class="lvl"><i style="width:15%"></i></span></label>
+    </div>
+    <div class="field"><label>Quality</label>
+      <div class="quality">
+        <label><input type="radio" name="q"><b>96</b>kbps · Speech</label>
+        <label><input type="radio" name="q"><b>128</b>kbps · Standard</label>
+        <label><input type="radio" name="q" checked><b>192</b>kbps · Music</label>
+      </div>
+      <span class="hint">192 kbps is recommended for music; 96 is plenty for spoken translation.</span>
+    </div>
+    <label style="display:flex;align-items:center;gap:10px;font-size:14px"><button type="button" class="switch" role="switch" aria-checked="false" onclick="this.ariaChecked=this.ariaChecked!=='true'"></button>Start automatically when LANStreamer launches</label>
+  </form>
+  <div class="drawer-f"><button class="btn btn-ghost" onclick="closeDrawer()">Cancel</button><button class="btn btn-secondary" form="newForm" type="button" onclick="LS.toast('Saved as stopped');closeDrawer()">Save</button><button class="btn btn-primary" form="newForm" type="submit">${''}Go live</button></div>
+</aside>
+
+<script>
+logo.innerHTML = I.logo; logo2.innerHTML = I.logo;
+document.querySelector('.drawer-f .btn-primary').innerHTML = I.play + 'Go live';
+let streams = [
+  {id:'S5',name:'Main Room English',state:'live',src:'CABLE Output (VB-Audio Virtual Cable)',kbps:192,t:494,listeners:18},
+  {id:'S6',name:'Side Room French',state:'stopped',src:'CABLE-A Output (VB-Audio Cable A)',kbps:192},
+  {id:'S3',name:'AutoStart Test',state:'err',src:'OBS Virtual Camera (Audio)',kbps:192,err:'Input device not found',hint:'OBS is closed or the virtual audio device was removed.'},
+  {id:'S1',name:'Electron Test 1',state:'stopped',src:'CABLE-A Output (VB-Audio Cable A)',kbps:128},
+  {id:'S2',name:'Redesign Demo Channel',state:'stopped',src:'CABLE Output (VB-Audio Virtual Cable)',kbps:192},
+  {id:'S4',name:'Dashboard Demo',state:'stopped',src:'CABLE Output (VB-Audio Virtual Cable)',kbps:192},
+  {id:'S7',name:'Verify One',state:'stopped',src:'CABLE Output (VB-Audio Virtual Cable)',kbps:192},
+];
+let filter='all';
+const fmt=s=>s<60?s+'s':s<3600?Math.floor(s/60)+'m '+String(s%60).padStart(2,'0')+'s':Math.floor(s/3600)+'h '+Math.floor(s%3600/60)+'m';
+const mic='<svg class="svg" viewBox="0 0 24 24" style="width:13px;height:13px;flex-shrink:0"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0M12 17v5"/></svg>';
+function rowHTML(s){
+  const live=s.state==='live', err=s.state==='err';
+  const status = live?'<span class="chip chip-live"><span class="eq"><i></i><i></i><i></i><i></i></span>LIVE</span>':err?'<span class="chip chip-err">ERROR</span>':'<span class="chip chip-off">Stopped</span>';
+  const extra = live?`<span class="dotsep"></span><span class="mono" data-t="${s.id}">${fmt(s.t)}</span><span class="dotsep"></span><span>${s.listeners} listening</span>`:'';
+  return `<div class="row ${live?'is-live':''} ${err?'is-err':''}" data-id="${s.id}">
+    <span class="grip hide-sm" title="Drag to reorder"><svg class="svg" viewBox="0 0 24 24" style="width:14px"><circle cx="9" cy="6" r="1"/><circle cx="15" cy="6" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="9" cy="18" r="1"/><circle cx="15" cy="18" r="1"/></svg></span>
+    <span class="sid">${s.id}</span>
+    <div style="min-width:0"><div class="name">${s.name}</div>
+      <div class="meta">${status}<span class="src" title="${s.src}">${mic}${s.src}</span><span class="dotsep"></span><span class="mono">${s.kbps}k</span>${extra}</div></div>
+    <div class="actions">
+      <button class="playbtn ${live?'stop':''}" aria-label="${live?'Stop':'Go live'} ${s.name}" onclick="toggle('${s.id}')">${live?I.stop:I.play}</button>
+      <div class="menu"><button class="iconbtn" aria-label="More actions" onclick="this.parentNode.classList.toggle('open')"><svg class="svg" viewBox="0 0 24 24"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg></button>
+        <div class="menu-pop card"><button onclick="LS.toast('Link to ${s.name} copied','copy')">Copy listener link</button><button>Edit</button><button>Duplicate</button><button class="del" onclick="del('${s.id}')">Delete</button></div></div>
+    </div>
+    ${err?`<div class="errbox"><b>${s.err}</b><span class="grow">${s.hint}</span><button class="btn btn-secondary btn-sm" onclick="openDrawer()">Change input</button><button class="btn btn-ghost btn-sm" onclick="LS.toast('Retrying ${s.id}…','${s.id}')">Retry</button></div>`:''}
+  </div>`;
+}
+function render(){
+  const vis=streams.filter(s=>filter==='all'||s.state===filter);
+  const live=vis.filter(s=>s.state==='live'), rest=vis.filter(s=>s.state!=='live');
+  let h='';
+  if(live.length) h+=`<div class="group-label eyebrow">On air · ${live.length}</div>`+live.map(rowHTML).join('');
+  if(rest.length) h+=`<div class="group-label eyebrow">${filter==='err'?'Issues':'Ready'} · ${rest.length}</div>`+rest.map(rowHTML).join('');
+  if(!vis.length) h=`<p class="muted" style="padding:32px 18px;text-align:center">Nothing here.</p>`;
+  list.innerHTML=h;
+  liveCount.textContent=streams.filter(s=>s.state==='live').length;
+}
+function toggle(id){const s=streams.find(x=>x.id===id);
+  if(s.state==='live'){s.state='stopped';LS.toast(`${s.name} stopped`,id)}
+  else if(s.state==='err'){LS.toast(`Can't start ${s.id}: input missing`,id);return}
+  else{s.state='live';s.t=0;s.listeners=0;LS.toast(`${s.name} is live`,id)}
+  render()}
+function stopAll(){if(!confirm('Stop every live stream?'))return;streams.forEach(s=>{if(s.state==='live')s.state='stopped'});render();LS.toast('All streams stopped')}
+function del(id){streams=streams.filter(s=>s.id!==id);render();LS.toast(`${id} deleted · Undo`)}
+function openDrawer(){document.body.classList.add('drawer-open');setTimeout(()=>sn.focus(),250)}
+function closeDrawer(){document.body.classList.remove('drawer-open')}
+function goLive(){const n='S'+(streams.length+1);streams.unshift({id:n,name:sn.value,state:'live',src:'CABLE Output (VB-Audio Virtual Cable)',kbps:192,t:0,listeners:0});sn.value='';closeDrawer();render();LS.toast(`${n} is live`)}
+document.querySelectorAll('.seg button').forEach(b=>b.onclick=()=>{document.querySelectorAll('.seg button').forEach(x=>x.ariaPressed='false');b.ariaPressed='true';filter=b.dataset.f;render()});
+document.addEventListener('click',e=>{if(!e.target.closest('.menu'))document.querySelectorAll('.menu.open').forEach(m=>m.classList.remove('open'))});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeDrawer()});
+setInterval(()=>{streams.forEach(s=>{if(s.state==='live'){s.t++;const el=document.querySelector(`[data-t="${s.id}"]`);if(el)el.textContent=fmt(s.t)}})},1000);
+// decorative QR
+(()=>{let r='';const f=(x,y)=>(x<7&&y<7)||(x>13&&y<7)||(x<7&&y>13);for(let y=0;y<21;y++)for(let x=0;x<21;x++){let on;if(f(x,y)){const lx=x>13?x-14:x,ly=y>13?y-14:y;on=lx==0||lx==6||ly==0||ly==6||(lx>1&&lx<5&&ly>1&&ly<5)}else on=((x*7+y*13+x*y)%5)<2;if(on)r+=`<rect x="${x}" y="${y}" width="1" height="1" fill="currentColor"/>`}qr.innerHTML=r})();
+render();
+</script>
+</body>
+</html>

@@ -1,127 +1,40 @@
 # LANStreamer Documentation
 
-This directory contains comprehensive documentation for the LANStreamer project.
+LANStreamer is an **Electron desktop app in active development** — most people will install the packaged app; it also runs straight from this repo for contributors and source users. Documentation below is split the same way. Current status: no installer released yet — see the status block in the [main README](../README.md).
 
-## 📚 Documentation Index
+## 📦 Using the app
 
-### Core Documentation
+| Document | Description |
+|----------|-------------|
+| **[../README.md](../README.md)** | Start here — quick start (desktop app or source), admin login, telemetry & privacy |
+| **[TROUBLESHOOTING.md](./TROUBLESHOOTING.md)** | Common issues — subnet, firewall, playback (plus the in-app guide at `/docs`) |
+| **[NETWORK-SETUP.md](./NETWORK-SETUP.md)** | Static-IP setup for events and conferences |
+| **[LATENCY.md](./LATENCY.md)** | Where audio delay comes from and how to cut it |
+| **[CHANGELOG.md](./CHANGELOG.md)** | Version history and release notes |
+| **[manual-setup/](../manual-setup/)** | Hardware-specific guides (Behringer DVS, XR18, and friends) |
+| **[guides/](./guides/)** | FFmpeg / Icecast installation — **packaged app: not needed (binaries are bundled)**; source/server-only installs: required |
 
-| Document | Description | Audience |
-|----------|-------------|----------|
-| **[LANSTREAMER_SYSTEM_ARCHITECTURE.md](./LANSTREAMER_SYSTEM_ARCHITECTURE.md)** | ⭐ **Complete system architecture** - Detailed technical documentation covering all services, startup sequence, configuration, and troubleshooting | Developers, AI assistants, advanced users |
-| **[TROUBLESHOOTING.md](./TROUBLESHOOTING.md)** | Common issues and solutions - Practical troubleshooting guide for real-world problems | All users |
-| **[NETWORK-SETUP.md](./NETWORK-SETUP.md)** | Network configuration guide - Static IP setup for events and conferences | Event organisers, network admins |
-| **[CHANGELOG.md](./CHANGELOG.md)** | Version history - Release notes, updates, and compatibility information | All users |
+## 🛠️ Developing & running from source
 
-### Installation Guides
+| Document | Description |
+|----------|-------------|
+| **[README-DEVELOPERS.md](./README-DEVELOPERS.md)** | ⭐ Start here — dev loop (`electron:dev`), tests, architecture notes, UI rules, telemetry internals |
+| **[GO-LIVE-CHECKLIST.md](./GO-LIVE-CHECKLIST.md)** | Pre-release checklist — test matrix, packaging, security blockers, GitHub release process |
+| **[APP-FLOW.md](./APP-FLOW.md)** | Every page, user flow (mermaid), and component — the UI map |
+| **[pressure-checklist.md](./pressure-checklist.md)** | PR review gate for streaming-behavior changes |
+| **[UX-AUDIT-2026-10.md](./UX-AUDIT-2026-10.md)** | Holistic UX assessment (IxDF framework) — scores, prioritized issues, redesign roadmap |
+| **[benchmark-report-v1.md](./benchmark-report-v1.md)** | Performance baseline (kept current until the latency round lands v2) |
+| **[../CLAUDE.md](../CLAUDE.md)** | Code conventions for AI-assisted contributors |
 
-| Guide | Description |
-|-------|-------------|
-| **[guides/README.md](./guides/README.md)** | Installation guides index |
-| **[guides/ffmpeg-installation.md](./guides/ffmpeg-installation.md)** | FFmpeg installation and setup |
-| **[guides/icecast-installation.md](./guides/icecast-installation.md)** | Icecast server installation |
-| **[guides/audio-pipeline-simple.md](./guides/audio-pipeline-simple.md)** | Simple audio pipeline setup |
-
-### Archived Documentation
-
-Old documentation files are preserved in the `archive/` folder for reference:
-- `archive/ARCHIVED_ICECAST_CONFIGURATION_AND_RUNTIME_ARCHITECTURE.md` - Previous Icecast-focused architecture doc (content merged into SYSTEM_ARCHITECTURE.md)
-
----
-
-## 🚀 Quick Start
-
-1. **Install dependencies:** `npm install`
-2. **Configure environment:** Copy `.env.example` to `.env` and modify as needed
-3. **Start development server:**
-   - **With live reload:** `npm run dev:live` → `http://localhost:3002` ⚡
-   - **Regular mode:** `npm run dev` → `http://localhost:3001`
-4. **Access dashboard:** Add `/dashboard` to either URL
-
-### 🔄 Development Mode
-
-For the best development experience, use `npm run dev:live`:
-- **Auto-refresh** on file changes (no more manual refresh!)
-- **BrowserSync** dashboard for development tools
-- **Multi-device testing** support
-- **Network access** for testing on other devices
-
----
-
-## 📖 Documentation Structure
-
-```
-docs/
-├── README.md                          # This file - documentation index
-├── LANSTREAMER_SYSTEM_ARCHITECTURE.md # ⭐ Core architecture documentation
-├── TROUBLESHOOTING.md                 # Practical troubleshooting guide
-├── NETWORK-SETUP.md                   # Network configuration guide
-├── CHANGELOG.md                       # Version history
-├── guides/                            # Installation guides
-│   ├── README.md                      # Guides index
-│   ├── ffmpeg-installation.md
-│   ├── icecast-installation.md
-│   └── audio-pipeline-simple.md
-└── archive/                           # Archived documentation
-    └── ARCHIVED_ICECAST_CONFIGURATION_AND_RUNTIME_ARCHITECTURE.md
+```bash
+npm install                # dependencies
+npm run electron:dev       # the DESKTOP APP (what users run)
+npm run dev                # server-only (no Electron shell) → http://localhost:3001
+npm test                   # Jest suite
 ```
 
----
+Dashboard login: `admin` / `lanstreamer123` by default (README → Security Setup).
 
-## 🎯 Finding What You Need
+## 🗄️ Archive
 
-### For Users
-- **Getting started?** → See main [README.md](../README.md)
-- **Having problems?** → Start with [TROUBLESHOOTING.md](./TROUBLESHOOTING.md)
-- **Setting up network?** → See [NETWORK-SETUP.md](./NETWORK-SETUP.md)
-- **Installing components?** → See [guides/](./guides/)
-
-### For Developers
-- **Understanding the system?** → Read [LANSTREAMER_SYSTEM_ARCHITECTURE.md](./LANSTREAMER_SYSTEM_ARCHITECTURE.md)
-- **Contributing code?** → See [CLAUDE.md](../CLAUDE.md) for development workflow
-- **API reference?** → See architecture doc Section 5 (Stream Creation Flow)
-
-### For AI Assistants
-- **System architecture?** → [LANSTREAMER_SYSTEM_ARCHITECTURE.md](./LANSTREAMER_SYSTEM_ARCHITECTURE.md) contains complete technical details
-- **Error diagnostics?** → Architecture doc Section 6 (Error Handling & Diagnostics)
-- **Service interactions?** → Architecture doc Section 3 (Core Services)
-
----
-
-## 🔍 Quick Reference
-
-### Common Tasks
-
-| Task | Document | Section |
-|------|----------|---------|
-| Understand system architecture | SYSTEM_ARCHITECTURE.md | Section 1: System Overview |
-| Trace stream creation flow | SYSTEM_ARCHITECTURE.md | Section 5: Stream Creation Flow |
-| Debug connection issues | TROUBLESHOOTING.md | Icecast Connection Issues |
-| Configure static IP | NETWORK-SETUP.md | Full guide |
-| Install FFmpeg | guides/ffmpeg-installation.md | Full guide |
-| Install Icecast | guides/icecast-installation.md | Full guide |
-
----
-
-## 📝 Documentation Standards
-
-- **Architecture docs** include file names, line numbers, and function names for precision
-- **Troubleshooting guides** include step-by-step solutions with commands
-- **Installation guides** are platform-specific with screenshots where helpful
-- **All docs** are kept up-to-date with codebase changes
-
----
-
-## 🤝 Contributing to Documentation
-
-When updating documentation:
-1. Keep technical accuracy - verify file paths and line numbers
-2. Update cross-references if moving content
-3. Test all commands and examples
-4. Follow the existing structure and formatting
-5. Update this README if adding new documents
-
----
-
-**Last Updated:** 2026-01-27  
-**Documentation Version:** Aligned with codebase v1.2.3
+Superseded docs (pre-Electron architecture, shipped redesign plans, old test plans) live in **[archive/](./archive/)** with an index stating what replaced each one.

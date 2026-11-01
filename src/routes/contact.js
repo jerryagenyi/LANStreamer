@@ -5,17 +5,19 @@ import multer from 'multer';
 import { fileURLToPath } from 'url';
 import logger from '../utils/logger.js';
 import { ValidationError, ErrorCodes } from '../utils/errors.js';
+import { dataDir, uploadsBase } from '../utils/vendorPaths.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const router = express.Router();
 
-// Path to contact details config file
-const contactConfigPath = path.join(process.cwd(), 'config', 'contact-details.json');
+// Mutable state lives in the data dir (userData in packaged apps, repo
+// config/ in dev) — a packaged app must never write next to its exe.
+const contactConfigPath = path.join(dataDir(), 'contact-details.json');
 
-// Path for event image uploads
-const UPLOADS_DIR = path.join(process.cwd(), 'public', 'uploads', 'events');
+// Path for event image uploads (served from the same base — see app.js)
+const UPLOADS_DIR = path.join(uploadsBase(), 'events');
 
 // Configure multer for event image uploads
 const storage = multer.diskStorage({

@@ -402,81 +402,110 @@ class IcecastManager {
             return;
         }
 
-        const statusColor = this.getStatusColor();
-        const statusText = this.getStatusText();
-        const statusIcon = this.getStatusIcon();
+        const installed = !!this.status.installed;
+        const running = !!this.status.running;
+        const statusColor = !installed ? 'var(--tok-danger)' : running ? 'var(--tok-live)' : 'var(--tok-text-3)';
+        const statusLabel = !installed ? 'Not installed' : running ? 'Online' : 'Offline';
 
-        // Build Icecast admin dashboard URL
-        // Use window.location.hostname to get the actual server IP/hostname
-        // This ensures the link works when accessing from remote machines
+        // Build Icecast admin dashboard URL using the host the page was opened from
         const icecastHost = window.location.hostname;
         const icecastPort = this.status.port || '8000';
         const icecastAdminUrl = `http://${icecastHost}:${icecastPort}/admin/`;
 
-        container.innerHTML = `
-            <div class="glass-card p-6">
-                <div class="flex justify-between items-start mb-4">
-                    <div class="flex items-center gap-3">
-                        <h2 class="text-xl font-bold text-white">Icecast Server</h2>
-                        ${this.status.installed ? `
-                            <a href="${icecastAdminUrl}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium text-blue-400 hover:text-blue-300 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/30 hover:border-blue-500/50 rounded-lg transition-all duration-300" title="Open Icecast Admin Dashboard">
-                                <span class="material-symbols-rounded text-sm">open_in_new</span>
-                                Dashboard
-                            </a>
-                        ` : ''}
+        // Status chip (dot + label) shown in the card header
+        const statusChip = `
+            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold"
+                  style="border:1px solid ${statusColor};color:${statusColor};">
+                <span style="width:7px;height:7px;border-radius:999px;background:${statusColor};display:inline-block;"></span>
+                ${statusLabel}
+            </span>
+        `;
+
+        // Icon-only controls with tooltips (labels lived in the tooltips before)
+        const actionsHtml = `
+            <div class="flex items-center gap-1.5" role="group" aria-label="Icecast server controls">
+                <button id="start-btn" class="copy-btn" title="Start Icecast server" aria-label="Start Icecast server"
+                        ${!installed || running ? 'disabled' : ''} style="${!installed || running ? 'opacity:.35;cursor:not-allowed;' : ''}">
+                    <span class="material-symbols-rounded text-base">play_arrow</span>
+                </button>
+                <button id="icecast-stop-btn" class="copy-btn" title="Stop Icecast server" aria-label="Stop Icecast server"
+                        ${!installed || !running ? 'disabled' : ''} style="${!installed || !running ? 'opacity:.35;cursor:not-allowed;' : ''}">
+                    <span class="material-symbols-rounded text-base">stop</span>
+                </button>
+                <button id="restart-btn" class="copy-btn" title="Restart Icecast server" aria-label="Restart Icecast server"
+                        ${!installed || !running ? 'disabled' : ''} style="${!installed || !running ? 'opacity:.35;cursor:not-allowed;' : ''}">
+                    <span class="material-symbols-rounded text-base">restart_alt</span>
+                </button>
+            </div>
+        `;
+
+        // The Icecast mark doubles as the server icon; its colour carries status
+        const icecastIcon = `
+            <img src="/assets/icecast-mark.svg" alt="" aria-hidden="true"
+                 class="w-6 h-6 ls-collapse-icon" style="color:${running ? 'var(--tok-accent)' : 'var(--tok-text-3)'};">
+        `;
+
+        const bodyContent = `
+            ${this.renderInstallationStatus()}
+            ${this.renderHostnameWarning()}
+            <div class="space-y-4 ${!installed ? 'opacity-50' : ''}">
+                <!-- Status row: mark + description + icon-only controls -->
+                <div class="flex items-center gap-3 flex-wrap">
+                    <div class="flex-1 min-w-0">
+                        <p class="font-semibold" style="color:var(--tok-text-1)">${this.getServerStatusText()}</p>
+                        <p class="text-xs" style="color:var(--tok-text-3)">${this.getServerStatusDescription()}</p>
                     </div>
+                    ${actionsHtml}
                 </div>
-                
-                <!-- Installation Status -->
-                ${this.renderInstallationStatus()}
-                
-                <!-- Security Warning -->
-                ${this.renderSecurityWarning()}
 
-                <!-- Hostname Warning -->
-                ${this.renderHostnameWarning()}
-
-                <div class="space-y-5 ${!this.status.installed ? 'opacity-50' : ''}">
-                    <!-- Server Status -->
-                    <div class="flex items-center gap-4 p-3 glass-card-inset rounded-xl">
-                        <span class="material-symbols-rounded text-2xl ${statusColor.replace('bg-', 'text-')}">${statusIcon}</span>
-                        <div class="flex-1">
-                            <p class="font-semibold text-white">${this.getServerStatusText()}</p>
-                            <p class="text-sm text-gray-400">${this.getServerStatusDescription()}</p>
-                        </div>
-                        ${this.status.processId ? `<span class="text-xs text-gray-500 font-mono">PID: ${this.status.processId}</span>` : ''}
-                    </div>
-                    
-                    <!-- Action Buttons -->
-                    <div class="flex gap-2 pt-4 border-t border-[var(--border-color)]">
-                        <button id="start-btn" class="flex-1 inline-flex items-center justify-center gap-2 rounded-md px-3 py-2 text-sm font-semibold text-white shadow-lg transition-all duration-300 btn-gradient disabled:opacity-50 disabled:cursor-not-allowed" ${!this.status.installed || this.status.running ? 'disabled' : ''}>
-                            <span class="material-symbols-rounded text-base">play_arrow</span>
-                            Start Server
-                        </button>
-                        <button id="icecast-stop-btn" class="flex-1 inline-flex items-center justify-center gap-2 rounded-md px-3 py-2 text-sm font-semibold text-white shadow-lg transition-all duration-300 btn-stop-gradient disabled:opacity-50 disabled:cursor-not-allowed" ${!this.status.installed || !this.status.running ? 'disabled' : ''}>
-                            <span class="material-symbols-rounded text-base">stop</span>
-                            Stop Server
-                        </button>
-                        <button id="restart-btn" class="flex-1 inline-flex items-center justify-center gap-2 rounded-md px-3 py-2 text-sm font-semibold text-white shadow-lg transition-all duration-300 bg-[var(--card-bg)] border border-[var(--border-color)] hover:bg-[var(--border-color)] disabled:opacity-50 disabled:cursor-not-allowed" ${!this.status.installed || !this.status.running ? 'disabled' : ''}>
-                            <span class="material-symbols-rounded text-base">restart_alt</span>
-                            Restart Server
-                        </button>
-                    </div>
-                    
-                    <!-- Server Info -->
-                    <div class="border-t border-[var(--border-color)] pt-4 mt-4 text-xs text-gray-500 space-y-1">
-                        <p><strong>Installation:</strong> ${this.status.installationPath || 'Not detected'}</p>
+                <!-- Server info: collapsed by default, remembers choice (plain row, no card-in-card) -->
+                ${window.LSCollapse ? LSCollapse.wrap('icecast-info', { title: 'Icecast server info', plain: true }, `
+                    <div class="text-xs space-y-1" style="color:var(--tok-text-3)">
                         <p><strong>Host:</strong> ${this.status.host || 'localhost'}</p>
                         <p><strong>Port:</strong> ${this.status.port || '8000'}</p>
                         <p><strong>Uptime:</strong> ${this.formatUptime(this.status.uptime)}</p>
                         <p><strong>Listeners:</strong> ${this.status.listeners || 0}/${this.status.maxListeners || 100}</p>
                         ${this.status.version ? `<p><strong>Version:</strong> ${this.status.version}</p>` : ''}
                         ${this.status.platform ? `<p><strong>Platform:</strong> ${this.status.platform}</p>` : ''}
+                        ${this.status.installationPath ? `<p class="break-all" title="${this.status.installationPath}"><strong>Path:</strong> ${this.status.installationPath}</p>` : ''}
+                        <p class="pt-1">
+                            <a href="${icecastAdminUrl}" target="_blank" rel="noopener noreferrer" style="color:var(--tok-accent);">
+                                Open Icecast admin dashboard
+                            </a>
+                        </p>
                     </div>
-                </div>
+                `, false) : `
+                    <div class="border-t border-[var(--border-color)] pt-4 mt-4 text-xs text-gray-500 space-y-1">
+                        <p><strong>Host:</strong> ${this.status.host || 'localhost'}</p>
+                        <p><strong>Port:</strong> ${this.status.port || '8000'}</p>
+                        <p><strong>Uptime:</strong> ${this.formatUptime(this.status.uptime)}</p>
+                        <p><strong>Listeners:</strong> ${this.status.listeners || 0}/${this.status.maxListeners || 100}</p>
+                    </div>
+                `}
             </div>
         `;
-        
+
+        container.innerHTML = window.LSCollapse
+            ? LSCollapse.wrap('icecast-server',
+                {
+                  iconHtml: icecastIcon,
+                  title: 'Icecast Server',
+                  badge: statusChip,
+                  aside: this.status.processId ? `<span class="text-xs" style="color:var(--tok-text-3)">PID ${this.status.processId}</span>` : ''
+                },
+                bodyContent, false)
+            : `
+            <div class="glass-card p-6 space-y-4">
+                <div class="flex justify-between items-center gap-3">
+                    <div class="flex items-center gap-3">
+                        <h2 class="text-lg font-bold text-white">Icecast Server</h2>
+                        ${statusChip}
+                    </div>
+                </div>
+                ${bodyContent}
+            </div>
+        `;
+
         // Re-setup event listeners after rendering
         this.setupEventListeners();
     }
@@ -584,50 +613,25 @@ class IcecastManager {
     }
 
     updateActionButtons(loadingButton = null) {
-        const startBtn = document.querySelector('#start-btn');
-        const stopBtn = document.querySelector('#icecast-stop-btn');
-        const restartBtn = document.querySelector('#restart-btn');
-        
-        // Always disable all buttons during any operation to prevent race conditions
-        if (startBtn) startBtn.disabled = (loadingButton !== null) || !this.status.installed || this.status.running;
-        if (stopBtn) stopBtn.disabled = (loadingButton !== null) || !this.status.installed || !this.status.running;
-        if (restartBtn) restartBtn.disabled = (loadingButton !== null) || !this.status.installed || !this.status.running;
-        
-        // Update button text - only show spinner for the specific loading button
-        if (startBtn) {
-            if (loadingButton === 'start') {
-                startBtn.innerHTML = '<span class="material-symbols-rounded text-base animate-spin">refresh</span> Starting Server...';
-            } else {
-                startBtn.innerHTML = '<span class="material-symbols-rounded text-base">play_arrow</span> Start Server';
-            }
+        // Icon-only buttons: busy state swaps the icon to a spinner, keeps tooltip
+        const buttons = [
+            { name: 'start', el: document.getElementById('start-btn'), icon: 'play_arrow', title: 'Start Icecast server' },
+            { name: 'stop', el: document.getElementById('icecast-stop-btn'), icon: 'stop', title: 'Stop Icecast server' },
+            { name: 'restart', el: document.getElementById('restart-btn'), icon: 'restart_alt', title: 'Restart Icecast server' }
+        ];
+
+        for (const { name, el, icon, title } of buttons) {
+            if (!el) continue;
+            const busy = loadingButton !== null;
+            const enabled = !busy && this.status.installed && (name === 'start' ? !this.status.running : this.status.running);
+            el.disabled = !enabled;
+            el.title = loadingButton === name ? `${title} (working…)` : title;
+            el.setAttribute('aria-label', el.title);
+            el.style.opacity = enabled ? '' : '0.35';
+            el.style.cursor = enabled ? 'pointer' : 'not-allowed';
+            const spinning = loadingButton === name;
+            el.innerHTML = `<span class="material-symbols-rounded text-base${spinning ? ' animate-spin' : ''}">${spinning ? 'progress_activity' : icon}</span>`;
         }
-        
-        if (stopBtn) {
-            if (loadingButton === 'stop') {
-                stopBtn.innerHTML = '<span class="material-symbols-rounded text-base animate-spin">refresh</span> Stopping Server...';
-            } else {
-                stopBtn.innerHTML = '<span class="material-symbols-rounded text-base">stop</span> Stop Server';
-            }
-        }
-        
-        if (restartBtn) {
-            if (loadingButton === 'restart') {
-                restartBtn.innerHTML = '<span class="material-symbols-rounded text-base animate-spin">refresh</span> Restarting Server...';
-            } else {
-                restartBtn.innerHTML = '<span class="material-symbols-rounded text-base">restart_alt</span> Restart Server';
-            }
-        }
-        
-        // Add visual feedback for disabled state
-        [startBtn, stopBtn, restartBtn].forEach(btn => {
-            if (btn) {
-                if (btn.disabled) {
-                    btn.classList.add('opacity-50', 'cursor-not-allowed');
-                } else {
-                    btn.classList.remove('opacity-50', 'cursor-not-allowed');
-                }
-            }
-        });
     }
 
     updateStatusIndicators() {
@@ -696,36 +700,8 @@ class IcecastManager {
     }
 
     showNotification(message, type = 'info') {
-        // Create notification element
-        const notification = document.createElement('div');
-        notification.className = `fixed top-4 right-4 p-4 rounded-lg shadow-lg z-50 transition-all duration-300 transform translate-x-full`;
-        
-        const bgColor = type === 'success' ? 'bg-green-600' : type === 'error' ? 'bg-red-600' : type === 'warning' ? 'bg-yellow-600' : 'bg-blue-600';
-        notification.className += ` ${bgColor} text-white`;
-        
-        notification.innerHTML = `
-            <div class="flex items-center gap-2">
-                <span class="material-symbols-rounded text-lg">${type === 'success' ? 'check_circle' : type === 'error' ? 'error' : type === 'warning' ? 'warning' : 'info'}</span>
-                <span>${message}</span>
-            </div>
-        `;
-        
-        document.body.appendChild(notification);
-        
-        // Animate in
-        setTimeout(() => {
-            notification.classList.remove('translate-x-full');
-        }, 100);
-        
-        // Auto-remove after 5 seconds
-        setTimeout(() => {
-            notification.classList.add('translate-x-full');
-            setTimeout(() => {
-                if (notification.parentNode) {
-                    notification.parentNode.removeChild(notification);
-                }
-            }, 300);
-        }, 5000);
+        if (window.LSToasts) LSToasts.show(message, type);
+        else console.log(`${type.toUpperCase()}: ${message}`);
     }
 
     startAutoRefresh() {
@@ -743,6 +719,7 @@ class IcecastManager {
     async checkStatusAndUpdateButtons() {
         try {
             const wasInstalled = this.status.installed;
+            const wasRunning = !!this.status.running;
 
             // Always check for installation changes
             await this.detectIcecastInstallation();
@@ -758,6 +735,23 @@ class IcecastManager {
             if (this.status.installed) {
                 await this.checkStatus();
                 this.render(); // Update button states based on new status
+
+                // Feed the notification bell on up/down transitions
+                const nowRunning = !!this.status.running;
+                if (window.LSNotifications && wasRunning && !nowRunning) {
+                    LSNotifications.notify({
+                        title: 'Icecast server went offline',
+                        message: 'Running streams will stop until it is back. Restart it from the Icecast panel.',
+                        type: 'error'
+                    });
+                } else if (window.LSNotifications && !wasRunning && nowRunning && this._announcedOnce) {
+                    LSNotifications.notify({
+                        title: 'Icecast server is back online',
+                        message: 'Streams can be started again.',
+                        type: 'success'
+                    });
+                }
+                this._announcedOnce = true;
             }
         } catch (error) {
             console.warn('Auto status check failed:', error);

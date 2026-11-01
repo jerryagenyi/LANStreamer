@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+  <!-- Stylized Icecast server mark: ice shard in a hex frame -->
+  <path d="M12 2.5 L20 7 V17 L12 21.5 L4 17 V7 Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+  <path d="M8.6 15.4 L15.4 8.6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M15.4 15.4 L8.6 8.6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+</svg>

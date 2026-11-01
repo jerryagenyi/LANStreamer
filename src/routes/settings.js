@@ -3,16 +3,19 @@ import fs from 'fs-extra';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import multer from 'multer';
+import { dataDir, uploadsBase } from '../utils/vendorPaths.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const router = express.Router();
 
-// Path to store application settings
-const SETTINGS_DIR = path.join(__dirname, '../../data/settings');
+// Path to store application settings — the writable DATA DIR, never the
+// install dir (packaged apps run from a read-only asar; a repo-relative
+// path there fails ENOTDIR and settings init silently dies).
+const SETTINGS_DIR = path.join(dataDir(), 'settings');
 const MUSIC_FILE_SETTING = path.join(SETTINGS_DIR, 'last-music-file.json');
-const UPLOADS_DIR = path.join(__dirname, '../../public/uploads/music');
+const UPLOADS_DIR = path.join(uploadsBase(), 'music');
 
 // Configure multer for music file uploads
 const storage = multer.diskStorage({
@@ -300,8 +303,8 @@ router.get('/music/verify', async (req, res) => {
 
         if (musicSettings.filename) {
             if (musicSettings.isUploaded) {
-                // Check uploaded files directory
-                const uploadsDir = path.join(__dirname, '../../public/uploads/music');
+                // Check uploaded files directory (writable uploads base)
+                const uploadsDir = path.join(uploadsBase(), 'music');
                 const filePath = path.join(uploadsDir, musicSettings.filename);
                 fileExists = await fs.pathExists(filePath);
                 fileUrl = fileExists ? `/uploads/music/${musicSettings.filename}` : null;
