@@ -248,11 +248,19 @@ async function createTray() {
 }
 
 /**
- * First-run consent: ask once, remember the answer (config/telemetry.json).
- * Users can change it anytime from the tray menu (Telemetry: On/Off).
+ * First-run consent: ask once, remember the answer (data-dir telemetry.json).
+ * Change anytime: tray menu (Telemetry: On/Off) or the dashboard Admin
+ * account card switch.
+ *
+ * FIX (2026-11-01, Jerry's install report): this check RACES the telemetry
+ * service's async init — getKey() read before _loadState finishes returns
+ * null and the prompt silently never shows (and never retries). init() is
+ * idempotent, so await it here first: the prompt is guaranteed to see the
+ * real key + consent state.
  */
 async function maybeAskTelemetryConsent() {
   const telemetry = (await import('../src/services/TelemetryService.js')).default;
+  await telemetry.init(); // idempotent — ensures key/consent state is loaded
   const state = telemetry.getConsentState();
   if (state.consented !== null || !telemetry.getKey()) return; // decided, or nothing to enable
 
@@ -265,7 +273,7 @@ async function maybeAskTelemetryConsent() {
       + '(app start/stop, stream started/stopped/failed, app version, OS) to the '
       + 'maintainer\'s PostHog. No audio, no stream names, no personal data, and '
       + 'listeners\' phones never send anything.\n\n'
-      + 'You can change this anytime: tray icon → Telemetry → On/Off.',
+      + 'You can change this anytime: the dashboard Admin account card, or tray icon → Telemetry → On/Off.',
     buttons: ['Allow', 'Decline'],
     defaultId: 1,
     cancelId: 1,

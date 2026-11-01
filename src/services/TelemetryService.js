@@ -75,12 +75,22 @@ class TelemetryService {
   }
 
   _readBundledKey() {
-    try {
-      const bundledPath = path.join(process.cwd(), 'electron', 'telemetry-key.json');
-      if (fs.existsSync(bundledPath)) {
-        return JSON.parse(fs.readFileSync(bundledPath, 'utf8'));
-      }
-    } catch { /* ignore */ }
+    // Candidates: dev checkout (cwd), packaged app (inside the asar — Electron's
+    // patched fs reads through it), and unpacked resources as a fallback. Without
+    // the asar path, distributed installs on machines WITHOUT ~/.secrets can
+    // never enable telemetry (the key only exists inside the packaged app).
+    const candidates = [
+      path.join(process.cwd(), 'electron', 'telemetry-key.json'),
+      process.resourcesPath ? path.join(process.resourcesPath, 'app.asar', 'electron', 'telemetry-key.json') : null,
+      process.resourcesPath ? path.join(process.resourcesPath, 'app', 'electron', 'telemetry-key.json') : null
+    ].filter(Boolean);
+    for (const bundledPath of candidates) {
+      try {
+        if (fs.existsSync(bundledPath)) {
+          return JSON.parse(fs.readFileSync(bundledPath, 'utf8'));
+        }
+      } catch { /* try next candidate */ }
+    }
     return null;
   }
 

@@ -68,4 +68,38 @@ router.post('/client-event', (req, res) => {
   }
 });
 
+/**
+ * @route GET /api/telemetry/consent
+ * @description Current telemetry state for the dashboard Admin account card
+ *   switch. Admin-only (the whole router sits behind the auth gate except the
+ *   explicitly-allowlisted client-event POST).
+ * @access Private (admin)
+ */
+router.get('/consent', async (req, res, next) => {
+  try {
+    await telemetry.init(); // idempotent: state + key loaded before reading
+    const { enabled, consented } = telemetry.getConsentState();
+    return res.json({ enabled, consented, configured: !!telemetry.getKey() });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * @route POST /api/telemetry/consent
+ * @description Toggle telemetry from the dashboard (same path as the tray
+ *   menu toggle). Body: { enabled: boolean }.
+ * @access Private (admin)
+ */
+router.post('/consent', async (req, res, next) => {
+  try {
+    const enabled = req.body?.enabled === true;
+    telemetry.setConsented(enabled);
+    const { consented } = telemetry.getConsentState();
+    return res.json({ ok: true, enabled, consented });
+  } catch (error) {
+    next(error);
+  }
+});
+
 export default router;

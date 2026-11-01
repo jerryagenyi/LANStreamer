@@ -687,6 +687,15 @@
                                style="width:100%;padding:8px 10px;border-radius:8px;border:1px solid var(--tok-line-strong);background:var(--tok-surface-inset);color:var(--tok-text-1);font-size:14px;">
                         <div id="admin-account-error" class="hidden" role="alert" style="color:var(--tok-danger);font-size:13px;"></div>
                         <button type="button" id="admin-save" class="btn btn-primary" style="margin-top:6px;">Update login</button>
+
+                        <div style="border-top:1px solid var(--tok-line);margin-top:14px;padding-top:12px;">
+                            <div style="display:flex;align-items:center;gap:10px;">
+                                <button type="button" class="switch" id="telemetry-toggle" role="switch" aria-checked="false"
+                                        aria-label="Send anonymous usage statistics"></button>
+                                <span style="font-size:13px;font-weight:600;color:var(--tok-text-1);">Anonymous usage statistics</span>
+                            </div>
+                            <p id="telemetry-hint" style="font-size:12px;color:var(--tok-text-2);margin:6px 0 0;">Loading…</p>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -1494,6 +1503,55 @@
                 } catch {
                     if (hint) hint.textContent = 'Could not load the current admin account settings.';
                 }
+                this.initTelemetryToggle();
+            }
+
+            /** Telemetry switch in the Admin account card — same source of
+             *  truth as the tray toggle (GET/POST /api/telemetry/consent). */
+            async initTelemetryToggle() {
+                const sw = document.getElementById('telemetry-toggle');
+                const hintEl = document.getElementById('telemetry-hint');
+                if (!sw || sw.dataset.wired) return;
+                sw.dataset.wired = '1';
+
+                const paint = (enabled, configured) => {
+                    sw.setAttribute('aria-checked', enabled ? 'true' : 'false');
+                    if (hintEl) {
+                        hintEl.textContent = !configured
+                            ? 'Telemetry is not configured on this install (no key bundled).'
+                            : enabled
+                                ? 'On — anonymous events (app start/stop, stream started/stopped/failed, version, OS) go to the maintainer\u2019s PostHog. No audio, no stream names, no personal data; listeners\u2019 phones never send anything.'
+                                : 'Off — nothing leaves this machine. Turning it on helps improve LANStreamer (anonymous events only; no audio, no personal data).';
+                    }
+                };
+
+                try {
+                    const res = await fetch('/api/telemetry/consent');
+                    const data = await res.json();
+                    paint(data.enabled, data.configured);
+                } catch {
+                    paint(false, false);
+                }
+
+                sw.addEventListener('click', async () => {
+                    const target = sw.getAttribute('aria-checked') !== 'true';
+                    sw.disabled = true;
+                    try {
+                        const res = await fetch('/api/telemetry/consent', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ enabled: target })
+                        });
+                        const data = await res.json();
+                        if (!res.ok) throw new Error(data.error || res.status);
+                        paint(data.enabled, true);
+                        if (window.LSToasts) LSToasts.show(data.enabled ? 'Telemetry on — thank you!' : 'Telemetry off', 'success');
+                    } catch (e) {
+                        if (window.LSToasts) LSToasts.show('Could not change telemetry setting', 'error');
+                    } finally {
+                        sw.disabled = false;
+                    }
+                });
             }
 
             async saveAdminCredentials() {

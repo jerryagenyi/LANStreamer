@@ -88,8 +88,14 @@ class HeaderComponent {
                     </a>
                 </div>
 
-                <!-- Navigation and Actions -->
+                <!-- Navigation and Actions — Listener page FIRST, Exit LAST (owner order 2026-11-01) -->
                 <div class="flex items-center gap-3">
+                    <!-- Open listener page (sharing lives in the dashboard sidebar card) -->
+                    <a href="${streamsUrl}" target="_blank" rel="noopener" class="btn btn-secondary" style="height:30px;padding:0 10px;font-size:13px;" title="Open the listener page">
+                        <span class="material-symbols-rounded" style="font-size:15px;">headphones</span>
+                        <span class="hidden sm:inline">Open listener page</span>
+                    </a>
+
                     <!-- Notification bell: lights up when there are unread notifications -->
                     <button id="header-bell-btn"
                             class="theme-toggle"
@@ -108,7 +114,7 @@ class HeaderComponent {
                         <span class="material-symbols-rounded text-sm">light_mode</span>
                     </button>
 
-                    <!-- Sign out of the admin dashboard -->
+                    <!-- Sign out of the admin dashboard — always the last control -->
                     <button type="button"
                             class="theme-toggle"
                             title="Sign out"
@@ -116,13 +122,6 @@ class HeaderComponent {
                             onclick="window.LSAdminAuth && window.LSAdminAuth.logout()">
                         <span class="material-symbols-rounded text-sm">logout</span>
                     </button>
-
-                    <!-- Open listener page (sharing lives in the dashboard sidebar card) -->
-                    <a href="${streamsUrl}" target="_blank" rel="noopener" class="btn btn-secondary" style="height:30px;padding:0 10px;font-size:13px;" title="Open the listener page">
-                        <span class="material-symbols-rounded" style="font-size:15px;">headphones</span>
-                        <span class="hidden sm:inline">Open listener page</span>
-                    </a>
-
                     </div>
                 </div>
             </header>
