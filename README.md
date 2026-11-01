@@ -2,7 +2,16 @@
 
 **LAN audio streaming for language interpretation, meetings, and events.** LANStreamer is a desktop app that turns an ordinary PC into a multi-channel audio streaming server for your local network (LAN) — it orchestrates **FFmpeg** and **Icecast** behind the scenes, so a whole room can listen to live, low-latency audio on their phones.
 
-> **Status: v2.0.0 is released** — download the installer or standalone build from [GitHub Releases](https://github.com/jerryagenyi/LANStreamer/releases) (both bundle FFmpeg + Icecast; nothing to pre-install). Running from source still works: `npm run electron:dev`, or the server-only `Start LANStreamer Server.bat`. Release process and pre-ship checks: [docs/GO-LIVE-CHECKLIST.md](docs/GO-LIVE-CHECKLIST.md).
+> **Status: v2.0.0 is released** — download from [GitHub Releases](https://github.com/jerryagenyi/LANStreamer/releases). Running from source still works: `npm run electron:dev`, or the server-only `Start LANStreamer Server.bat`. Release process and pre-ship checks: [docs/GO-LIVE-CHECKLIST.md](docs/GO-LIVE-CHECKLIST.md).
+
+**Highlights**
+
+- **One download, nothing to pre-install** — the app bundles FFmpeg + Icecast. Two builds: `Setup` (installer) and `Standalone` (single file, run from anywhere).
+- **Listeners just open a link** — any phone/PC browser on the same network; QR code included; no app, no account.
+- **~1 second listener latency** — a low-latency player keeps live audio close behind the room ([how](docs/LATENCY.md)).
+- **Multi-channel** — one stream per language/channel; speech-friendly 96 kbps default, 128/192 for music, switchable per stream.
+- **Admin login, LAN-safe by design** — the dashboard is locked to the operator's PC; the network only ever sees the listener page.
+- **Event-ready extras** — event banner, listener QR sharing, light/dark themes, fully offline after install, telemetry you can turn off with one switch.
 
 ---
 
@@ -14,7 +23,7 @@ Think "wireless interpretation booth": the interpreter's PC captures audio (micr
 
 | Interface | Purpose | Access |
 |-----------|---------|--------|
-| **Admin Dashboard** | Control center for managing streams | `http://localhost:3001/dashboard` on the operator PC (login: `admin` / `lanstreamer123` by default) |
+| **Admin Dashboard** | Control center for managing streams | The app window (or `http://localhost:3001/dashboard` on the operator PC) — login: `admin` / `lanstreamer123` by default |
 | **Listener Interface** | User-friendly page for browsing and playing streams | `http://YOUR-PC-IP:3001/streams` (public, no login) |
 
 ### Use Cases
@@ -29,7 +38,7 @@ Think "wireless interpretation booth": the interpreter's PC captures audio (micr
 ## 🚀 Quick Start (Desktop App)
 
 **Step 1: Launch LANStreamer**
-Start the LANStreamer app on the operator PC. It starts the streaming server and opens the dashboard window automatically — no terminal windows to babysit. Closing the window only hides it to the tray: streams keep running for your listeners. To stop for real, use the tray icon → **Stop All & Quit**.
+Start the LANStreamer app on the operator PC — the **Standalone** build runs from anywhere, no installation. The dashboard window opens automatically; no terminal to babysit. Two buttons top-right run the app: **minimize** (hides to the tray — streams keep playing for your listeners; a balloon reminds you where it went) and the red **power button** (shuts LANStreamer down — it warns first if streams are live). Closing the window also just minimizes to the tray; quit from the tray icon → **Stop All & Quit**.
 
 > No app package? You can run the same server from a source/ZIP copy: double-click `Start LANStreamer Server.bat` (requires [Node.js](https://nodejs.org/) LTS, plus FFmpeg & Icecast — see the [Installation Guides](docs/guides/README.md)). Building the desktop package from source is covered in the [Developer Guide](docs/README-DEVELOPERS.md).
 
@@ -39,10 +48,10 @@ The dashboard asks you to sign in when it opens.
 - **Username**: `admin`
 - **Password**: `lanstreamer123`
 
-Change these before your event — see [Security Setup](#-security-setup--admin-login) below.
+Leave **Remember me** checked (the default) and you won't be asked again on this PC — even after restarting the app. Change the login before your event — see [Security Setup](#-security-setup--admin-login) below.
 
 **Step 3: Create a Stream**
-Click **Add stream**, pick an audio source (your microphone, audio interface, or virtual audio cable), choose a quality, and click **Go live**. Repeat for more channels (e.g. one per language). You can also use **Start All / Stop All**.
+Click **Add stream**, pick an audio source (your microphone, audio interface, or virtual audio cable), and click **Go live**. Quality defaults to **96 kbps — plenty for speech**; switch a stream to 128/192 for music anytime via its **Edit** dialog (a live stream restarts at the new bitrate automatically). Repeat for more channels (e.g. one per language), or use **Start All / Stop All**.
 
 **Step 4: Share with Listeners**
 The dashboard's **Share with listeners** card shows the listener link (e.g. `http://192.168.x.x:3001/streams`). Copy it, or tap the QR icon and let people scan it. Share it once — by chat, email, projector slide, or QR on paper.
@@ -68,11 +77,11 @@ The listener page is forgiving: it **auto-resumes** a stream that drops and come
 | Username | `admin` |
 | Password | `lanstreamer123` |
 
-Sign in at `http://localhost:3001/dashboard` (or the Electron app window) — the login appears automatically when the dashboard is opened. The **listener page (`/streams`) has no login**; phones on the LAN just open the shared link.
+Sign in in the app window (or at `http://localhost:3001/dashboard` from a browser on the operator PC) — the login appears automatically when the dashboard is opened. **Remember me** (default on) keeps you signed in for 30 days across app restarts; unchecked, the session lasts one day. The **listener page (`/streams`) has no login** — phones on the LAN just open the shared link.
 
 **First run:** while the default credentials are active, the dashboard shows a banner stating them and how to change them — it disappears permanently once you set your own.
 
-**Forgot your password?** On the operator PC, delete the admin login file and restart LANStreamer — the default login above returns, and you can set a new one from the dashboard (Admin account). Installed app: `%APPDATA%\LANStreamer\security.json` · running from source: `config\security.json`. (The login page carries this same hint — it only opens on the operator's PC, so the path is safe to show there.)
+**Forgot your password?** On the operator PC, delete the admin login file and restart LANStreamer — the default login above returns, and you can set a new one from the dashboard (Admin account). Desktop app (installer or standalone): `%APPDATA%\LANStreamer\security.json` · running from source: `config\security.json`. (The login page carries this same hint with a **Forgot password?** link — it only opens on the operator's PC, so the path is safe to show there.)
 
 Admin access has two layers:
 
@@ -90,7 +99,7 @@ JWT_SECRET=your-jwt-secret
 SESSION_SECRET=your-session-secret
 ```
 
-Restart LANStreamer afterwards. (The in-app change takes precedence over `.env` values. Logins stay valid for 7 days, or set `JWT_EXPIRES_IN` to change that.)
+Restart LANStreamer afterwards. (The in-app change takes precedence over `.env` values. Sessions last 30 days with Remember me, 1 day without — or set `JWT_EXPIRES_IN` when running from source.)
 
 **Icecast (the streaming server LANStreamer drives) is hardened automatically when bundled.** The bundled Icecast binds to `127.0.0.1` only — listeners receive audio through LANStreamer's own play proxy on port 3001, so nothing about Icecast is ever exposed to your network — and its passwords are randomly generated per install (the app reads them itself; nobody ever types them). Someone who knows LANStreamer's defaults cannot reach or control it.
 
@@ -100,15 +109,20 @@ Using your **own Icecast install** instead of the bundled one? That install is o
 
 ## ⚙️ System Requirements
 
-**Minimum (operator PC)**
-- Windows 10/11 64-bit (macOS/Linux supported from source)
-- 4 GB RAM, dual-core CPU — encoding one stream uses ~2–5% of a modern CPU
-- Any audio input (built-in mic, USB, or virtual audio cable)
-- FFmpeg + Icecast — **bundled with the desktop installer** (in preparation). Running from source/CLI? Install them separately (see [guides](docs/guides/README.md))
+**Operator PC (minimum)**
 
-**Listeners:** any phone/PC with a browser and WiFi — nothing to install. ~20–25 listeners per consumer WiFi access point for stable audio; larger events should add access points.
+| | Requirement |
+|---|---|
+| OS | Windows 10/11 64-bit (macOS/Linux run from source) |
+| CPU / RAM | Dual-core, 4 GB RAM — one stream encodes at ~2–5% of a modern CPU |
+| Disk | ~600 MB (app + bundled FFmpeg/Icecast) |
+| Audio | Any input: built-in mic, USB interface, or virtual audio cable (e.g. VB-Cable) |
+| Network | Wi-Fi or Ethernet to the same network as the listeners |
+| Extras | **None** — FFmpeg + Icecast are bundled. Source installs: see the [guides](docs/guides/README.md) |
 
-**Recommended:** 8 GB RAM for 4+ simultaneous streams, wired Ethernet from the operator PC to the router, 5 GHz WiFi for listeners (see [Latency guide](docs/LATENCY.md)).
+**Listeners:** any phone/PC with a browser and WiFi — nothing to install. Rule of thumb: ~20–25 listeners per consumer WiFi access point for stable audio; larger events should add access points.
+
+**Recommended for bigger events:** 8 GB RAM for 4+ simultaneous streams, wired Ethernet from the operator PC to the router, 5 GHz WiFi for listeners (see the [Latency guide](docs/LATENCY.md)).
 
 ---
 
@@ -121,7 +135,7 @@ Using your **own Icecast install** instead of the bundled one? That install is o
 | Stream won't start | Make sure the audio device isn't already in use by another app; rescan devices in the dashboard |
 | Listeners can't connect | Check everyone is on the **same Wi-Fi/network** as the operator PC, and the link uses the PC's LAN IP (not `localhost`). Also see [Firewall Issues](docs/TROUBLESHOOTING.md#firewall-issues) |
 | "This site can't be reached" | Likely subnet mismatch — see [Network Troubleshooting](docs/TROUBLESHOOTING.md#network-connectivity-issues) |
-| "Port 3001 already in use" | A leftover server instance is running — close its terminal window (or quit the app from the tray), or end `node.exe` in Task Manager, then relaunch. The dashboard's stop buttons end streams and Icecast, but no button can stop the server itself |
+| "Port 3001 already in use" | A leftover instance is running — quit it from the tray (Stop All & Quit) or the header power button, close any old terminal window, or end `LANStreamer.exe` (source runs: `node.exe`) in Task Manager, then relaunch. The app also warns you itself when it lands on a different port |
 | "No audio devices detected" | Ensure device is connected and not in use by another app |
 | "Stream format not supported" | See [Stream Playback Issues](docs/TROUBLESHOOTING.md#stream-playback-issues) |
 | Link/QR stopped working after moving networks | The share card always shows the PC's **current** network address — re-share the link/QR after the network changes; old links point at the old address |
@@ -133,7 +147,7 @@ Using your **own Icecast install** instead of the bundled one? That install is o
 
 ## 🔄 Updating
 
-**Packaged installs (once released):** download the new installer from [GitHub Releases](https://github.com/jerryagenyi/LANStreamer/releases) and run it — your stream configuration is kept.
+**Desktop app:** download the new build from [GitHub Releases](https://github.com/jerryagenyi/LANStreamer/releases) — run the new Setup over the old install, or replace your Standalone exe. Your streams and settings (`%APPDATA%\LANStreamer`) are kept.
 
 **ZIP/source installs:** double-click `Update LANStreamer.bat` in your installation folder.
 
