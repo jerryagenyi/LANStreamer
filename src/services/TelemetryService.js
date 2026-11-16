@@ -218,6 +218,10 @@ class TelemetryService {
           appVersion: appVersion(),
           schema: 1, // event-property schema version — bump when shapes change
           platform: process.platform,
+          // OS build (e.g. Windows 10.0.26100) — machine SPEC, shared by
+          // millions of installs; machine IDENTITY (hostname/serials/user
+          // names) is what we never send.
+          osVersion: os.release(),
           arch: process.arch,
           ...properties,
         },
