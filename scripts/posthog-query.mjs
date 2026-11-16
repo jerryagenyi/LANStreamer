@@ -46,7 +46,9 @@ const secrets = readSecrets();
 const _pIdx = process.argv.indexOf('--project');
 const cliProject = _pIdx >= 0 ? process.argv[_pIdx + 1] : null;
 const TOKEN = secrets.LS_POSTHOG_API_TOKEN || secrets.POSTHOG_API_TOKEN || process.env.POSTHOG_API_TOKEN || '';
-const PROJECT = secrets.LS_POSTHOG_PROJECT_ID || secrets.POSTHOG_PROJECT_ID || process.env.POSTHOG_PROJECT_ID || '';
+// The store names it LS_POSTHOG_ORG_ID; the numeric id in the project URL is
+// the PROJECT id (PostHog org UUIDs aren't numeric) — accept both spellings.
+const PROJECT = secrets.LS_POSTHOG_PROJECT_ID || secrets.LS_POSTHOG_ORG_ID || secrets.POSTHOG_PROJECT_ID || process.env.POSTHOG_PROJECT_ID || '';
 // The store's host lines point at the INGEST endpoint (eu.i.posthog.com);
 // queries go to the app API host — normalize instead of 404ing.
 function queryHost(raw) {
@@ -120,7 +122,7 @@ function printResults(body, { json = false } = {}) {
 async function main() {
   const args = process.argv.slice(2);
   const json = args.includes('--json');
-  const rest = args.filter((a, i) => a !== '--json' && i !== _pIdx && i !== _pIdx + 1);
+  const rest = args.filter((a, i) => a !== '--json' && !(_pIdx >= 0 && (i === _pIdx || i === _pIdx + 1)));
   const cmd = rest[0] || 'status';
 
   if (!TOKEN) {
