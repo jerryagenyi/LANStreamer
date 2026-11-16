@@ -12,20 +12,23 @@ const require = createRequire(import.meta.url);
  * Voluntary, privacy-minimal product telemetry (PostHog).
  *
  * Principles (documented in README "Telemetry & Privacy"):
- *  - OFF until the user allows it in the first-run prompt (or POSTHOG_KEY absent).
+ *  - ON unless the operator turns it off (opt-out; first run is a notice).
  *  - Anonymous install ID only — no IP logging, no machine/user names, never
  *    audio, never stream names, never file paths.
  *  - Queue-and-flush: a LAN-first app is often offline; telemetry must never
  *    block or break anything. Every call is try/caught.
  *
- * Collected event properties: event name, timestamp, app version, OS +
- * architecture, anonymous install ID, and for failures the error category
- * (from errorDiagnostics). Stream started additionally carries the output
- * format, bitrate, source kind (device/file) and a one-way source hash (10
- * hex chars of sha256 over the device/file label — field reports can say
- * WHICH source a stream used without the label ever leaving the machine).
- * Listener-page events (failures + the 30s buffer heartbeat) relay through
- * routes/telemetry.js. Nothing else is collected. Every event also carries
+ * Collected event properties: event name, timestamp, app version, event
+ * schema version, OS + architecture, anonymous install ID, and for failures
+ * the error category (from errorDiagnostics). Stream started additionally
+ * carries the output format, bitrate, source kind (device/file) and a
+ * one-way source hash (10 hex chars, sha256 over a per-install random salt +
+ * the device/file label — comparable WITHIN an install only, never
+ * reversible or comparable across installs).
+ * Listener-page events (failures + the 30s buffer heartbeat, which the relay
+ * enriches with the current listener count) go through routes/telemetry.js.
+ * stream_stopped also carries session length in minutes. Nothing else is
+ * collected. Every event also carries
  * the fixed app=lanstreamer tag (the maintainer's PostHog project is shared
  * with other apps; the tag is how insights tell this app's events apart).
  * See docs/APP-FLOW.md and README.
@@ -69,6 +72,11 @@ class TelemetryService {
     }
     this.installId = state.installId || crypto.randomUUID();
     this.consented = typeof state.consented === 'boolean' ? state.consented : null;
+    // Per-install random salt for sourceHash (below) — persisted so hashes stay
+    // comparable WITHIN an install (morning vs afternoon stream = same source?),
+    // while never being comparable across installs (no global dictionary attack
+    // on common device names).
+    this.sourceHashSalt = state.sourceHashSalt || crypto.randomUUID();
     // Key/host resolution order:
     //   1. env (dev: POSTHOG_KEY / POSTHOG_HOST, typically via .env)
     //   2. config/telemetry.json (operator-configurable at runtime)
@@ -76,7 +84,7 @@ class TelemetryService {
     //      apps ship telemetry with zero user configuration)
     this._configKey = state.posthogKey || this._readSecretsStore()?.posthogKey || this._readBundledKey()?.posthogKey || null;
     this._configHost = state.posthogHost || this._readSecretsStore()?.posthogHost || this._readBundledKey()?.posthogHost || null;
-    if (!state.installId) this._saveState();
+    if (!state.installId || !state.sourceHashSalt) this._saveState();
   }
 
   _readBundledKey() {
@@ -136,6 +144,7 @@ class TelemetryService {
       fs.mkdirSync(path.dirname(this.configPath), { recursive: true });
       fs.writeFileSync(this.configPath, JSON.stringify({
         installId: this.installId,
+        sourceHashSalt: this.sourceHashSalt,
         consented: this.consented,
         posthogKey: this._configKey || undefined,
         posthogHost: this._configHost || undefined,
@@ -185,6 +194,18 @@ class TelemetryService {
     return this.getConsentState();
   }
 
+  /** One-way fingerprint of an audio source label (device or file), salted
+   *  with a per-install random salt. Stable within an install (so two events
+   *  can be compared: "same source or not?"), meaningless across installs. */
+  sourceHash(label) {
+    try {
+      if (!label) return 'none';
+      return crypto.createHash('sha256').update(`${this.sourceHashSalt}\0${String(label)}`).digest('hex').slice(0, 10);
+    } catch {
+      return 'none';
+    }
+  }
+
   capture(event, properties = {}) {
     if (!this.enabled || !this.client) return;
     try {
@@ -194,6 +215,7 @@ class TelemetryService {
         properties: {
           app: 'lanstreamer',
           appVersion: process.env.npm_package_version || 'unknown',
+          schema: 1, // event-property schema version — bump when shapes change
           platform: process.platform,
           arch: process.arch,
           ...properties,
@@ -214,6 +236,9 @@ class TelemetryService {
 
   async shutdown() {
     try {
+      // Session boundary marker — pairs with app_start so remote data shows
+      // install session lengths without inferring from gaps.
+      this.capture('app_stop', {});
       if (this.client) await this.client.shutdown();
     } catch { /* ignore */ }
   }

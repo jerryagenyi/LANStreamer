@@ -46,6 +46,16 @@ From research on wireless audio latency (see references):
 
 Constant ~1–3 s offset = buffering config (burst/prebuffer). Stutter/drops = WiFi capacity/interference. That distinction tells you which side to fix.
 
+### Field case: sudden 4–6 s with a virtual audio cable (Nigeria, 2026-11)
+
+Same gear measured ~2 s one day and 6 s the next; the only change was switching the audio source to a **free VB-CABLE**. The app side exonerates itself by construction: the MSE player holds ~0.75 s and hard-snaps back to live past 2.5 s, so the extra ~4 s were upstream of LANStreamer. Diagnosis checklist (full version in [TROUBLESHOOTING.md](TROUBLESHOOTING.md#high-or-sudden-latency-4-6-s)):
+
+- **The app playing INTO the cable buffers on its own** (Zoom/browser/media player jitter buffers are seconds). Feed the cable from the most direct output; minimize the feeder's buffer setting.
+- **Windows "Listen to this device" adds seconds** — never use it as routing.
+- **Safari/iOS listeners are on the plain-`<audio>` fallback** where the browser keeps its own multi-second buffer — slower by design, not a fault. Android/Chrome/Edge/Firefox use the MSE low-latency path.
+
+Telemetry bisect (v2.0.1+): the 30 s listener heartbeat (`lanstreamer_client_buffer_report`) carries `ahead` (buffered seconds), `mode` (`mse` vs `src`) and `rate`; `ahead` ≈ 0.8 s while total latency is high proves the delay sits before the app, and `stream_started`'s `sourceHash` identifies which audio source the session used.
+
 ## References
 
 - [Fixing streaming latency in wireless audio systems — TechTaps](https://techtaps.com/how-to-fix-streaming-latency-issues-in-wireless-audio-systems/)

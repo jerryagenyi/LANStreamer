@@ -1,5 +1,6 @@
 import express from 'express';
 import telemetry from '../services/TelemetryService.js';
+import IcecastService from '../services/IcecastService.js';
 
 const router = express.Router();
 
@@ -33,7 +34,7 @@ const RATE_LIMIT = 30;
 const RATE_WINDOW_MS = 60_000;
 const hits = new Map(); // ip -> { count, windowStart }
 
-router.post('/client-event', (req, res) => {
+router.post('/client-event', async (req, res) => {
   try {
     const now = Date.now();
     const ip = req.ip || req.socket?.remoteAddress || 'unknown';
@@ -59,6 +60,16 @@ router.post('/client-event', (req, res) => {
       if (typeof v === 'string') props[k] = v.slice(0, MAX_STR);
       else if (typeof v === 'number' || typeof v === 'boolean') props[k] = v;
       count++;
+    }
+
+    // Buffer heartbeats carry the server-side listener count too — the
+    // remote bisect then covers "6s latency WITH N listeners" vs without,
+    // from the same event stream. Best-effort: never blocks the relay.
+    if (event === 'buffer_report') {
+      try {
+        const status = await IcecastService.getStatus();
+        if (typeof status?.listeners === 'number') props.listeners = status.listeners;
+      } catch { /* stats unavailable — heartbeat still relays */ }
     }
 
     // capture() is a no-op unless the operator consented + key resolves

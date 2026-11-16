@@ -195,11 +195,13 @@
 
     <section class="doc-section" id="latency">
         <h2><span class="material-symbols-rounded">speed</span>Latency</h2>
-        <p>Total delay from mic to ears is typically <strong>2–6 seconds</strong>. Fastest wins:</p>
+        <p>Total delay from mic to ears is typically <strong>1.5–2.5 seconds</strong> on a healthy LAN. Fastest wins:</p>
         <ul>
             <li><strong>Operator side:</strong> 5&nbsp;GHz Wi-Fi or wired for the streaming PC; keep it away from congestion; QoS/streaming priority on the router helps on busy networks.</li>
             <li><strong>Listener side:</strong> phones on the same AP/SSID; close background streaming apps; wired headsets avoid Bluetooth's extra 100–200&nbsp;ms.</li>
             <li><strong>In LANStreamer:</strong> lower bitrate (128&nbsp;kbps) trims buffer a little; keep the listener volume above ~50% and use the on-page volume.</li>
+            <li><strong>Virtual audio cables (VB-CABLE etc.):</strong> the cable itself is fast, but <em>whatever plays INTO it</em> may buffer seconds on its own — a Zoom call, a browser tab, a media player. Feed the cable from the most direct output available and set that app's buffer/buffering to its minimum. Also avoid Windows' <strong>"Listen to this device"</strong> routing (Sound settings → device properties) — it adds seconds of its own.</li>
+            <li><strong>iPhone/Safari listeners:</strong> these use a compatibility playback path where the browser keeps its own (multi-second) buffer — latency there is higher by design. Android/Chrome/Edge/Firefox phones sit closest to live.</li>
         </ul>
         <p>Full write-up: <code>docs/LATENCY.md</code> in the repository.</p>
     </section>
