@@ -6,18 +6,20 @@
  * dashboard UI.
  *
  * Auth: a PERSONAL ACCESS TOKEN (phx_…), not the ingest key — the ingest key
- * (phc_…) can only capture, never query. Token lives in ~/.secrets/posthog
- * (same store the app reads, same convention: read at runtime, never print):
+ * (phc_…) can only capture, never query. Tokens are ORG-SCOPED: this script
+ * needs the phx_ created while switched into the LANSTREAMER organization
+ * (the ChurchAfrica org's key cannot see this project and vice versa).
+ * ~/.secrets/posthog is sectioned per product (read at runtime, never printed):
  *
- *   POSTHOG_API_TOKEN=phx_...          <- eu.posthog.com → Settings → Personal access tokens
- *   POSTHOG_HOST=https://eu.posthog.com  (default; project is on EU)
- *   POSTHOG_PROJECT_ID=12345            (optional — auto-resolved via /api/projects)
+ *   LS_POSTHOG_API_TOKEN=phx_...       <- created in the LANStreamer org (query:read + project:read)
+ *   LS_POSTHOG_PROJECT_ID=12345        <- numeric id, needed if the key is project-scoped
+ *   LS_POSTHOG_API_HOST=https://eu.posthog.com   (default; store host lines are INGEST hosts and get normalized)
  *
  * Usage:
  *   node scripts/posthog-query.mjs status              # masked connectivity check + 7-day event counts
  *   node scripts/posthog-query.mjs events [hours=48]   # recent lanstreamer_* events, newest first
  *   node scripts/posthog-query.mjs "SELECT event, count() FROM events WHERE ..."
- *   ... append --json to any command for raw JSON output
+ *   ... append --json for raw JSON, --project <id> to target a specific project
  *
  * Exit codes: 0 ok, 1 bad usage/credentials, 2 query failed.
  */
@@ -41,23 +43,34 @@ function readSecrets() {
 }
 
 const secrets = readSecrets();
-const TOKEN = secrets.POSTHOG_API_TOKEN || process.env.POSTHOG_API_TOKEN || '';
-const HOST = (secrets.POSTHOG_HOST || process.env.POSTHOG_HOST || DEFAULT_HOST).replace(/\/+$/, '');
+const _pIdx = process.argv.indexOf('--project');
+const cliProject = _pIdx >= 0 ? process.argv[_pIdx + 1] : null;
+const TOKEN = secrets.LS_POSTHOG_API_TOKEN || secrets.POSTHOG_API_TOKEN || process.env.POSTHOG_API_TOKEN || '';
+const PROJECT = secrets.LS_POSTHOG_PROJECT_ID || secrets.POSTHOG_PROJECT_ID || process.env.POSTHOG_PROJECT_ID || '';
+// The store's host lines point at the INGEST endpoint (eu.i.posthog.com);
+// queries go to the app API host — normalize instead of 404ing.
+function queryHost(raw) {
+  return (raw || DEFAULT_HOST)
+    .replace(/\/+$/, '')
+    .replace('//eu.i.posthog.com', '//eu.posthog.com')
+    .replace('//us.i.posthog.com', '//us.posthog.com');
+}
+const HOST = queryHost(secrets.LS_POSTHOG_API_HOST || secrets.POSTHOG_API_HOST || secrets.LS_POSTHOG_HOST || secrets.POSTHOG_HOST || secrets.CA_POSTHOG_HOST);
 
 function authedHeaders() {
   return { Authorization: `Bearer ${TOKEN}`, 'Content-Type': 'application/json' };
 }
 
 async function resolveProjectId() {
-  if (secrets.POSTHOG_PROJECT_ID) return secrets.POSTHOG_PROJECT_ID;
-  if (process.env.POSTHOG_PROJECT_ID) return process.env.POSTHOG_PROJECT_ID;
+  if (cliProject) return cliProject;
+  if (PROJECT) return PROJECT;
   const res = await fetch(`${HOST}/api/projects?limit=50`, { headers: authedHeaders() });
-  if (!res.ok) throw new Error(`project listing failed: ${res.status} ${await res.text().then(t => t.slice(0, 200))}`);
+  if (!res.ok) throw new Error(`project listing failed: HTTP ${res.status} — if this is a project-scoped key, add LS_POSTHOG_PROJECT_ID=<numeric id> to ~/.secrets/posthog`);
   const { results = [] } = await res.json();
-  if (!results.length) throw new Error('token can see no projects — check its scope/access');
+  if (!results.length) throw new Error('token can see no projects — check its scope/access (must be created inside the LANStreamer org)');
   const preferred = results.find(p => /lanstreamer/i.test(p.name || ''));
   if (results.length === 1 || preferred) return String((preferred || results[0]).id);
-  console.error('Token can see multiple projects — pick one and set POSTHOG_PROJECT_ID in ~/.secrets/posthog:');
+  console.error('Token can see multiple projects — pick one and set LS_POSTHOG_PROJECT_ID in ~/.secrets/posthog:');
   for (const p of results) console.error(`  ${p.id}  ${p.name}`);
   process.exit(1);
 }
@@ -107,13 +120,14 @@ function printResults(body, { json = false } = {}) {
 async function main() {
   const args = process.argv.slice(2);
   const json = args.includes('--json');
-  const rest = args.filter(a => a !== '--json');
+  const rest = args.filter((a, i) => a !== '--json' && i !== _pIdx && i !== _pIdx + 1);
   const cmd = rest[0] || 'status';
 
   if (!TOKEN) {
-    console.error('No POSTHOG_API_TOKEN found in ~/.secrets/posthog (or env).\n' +
-      'Create one at eu.posthog.com → Settings → Personal access tokens (read scope),\n' +
-      'then add:   POSTHOG_API_TOKEN=phx_...   to ~/.secrets/posthog');
+    console.error('No LS_POSTHOG_API_TOKEN found in ~/.secrets/posthog (or env).\n' +
+      'Create one while switched into the LANSTREAMER org: eu.posthog.com → Settings → Personal access tokens\n' +
+      '(scopes: query:read + project:read), then add:   LS_POSTHOG_API_TOKEN=phx_...   to ~/.secrets/posthog\n' +
+      'Add the numeric project id as LS_POSTHOG_PROJECT_ID if the key is project-scoped.');
     process.exit(1);
   }
   if (cmd === 'status') {

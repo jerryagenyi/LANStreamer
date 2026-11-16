@@ -110,8 +110,11 @@ class TelemetryService {
 
   /**
    * Machine credential store convention (this operator's setup):
-   * ~/.secrets/posthog with KEY=VALUE lines — POSTHOG_PROJECT_TOKEN and
-   * optional POSTHOG_HOST. Values are never logged.
+   * ~/.secrets/posthog with KEY=VALUE lines, sectioned per product —
+   * LS_POSTHOG_PROJECT_TOKEN (LANStreamer ingest key; the legacy unprefixed
+   * name is honoured for old setups) and an optional host line. Hosts fall
+   * back across sections because the operator's projects share one region.
+   * Values are never logged.
    */
   _readSecretsStore() {
     try {
@@ -123,10 +126,12 @@ class TelemetryService {
         const m = line.match(/^\s*([A-Z0-9_]+)\s*=\s*(.+?)\s*$/);
         if (m) map[m[1]] = m[2];
       }
-      if (!map.POSTHOG_PROJECT_TOKEN) return null;
+      const key = map.LS_POSTHOG_PROJECT_TOKEN || map.POSTHOG_PROJECT_TOKEN;
+      if (!key) return null;
+      const host = map.LS_POSTHOG_HOST || map.POSTHOG_HOST || map.CA_POSTHOG_HOST;
       return {
-        posthogKey: map.POSTHOG_PROJECT_TOKEN,
-        ...(map.POSTHOG_HOST ? { posthogHost: map.POSTHOG_HOST } : {}),
+        posthogKey: key,
+        ...(host ? { posthogHost: host } : {}),
       };
     } catch { /* ignore */ }
     return null;
