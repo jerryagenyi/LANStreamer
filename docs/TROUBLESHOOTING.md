@@ -16,16 +16,18 @@ Common issues and solutions for LANStreamer.
 
 ## High or Sudden Latency (4–6 s)
 
-Field report this section is written from: same gear, one day at ~2 s end-to-end, the next at 6 s — the only change was the audio source switched to a **free VB-CABLE**. LANStreamer's player holds ~0.75 s of buffer and hard-snaps back to live past 2.5 s, so when the total hits 4–6 s the extra seconds are almost always **before the app** (capture chain) or on a **fallback playback path** — not the network and not the app itself.
+Field report this section is written from: same gear, one day at ~2 s end-to-end, the next at 6 s — the only change was the audio source switched to a **free VB-CABLE**. LANStreamer's player holds ~0.75 s of buffer and hard-snaps back to live past 2.5 s **on the low-latency path** — so when the total hits 4–6 s the extra seconds are almost always **before the app** (capture chain) or on the **slow fallback playback path** — not the network and not the app itself.
 
 Check in this order:
 
 1. **What feeds the virtual cable?** The cable itself is fast, but the app *playing into it* (Zoom, a browser tab, a media player) may buffer seconds on its own. Feed the cable from the most direct output available and set that app's buffering to its minimum. If the audio comes out of a meeting app at all, expect its full jitter buffer in the chain.
 2. **Windows "Listen to this device" must be OFF.** Sound settings → device properties → Listen tab. Routing audio through "Listen" adds seconds on its own; it's a monitoring feature, not a routing tool.
 3. **Which listeners are slow — everyone, or only iPhones/Safari?** Safari/iOS uses a compatibility playback path where the browser keeps its own multi-second buffer; Android/Chrome/Edge/Firefox sit closest to live. If only Apple devices are slow, that's expected behavior, not a fault.
-4. **Verify with the clap test** (clap at the mic, count seconds to the listener's ear). A constant offset that never grows points at a fixed buffer (items 1–3); dropouts/stutter point at Wi-Fi congestion instead (see [docs/LATENCY.md](LATENCY.md) for the operator-side network list).
+4. **Any non-Apple listener that got slow mid-session?** A playback error can silently drop a supported browser onto the slow path with no visible change. If telemetry is on, this reports itself (`lanstreamer_client_ll_fallback`); otherwise a page reload puts the listener back on the low-latency path.
+5. **Icecast join burst on that PC.** The bundled config ships a 16 KB burst; a stock operator-installed Icecast (or an older generated config) may carry 64 KB, which pre-pushes ≈5.5 s at the default 96 kbps — significant only for listeners on the slow path from #3/#4. Check `burst-size` in the active `icecast.xml`.
+6. **Verify with the clap test** (clap at the mic, count seconds to the listener's ear). A constant offset that never grows points at a fixed buffer (items 1–5); dropouts/stutter point at Wi-Fi congestion instead (see [docs/LATENCY.md](LATENCY.md) for the operator-side network list).
 
-If telemetry is on, each listener's playback app reports a 30-second buffer heartbeat (`lanstreamer_client_buffer_report` in the operator's PostHog): `ahead` staying near 0.8 while total latency is high proves the delay is upstream of LANStreamer; `mode: src` rows mean that listener is on the Safari/iOS fallback path.
+If telemetry is on, listener heartbeats are aggregated into one `lanstreamer_client_buffer_summary` event per minute in the operator's PostHog (buffer depths per playback path and platform, worst underruns, listener count): `mseAheadMax` staying near ~1 s while total latency is high proves the delay is upstream of LANStreamer; deep `srcAheadMax` means listeners are on the slow path — expected if `ios` counts dominate, a real fallback if `srcFallback` > 0.
 
 ---
 

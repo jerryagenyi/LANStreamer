@@ -48,13 +48,13 @@ Constant ~1–3 s offset = buffering config (burst/prebuffer). Stutter/drops = W
 
 ### Field case: sudden 4–6 s with a virtual audio cable (Nigeria, 2026-11)
 
-Same gear measured ~2 s one day and 6 s the next; the only change was switching the audio source to a **free VB-CABLE**. The app side exonerates itself by construction: the MSE player holds ~0.75 s and hard-snaps back to live past 2.5 s, so the extra ~4 s were upstream of LANStreamer. Diagnosis checklist (full version in [TROUBLESHOOTING.md](TROUBLESHOOTING.md#high-or-sudden-latency-4-6-s)):
+Same gear measured ~2 s one day and 6 s the next; the only change was switching the audio source to a **free VB-CABLE**. The app side is exonerated **only while the listener stays on the MSE low-latency path** (player holds ~0.75 s and hard-snaps back to live past 2.5 s) — two ways a listener ends up on the slower plain-`<audio>` path instead: Safari/iOS (no MP3-in-MSE support — permanent for that device) and any mid-session MSE error, which silently falls back with no visible change. On that path the browser buffers freely AND a large Icecast join burst matters: the bundled template ships 16 KB, but a stock operator-installed Icecast (or an older generated config) at 64 KB pre-pushes ≈5.5 s at the default 96 kbps. Diagnosis checklist (full version in [TROUBLESHOOTING.md](TROUBLESHOOTING.md#high-or-sudden-latency-4-6-s)):
 
 - **The app playing INTO the cable buffers on its own** (Zoom/browser/media player jitter buffers are seconds). Feed the cable from the most direct output; minimize the feeder's buffer setting.
 - **Windows "Listen to this device" adds seconds** — never use it as routing.
 - **Safari/iOS listeners are on the plain-`<audio>` fallback** where the browser keeps its own multi-second buffer — slower by design, not a fault. Android/Chrome/Edge/Firefox use the MSE low-latency path.
 
-Telemetry bisect (v2.0.1+): the 30 s listener heartbeat (`lanstreamer_client_buffer_report`) carries `ahead` (buffered seconds), `mode` (`mse` vs `src`) and `rate`; `ahead` ≈ 0.8 s while total latency is high proves the delay sits before the app, and `stream_started`'s `sourceHash` identifies which audio source the session used.
+Telemetry bisect (v2.1+): listener heartbeats are aggregated server-side into one `lanstreamer_client_buffer_summary` per minute (per-path/per-platform buffer depths, worst underruns, listener count); a silent low-latency→slow-path switch reports itself as `lanstreamer_client_ll_fallback`. `ahead` ≈ 0.8 s on MSE reports while total latency is high proves the delay sits before the app; `src` reports with deep `ahead` mean that listener is on the slow path (expected on iOS, a real fallback elsewhere); `stream_started`'s `sourceHash` identifies which audio source the session used.
 
 ## References
 

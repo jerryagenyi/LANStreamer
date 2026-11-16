@@ -67,7 +67,7 @@ async function runHogQL(query) {
   const res = await fetch(`${HOST}/api/environments/${id}/query`, {
     method: 'POST',
     headers: authedHeaders(),
-    body: JSON.stringify({ query })
+    body: JSON.stringify({ query: { kind: 'HogQLQuery', query } })
   });
   const body = await res.json().catch(() => ({}));
   if (!res.ok) {
@@ -120,7 +120,11 @@ async function main() {
     console.log(`host:    ${HOST}`);
     console.log(`token:   ${mask(TOKEN)} (personal access token)`);
     const id = await resolveProjectId();
-    console.log(`project: ${id}`);
+    // Name the project: the org holds more than one app, and a project-scoped
+    // key gives no other hint which one this id is.
+    const pr = await fetch(`${HOST}/api/projects/${id}/`, { headers: authedHeaders() });
+    const pj = pr.ok ? await pr.json().catch(() => ({})) : {};
+    console.log(`project: ${id}${pj.name ? ` — "${pj.name}"` : ` (name unavailable: HTTP ${pr.status})`}`);
     const body = await runHogQL(
       `SELECT event, count() AS n FROM events
        WHERE timestamp > now() - interval 7 day AND properties.app = 'lanstreamer'

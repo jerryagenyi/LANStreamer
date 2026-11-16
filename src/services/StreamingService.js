@@ -2,6 +2,7 @@ import { spawn, exec, execSync } from 'child_process'
 import { fileURLToPath } from 'url'
 import { dirname, join } from 'path'
 import fs from 'fs'
+import { randomBytes } from 'crypto'
 import logger from '../utils/logger.js'
 import errorDiagnostics from '../utils/errorDiagnostics.js'
 import IcecastService from './IcecastService.js'
@@ -339,20 +340,7 @@ class StreamingService {
         this.savePersistentStreams()
 
         logger.info(`Stream ${streamId} started successfully with ${currentFormat.name} format`)
-        import('./TelemetryService.js').then(m => {
-          // Source identity for field diagnostics: kind + a one-way hash of the
-          // device/file label (salted per install by TelemetryService — stable
-          // within an install, so "was the 6s session using the same source as
-          // the 2s one?" is answerable remotely; the label itself never leaves
-          // the machine).
-          const label = streamConfig.inputFile || streamConfig.deviceId || ''
-          m.default.capture('stream_started', {
-            format: currentFormat.name,
-            sourceKind: streamConfig.inputFile ? 'file' : 'device',
-            sourceHash: m.default.sourceHash(label),
-            bitrate: Number(streamConfig.bitrate) || 0
-          })
-        }).catch(() => {})
+        this._reportStarted(this.activeStreams[streamId], 'start')
         return this.activeStreams[streamId]
 
       } catch (error) {
@@ -369,17 +357,65 @@ class StreamingService {
 
     // If we get here, all formats failed
     logger.error(`Failed to start stream ${streamId} with all available formats:`, lastError)
-    import('./TelemetryService.js').then(m => {
-      const label = streamConfig.inputFile || streamConfig.deviceId || ''
-      m.default.capture('stream_failed', {
-        category: lastError?.cause || 'unknown',
-        sourceHash: m.default.sourceHash(label)
-      })
-    }).catch(() => {})
+    this._emitStreamEvent('stream_failed', { config: streamConfig }, {
+      via: 'start',
+      category: lastError?.cause || 'unknown'
+    })
     const err = new Error(`Stream failed to start with all audio formats (MP3, AAC, OGG). Last error: ${lastError?.message || 'Unknown error'}`)
     if (lastError?.capacity) err.capacity = lastError.capacity
     if (lastError?.shortMessage) err.shortMessage = lastError.shortMessage
     throw err
+  }
+
+  /**
+   * Lifecycle telemetry — one helper so every path reports the same shape.
+   * Contract: each live session emits exactly one stream_started and exactly
+   * one end event (stream_stopped OR stream_crashed), tied together by `sid`
+   * (random per session, meaningless outside it). Source identity is kind + a
+   * salted one-way hash; the device/file label itself never leaves the machine.
+   * Fire-and-forget: telemetry must never break streaming.
+   */
+  _emitStreamEvent(event, stream, extra = {}) {
+    // Snapshot NOW: the import below resolves later, by which time the caller
+    // may have closed the session (sid cleared) or edited the config.
+    const sid = stream?.telemetrySid
+    const cfg = stream?.config || {}
+    const label = cfg.inputFile || cfg.deviceId || ''
+    import('./TelemetryService.js').then(m => {
+      m.default.capture(event, {
+        ...(sid ? { sid } : {}),
+        sourceKind: cfg.inputFile ? 'file' : 'device',
+        sourceHash: m.default.sourceHash(label),
+        ...extra
+      })
+    }).catch(() => {})
+  }
+
+  /** A stream just came up (any path): open a new telemetry session. */
+  _reportStarted(stream, via) {
+    if (!stream) return
+    stream.telemetrySid = randomBytes(4).toString('hex')
+    this._emitStreamEvent('stream_started', stream, {
+      via, // 'start' = operator created/started it; 'restart' = auto-start, Start All, Retry, edit, resume
+      format: stream.audioFormat || 'MP3',
+      bitrate: Number(stream.config?.bitrate) || 0
+    })
+  }
+
+  /**
+   * A live stream is being ended ON PURPOSE (stop, restart handoff, edit).
+   * Call BEFORE changing status/killing. Safe to call on any stream and more
+   * than once: only a running stream with an open session reports, and the
+   * session id is cleared so a second call (or a copied row) stays silent.
+   */
+  _closeSession(stream, reason) {
+    if (!stream || stream.status !== 'running' || !stream.telemetrySid) return
+    this._emitStreamEvent('stream_stopped', stream, { uptimeMin: this._uptimeMin(stream), reason })
+    stream.telemetrySid = null
+  }
+
+  _uptimeMin(stream) {
+    return stream?.startedAt ? Math.max(0, Math.round((Date.now() - new Date(stream.startedAt).getTime()) / 60000)) : 0
   }
 
   /**
@@ -876,14 +912,11 @@ class StreamingService {
 
     try {
       logger.info(`Stopping stream: ${streamId}`)
-      import('./TelemetryService.js').then(m => {
-        // How long the stream ran before this stop — pairs with stream_started
-        // to give session length per source (drift/latency reports correlate
-        // with long runs).
-        const uptimeMin = stream.startedAt ? Math.max(0, Math.round((Date.now() - new Date(stream.startedAt).getTime()) / 60000)) : 0
-        m.default.capture('stream_stopped', { uptimeMin })
-      }).catch(() => {})
-      
+      // Only a LIVE stream has a session to close — stop is also called on
+      // already-stopped/errored rows (stop-all, shutdown, delete), which used
+      // to inflate stops to twice the starts in field data.
+      this._closeSession(stream, 'stop')
+
       if (stream.ffmpegProcess) {
         // Kill the whole tree (shell wrapper + ffmpeg) — see killProcessTree
         this.killProcessTree(stream.ffmpegProcess, streamId)
@@ -931,6 +964,7 @@ class StreamingService {
       // error (which the old Retry path never hit — its process was dead).
       if (stream.ffmpegProcess && stream.ffmpegProcess.exitCode === null) {
         logger.info(`restartStream: stopping old FFmpeg for ${streamId} first (device handoff)`)
+        this._closeSession(stream, 'restart')
         stream.intentionallyStopped = true // exit handler must not mark an error
         await new Promise((resolve) => {
           const pid = stream.ffmpegProcess.pid
@@ -1007,10 +1041,15 @@ class StreamingService {
       this.savePersistentStreams()
 
       logger.info(`Stream ${streamId} restarted successfully`)
+      this._reportStarted(stream, 'restart')
       return { success: true, message: 'Stream restarted successfully' }
-      
+
     } catch (error) {
       logger.error(`Failed to restart stream ${streamId}:`, error)
+      this._emitStreamEvent('stream_failed', this.activeStreams[streamId], {
+        via: 'restart',
+        category: error?.cause || 'unknown'
+      })
       // Surface the failure on the row itself (short summary + expandable detail)
       if (this.activeStreams[streamId]) {
         // A failed restart can leave a spawned FFmpeg alive while the stream
@@ -1101,6 +1140,7 @@ class StreamingService {
       // If stream is running, we need to stop it first
       if (stream.status === 'running' && stream.ffmpegProcess) {
         logger.info(`Stopping running stream ${streamId} to update with new ID ${newStreamId}`)
+        this._closeSession(stream, 'edit')
         try {
           this.killProcessTree(stream.ffmpegProcess, streamId)
           stream.intentionallyStopped = true
@@ -1157,6 +1197,7 @@ class StreamingService {
 
     if (deviceChanged || currentStream.status === 'error' || nameChanged) {
       logger.info(`Resetting stream state after update (deviceChanged=${deviceChanged}, nameChanged=${nameChanged}, previousStatus=${currentStream.status})`)
+      this._closeSession(currentStream, 'edit')
       // Ensure any running process is cleared — killProcessTree, NOT bare
       // .kill(): a lone SIGTERM only ends the cmd wrapper and orphans ffmpeg
       // (which keeps the audio device exclusively).
@@ -1398,6 +1439,22 @@ class StreamingService {
       const startTime = stream.startedAt?.getTime() || Date.now()
       const runTime = Date.now() - startTime
       const isImmediateCrash = runTime < 3000 && code !== 0
+
+      // FFmpeg died under a LIVE stream nobody asked to stop (device unplugged,
+      // Icecast gone, encoder error…). This was invisible in telemetry: the
+      // only failure event fired at start. Startup failures are not counted
+      // here — status is not 'running' yet, and stream_failed covers them.
+      if (stream.status === 'running' && !stream.intentionallyStopped) {
+        let category = 'unknown'
+        try {
+          category = errorDiagnostics.diagnose(stderrData || '', code, { streamId })?.category || 'unknown'
+        } catch { /* diagnosis is best-effort */ }
+        this._emitStreamEvent('stream_crashed', stream, {
+          uptimeMin: this._uptimeMin(stream),
+          category,
+          cleanExit: code === 0
+        })
+      }
 
       // If stream was intentionally stopped, keep the 'stopped' status
       // Otherwise, determine status based on exit code

@@ -5,6 +5,7 @@ import crypto from 'crypto';
 import { createRequire } from 'module';
 import logger from '../utils/logger.js';
 import { dataDir } from '../utils/vendorPaths.js';
+import { appVersion } from '../utils/appVersion.js';
 
 const require = createRequire(import.meta.url);
 
@@ -214,7 +215,7 @@ class TelemetryService {
         event: `lanstreamer_${event}`,
         properties: {
           app: 'lanstreamer',
-          appVersion: process.env.npm_package_version || 'unknown',
+          appVersion: appVersion(),
           schema: 1, // event-property schema version — bump when shapes change
           platform: process.platform,
           arch: process.arch,

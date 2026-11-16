@@ -892,6 +892,16 @@
                 } catch (e) { /* never let reporting break playback */ }
             }
 
+            /** Coarse platform for telemetry (never a full UA): the slow src
+             *  path is EXPECTED on iOS/Safari but a silent failure anywhere
+             *  else — the summary can only tell them apart with this. */
+            listenPlatform() {
+                const ua = navigator.userAgent || '';
+                if (/iPhone|iPad|iPod/i.test(ua)) return 'ios';
+                if (/Android/i.test(ua)) return 'android';
+                return 'desktop';
+            }
+
             /** One 30s sample of the playback buffer, posted while playing.
              *  mode 'mse' = low-latency path (buffer held ~0.75s by design);
              *  'src' = plain <audio> fallback (Safari/iOS — browser-controlled
@@ -900,7 +910,7 @@
             reportBufferHeartbeat() {
                 if (!this.currentStream || !this.audioPlayer || this.audioPlayer.paused) return;
                 try {
-                    let mode = 'src', ahead = null, queued = 0, underruns = 0, snaps = 0;
+                    let mode = 'src', ahead = null, queued = 0, underruns = 0, snaps = 0, why = '';
                     if (this.llPlayer) {
                         const s = this.llPlayer.stats();
                         mode = s.mode; ahead = s.bufferedAhead; queued = s.queued || 0;
@@ -910,10 +920,14 @@
                         if (b && b.length) {
                             ahead = Math.max(0, +(b.end(b.length - 1) - this.audioPlayer.currentTime).toFixed(2));
                         }
+                        // Why we're on the slow path: browser can't do MP3-in-MSE
+                        // at all, or MSE errored mid-session (silent fallback).
+                        why = this.llFallback ? 'mse-error' : 'unsupported';
                     }
                     this.reportClientEvent('buffer_report', {
                         streamId: this.currentStream,
-                        mode, ahead,
+                        mode, ahead, why,
+                        plat: this.listenPlatform(),
                         rate: +this.audioPlayer.playbackRate.toFixed(2),
                         queued, underruns, snaps
                     });
@@ -933,6 +947,14 @@
                             onError: (e) => {
                                 console.warn('Low-latency playback failed, falling back to direct stream:', e && e.message);
                                 this.llFallback = true; // remember for this page load
+                                // Report the silent switch: this listener just moved
+                                // from the ~0.75s path to a multi-second buffer with
+                                // no visible change — the top field-latency suspect.
+                                this.reportClientEvent('ll_fallback', {
+                                    streamId: this.currentStream || '',
+                                    err: String((e && (e.name || e.message)) || 'unknown').slice(0, 80),
+                                    plat: this.listenPlatform()
+                                });
                                 this.clearAudioSource();
                                 this.audioPlayer.src = url; // plain path, identical behaviour
                                 if (this.currentStream && this.audioPlayer.paused) {
