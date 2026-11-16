@@ -163,6 +163,12 @@ router.post('/contact-details', async (req, res) => {
             phone: contactDetails.phone ? '***-***-****' : 'empty',
             whatsapp: contactDetails.whatsapp ? '***-***-****' : 'empty'
         });
+        import('../services/TelemetryService.js').then(m => m.default.capture('contact_details_updated', {
+            email_visible: contactDetails.showEmail,
+            phone_visible: contactDetails.showPhone,
+            whatsapp_visible: contactDetails.showWhatsapp,
+            event_configured: Boolean(contactDetails.eventTitle)
+        })).catch(() => {});
 
         res.json({
             success: true,

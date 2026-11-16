@@ -67,6 +67,7 @@ router.post('/login', loginThrottle, async (req, res) => {
             // "Remember me": 30-day token vs 1-day (login form default = on)
             const remember = req.body?.remember !== false;
             const token = generateToken(username, { expiresIn: remember ? '30d' : '1d' });
+            import('../services/TelemetryService.js').then(m => m.default.capture('admin_login_succeeded', { remember })).catch(() => {});
 
             res.json({
                 message: 'Login successful',
@@ -76,6 +77,7 @@ router.post('/login', loginThrottle, async (req, res) => {
             });
         } else {
             recordLoginResult(req, username, false);
+            import('../services/TelemetryService.js').then(m => m.default.capture('admin_login_failed', {})).catch(() => {});
             res.status(401).json({
                 message: 'Invalid username or password'
             });
@@ -142,6 +144,7 @@ router.post('/credentials', authenticateToken, async (req, res) => {
         config.security.adminUsername = username;
         config.security.adminPasswordHash = adminPasswordHash;
         config.security.jwtSecret = jwtSecret;
+        import('../services/TelemetryService.js').then(m => m.default.capture('admin_credentials_updated', {})).catch(() => {});
 
         res.json({
             message: 'Admin login updated — other sessions were signed out',

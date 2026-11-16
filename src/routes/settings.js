@@ -210,6 +210,10 @@ router.post('/music', async (req, res) => {
         };
         
         await fs.writeJson(MUSIC_FILE_SETTING, data, { spaces: 2 });
+        import('../services/TelemetryService.js').then(m => m.default.capture('music_settings_saved', {
+            loop_enabled: data.loop,
+            muted: data.muted
+        })).catch(() => {});
         res.json({ success: true, message: 'Music settings saved', data });
     } catch (error) {
         console.error('Error saving music settings:', error);
@@ -359,6 +363,10 @@ router.post('/music/upload', upload.single('musicFile'), async (req, res) => {
         };
 
         await fs.writeJson(MUSIC_FILE_SETTING, musicSettings, { spaces: 2 });
+        import('../services/TelemetryService.js').then(m => m.default.capture('music_file_uploaded', {
+            loop_enabled: musicSettings.loop,
+            muted: musicSettings.muted
+        })).catch(() => {});
 
         res.json({
             success: true,

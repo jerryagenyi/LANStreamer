@@ -2,6 +2,7 @@ import os from 'os';
 import readline from 'readline';
 import app, { startServer } from './app.js';
 import streamingService from './services/StreamingService.js';
+import posthogLogService from './services/PostHogLogService.js';
 import logger from './utils/logger.js';
 
 const PORT = process.env.PORT || 3001;
@@ -103,6 +104,7 @@ if (process.env.NODE_ENV !== 'test') {
               console.log('✅ No active streams to stop.');
             }
 
+            posthogLogService.emit('info', 'LANStreamer server shutdown requested');
             await new Promise((res) => {
               const forceTimer = setTimeout(() => res(), 5000);
               server.close(() => {
@@ -111,6 +113,7 @@ if (process.env.NODE_ENV !== 'test') {
                 res();
               });
             });
+            await posthogLogService.shutdown();
 
             console.log('\n👋 LANStreamer has been shut down gracefully.\n');
             resolve(true);

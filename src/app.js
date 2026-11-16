@@ -14,6 +14,7 @@ import { optionalAuth, authenticateToken } from './middleware/auth.js';
 import { requireLocalhostAdmin } from './middleware/requireLocalhost.js';
 import streamingService from './services/StreamingService.js';
 import icecastService from './services/IcecastService.js';
+import posthogLogService from './services/PostHogLogService.js';
 import logger from './utils/logger.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -127,6 +128,13 @@ export function startServer({ port = process.env.PORT || 3001, host = process.en
   // Voluntary telemetry (no-op unless the user consented and POSTHOG_KEY is set)
   import('./services/TelemetryService.js').then(m => m.default.init()).catch(() => {});
 
+  // This dedicated provider exports only the lifecycle records emitted below;
+  // it never attaches to the application's existing Winston loggers.
+  posthogLogService.init();
+  server.once('listening', () => {
+    posthogLogService.emit('info', 'LANStreamer HTTP server is listening', { transport: 'http' });
+  });
+
   // Functional binary self-test (dshow/encoders/2s end-to-end) — first run and
   // on stale pins only; fire-and-forget, must never delay or break startup.
   binaryProbe.ensureProbed(process.env.npm_package_version || 'unknown');
@@ -135,6 +143,7 @@ export function startServer({ port = process.env.PORT || 3001, host = process.en
   // Electron shell does its own ordered teardown) skip the duplicate pass —
   // a second stopAllStreams doubles quit latency and can throw on dead state.
   const shutdown = async ({ timeoutMs = 5000, stopStreams = true } = {}) => {
+    posthogLogService.emit('info', 'LANStreamer server shutdown requested');
     try {
       if (stopStreams) {
         const stats = streamingService.getStats();
@@ -159,6 +168,7 @@ export function startServer({ port = process.env.PORT || 3001, host = process.en
         resolve();
       });
     });
+    await posthogLogService.shutdown();
   };
 
   return { server, port, host, shutdown };

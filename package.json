@@ -60,6 +60,9 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@opentelemetry/exporter-logs-otlp-http": "^0.301.2",
+    "@opentelemetry/resources": "^3.1.1",
+    "@opentelemetry/sdk-logs": "^3.1.1",
     "dotenv": "^17.2.1",
     "express": "^4.21.2",
     "fs-extra": "^11.3.1",

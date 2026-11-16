@@ -123,7 +123,7 @@ class TelemetryService {
   }
 
   getHost() {
-    return process.env.POSTHOG_HOST || this._configHost || 'https://us.i.posthog.com';
+    return process.env.POSTHOG_HOST || this._configHost;
   }
 
   _saveState() {
@@ -142,21 +142,31 @@ class TelemetryService {
 
   _maybeStartClient() {
     const key = this.getKey();
+    const host = this.getHost();
     // OPT-OUT model (owner decision 2026-11-01): telemetry is ON unless the
     // operator explicitly turned it off (consented === false). A fresh install
     // (consented null) sends; the first-run dialog is an informational notice
     // with a one-click "Turn off", and the dashboard/tray toggles flip it.
-    if (!key || this.consented === false) {
+    if (this.consented === false) {
       this.enabled = false;
+      return;
+    }
+    if (!key || !host) {
+      this.enabled = false;
+      if (process.env.NODE_ENV !== 'production') {
+        const variable = !key ? 'POSTHOG_KEY' : 'POSTHOG_HOST';
+        logger.warn(`${variable} variable required by PostHog is missing or un-configured, this causes events to be silently missed. This error stops appearing once ${variable} is configured`);
+      }
       return;
     }
     try {
       // Lazy import so a missing/broken SDK never affects the app
       const { PostHog } = require('posthog-node');
       this.client = new PostHog(key, {
-        host: this.getHost(),
+        host,
         flushAt: 10,
         flushInterval: 30_000,
+        enableExceptionAutocapture: true,
       });
       this.enabled = true;
     } catch (error) {
@@ -209,7 +219,7 @@ class TelemetryService {
 
   async shutdown() {
     try {
-      if (this.client) await this.client.shutdown();
+      if (this.client) await this.client.shutdown(3000);
     } catch { /* ignore */ }
   }
 }

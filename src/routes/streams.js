@@ -60,6 +60,7 @@ router.post('/start', async (req, res) => {
 router.post('/create', async (req, res) => {
   try {
     const stream = await streamingService.createStoppedStream(req.body || {});
+    import('../services/TelemetryService.js').then(m => m.default.capture('stream_created', {})).catch(() => {});
     res.status(200).json({ message: 'Stream created (stopped)', streamId: stream.id, stream });
   } catch (error) {
     logger.error('Error creating stream:', { error: error.message });
@@ -242,6 +243,7 @@ router.post('/reorder', async (req, res) => {
       return res.status(400).json({ message: 'streamIds must be an array' });
     }
     streamingService.setStreamOrder(streamIds);
+    import('../services/TelemetryService.js').then(m => m.default.capture('stream_order_updated', { stream_count: streamIds.length })).catch(() => {});
     res.status(200).json({ message: 'Stream order updated', streamIds });
   } catch (error) {
     logger.error('Error reordering streams:', error);
@@ -258,6 +260,7 @@ router.post('/update', async (req, res) => {
   try {
     const { streamId, name, deviceId, bitrate } = req.body;
     const result = await streamingService.updateStream(streamId, { name, deviceId, bitrate });
+    import('../services/TelemetryService.js').then(m => m.default.capture('stream_configuration_updated', { bitrate })).catch(() => {});
     res.status(200).json({
       message: 'Stream updated successfully',
       oldStreamId: result.oldStreamId,
@@ -279,6 +282,7 @@ router.post('/delete', async (req, res) => {
   try {
     const { id } = req.body;
     await streamingService.deleteStream(id);
+    import('../services/TelemetryService.js').then(m => m.default.capture('stream_deleted', {})).catch(() => {});
     res.status(200).json({ message: 'Stream deleted successfully', streamId: id });
   } catch (error) {
     logger.error('Error deleting stream:', error);

@@ -262,6 +262,7 @@ router.post('/binaries/download', async (req, res, next) => {
       return res.status(409).json({ error: 'Download already running', download: before });
     }
     const job = startBinaryDownload();
+    import('../services/TelemetryService.js').then(m => m.default.capture('binary_download_started', {})).catch(() => {});
     return res.status(202).json({ message: 'Download started', download: job });
   } catch (error) {
     next(error);
@@ -359,6 +360,7 @@ router.post('/icecast/start', async (req, res, next) => {
       const status = await icecastService.getStatus();
 
       if (status.running) {
+        import('../services/TelemetryService.js').then(m => m.default.capture('icecast_service_started', {})).catch(() => {});
         res.json({
           success: true,
           message: result.message || 'Icecast server started successfully',
@@ -389,6 +391,9 @@ router.post('/icecast/start', async (req, res, next) => {
 router.post('/icecast/stop', async (req, res, next) => {
   try {
     const result = await icecastService.stop();
+    if (result.success !== false) {
+      import('../services/TelemetryService.js').then(m => m.default.capture('icecast_service_stopped', {})).catch(() => {});
+    }
     res.json(result);
   } catch (error) {
     next(error); // Pass to error middleware
@@ -403,6 +408,9 @@ router.post('/icecast/stop', async (req, res, next) => {
 router.post('/icecast/restart', async (req, res, next) => {
   try {
     const result = await icecastService.restart();
+    if (result.success !== false) {
+      import('../services/TelemetryService.js').then(m => m.default.capture('icecast_service_restarted', {})).catch(() => {});
+    }
     res.json(result);
   } catch (error) {
     next(error); // Pass to error middleware
