@@ -1,4 +1,5 @@
 import { spawn, exec, execSync } from 'child_process'
+import crypto from 'crypto'
 import { fileURLToPath } from 'url'
 import { dirname, join } from 'path'
 import fs from 'fs'
@@ -339,7 +340,24 @@ class StreamingService {
         this.savePersistentStreams()
 
         logger.info(`Stream ${streamId} started successfully with ${currentFormat.name} format`)
-        import('./TelemetryService.js').then(m => m.default.capture('stream_started', { format: currentFormat.name })).catch(() => {})
+        import('./TelemetryService.js').then(m => {
+          // Source identity for field diagnostics: kind + a one-way hash of the
+          // device/file label. Same driver name hashes identically on every
+          // install, so "which audio source was that stream using?" (the
+          // Nigeria 6s report) is answerable remotely — the label itself
+          // never leaves the machine.
+          let sourceHash = 'none'
+          try {
+            const label = streamConfig.inputFile || streamConfig.deviceId || ''
+            if (label) sourceHash = crypto.createHash('sha256').update(String(label)).digest('hex').slice(0, 10)
+          } catch { /* keep 'none' */ }
+          m.default.capture('stream_started', {
+            format: currentFormat.name,
+            sourceKind: streamConfig.inputFile ? 'file' : 'device',
+            sourceHash,
+            bitrate: Number(streamConfig.bitrate) || 0
+          })
+        }).catch(() => {})
         return this.activeStreams[streamId]
 
       } catch (error) {

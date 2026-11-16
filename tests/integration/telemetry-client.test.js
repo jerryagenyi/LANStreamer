@@ -81,6 +81,21 @@ describe('Listener client-event relay', () => {
     expect(props.ok).toBe(true);
   });
 
+  it('accepts the 30s listener buffer heartbeat (latency bisect telemetry)', async () => {
+    const res = await request(app)
+      .post('/api/telemetry/client-event')
+      .send({
+        event: 'buffer_report',
+        properties: { streamId: 's1', mode: 'mse', ahead: 0.78, rate: 1, queued: 0, underruns: 0, snaps: 0 }
+      });
+    expect(res.status).toBe(200);
+    expect(captureMock).toHaveBeenCalledWith('client_buffer_report', expect.objectContaining({
+      surface: 'listener',
+      mode: 'mse',
+      ahead: 0.78
+    }));
+  });
+
   it('rate-limits to 30 events per minute per IP', async () => {
     const statuses = [];
     for (let i = 0; i < 35; i++) {

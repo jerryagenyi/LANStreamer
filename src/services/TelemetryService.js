@@ -20,10 +20,15 @@ const require = createRequire(import.meta.url);
  *
  * Collected event properties: event name, timestamp, app version, OS +
  * architecture, anonymous install ID, and for failures the error category
- * (from errorDiagnostics) — nothing else. Every event also carries the fixed
- * app=lanstreamer tag (the maintainer's PostHog project is shared with other
- * apps; the tag is how insights tell this app's events apart). See
- * docs/APP-FLOW.md and README.
+ * (from errorDiagnostics). Stream started additionally carries the output
+ * format, bitrate, source kind (device/file) and a one-way source hash (10
+ * hex chars of sha256 over the device/file label — field reports can say
+ * WHICH source a stream used without the label ever leaving the machine).
+ * Listener-page events (failures + the 30s buffer heartbeat) relay through
+ * routes/telemetry.js. Nothing else is collected. Every event also carries
+ * the fixed app=lanstreamer tag (the maintainer's PostHog project is shared
+ * with other apps; the tag is how insights tell this app's events apart).
+ * See docs/APP-FLOW.md and README.
  *
  * Config: config/telemetry.json { installId, consented: boolean|null }
  * Env: POSTHOG_KEY (project API key), POSTHOG_HOST (default us.i.posthog.com).

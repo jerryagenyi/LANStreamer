@@ -521,7 +521,7 @@
     <script src="/assets/js/boot.js?v=5"></script>
     <script src="/assets/js/toasts.js?v=5"></script>
     <script src="/assets/js/lightbox.js?v=1"></script>
-    <script src="/assets/js/lowlatency.js?v=3"></script>
+    <script src="/assets/js/lowlatency.js?v=4"></script>
     <script>
         class StreamListener {
             constructor() {
@@ -586,6 +586,14 @@
                 }
                 this.clientTimers = new Map(); // streamId -> { startTime, isRunning }
                 this.uptimeUpdateInterval = null;
+
+                // Buffer heartbeat (30s while playing): makes listener-side
+                // latency observable in remote telemetry. If total latency is
+                // high but 'ahead' stays ~0.8s, the delay is UPSTREAM of the
+                // player (capture chain) — the exact bisect the Nigeria "6s"
+                // report needed. Numbers only, relayed through the operator's
+                // server like every listener report.
+                setInterval(() => this.reportBufferHeartbeat(), 30_000);
 
                 // Track known stream IDs to detect new streams
                 this.knownStreamIds = new Set();
@@ -881,6 +889,34 @@
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ event, properties })
                     }).catch(() => {});
+                } catch (e) { /* never let reporting break playback */ }
+            }
+
+            /** One 30s sample of the playback buffer, posted while playing.
+             *  mode 'mse' = low-latency path (buffer held ~0.75s by design);
+             *  'src' = plain <audio> fallback (Safari/iOS — browser-controlled
+             *  buffer, can sit multiple seconds ahead). ahead + rate together
+             *  say whether THIS side owns any reported latency. */
+            reportBufferHeartbeat() {
+                if (!this.currentStream || !this.audioPlayer || this.audioPlayer.paused) return;
+                try {
+                    let mode = 'src', ahead = null, queued = 0, underruns = 0, snaps = 0;
+                    if (this.llPlayer) {
+                        const s = this.llPlayer.stats();
+                        mode = s.mode; ahead = s.bufferedAhead; queued = s.queued || 0;
+                        underruns = s.underruns || 0; snaps = s.snaps || 0;
+                    } else {
+                        const b = this.audioPlayer.buffered;
+                        if (b && b.length) {
+                            ahead = Math.max(0, +(b.end(b.length - 1) - this.audioPlayer.currentTime).toFixed(2));
+                        }
+                    }
+                    this.reportClientEvent('buffer_report', {
+                        streamId: this.currentStream,
+                        mode, ahead,
+                        rate: +this.audioPlayer.playbackRate.toFixed(2),
+                        queued, underruns, snaps
+                    });
                 } catch (e) { /* never let reporting break playback */ }
             }
 

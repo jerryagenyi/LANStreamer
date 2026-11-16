@@ -49,6 +49,8 @@
       this.appending = false;
       this.stopped = false;
       this.lastSnapAt = 0;
+      this.underruns = 0; // buffer ran dry (waiting fired)
+      this.snaps = 0;     // hard seeks back to the live edge
     }
 
     /** Start feeding from url. The audio element's src is replaced by the
@@ -83,10 +85,12 @@
       // data exists; otherwise let the next tick land — the element resumes
       // by itself and the gap is a short silence, not an audible skip.
       this._onWaiting = () => {
+        this.underruns++;
         const b = this._bufferedEnd();
         if (b !== null && b - this.audio.currentTime > WAIT_SEEK_AHEAD) {
           this.audio.currentTime = Math.max(0, b - SNAP_BACK);
           this.lastSnapAt = Date.now();
+          this.snaps++;
         }
       };
       this.audio.addEventListener('waiting', this._onWaiting);
@@ -142,6 +146,7 @@
         a.currentTime = Math.max(0, end - SNAP_BACK);
         a.playbackRate = 1;
         this.lastSnapAt = now;
+        this.snaps++;
       } else if (ahead > RATE_NUDGE_ABOVE && !a.paused) {
         if (a.playbackRate !== RATE_NUDGE) a.playbackRate = RATE_NUDGE;
       } else if (a.playbackRate !== 1) {
@@ -164,13 +169,17 @@
       return b.end(b.length - 1);
     }
 
-    /** Latency in seconds between live edge and playhead (for diagnostics). */
+    /** Latency in seconds between live edge and playhead (for diagnostics).
+     *  underruns/snaps feed the 30s buffer heartbeat — they show whether a
+     *  listener's session was clean or fighting the network. */
     stats() {
       const end = this._bufferedEnd();
       return {
         mode: 'mse',
         bufferedAhead: end === null ? null : Math.max(0, +(end - this.audio.currentTime).toFixed(2)),
-        queued: this.queue.length
+        queued: this.queue.length,
+        underruns: this.underruns,
+        snaps: this.snaps
       };
     }
 

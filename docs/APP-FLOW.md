@@ -152,6 +152,6 @@ flowchart TD
 | `IcecastService` | install detection, start/stop, stats (localhost polls), hostname auto-sync, security check |
 | `AudioDeviceService` | device discovery (dshow; wasapi fallback) |
 | `UpdateService` | GitHub release polling (to be replaced by electron-updater) |
-| `TelemetryService` | PostHog, opt-in, anonymous ID, queue-and-flush |
+| `TelemetryService` | PostHog, opt-out (owner decision), anonymous ID, queue-and-flush |
 
 API surface used by the UI: `/api/streams/*` (status, start, stop, start-all, stop-all, reorder, play/:id proxy), `/api/system/*` (config, icecast start/stop/status, audio-devices, security-check), `/api/settings/*`, `/api/contact-details`, `/api/auth/login`.

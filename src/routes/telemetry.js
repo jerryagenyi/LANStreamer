@@ -18,6 +18,7 @@ const router = express.Router();
 const CLIENT_EVENTS = new Set([
   'playback_error',    // audio element failed while playing a channel
   'playback_stalled',  // buffering stall (deduped client-side)
+  'buffer_report',     // 30s heartbeat while playing: buffered-ahead depth, rate mode
   'reconnect_grace',   // the stream disappeared mid-listen; grace window opened
   'offair_giveup',     // grace expired without the stream returning
   'load_failed'        // the listener page could not load the stream list
