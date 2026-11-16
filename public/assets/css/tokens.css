@@ -42,6 +42,8 @@
   --tok-warning-dim: rgba(245, 165, 36, 0.13);
   --tok-danger: #F2555A;
   --tok-danger-dim: rgba(242, 85, 90, 0.12);
+  --tok-virtual: #A78BFA;                        /* virtual-device badge */
+  --tok-virtual-dim: rgba(167, 139, 250, 0.15);
   --tok-onair: #FF4A3B;                          /* reserved: the ON AIR badge only */
 
   /* Type */
@@ -96,6 +98,8 @@
   --tok-warning-dim: rgba(217, 138, 4, 0.12);
   --tok-danger: #D93025;
   --tok-danger-dim: rgba(217, 48, 37, 0.10);
+  --tok-virtual: #6D4FD1;
+  --tok-virtual-dim: rgba(109, 79, 209, 0.12);
   --tok-onair: #E5372B;
 
   --tok-shadow-card: 0 1px 2px rgba(14,23,42,0.04), 0 8px 24px -12px rgba(14,23,42,0.12);

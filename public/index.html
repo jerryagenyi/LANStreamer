@@ -15,7 +15,7 @@
     <script src="/assets/js/theme-toggle.js?v=7"></script>
     <script src="/assets/js/admin-auth.js?v=7"></script>
     <script src="/assets/js/pwtoggle.js?v=1"></script>
-    <script src="/assets/js/qr-share.js?v=6"></script>
+    <script src="/assets/js/qr-share.js?v=7"></script>
     <script src="/assets/js/marquee.js?v=6"></script>
     <style>
         :root {
@@ -1256,10 +1256,8 @@
                 if (copyBtn && !copyBtn.dataset.wired) {
                     copyBtn.dataset.wired = '1';
                     copyBtn.addEventListener('click', async () => {
-                        try {
-                            await navigator.clipboard.writeText(url);
-                            this.showNotification('Listener link copied', 'success', { tag: 'copy' });
-                        } catch { window.prompt('Copy this link:', url); }
+                        const ok = await LSShare.copy(url);
+                        this.showNotification(ok ? 'Listener link copied' : `Could not copy — the link is ${url}`, ok ? 'success' : 'error', { tag: 'copy' });
                     });
                 }
 
