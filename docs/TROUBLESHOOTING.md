@@ -18,6 +18,8 @@ Common issues and solutions for LANStreamer.
 
 Field report this section is written from: same gear, one day at ~2 s end-to-end, the next at 6 s — the only change was the audio source switched to a **free VB-CABLE**. LANStreamer's player holds ~0.75 s of buffer and hard-snaps back to live past 2.5 s **on the low-latency path** — so when the total hits 4–6 s the extra seconds are almost always **before the app** (capture chain) or on the **slow fallback playback path** — not the network and not the app itself.
 
+**Fastest first check (field-proven, Nov 2026): plug one listener in by cable.** The same Nigeria setup measured ~1 s on a wired listener while Wi-Fi phones sat at 5–6 s — one cable test proves the whole server chain (source → VB-Cable → FFmpeg → Icecast) is fine and the extra seconds live in the *wireless listener's playback path*, not in "the network" as a whole. And note what weak signal actually does on the low-latency path: it produces **stutter/breaks** (buffer runs dry), never a *constant* 5–6 s offset — a constant offset means a deep buffer (the slow path below), whatever the signal strength.
+
 Check in this order:
 
 1. **What feeds the virtual cable?** The cable itself is fast, but the app *playing into it* (Zoom, a browser tab, a media player) may buffer seconds on its own. Feed the cable from the most direct output available and set that app's buffering to its minimum. If the audio comes out of a meeting app at all, expect its full jitter buffer in the chain.
