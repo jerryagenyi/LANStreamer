@@ -123,7 +123,7 @@ describe('Listener client-event relay', () => {
     captureMock.mockClear();
     const post = (properties) => request(app).post('/api/telemetry/client-event').send({ event: 'buffer_report', properties });
     await post({ streamId: 's1', mode: 'mse', plat: 'android', ahead: 0.7, underruns: 0, snaps: 0 });
-    await post({ streamId: 's1', mode: 'mse', plat: 'android', ahead: 0.9, underruns: 3, snaps: 1 });
+    await post({ streamId: 's1', mode: 'mse', plat: 'android', ahead: 0.9, underruns: 3, snaps: 1, reconnects: 4 });
     await post({ streamId: 's2', mode: 'src', why: 'unsupported', plat: 'ios', ahead: 4.2, underruns: 0, snaps: 0 });
 
     await flushListenerSummary();
@@ -144,7 +144,8 @@ describe('Listener client-event relay', () => {
       srcAheadMax: 4.2,
       mseAheadMax: 0.9,
       underrunsMax: 3,
-      snapsMax: 1
+      snapsMax: 1,
+      reconnectsMax: 4 // worst listener's recovered connection drops = Wi-Fi health
     }));
   });
 

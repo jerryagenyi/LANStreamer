@@ -9,7 +9,68 @@ suspected, and what to do next.
 - **Trigger:** field report "1–2 s latency first try, next day same equipment 6 s" + "DVS still doesn't work"; Zcode proposed cutting v2.1.0 (telemetry + docs only).
 - **Verdict in one line:** do **not** cut v2.1.0 as it stands — its purpose is remote latency diagnosis and the two things that make that possible (listener heartbeat, app version) are broken. Fix the P0 list below first; it is small.
 
-## 1. State of the working tree
+## 0. STATUS UPDATE — 2026-11-16 evening (read this first; it supersedes parts of §1, §5, §6, §7)
+
+### What changed since the review was written
+
+| Item | State |
+|---|---|
+| F1 listener POST from LAN, F2 real `appVersion`, F3 lifecycle events (`sid`, `stream_crashed`, restart starts), F8 heartbeat aggregation (`client_buffer_summary`), `ll_fallback` event | **Done, committed, pushed** (`c12b6ef` + follow-ups by a second agent working from this handover) |
+| F9 shared PostHog project | **Resolved differently:** LANStreamer now has its own PostHog organisation/project (**353182**). Verified: dev events arrive there with `appVersion 2.0.0`, `osVersion`, `schema 1`. `node scripts/posthog-query.mjs status` works with no env prefix. |
+| **Root cause of "1 s wired / 5–6 s Wi-Fi" found and fixed** (new finding F13 below) | **Done in the working tree, NOT committed** |
+| `CLAUDE.md` telemetry section (opt-out, event contract) | Updated, not committed |
+
+**Uncommitted at the time of writing:** `public/assets/js/lowlatency.js`, `public/streams.html`, `src/routes/telemetry.js`, `tests/integration/telemetry-client.test.js`, `tests/unit/lowlatency.test.js` (new), `scripts/verify-ll-reconnect.mjs` (new), `CLAUDE.md`, `docs/TROUBLESHOOTING.md`, this file. Full suite with these changes: **22 suites / 122 tests pass**.
+
+### F13 — The player gave up on low latency after any network error (PROVEN, FIXED) — this is the Nigeria latency bug
+
+New field facts (2026-11-16): on the same stream a **wired laptop measured ~1 s** while **Wi-Fi listeners — Chrome on a phone, Edge on a laptop — sat at 5–6 s**; first test was 1–2 s.
+- The wired result clears everything up to the server (virtual cable, capture, FFmpeg, Icecast). §5's H1 is out.
+- Chrome and Edge both support the low-latency (MSE) player, which is bounded at ~2.5 s by design. Sitting at 5–6 s means those listeners were no longer on it.
+- Cause, in `public/assets/js/lowlatency.js` `_fetch`: **any** fetch/read error called `onError`, and the page's `onError` (`public/streams.html`) switches to plain `<audio src>` for the rest of the page load, silently. A clean server close did nothing at all (player dead). One Wi-Fi drop was enough; the slow path then falls further behind with every hiccup and never returns to live.
+- Fix: a dropped/refused/closed connection now **reconnects on the MSE path** (300 ms, 800 ms, 1.5 s, 3 s, then every 5 s while the channel stays selected; parser state and stale queue discarded; backoff resets after 10 s of healthy data). `onError` → fallback remains only for real MSE failures (SourceBuffer error, constructor/append failure).
+- Proof: unit tests `tests/unit/lowlatency.test.js` (watched fail first: `onError` called with `TypeError: network error`), and a **real Chromium run** with `node scripts/verify-ll-reconnect.mjs` → after a cut connection: `reconnects 1`, `mode mse`, `fallback no`, buffer 0.57 s, playback continuous; after an 8 s outage: stalled during it, then live again on MSE at 0.48 s.
+- New telemetry: heartbeats carry `reconnects`; the summary carries `reconnectsMax` (how rough the listeners' Wi-Fi is). The PostHog dashboard does not chart it yet.
+- **Not verified:** a real phone on real weak Wi-Fi; Firefox; behaviour when Icecast restarts mid-stream. The harness simulates drops on loopback only.
+- **Workaround for v2.0.0 in the field today:** reload the page on the slow device (or tap the channel off and on).
+- Still open on the same theme: `SEEK_ABOVE = 2.5 s` lets an MSE listener on a rough link hover up to ~2.5 s of buffer (≈3.5 s end-to-end) before a hard snap. Tune only after `mseAheadMax`/`snapsMax` data exists.
+
+### New issues found this round
+
+1. **PR [#16](https://github.com/jerryagenyi/LANStreamer/pull/16) "Instrument application with PostHog"** was opened by the PostHog wizard bot (branch `posthog/wizard-01a1e4f6be68`), CI failing. It adds an OpenTelemetry **log exporter that reads the key from env and is not gated by the operator's telemetry switch**, new dependencies with `^` ranges, and ~15 extra events (`admin_login_succeeded/failed`, `contact_details_updated`, …). It conflicts with the privacy contract and the consent toggle. **Recommendation: close without merging**; if any event is wanted, add it through `TelemetryService.capture` by hand.
+2. **CI on `main` has been red since 2026-11-01** (PR #15 merge; `enforce-prs` also failed). Locally `node scripts/check-design-tokens.mjs` reports 6 violations above baseline in files untouched today (`public/index.html`, `public/showcase.html`, `public/components/FFmpegStreamsManager.js`). The release path (dev → PR → main with green CI) is blocked until these are fixed or the baseline is deliberately updated.
+3. **Installs in the field (v2.0.0) still report to the OLD project** (ChurchAfrica's org, id 320407) with the old baked key, and will until they install a new build. Querying their history needs the ChurchAfrica org's key. `package.json` still says `2.0.0` — bump to `2.1.0` at release or the new build is indistinguishable from the old one.
+4. **Offline venues** — see "Offline telemetry" below; not built.
+
+### Offline telemetry — how data gets out when the PC is never online (design, not built)
+
+PostHog can only receive what a machine eventually sends. Three layers, cheapest first:
+1. **Always write a local journal.** Every telemetry event is also appended to a small rolling file in the data folder (same anonymous events, capped e.g. 2 MB / 30 days). Works with no internet at all.
+2. **Send later.** When the app next starts with internet, it uploads the journal with the **original timestamps** and marks what was sent. Covers "offline at the venue, online at home/office". Today the queue is memory-only, so those events are lost on exit.
+3. **Hand-carry for PCs that are never online.** A dashboard button "Export diagnostics" writes one small file (journal + version + redacted settings) that the operator sends by WhatsApp/email; `scripts/` gets an importer that replays it into PostHog. Same data, human transport.
+Layers 1+2 are one change in `TelemetryService`; layer 3 is the "Copy diagnostics" item already listed in §7 (P2 #14) and should move up.
+
+### Questions for Nigeria — plain-language version (replaces §6)
+
+Already answered: Wi-Fi listeners were a phone on Chrome and a laptop on Edge; the cabled listener was a laptop.
+
+1. **When a phone is 5–6 seconds behind, refresh the page on that phone and press play again. Is it back to about 1 second?** (Yes/No — and if yes, does it stay at 1 second for the next few minutes?)
+2. **How many computers are running LANStreamer?** We saw two start at the same minute on Nov 5, and a third later that day. (Just a number, and whether any PC has both the installed version and the plug-and-play version.)
+3. **Dante: when you open the "audio source" list in LANStreamer, do you see anything with "DVS" or "Dante" in its name?** (Yes/No — a screenshot of the list is perfect.)
+4. **If yes: what happens when you press Start on a stream using that DVS source?** (Screenshot of the message.)
+5. **In the Dante Virtual Soundcard window, is the "Audio Interface" set to WDM or ASIO?** (It must be WDM for LANStreamer to see it.)
+
+### Order of work from here
+
+1. Commit the F13 fix (after Jerry's go) → merge to dev → fix/accept the 6 linter violations so CI is green. The player change is a streaming-behaviour change: its PR description must answer the 7 conditions in `docs/pressure-checklist.md` (poor network is the one it exists for; also state the retry cadence under "hostile traffic"/"10x": one request per listener per 5 s at worst).
+2. Close PR #16.
+3. Bump version to 2.1.0; run the release acceptance test from §7 (#8) with a **real phone on Wi-Fi**: confirm `client_buffer_summary` arrives in project 353182, then walk out of Wi-Fi range and back — audio must return near-live without a reload and `reconnectsMax` must be > 0.
+4. Tell Nigeria: install v2.1.0; until then, reload a slow phone.
+5. Offline journal (layers 1+2), then diagnostics export (layer 3).
+6. DVS, once questions 3–5 are answered (§4 F6/F7 unchanged).
+7. v2.2: capture buffer (F5), device identity (F6), remaining security items (F11).
+
+## 1. State of the working tree (as of the original review — see §0 for current state)
 
 | Item | State |
 |---|---|

@@ -29,6 +29,11 @@
   const SNAP_BACK = 0.30;      // after a hard snap, playhead sits this far behind live edge
   const WAIT_SEEK_AHEAD = 0.4; // underrun: only jump if this much data exists
   const MAX_TRIM = 12;         // periodically drop played-out buffer beyond this many seconds
+  // Connection loss: retry on THIS path, quickly at first, then every 5 s for
+  // as long as the listener keeps the channel selected (the page stops the
+  // player when the stream goes off air or the listener leaves).
+  const RECONNECT_DELAYS_MS = [300, 800, 1500, 3000, 5000];
+  const HEALTHY_AFTER_MS = 10000; // data flowing this long = outage over, reset the backoff
 
   class LSLowLatency {
     static supported() {
@@ -51,6 +56,10 @@
       this.lastSnapAt = 0;
       this.underruns = 0; // buffer ran dry (waiting fired)
       this.snaps = 0;     // hard seeks back to the live edge
+      this.reconnects = 0; // connection drops recovered on this path (Wi-Fi health)
+      this.retries = 0;    // consecutive failed attempts (backoff position)
+      this.session = 0;    // bumped by load()/stop() so stale fetch loops go quiet
+      this._retryTimer = null;
     }
 
     /** Start feeding from url. The audio element's src is replaced by the
@@ -58,6 +67,7 @@
     load(url) {
       this.stop(); // tear down any previous session
       this.stopped = false;
+      this.retries = 0;
       try {
         this.mediaSource = new MediaSource();
       } catch (e) {
@@ -98,22 +108,55 @@
     }
 
     async _fetch(url) {
+      const session = this.session; // a later load()/stop() invalidates this loop
       this.controller = new AbortController();
+      const connectedAt = Date.now();
       try {
         const res = await fetch(url, { signal: this.controller.signal, cache: 'no-store' });
         if (!res.ok || !res.body) throw new Error('proxy ' + res.status);
         const reader = res.body.getReader();
         for (;;) {
           const { done, value } = await reader.read();
+          if (this.stopped || session !== this.session) return;
           if (done) break;
-          if (this.stopped) return;
+          // A connection that has delivered for a while is healthy again —
+          // the next drop starts from the short retry delay, not the long one.
+          if (this.retries && Date.now() - connectedAt > HEALTHY_AFTER_MS) this.retries = 0;
           this.queue.push(value);
           this._pump();
         }
       } catch (e) {
-        if (this.stopped || e.name === 'AbortError') return;
-        this.onError(e);
+        if (this.stopped || session !== this.session || e.name === 'AbortError') return;
       }
+      // Dropped, refused, or closed by the server. This is the NETWORK failing,
+      // not MSE: stay on the low-latency path and reconnect. (Handing the
+      // listener to the plain <audio> path here was the field "5–6 s on Wi-Fi,
+      // 1 s on cable" bug — that path never comes back to live on its own.)
+      this._reconnect(url, session);
+    }
+
+    _reconnect(url, session) {
+      if (this.stopped || session !== this.session) return;
+      const delay = RECONNECT_DELAYS_MS[Math.min(this.retries, RECONNECT_DELAYS_MS.length - 1)];
+      this.retries++;
+      this.reconnects++;
+      this._retryTimer = setTimeout(() => {
+        this._retryTimer = null;
+        if (this.stopped || session !== this.session) return;
+        // Discard what the dead connection left behind: a half MP3 frame in the
+        // parser and stale chunks in the queue. The new connection starts at
+        // the live edge; sequence mode appends it right after what was played.
+        this.queue = [];
+        // Only when the SourceBuffer is idle: abort() and appendBuffer() are
+        // both illegal mid-update, and an InvalidStateError would count as an
+        // MSE failure (fallback). If an append is still in flight, its
+        // updateend clears the flag and pumps the new data as usual.
+        if (this.sourceBuffer && !this.sourceBuffer.updating) {
+          this.appending = false;
+          try { this.sourceBuffer.abort(); } catch { /* closed */ }
+        }
+        this._fetch(url);
+      }, delay);
     }
 
     _pump() {
@@ -179,12 +222,15 @@
         bufferedAhead: end === null ? null : Math.max(0, +(end - this.audio.currentTime).toFixed(2)),
         queued: this.queue.length,
         underruns: this.underruns,
-        snaps: this.snaps
+        snaps: this.snaps,
+        reconnects: this.reconnects
       };
     }
 
     stop() {
       this.stopped = true;
+      this.session++;
+      if (this._retryTimer) { clearTimeout(this._retryTimer); this._retryTimer = null; }
       try { this.controller?.abort(); } catch { /* already */ }
       try { this.audio.removeEventListener('waiting', this._onWaiting); } catch { /* not attached */ }
       try { if (this.sourceBuffer && !this.sourceBuffer.updating) this.sourceBuffer.abort(); } catch { /* closed */ }

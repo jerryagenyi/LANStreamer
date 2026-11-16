@@ -112,6 +112,10 @@ export async function flushListenerSummary() {
   if (uMax !== null) props.underrunsMax = uMax;
   const sMax = maxOf('snaps');
   if (sMax !== null) props.snapsMax = sMax;
+  // Connection drops the player recovered from WITHOUT leaving the
+  // low-latency path — the direct measure of how rough the listeners' Wi-Fi is.
+  const rMax = maxOf('reconnects');
+  if (rMax !== null) props.reconnectsMax = rMax;
   const listeners = await currentListeners();
   if (typeof listeners === 'number') props.listeners = listeners;
 

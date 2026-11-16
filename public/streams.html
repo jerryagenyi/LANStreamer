@@ -910,11 +910,12 @@
             reportBufferHeartbeat() {
                 if (!this.currentStream || !this.audioPlayer || this.audioPlayer.paused) return;
                 try {
-                    let mode = 'src', ahead = null, queued = 0, underruns = 0, snaps = 0, why = '';
+                    let mode = 'src', ahead = null, underruns = 0, snaps = 0, reconnects = 0, why = '';
                     if (this.llPlayer) {
                         const s = this.llPlayer.stats();
-                        mode = s.mode; ahead = s.bufferedAhead; queued = s.queued || 0;
+                        mode = s.mode; ahead = s.bufferedAhead;
                         underruns = s.underruns || 0; snaps = s.snaps || 0;
+                        reconnects = s.reconnects || 0; // drops recovered on this path (Wi-Fi health)
                     } else {
                         const b = this.audioPlayer.buffered;
                         if (b && b.length) {
@@ -929,7 +930,7 @@
                         mode, ahead, why,
                         plat: this.listenPlatform(),
                         rate: +this.audioPlayer.playbackRate.toFixed(2),
-                        queued, underruns, snaps
+                        underruns, snaps, reconnects
                     });
                 } catch (e) { /* never let reporting break playback */ }
             }

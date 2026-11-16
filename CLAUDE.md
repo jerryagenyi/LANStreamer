@@ -5,7 +5,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Project Context
 
 **Project Type:** Electron desktop app (LAN audio streaming; Express server embedded in the Electron main process)
-**Key Technologies:** Electron, FFmpeg, Icecast, Express.js, PostHog (voluntary telemetry)
+**Key Technologies:** Electron, FFmpeg, Icecast, Express.js, PostHog (opt-out anonymous telemetry)
 
 **Architecture:**
 - `src/services/StreamingService.js` → Core FFmpeg process management
@@ -87,8 +87,11 @@ Example: `git merge feature/start-all-and-unique-names`. After pushing dev, you 
 
 ## Telemetry (PostHog)
 
-- `src/services/TelemetryService.js` — opt-in only; **never** capture personal data, audio, stream names, or paths. Events: `app_start`, `stream_started` (format), `stream_stopped`, `stream_failed` (error category), `telemetry_enabled/disabled`. Distinct ID = anonymous install UUID from `config/telemetry.json`.
-- Enabled only when user consented (first-run Electron prompt; toggle in tray menu) **and** `POSTHOG_KEY` env is set (`POSTHOG_HOST` optional). No-op otherwise — keep it that way for any new events.
+- `src/services/TelemetryService.js` — **opt-out** (owner decision 2026-11-01): ON by default, the first-run dialog is a notice with a one-click "Turn off", and the dashboard/tray toggles flip it. **Never** capture personal data, audio, stream names, device names, or paths. Distinct ID = anonymous install UUID from `config/telemetry.json`.
+- Sends only when the operator has not turned it off **and** a PostHog key resolves (env `POSTHOG_KEY`, `config/telemetry.json`, or the key bundled at build time). No-op otherwise — keep it that way for any new events.
+- Server events: `app_start`, `app_stop`, `telemetry_enabled/disabled`, and the stream lifecycle — every live session emits exactly one `stream_started` and exactly one end (`stream_stopped` or `stream_crashed`), paired by a random per-session `sid`; `stream_failed` = could not start. Emit them only through `StreamingService._reportStarted` / `_closeSession` / `_emitStreamEvent` so the pairing holds (`tests/unit/StreamingService.telemetry.test.js`).
+- Listener events go through `POST /api/telemetry/client-event` (`src/routes/telemetry.js`) — the one non-GET allowed from the LAN (`src/middleware/requireLocalhost.js`). The 30 s buffer heartbeat is **aggregated** into one `client_buffer_summary` per minute; never relay per-listener heartbeats (volume). New listener events must be added to `CLIENT_EVENTS` there.
+- A listener is by definition not on localhost: test anything listener-facing with `X-Test-Remote-Address`, not just from localhost.
 - Skipped entirely under `NODE_ENV=test`. All calls are fire-and-forget with catch: telemetry must never break the app.
 - Docs: README "Telemetry & Privacy" (user-facing) + this section (dev-facing).
 
