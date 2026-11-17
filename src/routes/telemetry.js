@@ -201,4 +201,49 @@ router.post('/consent', async (req, res, next) => {
   }
 });
 
+/**
+ * @route GET /api/telemetry/diagnostics/status
+ * @description Local-delivery status for the dashboard "Export diagnostics"
+ *   card: pending journal events, last upload/export, and whether events from
+ *   a PREVIOUS session still await delivery (the remind toast).
+ * @access Private (admin, localhost)
+ */
+router.get('/diagnostics/status', async (req, res, next) => {
+  try {
+    await telemetry.init(); // idempotent
+    return res.json(telemetry.diagnosticsStatus());
+  } catch (error) {
+    next(error);
+  }
+});
+
+/** Local-time filename stamp: YYYYMMDD-HHmm, zero-padded. */
+function diagnosticsStamp(d = new Date()) {
+  const p = (n) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}`;
+}
+
+/**
+ * @route GET /api/telemetry/diagnostics/export
+ * @description Download a hand-carry diagnostics bundle (every event still
+ *   in the local journal) for machines that never reach PostHog. 409 with a
+ *   clear message when telemetry is off (nothing is journaled then).
+ * @access Private (admin, localhost)
+ */
+router.get('/diagnostics/export', async (req, res, next) => {
+  try {
+    await telemetry.init(); // idempotent
+    const bundle = telemetry.exportDiagnostics();
+    if (!bundle) {
+      return res.status(409).json({ error: 'Telemetry is off — no diagnostics are collected. Turn telemetry on first.' });
+    }
+    const shortId = String(bundle.installId || '').replace(/[^0-9a-fA-F]/g, '').slice(0, 8) || 'install';
+    res.setHeader('Content-Type', 'application/json; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename="lanstreamer-diagnostics-${shortId}-${diagnosticsStamp()}.json"`);
+    return res.json(bundle);
+  } catch (error) {
+    next(error);
+  }
+});
+
 export default router;

@@ -165,6 +165,9 @@ LANStreamer is **free and open source — no one makes money from it, and no one
 - **First run** shows a plain notice that statistics are on, what they contain, and a one-click **Turn it off**.
 - **Change it anytime**: dashboard → sidebar → **Admin account** → *Anonymous usage statistics* switch, or tray icon → **Telemetry → On/Off**.
 - Events go to the maintainer's PostHog over the internet, queued and flushed in the background — nothing is sent while telemetry is off, and a fully offline LAN works either way.
+- **No internet at the venue?** The same anonymous events are first written to a small file on the PC (`telemetry-journal.jsonl` in the app's data folder: `%APPDATA%\LANStreamer` for the installed app, `config\` when run from source). They are sent, with their original times, the next time the app runs with internet, and removed once received. The file holds at most 10,000 events; beyond that the oldest are dropped.
+- **PC never online?** Dashboard → **Admin account** → **Export diagnostics** saves one readable JSON file with those events; send it to the developer by WhatsApp or email. The app notes when you last exported, and reminds you at start-up if events from earlier sessions are still waiting.
+- **Turning statistics off deletes that file** and stops writing it.
 - Maintainers packaging a distributed build: run `node scripts/prepare-telemetry-key.mjs` before building — it bundles the PostHog key into the app (gitignored) so other operators' installs report too (each with their own off switch).
 
 ---

@@ -695,6 +695,13 @@
                                 <span style="font-size:13px;font-weight:600;color:var(--tok-text-1);">Anonymous usage statistics</span>
                             </div>
                             <p id="telemetry-hint" style="font-size:12px;color:var(--tok-text-2);margin:6px 0 0;">Loading…</p>
+                            <div style="display:flex;align-items:center;gap:8px;margin-top:10px;">
+                                <button type="button" id="telemetry-diag-export" class="btn btn-secondary" style="font-size:12px;padding:6px 12px;">
+                                    <span class="material-symbols-rounded" style="font-size:16px;vertical-align:-3px;" aria-hidden="true">download</span>
+                                    Export diagnostics
+                                </button>
+                            </div>
+                            <p id="telemetry-diag-status" style="font-size:12px;color:var(--tok-text-2);margin:6px 0 0;"></p>
                         </div>
                     </div>
                 </div>
@@ -1502,6 +1509,7 @@
                     if (hint) hint.textContent = 'Could not load the current admin account settings.';
                 }
                 this.initTelemetryToggle();
+                this.initTelemetryDiagnostics();
             }
 
             /** Telemetry switch in the Admin account card — same source of
@@ -1543,11 +1551,89 @@
                         const data = await res.json();
                         if (!res.ok) throw new Error(data.error || res.status);
                         paint(data.enabled, true);
+                        this.initTelemetryDiagnostics();
                         if (window.LSToasts) LSToasts.show(data.enabled ? 'Telemetry on — thank you!' : 'Telemetry off', 'success');
                     } catch (e) {
                         if (window.LSToasts) LSToasts.show('Could not change telemetry setting', 'error');
                     } finally {
                         sw.disabled = false;
+                    }
+                });
+            }
+
+            /** Offline-telemetry diagnostics: status line + hand-carry export
+             *  button (layer 3). Reminds when events from BEFORE this app
+             *  start still haven't left the machine. */
+            async initTelemetryDiagnostics() {
+                const btn = document.getElementById('telemetry-diag-export');
+                const statusEl = document.getElementById('telemetry-diag-status');
+                if (!btn) return;
+
+                const paintStatus = (s) => {
+                    if (!statusEl) return;
+                    if (!s || !s.enabled) {
+                        statusEl.textContent = 'Telemetry is off — no diagnostics are collected.';
+                        btn.disabled = true;
+                        return;
+                    }
+                    btn.disabled = false;
+                    const bits = [];
+                    if (s.remind) {
+                        // Stays visible after the toast is gone.
+                        bits.push('Diagnostics from earlier sessions are still on this PC and have not been shared with the developer. Export the file and send it.');
+                    }
+                    bits.push(s.pendingCount === 0
+                        ? 'Nothing waiting.'
+                        : `${s.pendingCount} event${s.pendingCount === 1 ? '' : 's'} waiting${s.pendingSince ? ` (since ${new Date(s.pendingSince).toLocaleString()})` : ''}.`);
+                    if (s.lastExportAt) bits.push(`Last exported ${new Date(s.lastExportAt).toLocaleString()}.`);
+                    statusEl.textContent = bits.join(' ');
+                };
+
+                try {
+                    const res = await fetch('/api/telemetry/diagnostics/status');
+                    const s = await res.json();
+                    paintStatus(s);
+                    if (s && s.enabled && s.remind && window.LSToasts && !this._diagReminded) {
+                        this._diagReminded = true; // once per dashboard load
+                        LSToasts.show('This PC has diagnostics from earlier sessions that could not be sent (no internet). Open Admin account, press "Export diagnostics" and send the file to the developer.', 'warning', { tag: 'diagnostics-remind', timeoutMs: 30000 });
+                    }
+                    // The dashboard usually opens before the app's first upload
+                    // attempt has finished; ask once more when the answer is final.
+                    if (s && s.enabled && s.settled === false && !this._diagRecheck) {
+                        this._diagRecheck = setTimeout(() => this.initTelemetryDiagnostics(), 16000);
+                    }
+                } catch {
+                    paintStatus(null);
+                }
+
+                if (btn.dataset.wired) return;
+                btn.dataset.wired = '1';
+                btn.addEventListener('click', async () => {
+                    btn.disabled = true;
+                    try {
+                        const res = await fetch('/api/telemetry/diagnostics/export');
+                        if (res.status === 409) {
+                            if (window.LSToasts) LSToasts.show('Telemetry is off — turn it on before exporting diagnostics.', 'warning');
+                            return;
+                        }
+                        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                        const cd = res.headers.get('content-disposition') || '';
+                        const name = (cd.match(/filename="([^"]+)"/) || [])[1] || 'lanstreamer-diagnostics.json';
+                        const blob = await res.blob();
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = name;
+                        document.body.appendChild(a);
+                        a.click();
+                        a.remove();
+                        URL.revokeObjectURL(url);
+                        if (window.LSToasts) LSToasts.show('Diagnostics file saved to your Downloads. Send it to the developer (WhatsApp or email).', 'success', { tag: 'diagnostics-export' });
+                    } catch {
+                        if (window.LSToasts) LSToasts.show('Could not export diagnostics', 'error', { tag: 'diagnostics-export' });
+                    } finally {
+                        btn.disabled = false;
+                        this.initTelemetryDiagnostics(); // refresh counts (marking exported)
                     }
                 });
             }
