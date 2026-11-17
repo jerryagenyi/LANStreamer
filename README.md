@@ -182,6 +182,7 @@ LANStreamer is **free and open source — no one makes money from it, and no one
 | [Installation Guides](docs/guides/README.md) | FFmpeg and Icecast setup guides |
 | [Network Setup](docs/NETWORK-SETUP.md) | Static IP configuration for live events |
 | [Latency Guide](docs/LATENCY.md) | Getting the lowest latency for listeners |
+| [Field Testing](docs/FIELD-TESTING.md) | How to measure listener delay at a venue (the 1-second test) and what to report |
 | [Manual Setup](manual-setup/README.md) | Hardware-specific configuration guides |
 | [Changelog](docs/CHANGELOG.md) | Version history and release notes |
 
