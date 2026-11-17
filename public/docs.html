@@ -76,6 +76,7 @@
         <a href="#devices">Audio sources</a>
         <a href="#network">Network &amp; phones</a>
         <a href="#latency">Latency</a>
+        <a href="#testing">Testing</a>
         <a href="#diagnostics">Diagnostics</a>
         <a href="#specs">Minimum specs</a>
     </nav>
@@ -207,6 +208,28 @@
         <h3>Cabled listeners are fine, Wi-Fi listeners are 5–6 seconds behind</h3>
         <p>On version 2.0.0 a single Wi-Fi drop moved that listener to the slower playback path for good. From 2.1.0 the page reconnects by itself and comes back to about 1 second. On 2.0.0: <strong>reload the listener page</strong> on the slow phone or laptop, or tap the channel off and on.</p>
         <p>Full write-up: <code>docs/LATENCY.md</code> in the repository.</p>
+    </section>
+
+    <section class="doc-section" id="testing">
+        <h2><span class="material-symbols-rounded">timer</span>Testing the delay before an event</h2>
+        <p>Expect about <strong>1 second</strong> on a cabled laptop, <strong>1–1.5 seconds</strong> on Android or a laptop over Wi-Fi, and a few seconds more on iPhones.</p>
+        <h3>The 1-second test</h3>
+        <ol class="doc-steps">
+            <li>On this PC, play continuous music or speech in VLC into the cable you stream from (VLC → Audio → Audio Device → <em>CABLE Input</em>).</li>
+            <li>On the listener device, open the listener page and press play. Keep the page in front and the screen on.</li>
+            <li>Press <strong>pause</strong> in VLC and count until the listener goes quiet. Repeat 3 times.</li>
+        </ol>
+        <p>More precise: film the PC screen and the listener device together with a second phone, then step through the video frame by frame (30 frames = 1 second). Use the device's speaker or wired earphones; Bluetooth adds its own delay.</p>
+        <h3>Compare, then wait an hour</h3>
+        <ul>
+            <li>Test a <strong>cabled laptop</strong>, a <strong>Wi-Fi phone</strong> and a <strong>Wi-Fi laptop</strong> at the same time, on the same stream. The cabled one shows what this PC delivers.</li>
+            <li>Leave them playing for an hour and repeat every 15 minutes.</li>
+            <li>If one gets slow: is the cabled laptop still about 1 second? Then reload the page on the slow device. Back to 1 second: that device's Wi-Fi dropped. Still slow: weak Wi-Fi at that spot. Cabled laptop slow too: something on this PC.</li>
+            <li>Change one thing at a time between rounds: router, distance from the access point, 5 GHz vs 2.4 GHz, audio source.</li>
+        </ul>
+        <h3>What to send the developer</h3>
+        <p>The version (next to the logo on the dashboard), a short table of time · device · browser · cable or Wi-Fi · router · delay, the audio source you used, and, if this PC has no internet, the file from <strong>Admin account → Export diagnostics</strong>.</p>
+        <p>Full guide with a results template: <code>docs/FIELD-TESTING.md</code> in the repository (also linked from the release page on GitHub).</p>
     </section>
 
     <section class="doc-section" id="diagnostics">
