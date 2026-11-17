@@ -137,6 +137,7 @@ Using your **own Icecast install** instead of the bundled one? That install is o
 | "This site can't be reached" | Likely subnet mismatch — see [Network Troubleshooting](docs/TROUBLESHOOTING.md#network-connectivity-issues) |
 | "Port 3001 already in use" | A leftover instance is running — quit it from the tray (Stop All & Quit) or the header power button, close any old terminal window, or end `LANStreamer.exe` (source runs: `node.exe`) in Task Manager, then relaunch. The app also warns you itself when it lands on a different port |
 | "No audio devices detected" | Ensure device is connected and not in use by another app |
+| Cabled listeners ~1 s, Wi-Fi listeners 5–6 s | Fixed in v2.1.0 (the page now reconnects after a Wi-Fi drop instead of switching to a slower player). On v2.0.0: reload the listener page on the slow device. |
 | Latency suddenly 4–6 s (was ~2 s) | Usually the audio *source* chain, not the app: check what feeds the virtual cable (the app playing into it may buffer seconds), turn OFF Windows "Listen to this device", and note iPhone/Safari listeners always sit a few seconds behind. See [High or Sudden Latency](docs/TROUBLESHOOTING.md#high-or-sudden-latency-4-6-s) |
 | "Stream format not supported" | See [Stream Playback Issues](docs/TROUBLESHOOTING.md#stream-playback-issues) |
 | Link/QR stopped working after moving networks | The share card always shows the PC's **current** network address — re-share the link/QR after the network changes; old links point at the old address |

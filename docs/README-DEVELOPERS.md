@@ -113,8 +113,8 @@ Jest runs with `--experimental-vm-modules` (the project is ESM — `"type": "mod
 
 | Folder | Contents |
 |--------|----------|
-| `tests/unit/` | `StreamingService`, `IcecastService`, `errorDiagnostics` unit tests |
-| `tests/integration/` | Server startup, auth, admin-localhost lock, telemetry client relay, stream create/start/reorder/proxy, start-all, spawn errors |
+| `tests/unit/` | `StreamingService` (incl. lifecycle telemetry pairing), `IcecastService`, `errorDiagnostics`, `TelemetryService`, `TelemetryJournal` (offline journal/uploader/export), `import-diagnostics` validation, `appVersion`, `lowlatency` (listener player reconnect behaviour, with a fake MediaSource) |
+| `tests/integration/` | Server startup, auth, admin-localhost lock, telemetry client relay + per-minute summary, diagnostics status/export routes, stream create/start/reorder/proxy, start-all, spawn errors |
 | `tests/scenarios/` | Error-scenario coverage |
 | `tests/fixtures/` | Shared fixtures (`tests/setup.js` is the global setup) |
 
@@ -138,7 +138,9 @@ Puppeteer-driven checks against the live app (start the server first) — each w
 - `verify-host.mjs`, `verify-offline.mjs` — LAN-IP detection overrides stale saved hosts; app renders with ALL non-localhost requests aborted (offline proof)
 - `verify-client-telemetry.mjs` — listener failure relay E2E: real browser error → POST /api/telemetry/client-event → PostHog queue (sends past flushAt so events land in Live). Run against a fresh server (`PORT=3010 node src/server.js` + `BASE_URL=http://localhost:3010`) when the user's Electron app owns 3001
 - `verify-latency.mjs` — the latency proof: MSE player buffered-ahead (~0.5 s steady) vs plain-src baseline (~2.3 s), time-to-first-audio, and the pause→resume snap-back-to-live cycle. **Invariant: listener playback goes through `setAudioSource()`** (`streams.html`) — MSE path via `LSLowLatency` (`assets/js/lowlatency.js`, currently v=3; buffer target 0.75s — do NOT go below ~0.6s, Icecast delivers in 500ms ticks) with plain-src fallback for Safari/iOS or MSE failure; never assign `audioPlayer.src = proxyUrl` directly, or the browser's default prebuffering (the "4–5 seconds" report) returns
-- `prepare-telemetry-key.mjs` — bundles the PostHog key (env or `~/.secrets/posthog`) into gitignored `electron/telemetry-key.json` so packaged/distributed installs report after their first-run consent prompt
+- `verify-ll-reconnect.mjs` — listener reconnect proof in a real browser: serves a live MP3 tone with `/drop` and `/outage?ms=N` switches; after a drop the player must stay on MSE (`mode mse`, no fallback) and come back near-live (`node scripts/verify-ll-reconnect.mjs [port]`, then open the page it prints)
+- `prepare-telemetry-key.mjs` — bundles the PostHog key (env or the machine credential store's `LS_POSTHOG_PROJECT_TOKEN`) into gitignored `electron/telemetry-key.json` so packaged/distributed installs report
+- `posthog-query.mjs` — read-only HogQL console against the LANStreamer PostHog project; `import-diagnostics.mjs` — validates and replays hand-carried diagnostics files
 - `verify-lightselect.mjs`, `verify-rowalign.mjs` — light-mode dropdown contrast; stream-row action icons pinned in a fixed RIGHT column (stable right edge across rows and live→stopped flips; ⋯ popup opens leftward inside the card)
 - `verify-fixes.mjs`, `verify-p2p3.mjs`, `verify-p4.mjs`, `verify-round3.mjs` — earlier redesign/fix rounds
 - `diag-listener.mjs`, `diag-toggle.mjs`, `diag-processes.ps1` — console/network forensics on the listener page, collapse-toggle timing, and stray FFmpeg/Icecast process inspection
@@ -171,12 +173,14 @@ The full, current rules are in [CLAUDE.md](../CLAUDE.md) — read them before to
 
 ## 📊 Telemetry Implementation (PostHog)
 
-- `src/services/TelemetryService.js` — **opt-in only**; sends nothing unless (a) the user consented (first-run Electron prompt; toggle in the tray menu) **and** (b) `POSTHOG_KEY` is set in the environment (`POSTHOG_HOST` optional). No-op otherwise — keep it that way for any new events.
-- Events: `app_start`, `stream_started` (format), `stream_stopped`, `stream_failed` (error *category* only), `telemetry_enabled`/`telemetry_disabled`. Every event carries a fixed `app: lanstreamer` tag (the maintainer's PostHog project is shared across apps).
-- **Never** capture personal data, audio, stream names, or file paths. Distinct ID = anonymous install UUID stored in `config/telemetry.json`.
-- Skipped entirely under `NODE_ENV=test`. All calls are fire-and-forget with `catch` — telemetry must never break the app.
-- Consent prompt lives in `electron/main.js` (`maybeAskTelemetryConsent`); the build injects the key via `scripts/prepare-telemetry-key.mjs`.
-- User-facing wording lives in the **Telemetry & Privacy** section of the main [README](../README.md) — keep the two in sync when changing what is collected.
+- `src/services/TelemetryService.js` — **opt-out** (owner decision 2026-11-01): ON unless the operator turned it off (first-run notice with one-click "Turn off" in `electron/main.js`; dashboard Admin account switch; tray toggle) **and** a key resolves (env `POSTHOG_KEY`, `config/telemetry.json`, the machine credential store's `LS_POSTHOG_PROJECT_TOKEN`, or the key bundled at build time by `scripts/prepare-telemetry-key.mjs`). No-op otherwise — keep it that way for any new events. LANStreamer has its own PostHog project (since 2.1.0).
+- **Server events:** `app_start`, `app_stop`, `telemetry_enabled/disabled`, and the stream lifecycle — every live session emits exactly one `stream_started` (`via`, format, bitrate, sourceKind, salted `sourceHash`, `sid`) and exactly one end (`stream_stopped` with `uptimeMin`/`reason`, or `stream_crashed`); `stream_failed` = could not start. Emit them only through `StreamingService._reportStarted` / `_closeSession` / `_emitStreamEvent`. Every event carries `app`, `appVersion`, `schema: 1`, `platform`, `osVersion`, `arch`.
+- **Listener events** go through `POST /api/telemetry/client-event` (`src/routes/telemetry.js`), the one non-GET the LAN may call. Allowed names are in `CLIENT_EVENTS` (incl. `ll_fallback`). The 30 s buffer heartbeat is aggregated into one `client_buffer_summary` per minute (`aheadMedian`, `mseAheadMax`, `srcAheadMax`, `srcFallback`, `underrunsMax`, `snapsMax`, `reconnectsMax`, `listeners`, …) — never relay per-listener heartbeats. Test listener paths with the `X-Test-Remote-Address` header.
+- **Offline delivery (2.1.0):** `capture()` writes to `src/services/TelemetryJournal.js` first (`<dataDir>/telemetry-journal.jsonl`, cap 10,000); one uploader sends to PostHog `/batch/` with original timestamps, journal id as event uuid (repeat sends de-duplicate), `sent_at`, and `delivery: 'late'` after 5 min. Hand-carry: `GET /api/telemetry/diagnostics/status|export` (admin, localhost) + the dashboard **Export diagnostics** button; import with `node scripts/import-diagnostics.mjs [--dry-run] <file>` (adds `delivery: 'handcarry'`). Turning telemetry off deletes the journal. Never add a second send path.
+- **Never** capture personal data, audio, stream or device names, or file paths. Distinct ID = anonymous install UUID in `config/telemetry.json`.
+- Skipped entirely under `NODE_ENV=test`; the journal and importer are unit-tested with injected dir/clock/transport. All calls are fire-and-forget with `catch` — telemetry must never break the app.
+- Reading the data: `node scripts/posthog-query.mjs "<HogQL>" --json` (`status` for a connectivity check; reads the credential store, never prints the key).
+- User-facing wording lives in the **Telemetry & Privacy** section of the main [README](../README.md) and the **Diagnostics** section of the in-app guide (`public/docs.html`) — keep all three in sync when changing what is collected.
 
 ---
 

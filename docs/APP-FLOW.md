@@ -22,9 +22,9 @@ The **Electron desktop app** (packaged) opens `/dashboard` in its own window on 
 
 ```mermaid
 flowchart TD
-    A[App installed / first launch] --> B{Telemetry consent prompt}
-    B -->|Allow| C[Telemetry ON]
-    B -->|Decline| D[Telemetry OFF]
+    A[App installed / first launch] --> B{Telemetry notice: ON by default}
+    B -->|Keep on| C[Telemetry ON]
+    B -->|Turn off| D[Telemetry OFF]
     C --> E[Environment check]
     D --> E
     E --> F{FFmpeg found?}
@@ -152,6 +152,6 @@ flowchart TD
 | `IcecastService` | install detection, start/stop, stats (localhost polls), hostname auto-sync, security check |
 | `AudioDeviceService` | device discovery (dshow; wasapi fallback) |
 | `UpdateService` | GitHub release polling (to be replaced by electron-updater) |
-| `TelemetryService` | PostHog, opt-out (owner decision), anonymous ID, queue-and-flush |
+| `TelemetryService` | PostHog, opt-out (owner decision), anonymous ID; events journaled on disk first (`TelemetryJournal`), uploaded when online, exportable as a diagnostics file when never online |
 
 API surface used by the UI: `/api/streams/*` (status, start, stop, start-all, stop-all, reorder, play/:id proxy), `/api/system/*` (config, icecast start/stop/status, audio-devices, security-check), `/api/settings/*`, `/api/contact-details`, `/api/auth/login`.

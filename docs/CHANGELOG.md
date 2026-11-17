@@ -5,6 +5,26 @@ All notable changes to LANStreamer will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.0] — 2026-11 (field fixes + telemetry that works offline)
+
+Driven by the first field reports (Nigeria, Nov 2026): latency that was 1–2 s on the first test and 5–6 s the next day, but only for Wi-Fi listeners.
+
+### Fixed
+- **Wi-Fi listeners drifting to 5–6 s delay.** The low-latency player treated any dropped connection as "low latency is broken" and silently switched that listener to the slow playback path for the rest of the page load. A dropped, refused or closed connection now reconnects on the low-latency path (quick retries, then every 5 s) and comes back near-live. Only a real decode failure still falls back. *On 2.0.0 the workaround is to reload the page on the slow device.*
+- **Listener reports never arrived** from phones and laptops on the LAN (the report endpoint refused non-localhost callers). Listener telemetry now works from the LAN; everything else stays localhost-only.
+- `appVersion` was "unknown" on every event from packaged installs.
+- Stream lifecycle telemetry is balanced: each live session sends exactly one start and one end (`stream_stopped` or the new `stream_crashed`), and restarts are counted.
+- "Copy link" no longer opens a browser prompt box when the clipboard is unavailable; it shows the link in a notification instead.
+
+### Added
+- **Offline telemetry.** Events are kept in a small file on the PC until PostHog confirms them, so venues without internet lose nothing; they are sent with their original times the next time the app has internet.
+- **Export diagnostics** (Dashboard → Admin account): saves one file for PCs that are never online, to send by WhatsApp or email. The app logs each export and reminds the operator at start-up when earlier events are still waiting.
+- Telemetry now answers the field questions: stream format, bitrate, source kind and a salted one-way source fingerprint; OS build; a per-minute listener summary (how far behind live, low-latency vs fallback players, buffer underruns, live-edge snaps, Wi-Fi reconnects, listener count); `ll_fallback` when a listener leaves the low-latency path, with the reason.
+- LANStreamer reports to its own PostHog project (previously shared with another app). 2.0.0 installs keep reporting to the old project until updated.
+
+### Privacy
+- Telemetry stays opt-out with a one-click off; turning it off now also deletes the local event file. Still never: audio, stream or device names, file paths, user or machine names. Every event carries `schema: 1`.
+
 ## [2.0.0] — 2026-11-01 (first packaged release)
 
 Everything below ships in the Windows installer and standalone builds. For the release process, see [GO-LIVE-CHECKLIST.md](./GO-LIVE-CHECKLIST.md).
