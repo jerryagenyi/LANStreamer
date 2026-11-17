@@ -91,7 +91,7 @@ The installer carries everything: `electron:build:win` auto-runs `fetch-vendor-b
   - [ ] First-run telemetry consent dialog appears (bundled key resolves) — test BOTH Allow and Decline paths
   - [ ] Create a stream and go live **using only the bundled binaries**; a phone plays it (check Task Manager: ffmpeg.exe and icecast.exe run from the install's `resources\vendor\`)
   - [ ] All config/uploads land in `%APPDATA%/LANStreamer` (delete + reinstall the app → streams and settings survive)
-- [ ] Confirm the build does NOT contain `.env`, the dev machine's `config/`, `public/uploads/`, or a real-credential icecast.xml (inspect the installer's resources)
+- [ ] Confirm the build does NOT contain `.env`, the dev machine's `config/`, `public/uploads/`, or a real-credential icecast.xml (inspect the installer's resources). **Found 2026-11-17:** v2.0.0 shipped the build machine's three `public/uploads/events` banner images (~2.6 MB, unused by the packaged app). v2.1.0 was built with them moved aside; `package.json` `build.files` now excludes `public/uploads/**` so later builds can't include them.
 - [ ] SmartScreen will warn on an unsigned exe — decide: accept for now (document in release notes: "More info → Run anyway") or invest in code signing later
 - [ ] Portable build: runs from a folder without installing; config lands somewhere sensible and persists between runs (decide: true-portable via `PORTABLE_EXECUTABLE_DIR` vs `%APPDATA%`, and document)
 - [ ] **Upgrade path:** build two dummy versions, NSIS over-install test (old → new: settings survive, no duplicate entries)

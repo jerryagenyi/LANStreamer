@@ -75,15 +75,16 @@ Done since the status table above was written:
 
 - [x] Offline telemetry built, reviewed and verified (journal → send later → "Export diagnostics" file + export log + start-up reminder). See "Offline telemetry" above.
 
-Still to do, in order:
-- [ ] Merge this branch into `dev` locally, `npm test`, push `dev`.
+**v2.1.0 RELEASED 2026-11-17** — https://github.com/jerryagenyi/LANStreamer/releases/tag/v2.1.0 (tag on `c0c6c6d`, `main`). Release PR #17 (squash) + field-testing guide PR #18. Assets: `LANStreamer.Setup.2.1.0.exe`, `LANStreamer.Standalone.2.1.0.exe`, `SHA256SUMS.txt` (checked after download). Built on the maintainer PC from `main` with the git-ignored `public/uploads` moved aside; package inspected (no uploads/config/secrets, bundled key = LANStreamer EU project, guide has the Testing section, version 2.1.0) and smoke-started with a throwaway profile (pages up, bundled FFmpeg probe end-to-end OK, journal writes). NOT done: the real-phone Wi-Fi acceptance test below, upgrade-over-2.0.0 test, clean-VM/SmartScreen test.
+
+Release checklist status:
+- [x] Merged into `dev`, CI green on `dev` and `main` (first green since 2026-11-01; the Linux test run surfaced nothing hidden).
 - [x] PR #16 closed without merging on Jerry's instruction (2026-11-17), with the reasons in a comment — the biggest one is `enableExceptionAutocapture`, which would send stack traces containing file paths, i.e. Windows user names. The branch `posthog/wizard-01a1e4f6be68` still exists on the remote.
-- [ ] **Bump `package.json` version 2.0.0 → 2.1.0** (and `package-lock.json`) in the release commit. Without it the new build is indistinguishable from v2.0.0 in telemetry (`appVersion` is read from `package.json`).
-- [ ] Open the release PR `dev` → `main`. It changes streaming behaviour (the listener reconnect), so the description must answer the 7 conditions in `docs/pressure-checklist.md` (poor network is the one it exists for; under "10x"/"hostile traffic" state the retry cadence: one request per listener per 5 s at worst). CI must be green — it has been red on `main` since 2026-11-01 only because of the linter violations fixed above.
+- [x] Version bumped to 2.1.0; dashboard shows it next to the logo (`GET /api/system/version`).
+- [x] Release PR #17 with pressure-checklist answers; merged.
 - [ ] Release acceptance test (§7 #8) on the packaged build with a **real phone on Wi-Fi**: `client_buffer_summary` arrives in project 353182 with `appVersion 2.1.0`; walk out of Wi-Fi range and back — audio must return near-live without a reload and `reconnectsMax` must be > 0. Then unplug the PC's internet, stream for a minute, restart with internet: the offline events must arrive with their original times.
 - [ ] Add `reconnectsMax` and the `delivery` breakdown to the PostHog "LANStreamer field health" dashboard (prompt given to Jerry for PostHog AI). One test event `lanstreamer_offline_selftest` (distinct id `selftest-install`) exists in project 353182 from the live check; exclude or ignore it.
-- [ ] CI has not run the test suite on Linux since 2026-11-01 (the linter step failed first). The first green linter run may surface test failures that were hidden; check the first CI run on `dev`.
-- [ ] Tell Nigeria: install v2.1.0; until then, reload a slow phone.
+- [ ] Tell Nigeria: install v2.1.0, then run the field-testing guide (`docs/FIELD-TESTING.md`): cabled + Wi-Fi together, 1-hour test, reload check. DVS question still open: what happens on Start with "DVS Receive 1-2" (their video shows the DVS channels in the source list, so WDM mode is on).
 
 After the release:
 - [ ] DVS, once Nigeria questions 3–5 are answered (§4 F6/F7 unchanged).

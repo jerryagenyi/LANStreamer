@@ -25,6 +25,7 @@
       "electron/**",
       "src/**",
       "public/**",
+      "!public/uploads/**",
       "package.json",
       "README.md"
     ],
