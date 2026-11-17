@@ -20,6 +20,7 @@ Driven by the first field reports (Nigeria, Nov 2026): latency that was 1–2 s 
 - **Offline telemetry.** Events are kept in a small file on the PC until PostHog confirms them, so venues without internet lose nothing; they are sent with their original times the next time the app has internet.
 - **Export diagnostics** (Dashboard → Admin account): saves one file for PCs that are never online, to send by WhatsApp or email. The app logs each export and reminds the operator at start-up when earlier events are still waiting.
 - Telemetry now answers the field questions: stream format, bitrate, source kind and a salted one-way source fingerprint; OS build; a per-minute listener summary (how far behind live, low-latency vs fallback players, buffer underruns, live-edge snaps, Wi-Fi reconnects, listener count); `ll_fallback` when a listener leaves the low-latency path, with the reason.
+- The app version is shown next to the logo on the dashboard (read from the PC itself, so it works with no internet). The footer no longer shows a guessed version when the lookup fails.
 - LANStreamer reports to its own PostHog project (previously shared with another app). 2.0.0 installs keep reporting to the old project until updated.
 
 ### Privacy
