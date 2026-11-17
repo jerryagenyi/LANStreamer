@@ -1028,8 +1028,8 @@ class FFmpegStreamsManager {
             }, 2000);
         } catch (error) {
             console.error('Failed to copy URL:', error);
-            // Show the URL in a prompt as last resort
-            prompt('Copy this URL:', url);
+            // Last resort: show the URL where it can be read (never a native dialog)
+            this.showNotification(`Could not copy — the URL is ${url}`, 'error', { tag: 'copy' });
         }
     }
 
@@ -1197,12 +1197,8 @@ class FFmpegStreamsManager {
     copyListenerUrl() {
         const displayHost = this.serverHost || window.location.hostname;
         const url = `http://${displayHost}:${window.location.port || '3001'}/streams`;
-        if (navigator.clipboard) {
-            navigator.clipboard.writeText(url).then(() => this.showNotification('Listener link copied', 'success', { tag: 'copy' }))
-                .catch(() => window.prompt('Copy this link:', url));
-        } else {
-            window.prompt('Copy this link:', url);
-        }
+        LSShare.copy(url).then(ok => this.showNotification(
+            ok ? 'Listener link copied' : `Could not copy — the link is ${url}`, ok ? 'success' : 'error', { tag: 'copy' }));
     }
 
     /** Duplicate a stream config as a new stopped stream ("(copy)" name). */

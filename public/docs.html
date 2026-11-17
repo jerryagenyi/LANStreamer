@@ -8,7 +8,7 @@
     <link rel="icon" type="image/svg+xml" href="/assets/logo-mark.svg">
     <link rel="stylesheet" href="/assets/vendor/tailwind.css">
     <link rel="stylesheet" href="/assets/vendor/fonts/fonts.css?v=5">
-    <link rel="stylesheet" href="/assets/css/tokens.css?v=10">
+    <link rel="stylesheet" href="/assets/css/tokens.css?v=11">
     <link rel="stylesheet" href="/assets/css/ui.css?v=16">
     <script src="/assets/js/theme-toggle.js?v=7"></script>
     <style>
@@ -76,6 +76,7 @@
         <a href="#devices">Audio sources</a>
         <a href="#network">Network &amp; phones</a>
         <a href="#latency">Latency</a>
+        <a href="#diagnostics">Diagnostics</a>
         <a href="#specs">Minimum specs</a>
     </nav>
 
@@ -195,13 +196,27 @@
 
     <section class="doc-section" id="latency">
         <h2><span class="material-symbols-rounded">speed</span>Latency</h2>
-        <p>Total delay from mic to ears is typically <strong>2–6 seconds</strong>. Fastest wins:</p>
+        <p>Total delay from mic to ears is typically <strong>1–2 seconds</strong> on a healthy LAN (a bit more on first join). Fastest wins:</p>
         <ul>
             <li><strong>Operator side:</strong> 5&nbsp;GHz Wi-Fi or wired for the streaming PC; keep it away from congestion; QoS/streaming priority on the router helps on busy networks.</li>
             <li><strong>Listener side:</strong> phones on the same AP/SSID; close background streaming apps; wired headsets avoid Bluetooth's extra 100–200&nbsp;ms.</li>
             <li><strong>In LANStreamer:</strong> lower bitrate (128&nbsp;kbps) trims buffer a little; keep the listener volume above ~50% and use the on-page volume.</li>
+            <li><strong>Virtual audio cables (VB-CABLE etc.):</strong> the cable itself is fast, but <em>whatever plays INTO it</em> may buffer seconds on its own — a Zoom call, a browser tab, a media player. Feed the cable from the most direct output available and set that app's buffer/buffering to its minimum. Also avoid Windows' <strong>"Listen to this device"</strong> routing (Sound settings → device properties) — it adds seconds of its own.</li>
+            <li><strong>iPhone/Safari listeners:</strong> these use a compatibility playback path where the browser keeps its own (multi-second) buffer — latency there is higher by design. Android/Chrome/Edge/Firefox phones sit closest to live.</li>
         </ul>
+        <h3>Cabled listeners are fine, Wi-Fi listeners are 5–6 seconds behind</h3>
+        <p>On version 2.0.0 a single Wi-Fi drop moved that listener to the slower playback path for good. From 2.1.0 the page reconnects by itself and comes back to about 1 second. On 2.0.0: <strong>reload the listener page</strong> on the slow phone or laptop, or tap the channel off and on.</p>
         <p>Full write-up: <code>docs/LATENCY.md</code> in the repository.</p>
+    </section>
+
+    <section class="doc-section" id="diagnostics">
+        <h2><span class="material-symbols-rounded">insights</span>Usage statistics &amp; diagnostics</h2>
+        <p>LANStreamer sends anonymous usage statistics to the developer so field problems can be fixed: app version, OS build, stream format and bitrate, errors, and how far behind live listeners are. Never audio, stream or device names, file paths, or names of people or computers. Turn it off in <strong>Admin account → Anonymous usage statistics</strong> or from the tray icon.</p>
+        <h3>No internet at the venue</h3>
+        <p>Nothing is lost. The statistics wait in a small file on this PC and are sent, with their original times, the next time LANStreamer runs with internet.</p>
+        <h3>A PC that is never online</h3>
+        <p>Open <strong>Admin account</strong> and press <strong>Export diagnostics</strong>. A file named <code>lanstreamer-diagnostics-….json</code> is saved to your Downloads; send it to the developer by WhatsApp or email. The card shows when you last exported, and the app reminds you at start-up when statistics from earlier sessions are still waiting.</p>
+        <p>Turning statistics off deletes the waiting file.</p>
     </section>
 
     <section class="doc-section" id="specs">

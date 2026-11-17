@@ -6,10 +6,33 @@ Common issues and solutions for LANStreamer.
 - [Icecast Connection Issues](#icecast-connection-issues) ⭐ **Start Here**
 - [Network Connectivity Issues](#network-connectivity-issues) (includes [Which IP is my LAN / WiFi?](#which-ip-is-my-lan--wifi))
 - [Admin only on localhost](#admin-only-on-localhost)
+- [High or Sudden Latency (4–6 s)](#high-or-sudden-latency-4-6-s)
 - [Stream Playback Issues](#stream-playback-issues)
 - [Firewall Issues](#firewall-issues)
 - [Audio Device Issues](#audio-device-issues)
 - [Installation Issues](#installation-issues)
+
+---
+
+## High or Sudden Latency (4–6 s)
+
+Field report this section is written from: same gear, one day at ~2 s end-to-end, the next at 6 s — the only change was the audio source switched to a **free VB-CABLE**. LANStreamer's player holds ~0.75 s of buffer and hard-snaps back to live past 2.5 s **on the low-latency path** — so when the total hits 4–6 s the extra seconds are almost always **before the app** (capture chain) or on the **slow fallback playback path** — not the network and not the app itself.
+
+**Fastest first check (field-proven, Nov 2026): plug one listener in by cable.** The same Nigeria setup measured ~1 s on a wired listener while Wi-Fi listeners sat at 5–6 s — one cable test proves the whole server chain (source → VB-Cable → FFmpeg → Icecast) is fine and the extra seconds live in the *wireless listener's playback path*, not in "the network" as a whole. And note what weak signal actually does on the low-latency path: it produces **stutter/breaks** (buffer runs dry), never a *constant* 5–6 s offset — a constant offset means a deep buffer (the slow path below), whatever the signal strength. The Nigeria Wi-Fi listeners were Chrome (phone) and Edge (laptop) — both fully capable of the low-latency path, which makes the **silent fallback below (#4)** the prime suspect: one weak-signal hiccup while the page loads drops that browser onto the deep-buffer path for the whole session.
+
+**Cause found and fixed (v2.1+).** Up to v2.0.0 the low-latency player treated *any* network error — one dropped connection on weak Wi-Fi — as "low-latency is broken" and moved that listener to the deep-buffer path for the rest of the page load, with no visible change. That path never returns to live by itself and falls further behind with every hiccup: exactly "1 s on cable, 5–6 s on Wi-Fi, fine at first test". From v2.1 a dropped connection is retried **on the low-latency path** (0.3 s, then backing off to every 5 s for as long as the channel is selected), and the listener comes back at the live edge; only a genuine decode failure still falls back. Verified in Chromium with `node scripts/verify-ll-reconnect.mjs` (drop and 8 s outage: tone resumes, `mode` stays `mse`, buffer back to ~0.5 s). **On v2.0.0 the field workaround is: reload the page on the slow device** (or tap the channel off and on).
+
+Check in this order:
+
+1. **What feeds the virtual cable?** The cable itself is fast, but the app *playing into it* (Zoom, a browser tab, a media player) may buffer seconds on its own. Feed the cable from the most direct output available and set that app's buffering to its minimum. If the audio comes out of a meeting app at all, expect its full jitter buffer in the chain.
+2. **Windows "Listen to this device" must be OFF.** Sound settings → device properties → Listen tab. Routing audio through "Listen" adds seconds on its own; it's a monitoring feature, not a routing tool.
+3. **The reload test — run it on the slow listener.** Reload the page on a device showing 5–6 s. Comes back near-live and STAYS = it was on the deep-buffer fallback path (reload restored the low-latency path — done). Comes back near-live then slowly creeps up again = audio is genuinely arriving late (weak link — fix signal: move closer to the AP, 5 GHz, line of sight). Comes back already seconds behind = a fixed buffer upstream (keep going down the list).
+4. **Any non-Apple listener that got slow mid-session?** A playback error can silently drop a supported browser onto the slow path with no visible change — on a weak Wi-Fi link this can happen right at page load, so the listener spends the whole session seconds behind. If telemetry is on, this reports itself (`lanstreamer_client_ll_fallback`); otherwise the reload in #3 fixes it.
+5. **Which listeners are slow — everyone, or only iPhones/Safari?** Safari/iOS uses a compatibility playback path where the browser keeps its own multi-second buffer; Android/Chrome/Edge/Firefox sit closest to live. If only Apple devices are slow, that's expected behavior, not a fault.
+6. **Icecast join burst on that PC.** The bundled config ships a 16 KB burst; a stock operator-installed Icecast (or an older generated config) may carry 64 KB, which pre-pushes ≈5.5 s at the default 96 kbps — significant only for listeners on the slow path from #4/#5. Check `burst-size` in the active `icecast.xml`.
+7. **Verify with the clap test** (clap at the mic, count seconds to the listener's ear). A constant offset that never grows points at a fixed buffer; an offset that grows over minutes points at the link; dropouts/stutter point at Wi-Fi congestion (see [docs/LATENCY.md](LATENCY.md) for the operator-side network list).
+
+If telemetry is on, listener heartbeats are aggregated into one `lanstreamer_client_buffer_summary` event per minute in the operator's PostHog (buffer depths per playback path and platform, worst underruns, listener count): `mseAheadMax` staying near ~1 s while total latency is high proves the delay is upstream of LANStreamer; deep `srcAheadMax` means listeners are on the slow path — expected if `ios` counts dominate, a real fallback if `srcFallback` > 0.
 
 ---
 

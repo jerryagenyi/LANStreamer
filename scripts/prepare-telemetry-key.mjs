@@ -3,9 +3,11 @@
  * Prepare the build-time telemetry key before electron-builder packages the app.
  *
  * Key sources, in order: POSTHOG_KEY (+ optional POSTHOG_HOST) env, else the
- * machine credential store (~/.secrets/posthog: POSTHOG_PROJECT_TOKEN /
- * POSTHOG_HOST) — the same store TelemetryService reads at runtime, so the
- * maintainer's machine can package telemetry without exporting anything.
+ * machine credential store (~/.secrets/posthog, sectioned per product —
+ * LS_POSTHOG_PROJECT_TOKEN / LS_POSTHOG_HOST, legacy unprefixed fallback) —
+ * the same store TelemetryService reads at runtime, so the maintainer's
+ * machine can package telemetry without exporting anything. LANStreamer builds
+ * MUST bake the LANStreamer org's project key, never another product's.
  *
  * Writes electron/telemetry-key.json, which ships inside the packaged app.
  * TelemetryService falls back to this file when neither env vars nor the
@@ -30,12 +32,16 @@ if (!key) {
   try {
     const store = path.join(os.homedir(), '.secrets', 'posthog');
     if (fs.existsSync(store)) {
+      const map = {};
       for (const line of fs.readFileSync(store, 'utf8').split('\n')) {
         const m = line.match(/^\s*([A-Z0-9_]+)\s*=\s*(.+?)\s*$/);
-        if (!m) continue;
-        if (m[1] === 'POSTHOG_PROJECT_TOKEN' && !key) key = m[2];
-        if (m[1] === 'POSTHOG_HOST' && !host) host = m[2];
+        if (m) map[m[1]] = m[2];
       }
+      // Store is sectioned per product (LS_/CA_ prefixes). LANStreamer builds
+      // bake the LANStreamer project's ingest key; hosts fall back across
+      // sections because the operator's projects share one region.
+      key = map.LS_POSTHOG_PROJECT_TOKEN || map.POSTHOG_PROJECT_TOKEN || '';
+      host = host || map.LS_POSTHOG_HOST || map.POSTHOG_HOST || map.CA_POSTHOG_HOST || '';
     }
   } catch { /* store unreadable — treat as no key */ }
 }

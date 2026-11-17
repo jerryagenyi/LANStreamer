@@ -39,14 +39,36 @@
     modal.querySelector('[data-share-close]').addEventListener('click', close);
     modal.addEventListener('click', (e) => { if (e.target === modal) close(); });
     modal.querySelector('[data-share-copy]').addEventListener('click', async (e) => {
-      try {
-        await navigator.clipboard.writeText(url);
-        e.target.textContent = 'Copied!';
-        setTimeout(() => { e.target.textContent = 'Copy link'; }, 1500);
-      } catch {
-        window.prompt('Copy this link:', url);
-      }
+      const ok = await copy(url);
+      e.target.textContent = ok ? 'Copied!' : 'Copy failed — select the link above';
+      setTimeout(() => { e.target.textContent = 'Copy link'; }, ok ? 1500 : 4000);
     });
+  }
+
+  /** Copy text to the clipboard; resolves true/false and never opens a native
+   *  dialog (UI rule). navigator.clipboard needs a secure context (localhost or
+   *  HTTPS) — over plain http://<LAN-IP> fall back to execCommand. */
+  async function copy(text) {
+    try {
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(text);
+        return true;
+      }
+    } catch { /* fall through to the legacy path */ }
+    try {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.setAttribute('readonly', '');
+      ta.style.position = 'fixed';
+      ta.style.left = '-9999px';
+      document.body.appendChild(ta);
+      ta.select();
+      const ok = document.execCommand('copy');
+      ta.remove();
+      return ok;
+    } catch {
+      return false;
+    }
   }
 
   function close() {
@@ -55,5 +77,5 @@
 
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape') close(); });
 
-  window.LSShare = { show, close };
+  window.LSShare = { show, close, copy };
 })();

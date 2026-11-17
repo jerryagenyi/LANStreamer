@@ -4,6 +4,7 @@ import audioDeviceService from '../services/AudioDeviceService.js';
 import IcecastService from '../services/IcecastService.js';
 import streamingService from '../services/StreamingService.js';
 import binaryProbe from '../services/BinaryProbeService.js';
+import { appVersion } from '../utils/appVersion.js';
 // import { updateService } from '../services/UpdateService.js';
 import { ErrorHandler, errorMiddleware } from '../utils/errors.js';
 
@@ -591,6 +592,16 @@ router.get('/icecast/health', async (req, res, next) => {
   } catch (error) {
     next(error);
   }
+});
+
+/**
+ * @route GET /api/system/version
+ * @description The running app's version, from package.json. Answered
+ *   locally (no GitHub call), so it works on a LAN with no internet.
+ * @access Private (admin, localhost)
+ */
+router.get('/version', (req, res) => {
+  res.json({ version: appVersion() });
 });
 
 /**

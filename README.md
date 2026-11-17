@@ -8,7 +8,7 @@
 
 - **One download, nothing to pre-install** — the app bundles FFmpeg + Icecast. Two builds: `Setup` (installer) and `Standalone` (single file, run from anywhere).
 - **Listeners just open a link** — any phone/PC browser on the same network; QR code included; no app, no account.
-- **~1 second listener latency** — a low-latency player keeps live audio close behind the room ([how](docs/LATENCY.md)).
+- **~1–2 second listener latency** — a low-latency player keeps live audio close behind the room ([how](docs/LATENCY.md)).
 - **Multi-channel** — one stream per language/channel; speech-friendly 96 kbps default, 128/192 for music, switchable per stream.
 - **Admin login, LAN-safe by design** — the dashboard is locked to the operator's PC; the network only ever sees the listener page.
 - **Event-ready extras** — event banner, listener QR sharing, light/dark themes, fully offline after install, telemetry you can turn off with one switch.
@@ -137,6 +137,8 @@ Using your **own Icecast install** instead of the bundled one? That install is o
 | "This site can't be reached" | Likely subnet mismatch — see [Network Troubleshooting](docs/TROUBLESHOOTING.md#network-connectivity-issues) |
 | "Port 3001 already in use" | A leftover instance is running — quit it from the tray (Stop All & Quit) or the header power button, close any old terminal window, or end `LANStreamer.exe` (source runs: `node.exe`) in Task Manager, then relaunch. The app also warns you itself when it lands on a different port |
 | "No audio devices detected" | Ensure device is connected and not in use by another app |
+| Cabled listeners ~1 s, Wi-Fi listeners 5–6 s | Fixed in v2.1.0 (the page now reconnects after a Wi-Fi drop instead of switching to a slower player). On v2.0.0: reload the listener page on the slow device. |
+| Latency suddenly 4–6 s (was ~2 s) | Usually the audio *source* chain, not the app: check what feeds the virtual cable (the app playing into it may buffer seconds), turn OFF Windows "Listen to this device", and note iPhone/Safari listeners always sit a few seconds behind. See [High or Sudden Latency](docs/TROUBLESHOOTING.md#high-or-sudden-latency-4-6-s) |
 | "Stream format not supported" | See [Stream Playback Issues](docs/TROUBLESHOOTING.md#stream-playback-issues) |
 | Link/QR stopped working after moving networks | The share card always shows the PC's **current** network address — re-share the link/QR after the network changes; old links point at the old address |
 | Audio reaches listeners ~1–1.5 s after the room | Normal — the low-latency player holds a small buffer that also absorbs Icecast's ½-second delivery rhythm; how it works and how to tune it: [docs/LATENCY.md](docs/LATENCY.md) |
@@ -157,13 +159,16 @@ Using your **own Icecast install** instead of the bundled one? That install is o
 
 LANStreamer is **free and open source — no one makes money from it, and no one should** (MIT license).
 
-**Telemetry is ON by default (opt-out).** **What is collected:** anonymous events — app start, stream started/stopped/failed (with the error *category* only), app version, OS, and a random install ID. Every event also carries a fixed `app: lanstreamer` tag (the maintainer's PostHog project is shared across apps; the tag separates this app's events). **Never collected:** audio, stream names, contact details, file paths, IPs, or any personal data.
+**Telemetry is ON by default (opt-out).** **What is collected:** anonymous events — app start/stop (stop carries nothing extra), stream started/stopped/failed (started carries the output format, the configured bitrate, the source *kind* (device/file), and a one-way **source hash** — a 10-character salted fingerprint of the audio source (salt is random per install, so hashes identify a source *within* one install but can never be reversed or compared across installs); stopped carries how long the stream ran in minutes; failed carries the error *category* only), app version, OS family + build + architecture (machine *spec* — not identity: no hostnames, serials, or user names), and a random install ID. Every event also carries a fixed `app: lanstreamer` tag (the maintainer's PostHog project is shared across apps; the tag separates this app's events). **Never collected:** audio, stream names, contact details, file paths, IPs, or any personal data.
 
-**Listener failure reports:** when playback fails on a listener's device (audio error, buffer stall, the stream going off-air mid-listen, or the page failing to load), the listener page reports it to the *operator's own server*, which relays it to PostHog **only while the operator's telemetry is on** — carrying the stream label (e.g. "S1"), the media error code, and the browser platform. Listener devices never talk to PostHog directly and never hold any key; with telemetry off, the reports are dropped at the server.
+**Listener reports:** when playback fails on a listener's device (audio error, buffer stall, the stream going off-air mid-listen, the page failing to load, or a supported browser silently dropping to the slower compatibility playback path), the listener page reports it to the *operator's own server*, which relays it to PostHog **only while the operator's telemetry is on** — carrying the stream label (e.g. "S1"), the media error code, and a coarse platform (iOS/Android/desktop). While listeners play, their playback apps also post a buffer sample every 30 seconds; the server **aggregates these into a single summary per minute** — numbers only (buffer depths per playback path and platform, worst underrun/seek counts, how many listeners are connected) — so remote telemetry can tell a player-side delay from a capture-side one without flooding the project. Listener devices never talk to PostHog directly and never hold any key; with telemetry off, the reports are dropped at the server.
 
 - **First run** shows a plain notice that statistics are on, what they contain, and a one-click **Turn it off**.
 - **Change it anytime**: dashboard → sidebar → **Admin account** → *Anonymous usage statistics* switch, or tray icon → **Telemetry → On/Off**.
 - Events go to the maintainer's PostHog over the internet, queued and flushed in the background — nothing is sent while telemetry is off, and a fully offline LAN works either way.
+- **No internet at the venue?** The same anonymous events are first written to a small file on the PC (`telemetry-journal.jsonl` in the app's data folder: `%APPDATA%\LANStreamer` for the installed app, `config\` when run from source). They are sent, with their original times, the next time the app runs with internet, and removed once received. The file holds at most 10,000 events; beyond that the oldest are dropped.
+- **PC never online?** Dashboard → **Admin account** → **Export diagnostics** saves one readable JSON file with those events; send it to the developer by WhatsApp or email. The app notes when you last exported, and reminds you at start-up if events from earlier sessions are still waiting.
+- **Turning statistics off deletes that file** and stops writing it.
 - Maintainers packaging a distributed build: run `node scripts/prepare-telemetry-key.mjs` before building — it bundles the PostHog key into the app (gitignored) so other operators' installs report too (each with their own off switch).
 
 ---

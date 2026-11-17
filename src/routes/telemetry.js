@@ -1,5 +1,6 @@
 import express from 'express';
 import telemetry from '../services/TelemetryService.js';
+import IcecastService from '../services/IcecastService.js';
 
 const router = express.Router();
 
@@ -18,11 +19,13 @@ const router = express.Router();
 const CLIENT_EVENTS = new Set([
   'playback_error',    // audio element failed while playing a channel
   'playback_stalled',  // buffering stall (deduped client-side)
+  'buffer_report',     // 30s heartbeat while playing — AGGREGATED below, never relayed one-by-one
+  'll_fallback',       // a browser that supports MSE silently dropped to the plain-src slow path
   'reconnect_grace',   // the stream disappeared mid-listen; grace window opened
   'offair_giveup',     // grace expired without the stream returning
   'load_failed'        // the listener page could not load the stream list
 ]);
-const MAX_PROPS = 8;
+const MAX_PROPS = 10;
 const MAX_STR = 160;
 
 // Tiny in-memory rate limit: LAN app, single instance. 30 events/min/IP is far
@@ -32,7 +35,96 @@ const RATE_LIMIT = 30;
 const RATE_WINDOW_MS = 60_000;
 const hits = new Map(); // ip -> { count, windowStart }
 
-router.post('/client-event', (req, res) => {
+// --- Heartbeat aggregation -------------------------------------------------
+// Relaying every 30s phone heartbeat was ~24,000 PostHog events per 2-hour
+// service (into a shared free project) and an Icecast admin poll per post on
+// the machine doing real-time capture. Instead: collect a window, emit ONE
+// client_buffer_summary per minute that keeps every signal the bisect needs
+// (how deep were buffers, per playback-path, per platform, worst underruns).
+const SUMMARY_INTERVAL_MS = 60_000;
+const LISTENERS_CACHE_MS = 30_000;
+const hbWindow = [];
+let listenersCache = { value: null, at: 0 };
+
+/** Listener count for summaries, cached — never more than one Icecast admin
+ *  poll per 30s no matter how many phones are reporting. Best-effort. */
+async function currentListeners() {
+  if (Date.now() - listenersCache.at < LISTENERS_CACHE_MS) return listenersCache.value;
+  try {
+    const status = await IcecastService.getStatus();
+    if (typeof status?.listeners === 'number') {
+      listenersCache = { value: status.listeners, at: Date.now() };
+    }
+  } catch { /* keep the old cached value */ }
+  return listenersCache.value;
+}
+
+const num = (v) => (typeof v === 'number' && Number.isFinite(v) ? v : null);
+
+function median(sorted) {
+  if (!sorted.length) return null;
+  const mid = sorted.length >> 1;
+  const m = sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+  return +(m.toFixed(2));
+}
+
+/** Emit the window summary (one client_buffer_summary) and reset the window.
+ *  Exported for tests and for shutdown flushes. Empty window = no event. */
+export async function flushListenerSummary() {
+  const reports = hbWindow.splice(0);
+  if (!reports.length) return;
+
+  const aheadAll = reports.map(r => num(r.ahead)).filter(a => a !== null).sort((a, b) => a - b);
+  const ofMode = (mode) => reports.filter(r => r.mode === mode);
+  const aheadMaxAmong = (rs) => {
+    const vals = rs.map(r => num(r.ahead)).filter(a => a !== null);
+    return vals.length ? Math.max(...vals) : null;
+  };
+  const maxOf = (key) => {
+    const vals = reports.map(r => num(r[key])).filter(a => a !== null);
+    return vals.length ? Math.max(...vals) : null;
+  };
+
+  const src = ofMode('src');
+  const props = {
+    surface: 'listener',
+    reports: reports.length,
+    mse: ofMode('mse').length,
+    src: src.length,
+    // src on iOS/Safari is EXPECTED (no MP3-in-MSE there); src on any other
+    // platform means the low-latency path silently failed mid-session — that
+    // is the signal worth an alert.
+    srcFallback: src.filter(r => r.plat !== 'ios').length,
+    ios: reports.filter(r => r.plat === 'ios').length,
+    android: reports.filter(r => r.plat === 'android').length,
+    desktop: reports.filter(r => r.plat === 'desktop').length,
+    streams: new Set(reports.map(r => r.streamId).filter(Boolean)).size,
+  };
+  if (aheadAll.length) {
+    props.aheadMedian = median(aheadAll);
+    props.aheadMax = aheadAll[aheadAll.length - 1];
+  }
+  const mseMax = aheadMaxAmong(ofMode('mse'));
+  if (mseMax !== null) props.mseAheadMax = mseMax;
+  const srcMax = aheadMaxAmong(src);
+  if (srcMax !== null) props.srcAheadMax = srcMax;
+  const uMax = maxOf('underruns');
+  if (uMax !== null) props.underrunsMax = uMax;
+  const sMax = maxOf('snaps');
+  if (sMax !== null) props.snapsMax = sMax;
+  // Connection drops the player recovered from WITHOUT leaving the
+  // low-latency path — the direct measure of how rough the listeners' Wi-Fi is.
+  const rMax = maxOf('reconnects');
+  if (rMax !== null) props.reconnectsMax = rMax;
+  const listeners = await currentListeners();
+  if (typeof listeners === 'number') props.listeners = listeners;
+
+  telemetry.capture('client_buffer_summary', props);
+}
+
+setInterval(() => { flushListenerSummary().catch(() => {}); }, SUMMARY_INTERVAL_MS).unref?.();
+
+router.post('/client-event', async (req, res) => {
   try {
     const now = Date.now();
     const ip = req.ip || req.socket?.remoteAddress || 'unknown';
@@ -58,6 +150,13 @@ router.post('/client-event', (req, res) => {
       if (typeof v === 'string') props[k] = v.slice(0, MAX_STR);
       else if (typeof v === 'number' || typeof v === 'boolean') props[k] = v;
       count++;
+    }
+
+    if (event === 'buffer_report') {
+      // Aggregate, don't relay: the summary fires on the interval (or via
+      // flushListenerSummary) with the listener count attached there.
+      hbWindow.push(props);
+      return res.json({ ok: true, captured: telemetry.getConsentState().enabled });
     }
 
     // capture() is a no-op unless the operator consented + key resolves
@@ -97,6 +196,51 @@ router.post('/consent', async (req, res, next) => {
     telemetry.setConsented(enabled);
     const { consented } = telemetry.getConsentState();
     return res.json({ ok: true, enabled, consented });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * @route GET /api/telemetry/diagnostics/status
+ * @description Local-delivery status for the dashboard "Export diagnostics"
+ *   card: pending journal events, last upload/export, and whether events from
+ *   a PREVIOUS session still await delivery (the remind toast).
+ * @access Private (admin, localhost)
+ */
+router.get('/diagnostics/status', async (req, res, next) => {
+  try {
+    await telemetry.init(); // idempotent
+    return res.json(telemetry.diagnosticsStatus());
+  } catch (error) {
+    next(error);
+  }
+});
+
+/** Local-time filename stamp: YYYYMMDD-HHmm, zero-padded. */
+function diagnosticsStamp(d = new Date()) {
+  const p = (n) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}`;
+}
+
+/**
+ * @route GET /api/telemetry/diagnostics/export
+ * @description Download a hand-carry diagnostics bundle (every event still
+ *   in the local journal) for machines that never reach PostHog. 409 with a
+ *   clear message when telemetry is off (nothing is journaled then).
+ * @access Private (admin, localhost)
+ */
+router.get('/diagnostics/export', async (req, res, next) => {
+  try {
+    await telemetry.init(); // idempotent
+    const bundle = telemetry.exportDiagnostics();
+    if (!bundle) {
+      return res.status(409).json({ error: 'Telemetry is off — no diagnostics are collected. Turn telemetry on first.' });
+    }
+    const shortId = String(bundle.installId || '').replace(/[^0-9a-fA-F]/g, '').slice(0, 8) || 'install';
+    res.setHeader('Content-Type', 'application/json; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename="lanstreamer-diagnostics-${shortId}-${diagnosticsStamp()}.json"`);
+    return res.json(bundle);
   } catch (error) {
     next(error);
   }

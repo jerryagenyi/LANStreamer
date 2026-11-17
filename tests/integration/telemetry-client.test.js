@@ -39,6 +39,7 @@ jest.unstable_mockModule('../../src/services/StreamingService.js', () => ({
 }));
 
 const { default: app } = await import('../../src/server.js');
+const { flushListenerSummary } = await import('../../src/routes/telemetry.js');
 
 describe('Listener client-event relay', () => {
   it('accepts a playback failure WITHOUT a token (public surface)', async () => {
@@ -55,6 +56,28 @@ describe('Listener client-event relay', () => {
       streamId: 's1',
       code: 4
     }));
+  });
+
+  // Regression (2026-11-16): the localhost admin lock sat in front of this
+  // route and only let GETs through from the LAN, so every real listener
+  // (a phone, never localhost) got 403 and no client event ever reached
+  // PostHog from the field. Listeners are by definition NOT on localhost.
+  it('accepts a listener event from a phone on the LAN (not localhost)', async () => {
+    captureMock.mockClear();
+    const res = await request(app)
+      .post('/api/telemetry/client-event')
+      .set('X-Test-Remote-Address', '192.168.1.100')
+      .send({ event: 'playback_stalled', properties: { streamId: 's1' } });
+    expect(res.status).toBe(200);
+    expect(captureMock).toHaveBeenCalledWith('client_playback_stalled', expect.objectContaining({ surface: 'listener' }));
+  });
+
+  it('keeps every other POST blocked from the LAN (admin stays localhost-only)', async () => {
+    const res = await request(app)
+      .post('/api/telemetry/consent')
+      .set('X-Test-Remote-Address', '192.168.1.100')
+      .send({ enabled: false });
+    expect(res.status).toBe(403);
   });
 
   it('still guards other POST routes (401 without token)', async () => {
@@ -79,6 +102,67 @@ describe('Listener client-event relay', () => {
     expect(props.msg.length).toBe(160);
     expect(props).not.toHaveProperty('evil');
     expect(props.ok).toBe(true);
+  });
+
+  // Heartbeats are aggregated, not relayed one-by-one: 100 listeners posting
+  // every 30s was ~24,000 PostHog events per 2-hour service (shared free
+  // quota) and several Icecast admin calls per post on the capture machine.
+  it('accepts buffer heartbeats without relaying each one', async () => {
+    await flushListenerSummary(); // drop anything earlier tests left in the window
+    captureMock.mockClear();
+    const res = await request(app)
+      .post('/api/telemetry/client-event')
+      .send({ event: 'buffer_report', properties: { streamId: 's1', mode: 'mse', ahead: 0.78, rate: 1, underruns: 0, snaps: 0 } });
+    expect(res.status).toBe(200);
+    expect(captureMock).not.toHaveBeenCalled();
+    await flushListenerSummary();
+  });
+
+  it('summarises a window of heartbeats into ONE event that keeps the slow-path signal', async () => {
+    await flushListenerSummary();
+    captureMock.mockClear();
+    const post = (properties) => request(app).post('/api/telemetry/client-event').send({ event: 'buffer_report', properties });
+    await post({ streamId: 's1', mode: 'mse', plat: 'android', ahead: 0.7, underruns: 0, snaps: 0 });
+    await post({ streamId: 's1', mode: 'mse', plat: 'android', ahead: 0.9, underruns: 3, snaps: 1, reconnects: 4 });
+    await post({ streamId: 's2', mode: 'src', why: 'unsupported', plat: 'ios', ahead: 4.2, underruns: 0, snaps: 0 });
+
+    await flushListenerSummary();
+
+    const summaries = captureMock.mock.calls.filter(c => c[0] === 'client_buffer_summary');
+    expect(summaries).toHaveLength(1);
+    expect(summaries[0][1]).toEqual(expect.objectContaining({
+      surface: 'listener',
+      reports: 3,
+      mse: 2,
+      src: 1,
+      srcFallback: 0,
+      ios: 1,
+      android: 2,
+      streams: 2,
+      aheadMedian: 0.9,
+      aheadMax: 4.2,
+      srcAheadMax: 4.2,
+      mseAheadMax: 0.9,
+      underrunsMax: 3,
+      snapsMax: 1,
+      reconnectsMax: 4 // worst listener's recovered connection drops = Wi-Fi health
+    }));
+  });
+
+  it('sends no summary for a window with no heartbeats', async () => {
+    await flushListenerSummary();
+    captureMock.mockClear();
+    await flushListenerSummary();
+    expect(captureMock).not.toHaveBeenCalled();
+  });
+
+  it('accepts the low-latency fallback report (the silent switch to the slow path)', async () => {
+    captureMock.mockClear();
+    const res = await request(app)
+      .post('/api/telemetry/client-event')
+      .send({ event: 'll_fallback', properties: { streamId: 's1', err: 'QuotaExceededError', plat: 'android' } });
+    expect(res.status).toBe(200);
+    expect(captureMock).toHaveBeenCalledWith('client_ll_fallback', expect.objectContaining({ err: 'QuotaExceededError' }));
   });
 
   it('rate-limits to 30 events per minute per IP', async () => {

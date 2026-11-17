@@ -9,6 +9,7 @@ import contactRouter from './routes/contact.js';
 import authRouter from './routes/auth.js';
 import telemetryRouter from './routes/telemetry.js';
 import { uploadsBase } from './utils/vendorPaths.js';
+import { appVersion } from './utils/appVersion.js';
 import binaryProbe from './services/BinaryProbeService.js';
 import { optionalAuth, authenticateToken } from './middleware/auth.js';
 import { requireLocalhostAdmin } from './middleware/requireLocalhost.js';
@@ -129,7 +130,7 @@ export function startServer({ port = process.env.PORT || 3001, host = process.en
 
   // Functional binary self-test (dshow/encoders/2s end-to-end) — first run and
   // on stale pins only; fire-and-forget, must never delay or break startup.
-  binaryProbe.ensureProbed(process.env.npm_package_version || 'unknown');
+  binaryProbe.ensureProbed(appVersion());
 
   // stopStreams=false lets a caller that already stopped streams/icecast (the
   // Electron shell does its own ordered teardown) skip the duplicate pass —

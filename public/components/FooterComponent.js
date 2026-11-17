@@ -1,7 +1,7 @@
 class FooterComponent {
     constructor(containerId = 'footer-container') {
         this.containerId = containerId;
-        this.currentVersion = 'v1.1.0'; // Fallback version
+        this.currentVersion = ''; // shown blank rather than a guessed number
         this.isInitialized = false;
     }
 
@@ -22,11 +22,13 @@ class FooterComponent {
     async loadVersion() {
         try {
             console.log('🔄 Loading version info...');
-            const response = await fetch('/api/system/update-check');
+            // Local answer only: update-check asks GitHub first and can hang
+            // on a venue LAN with no internet, holding the footer back.
+            const response = await fetch('/api/system/version');
             const data = await response.json();
 
-            if (data.success && data.current) {
-                this.currentVersion = `v${data.current}`;
+            if (data.version) {
+                this.currentVersion = `v${data.version}`;
                 console.log('✅ Version loaded:', this.currentVersion);
             } else {
                 console.warn('⚠️ Failed to load version from API, using fallback');

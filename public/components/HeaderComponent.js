@@ -19,9 +19,21 @@ class HeaderComponent {
         this.render();
         this.setupEventListeners();
         if (window.LSNotifications) LSNotifications.bindBell(); // Notification center owns the bell now
+        this.showVersion();
         this.checkForUpdates(); // Feeds update notices into the notification bell
         this.isInitialized = true;
         console.log('🎯 HeaderComponent initialization complete');
+    }
+
+    /** Running version from the local server (no internet needed). Left
+     *  blank on failure rather than showing a guessed number. */
+    async showVersion() {
+        try {
+            const res = await fetch('/api/system/version');
+            const { version } = await res.json();
+            const el = document.getElementById('header-version');
+            if (el && version) el.textContent = `v${version}`;
+        } catch { /* leave blank */ }
     }
 
     async loadConfig() {
@@ -86,6 +98,8 @@ class HeaderComponent {
                             <span class="text-xl font-bold tracking-wider">LANStreamer</span>
                         </div>
                     </a>
+                    <!-- Version visible without scrolling: field testers read it off the screen -->
+                    <span id="header-version" class="mono" title="LANStreamer version" style="color:var(--tok-text-3);"></span>
                 </div>
 
                 <!-- Navigation and Actions — Listener page FIRST, Exit LAST (owner order 2026-11-01) -->

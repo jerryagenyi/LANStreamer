@@ -19,7 +19,14 @@ const LISTENER_GET_PATHS = [
   '/api/info'
 ];
 
-const LISTENER_PLAY_REGEX = /^\/api\/streams\/play\/[^/]+$/;
+// The one non-GET the listener page makes: its telemetry relay. Listeners are
+// never on localhost, so without this every phone's report was 403'd here
+// before reaching the route (which whitelists events and rate-limits itself).
+const LISTENER_POST_PATHS = [
+  '/api/telemetry/client-event'
+];
+
+const LISTENER_PLAY_REGEX =/^\/api\/streams\/play\/[^/]+$/;
 
 /**
  * In tests we can't open a real connection from another machine, so we allow
@@ -53,8 +60,9 @@ function getServerOwnIps() {
 }
 
 function isListenerPathAllowed(req) {
-  if (req.method !== 'GET') return false;
   const path = req.path || req.url?.split('?')[0] || '';
+  if (req.method === 'POST') return LISTENER_POST_PATHS.includes(path);
+  if (req.method !== 'GET') return false;
   if (LISTENER_GET_PATHS.includes(path)) return true;
   if (LISTENER_PLAY_REGEX.test(path)) return true;
   return false;
