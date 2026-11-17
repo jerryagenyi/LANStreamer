@@ -42,13 +42,20 @@ New field facts (2026-11-16): on the same stream a **wired laptop measured ~1 s*
 3. **Installs in the field (v2.0.0) still report to the OLD project** (ChurchAfrica's org, id 320407) with the old baked key, and will until they install a new build. Querying their history needs the ChurchAfrica org's key. `package.json` still says `2.0.0` — bump to `2.1.0` at release or the new build is indistinguishable from the old one.
 4. **Offline venues** — see "Offline telemetry" below; not built.
 
-### Offline telemetry — how data gets out when the PC is never online (design, not built)
+### Offline telemetry — how data gets out when the PC is never online (BUILT 2026-11-16, in this branch)
 
-PostHog can only receive what a machine eventually sends. Three layers, cheapest first:
-1. **Always write a local journal.** Every telemetry event is also appended to a small rolling file in the data folder (same anonymous events, capped e.g. 2 MB / 30 days). Works with no internet at all.
-2. **Send later.** When the app next starts with internet, it uploads the journal with the **original timestamps** and marks what was sent. Covers "offline at the venue, online at home/office". Today the queue is memory-only, so those events are lost on exit.
-3. **Hand-carry for PCs that are never online.** A dashboard button "Export diagnostics" writes one small file (journal + version + redacted settings) that the operator sends by WhatsApp/email; `scripts/` gets an importer that replays it into PostHog. Same data, human transport.
-Layers 1+2 are one change in `TelemetryService`; layer 3 is the "Copy diagnostics" item already listed in §7 (P2 #14) and should move up.
+Built by OpenClaude from a written brief, then reviewed, corrected and verified in the primary session.
+
+1. **Local journal.** `TelemetryService.capture()` writes every event to `<dataDir>/telemetry-journal.jsonl` first (`src/services/TelemetryJournal.js`). Capped at 10,000 events; a torn last line after a power cut is skipped; turning telemetry off deletes it.
+2. **Send later.** One delivery path: journal → uploader → PostHog `/batch/` (own `fetch`, 10 s timeout). Events keep their original time and use the journal id as the event uuid, so a repeat send is de-duplicated. Runs 4 s after start, 5 s after an event, every 60 s, and at shutdown (3 s cap). Events sent >5 min late carry `delivery: 'late'`. `sent_at` is included so PostHog corrects a wrong PC clock.
+3. **Hand-carry.** Dashboard → Admin account → **Export diagnostics** downloads `lanstreamer-diagnostics-<id>-<date>.json` (`GET /api/telemetry/diagnostics/export`, admin + localhost only). Each export is logged in `<dataDir>/telemetry-delivery.json` (last 50). `node scripts/import-diagnostics.mjs [--dry-run] <file>` validates the (untrusted) file and replays it with `delivery: 'handcarry'`.
+4. **Reminder.** `GET /api/telemetry/diagnostics/status` returns `remind: true` when events from an earlier session are still waiting after the start-up upload attempt. The dashboard then shows a 30 s toast and a permanent line next to the button. We only know the file was exported, not that it was sent.
+
+Fixed in review (each with a failing test first): unsent events could be deleted when the journal was full during an upload; a full journal was rewritten in full on every event; the reminder never fired because the dashboard asked before the first upload attempt finished (`settled` flag + one re-check).
+
+Verified: 25 suites / 154 tests; linter 0 new; a **live upload to project 353182** (event dated two hours earlier arrived with that time, `delivery: late`, one copy after a deliberate double send); a **real dashboard run as an offline PC** (throwaway data folder, unreachable PostHog host, three events seeded from the day before): reminder toast shown, status line "4 events waiting", export logged, status then "Nothing waiting", importer dry-run read the file.
+
+Not verified / not done: the packaged Electron build; a real PC with no internet for days; a real `import-diagnostics` run without `--dry-run`; light theme of the new button; tray menu item (skipped); the `telemetry_disabled` event is still never sent (pre-existing: capture is already off when it fires). `posthog-node` is now only a fallback when the journal cannot be written; removing the dependency is a later clean-up.
 
 ### Questions for Nigeria — plain-language version (replaces §6)
 
@@ -60,15 +67,27 @@ Already answered: Wi-Fi listeners were a phone on Chrome and a laptop on Edge; t
 4. **If yes: what happens when you press Start on a stream using that DVS source?** (Screenshot of the message.)
 5. **In the Dante Virtual Soundcard window, is the "Audio Interface" set to WDM or ASIO?** (It must be WDM for LANStreamer to see it.)
 
-### Order of work from here
+### TODO towards the next release (v2.1.0) — updated 2026-11-16 late evening
 
-1. Commit the F13 fix (after Jerry's go) → merge to dev → fix/accept the 6 linter violations so CI is green. The player change is a streaming-behaviour change: its PR description must answer the 7 conditions in `docs/pressure-checklist.md` (poor network is the one it exists for; also state the retry cadence under "hostile traffic"/"10x": one request per listener per 5 s at worst).
-2. Close PR #16.
-3. Bump version to 2.1.0; run the release acceptance test from §7 (#8) with a **real phone on Wi-Fi**: confirm `client_buffer_summary` arrives in project 353182, then walk out of Wi-Fi range and back — audio must return near-live without a reload and `reconnectsMax` must be > 0.
-4. Tell Nigeria: install v2.1.0; until then, reload a slow phone.
-5. Offline journal (layers 1+2), then diagnostics export (layer 3).
-6. DVS, once questions 3–5 are answered (§4 F6/F7 unchanged).
-7. v2.2: capture buffer (F5), device identity (F6), remaining security items (F11).
+Done since the status table above was written:
+- [x] F13 Wi-Fi reconnect fix committed (`81dc67e`).
+- [x] The 6 design-token violations fixed (`a3b598e`; baseline ratcheted down in `ac13188`). `node scripts/check-design-tokens.mjs` → "0 new". The three `prompt()` copy fallbacks now go through `LSShare.copy()`; the showcase uses tokens (`--tok-virtual`, `--tok-virtual-dim` are new).
+
+- [x] Offline telemetry built, reviewed and verified (journal → send later → "Export diagnostics" file + export log + start-up reminder). See "Offline telemetry" above.
+
+Still to do, in order:
+- [ ] Merge this branch into `dev` locally, `npm test`, push `dev`.
+- [x] PR #16 closed without merging on Jerry's instruction (2026-11-17), with the reasons in a comment — the biggest one is `enableExceptionAutocapture`, which would send stack traces containing file paths, i.e. Windows user names. The branch `posthog/wizard-01a1e4f6be68` still exists on the remote.
+- [ ] **Bump `package.json` version 2.0.0 → 2.1.0** (and `package-lock.json`) in the release commit. Without it the new build is indistinguishable from v2.0.0 in telemetry (`appVersion` is read from `package.json`).
+- [ ] Open the release PR `dev` → `main`. It changes streaming behaviour (the listener reconnect), so the description must answer the 7 conditions in `docs/pressure-checklist.md` (poor network is the one it exists for; under "10x"/"hostile traffic" state the retry cadence: one request per listener per 5 s at worst). CI must be green — it has been red on `main` since 2026-11-01 only because of the linter violations fixed above.
+- [ ] Release acceptance test (§7 #8) on the packaged build with a **real phone on Wi-Fi**: `client_buffer_summary` arrives in project 353182 with `appVersion 2.1.0`; walk out of Wi-Fi range and back — audio must return near-live without a reload and `reconnectsMax` must be > 0. Then unplug the PC's internet, stream for a minute, restart with internet: the offline events must arrive with their original times.
+- [ ] Add `reconnectsMax` and the `delivery` breakdown to the PostHog "LANStreamer field health" dashboard (prompt given to Jerry for PostHog AI). One test event `lanstreamer_offline_selftest` (distinct id `selftest-install`) exists in project 353182 from the live check; exclude or ignore it.
+- [ ] CI has not run the test suite on Linux since 2026-11-01 (the linter step failed first). The first green linter run may surface test failures that were hidden; check the first CI run on `dev`.
+- [ ] Tell Nigeria: install v2.1.0; until then, reload a slow phone.
+
+After the release:
+- [ ] DVS, once Nigeria questions 3–5 are answered (§4 F6/F7 unchanged).
+- [ ] v2.2: capture buffer (F5), device identity (F6), remaining security items (F11).
 
 ## 1. State of the working tree (as of the original review — see §0 for current state)
 
